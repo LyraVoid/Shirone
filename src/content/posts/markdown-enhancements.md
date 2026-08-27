@@ -100,3 +100,84 @@ dist
 
 - `title="string"`: Sets a custom header title and accessible label for the tree.
 - `icon="colored" | "simple"`: Choose between multi-color extension icons (`colored`, default) or minimal monochrome icons (`simple`).
+
+---
+
+## Code Trees
+
+Interactive Code Trees pair a multi-level file hierarchy navigation pane on the left with instant code panel switching on the right. They provide an IDE-like reading experience for multi-file examples, modules, or whole directory walk-throughs.
+
+### 1. Container Syntax (`:::code-tree`)
+
+Combine multiple fenced code blocks within a `:::code-tree` block directive. Each code block specifies its path via `title="path/to/file"`.
+
+````markdown
+:::code-tree{title="Shirone Component Demo" height="380px" entry="src/Button.svelte"}
+```svelte title="src/Button.svelte"
+<script lang="ts">
+  let { label = "Click me" } = $props();
+</script>
+
+<button class="m3-btn">{label}</button>
+```
+
+```stylus title="src/styles/button.styl"
+.m3-btn
+  background: var(--primary)
+  color: var(--on-primary)
+  border-radius: var(--shape-corner-m)
+```
+
+```json title="package.json"
+{
+  "name": "button-demo",
+  "version": "1.0.0"
+}
+```
+:::
+````
+
+:::code-tree{title="Shirone Component Demo" height="380px" entry="src/Button.svelte"}
+```svelte title="src/Button.svelte"
+<script lang="ts">
+  let { label = "Click me" } = $props();
+</script>
+
+<button class="m3-btn">{label}</button>
+```
+
+```stylus title="src/styles/button.styl"
+.m3-btn
+  background: var(--primary)
+  color: var(--on-primary)
+  border-radius: var(--shape-corner-m)
+```
+
+```json title="package.json"
+{
+  "name": "button-demo",
+  "version": "1.0.0"
+}
+```
+:::
+
+#### Configuration & Markers
+
+- `title="string"`: Sets the header title and accessible label for the code tree.
+- `height="string"`: Sets the height for the desktop view (default `420px`, e.g. `380px`, `26rem`).
+- `entry="filepath"`: Specifies which file is active upon first load.
+- `icon="colored" | "simple"`: Switch between colorful or minimal monochrome file icons.
+- `:active`: Place `:active` on any fenced code block to designate it as the default active tab.
+
+---
+
+### 2. Local Directory Auto-Import (`@[code-tree]`)
+
+Point directly to any local directory path in the workspace to automatically scan and generate an interactive code tree at build time without manually copying file contents.
+
+```markdown
+@[code-tree title="Anime Utilities" entry="status.ts"](/src/utils/anime)
+```
+
+@[code-tree title="Site Configuration" entry="siteConfig.ts"](/src/config)
+

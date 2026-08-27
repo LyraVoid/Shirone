@@ -54,6 +54,78 @@
 			"notes": ["两种输入统一进入同一 Admonition renderer。"]
 		},
 		{
+			"id": "code-tree",
+			"name": "Code Tree",
+			"status": "stable",
+			"category": "container",
+			"source": "shirone",
+			"summary": "将多文件代码示例或本地目录渲染为可折叠目录导航与可切换代码面板。",
+			"forms": [
+				{
+					"kind": "container-directive",
+					"pattern": ":::code-tree{title=\"...\" height=\"...\" entry=\"...\" icon=\"colored|simple\"} ... :::",
+					"example": ":::code-tree{title=\"组件示例\" height=\"420px\" entry=\"Button.svelte\"}\n```svelte title=\"Button.svelte\"\n<button>Click</button>\n```\n:::"
+				},
+				{
+					"kind": "custom-pattern",
+					"pattern": "@[code-tree title=\"...\" height=\"...\" entry=\"...\"](dir_path)",
+					"example": "@[code-tree title=\"站点配置\" entry=\"siteConfig.ts\"](/src/config)"
+				}
+			],
+			"attributes": [
+				{
+					"name": "title",
+					"required": false,
+					"values": "string, at most 200 characters",
+					"default": ""
+				},
+				{
+					"name": "height",
+					"required": false,
+					"values": "valid CSS length (e.g. 420px, 26rem)",
+					"default": "420px"
+				},
+				{
+					"name": "entry",
+					"required": false,
+					"values": "filepath string",
+					"default": null
+				},
+				{
+					"name": "icon",
+					"required": false,
+					"values": "colored | simple",
+					"default": "colored"
+				},
+				{
+					"name": "dir",
+					"required": false,
+					"values": "local directory path",
+					"default": null
+				}
+			],
+			"implementation": [
+				"src/plugins/markdown/code/remark-code-tree.mjs",
+				"src/plugins/markdown/containers/rehype-code-tree.mjs",
+				"src/plugins/markdown/core/file-tree-icons.mjs"
+			],
+			"registeredIn": "src/utils/markdown-processor.mjs",
+			"styles": ["src/styles/markdown/trees.css"],
+			"runtime": {
+				"mode": "client-enhanced",
+				"modules": ["src/utils/code-tree.ts"],
+				"network": []
+			},
+			"docs": ["src/content/posts/markdown-enhancements.md"],
+			"tests": [
+				"tests/plugins/markdown/containers/code-tree.test.mjs",
+				"tests/site/code-tree.spec.ts"
+			],
+			"notes": [
+				"本地目录导入限制在工作区根目录内，以 UTF-8 读取文件，并忽略隐藏目录、依赖目录、构建目录及大于 256KB 的文件。"
+			]
+		},
+		{
 			"id": "expressive-code",
 			"name": "Expressive Code fence metadata",
 			"status": "stable",
