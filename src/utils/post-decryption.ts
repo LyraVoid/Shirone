@@ -2,6 +2,7 @@ import I18nKey from "@i18n/i18nKey";
 import { i18n } from "@i18n/translation";
 import { siteConfig } from "@/config/siteConfig";
 import { initCodeCopyButtons } from "./code-copy";
+import { initCodeTrees } from "./code-tree";
 import { initFancybox } from "./fancybox-handler";
 import { initKaTeXScrollbars } from "./katex-scroll";
 import { scheduleMermaidRender } from "./mermaid";
@@ -26,6 +27,7 @@ export function initPostDecryption(container: HTMLElement): void {
 
 	// Copy uses one delegated listener, so it also covers HTML injected later.
 	initCodeCopyButtons();
+	initCodeTrees();
 
 	if (
 		typeof window !== "undefined" &&

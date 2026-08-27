@@ -164,8 +164,319 @@
 	}
 }
 
+/* --- M3E 代码树 (Code Tree) --- */
+.custom-md .m3-code-tree {
+	margin: var(--m3e-space-6) 0;
+	border: 1px solid var(--outline-variant);
+	border-radius: var(--shape-corner-l);
+	background: var(--codeblock-bg);
+	color: var(--on-surface);
+	overflow: hidden;
+}
+
+/* 顶部标题栏 */
+.custom-md .m3-code-tree__header {
+	display: flex;
+	align-items: center;
+	gap: var(--m3e-space-2);
+	min-height: calc(var(--m3e-space-8) + var(--m3e-space-1));
+	padding: var(--m3e-space-1) var(--m3e-space-3);
+	border-bottom: 1px solid var(--outline-variant);
+	background: var(--codeblock-topbar-bg);
+	color: var(--on-surface);
+	font: var(--m3e-type-label-large);
+}
+
+.custom-md .m3-code-tree__header-icon {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: var(--m3e-space-5);
+	height: var(--m3e-space-5);
+	color: var(--primary);
+	flex-shrink: 0;
+}
+
+.custom-md .m3-code-tree__header-icon svg {
+	width: var(--m3e-space-5);
+	height: var(--m3e-space-5);
+}
+
+.custom-md .m3-code-tree__title {
+	min-width: 0;
+	overflow-wrap: anywhere;
+}
+
+/* 分栏主体 */
+.custom-md .m3-code-tree__body {
+	display: flex;
+	height: var(--code-tree-height, 26.25rem);
+	min-height: 18rem;
+}
+
+/* 左侧文件树导航栏 */
+.custom-md .m3-code-tree__nav {
+	width: 14rem;
+	min-width: 11rem;
+	max-width: 18rem;
+	flex-shrink: 0;
+	border-inline-end: 1px solid var(--outline-variant);
+	background: var(--surface-container-low, color-mix(in oklab, var(--on-surface) 3%, var(--codeblock-bg)));
+	overflow: auto;
+	overscroll-behavior: contain;
+	scrollbar-width: none;
+	padding: var(--m3e-space-2) var(--m3e-space-1);
+}
+
+.custom-md .m3-code-tree__nav::-webkit-scrollbar,
+.custom-md .m3-code-tree__content::-webkit-scrollbar {
+	display: none;
+	width: 0;
+	height: 0;
+}
+
+.custom-md .m3-code-tree__tree-root,
+.custom-md .m3-code-tree__sub-tree {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.custom-md .m3-code-tree__sub-tree {
+	margin-inline-start: var(--m3e-space-3);
+	padding-inline-start: var(--m3e-space-1);
+	border-inline-start: 1px dashed var(--outline-variant);
+}
+
+.custom-md .m3-code-tree__tree-node {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+}
+
+.custom-md .m3-code-tree__disclosure {
+	margin: 0;
+}
+
+.custom-md .m3-code-tree__dir-label {
+	display: flex;
+	align-items: center;
+	gap: var(--m3e-space-1);
+	width: 100%;
+	padding: var(--m3e-space-1) var(--m3e-space-2);
+	border-radius: var(--shape-corner-s);
+	font: var(--m3e-type-body-small);
+	font-weight: 600;
+	color: var(--on-surface-variant);
+	cursor: pointer;
+	user-select: none;
+	transition: background-color var(--m3e-duration-short) var(--m3e-easing-standard),
+		color var(--m3e-duration-short) var(--m3e-easing-standard);
+}
+
+.custom-md .m3-code-tree__dir-label:hover {
+	background: color-mix(in oklab, var(--on-surface) 6%, transparent);
+	color: var(--on-surface);
+}
+
+.custom-md .m3-code-tree__dir-label:active {
+	background: color-mix(in oklab, var(--on-surface) 10%, transparent);
+}
+
+.custom-md .m3-code-tree__dir-label:focus-visible {
+	outline: 2px solid var(--primary);
+	outline-offset: 1px;
+}
+
+.custom-md .m3-code-tree__dir-icon {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: var(--m3e-space-4);
+	height: var(--m3e-space-4);
+	color: var(--primary);
+	flex-shrink: 0;
+}
+
+.custom-md .m3-code-tree__dir-icon svg,
+.custom-md .m3-code-tree__file-icon svg {
+	width: var(--m3e-space-4);
+	height: var(--m3e-space-4);
+}
+
+.custom-md .m3-code-tree__dir-name {
+	min-width: 0;
+	overflow-wrap: anywhere;
+}
+
+.custom-md .m3-code-tree__file-btn {
+	display: flex;
+	align-items: center;
+	gap: var(--m3e-space-1);
+	width: 100%;
+	padding: var(--m3e-space-1) var(--m3e-space-2);
+	border: none;
+	background: transparent;
+	border-radius: var(--shape-corner-s);
+	font: var(--m3e-type-body-small);
+	font-family: var(--font-mono, var(--m3e-font-mono-fallback));
+	color: var(--on-surface-variant);
+	text-align: left;
+	cursor: pointer;
+	transition: background-color var(--m3e-duration-short) var(--m3e-easing-standard),
+		color var(--m3e-duration-short) var(--m3e-easing-standard);
+}
+
+.custom-md .m3-code-tree__file-btn:hover {
+	background: color-mix(in oklab, var(--on-surface) 6%, transparent);
+	color: var(--on-surface);
+}
+
+.custom-md .m3-code-tree__file-btn:active {
+	background: color-mix(in oklab, var(--on-surface) 10%, transparent);
+}
+
+.custom-md .m3-code-tree__file-btn:focus-visible {
+	outline: 2px solid var(--primary);
+	outline-offset: 1px;
+}
+
+/* 激活文件项：聚焦文件名本体的高亮，保持树结构自然通透 */
+.custom-md .m3-code-tree__file-btn--active,
+.custom-md .m3-code-tree__tree-node--file[aria-selected="true"] > .m3-code-tree__file-btn {
+	background: color-mix(in oklab, var(--on-surface) 5%, transparent);
+	color: var(--on-surface);
+}
+
+.custom-md .m3-code-tree__file-btn--active .m3-code-tree__file-name,
+.custom-md .m3-code-tree__tree-node--file[aria-selected="true"] > .m3-code-tree__file-btn .m3-code-tree__file-name {
+	color: var(--primary);
+	font-weight: 700;
+	text-decoration: underline;
+	text-decoration-color: var(--primary);
+	text-underline-offset: 3px;
+	text-decoration-thickness: 1.5px;
+}
+
+.custom-md .m3-code-tree__file-btn--active:hover,
+.custom-md .m3-code-tree__tree-node--file[aria-selected="true"] > .m3-code-tree__file-btn:hover {
+	background: color-mix(in oklab, var(--on-surface) 8%, transparent);
+	color: var(--on-surface);
+}
+
+.custom-md .m3-code-tree__file-btn--active:active,
+.custom-md .m3-code-tree__tree-node--file[aria-selected="true"] > .m3-code-tree__file-btn:active {
+	background: color-mix(in oklab, var(--on-surface) 10%, transparent);
+	color: var(--on-surface);
+}
+
+.custom-md .m3-code-tree__file-btn--active:hover .m3-code-tree__file-name,
+.custom-md .m3-code-tree__tree-node--file[aria-selected="true"] > .m3-code-tree__file-btn:hover .m3-code-tree__file-name,
+.custom-md .m3-code-tree__file-btn--active:active .m3-code-tree__file-name,
+.custom-md .m3-code-tree__tree-node--file[aria-selected="true"] > .m3-code-tree__file-btn:active .m3-code-tree__file-name {
+	color: var(--primary);
+	font-weight: 700;
+	text-decoration: underline;
+	text-decoration-color: var(--primary);
+	text-underline-offset: 3px;
+	text-decoration-thickness: 1.5px;
+}
+
+.custom-md .m3-code-tree__file-icon {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: var(--m3e-space-4);
+	height: var(--m3e-space-4);
+	flex-shrink: 0;
+	opacity: 0.8;
+	transition: opacity var(--m3e-duration-short) var(--m3e-easing-standard);
+}
+
+.custom-md .m3-code-tree__file-btn:hover .m3-code-tree__file-icon,
+.custom-md .m3-code-tree__file-btn--active .m3-code-tree__file-icon {
+	opacity: 1;
+}
+
+.custom-md .m3-code-tree__file-name {
+	min-width: 0;
+	overflow-wrap: anywhere;
+	transition: color var(--m3e-duration-short) var(--m3e-easing-standard);
+}
+
+/* 右侧代码面板查看器 */
+.custom-md .m3-code-tree__content {
+	flex: 1;
+	min-width: 0;
+	height: 100%;
+	overflow: auto;
+	overscroll-behavior: contain;
+	scrollbar-width: none;
+	background: var(--codeblock-bg);
+}
+
+.custom-md .m3-code-tree__panel {
+	min-height: 100%;
+}
+
+/* !important boundary: Tailwind Typography / Expressive Code owns prose code geometry; code-tree panels own panel visibility. */
+.custom-md .m3-code-tree__panel.hidden {
+	display: none !important;
+}
+
+/* !important boundary: Tailwind Typography / Expressive Code owns default code margins and borders; code-tree panels own embedded block geometry. */
+.custom-md .m3-code-tree__panel .expressive-code {
+	margin: 0 !important;
+	border: none !important;
+	border-radius: 0 !important;
+	height: auto;
+	min-height: 100%;
+}
+
+/* !important boundary: Expressive Code frames own default borders; code-tree panel embedded frame removes redundant borders. */
+.custom-md .m3-code-tree__panel .expressive-code .frame {
+	border: none !important;
+	border-radius: 0 !important;
+	height: auto;
+	min-height: 100%;
+}
+
+/* Code Tree owns scrolling; embedded code blocks must not create a second scroll viewport. */
+.custom-md .m3-code-tree__panel .expressive-code .frame > pre {
+	height: auto;
+	min-height: 0;
+	margin: 0 !important;
+	border: none !important;
+	border-radius: 0 !important;
+	max-height: none !important;
+	overflow: visible !important;
+}
+
+/* 响应式断点 */
+@media (max-width: 47.99rem) {
+	.custom-md .m3-code-tree__body {
+		flex-direction: column;
+		height: auto;
+	}
+
+	.custom-md .m3-code-tree__nav {
+		width: 100%;
+		max-width: 100%;
+		max-height: 10rem;
+		border-inline-end: none;
+		border-bottom: 1px solid var(--outline-variant);
+	}
+
+	.custom-md .m3-code-tree__content {
+		height: var(--code-tree-height, 22rem);
+		max-height: 28rem;
+	}
+}
+
 @media (prefers-reduced-motion: reduce) {
-	.custom-md .m3-file-tree__row {
+	.custom-md .m3-file-tree__row,
+	.custom-md .m3-code-tree__dir-label,
+	.custom-md .m3-code-tree__file-btn {
 		transition: none;
 	}
 }

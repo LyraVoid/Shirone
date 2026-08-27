@@ -8,6 +8,7 @@ import { h } from "hastscript";
 
 const MATERIAL_ICON_NAMES = {
 	tree: "account-tree-outline-rounded",
+	code: "code-rounded",
 	disclosure: "chevron-right-rounded",
 	folder: "folder-rounded",
 	file: "draft-outline-rounded",
@@ -40,6 +41,17 @@ const EXTENSION_ICONS = new Map([
 	["css", { collection: "simple", name: "css", tone: "primary" }],
 	["styl", { collection: "simple", name: "stylus", tone: "tertiary" }],
 	["stylus", { collection: "simple", name: "stylus", tone: "tertiary" }],
+	["html", { collection: "simple", name: "html5", tone: "error" }],
+	["htm", { collection: "simple", name: "html5", tone: "error" }],
+	["py", { collection: "simple", name: "python", tone: "primary" }],
+	["go", { collection: "simple", name: "go", tone: "primary" }],
+	["rs", { collection: "simple", name: "rust", tone: "error" }],
+	["rust", { collection: "simple", name: "rust", tone: "error" }],
+	["sh", { collection: "simple", name: "gnubash", tone: "secondary" }],
+	["bash", { collection: "simple", name: "gnubash", tone: "secondary" }],
+	["yaml", { collection: "simple", name: "yaml", tone: "error" }],
+	["yml", { collection: "simple", name: "yaml", tone: "error" }],
+	["svg", { collection: "simple", name: "svg", tone: "tertiary" }],
 ]);
 
 function resolveIcon(name, isDirectory, mode) {
@@ -120,6 +132,13 @@ export function createFileTreeHeaderIcon() {
 	return createSvg(
 		{ collection: "material", name: "tree", tone: "primary" },
 		"m3-file-tree__header-icon",
+	);
+}
+
+export function createCodeTreeHeaderIcon() {
+	return createSvg(
+		{ collection: "material", name: "code", tone: "primary" },
+		"m3-code-tree__header-icon",
 	);
 }
 

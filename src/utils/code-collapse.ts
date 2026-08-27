@@ -57,6 +57,10 @@ export class CodeBlockCollapser {
 	}
 
 	private enhanceCodeBlock(codeBlock: HTMLElement) {
+		// Code Tree owns a fixed-height scroll viewport. Collapsing an embedded
+		// block creates a second, conflicting height model and leaves dead space.
+		if (codeBlock.closest(".m3-code-tree")) return;
+
 		const frame = codeBlock.querySelector(":scope > .frame");
 		const pre = frame?.querySelector(":scope > pre");
 		const lineCount = pre?.querySelectorAll(".ec-line").length ?? 0;
