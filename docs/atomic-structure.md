@@ -1,4 +1,4 @@
-﻿# 原子化分层结构规范 — Shirone 主题
+# 原子化分层结构规范 — Shirone 主题
 
 > 本文档定义 `src/components/` 的原子化（Atomic Design）分层结构：
 > 各层职责、依赖方向与**禁止事项**。

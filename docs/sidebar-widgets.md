@@ -1,4 +1,4 @@
-﻿# 侧栏 Widget 清单与契约 — Shirone 主题
+# 侧栏 Widget 清单与契约 — Shirone 主题
 
 > 本文档记录 `SideBar.astro` 支持的全部 widget：
 > 配置形式、视觉规格、数据源、依赖与实现要点。

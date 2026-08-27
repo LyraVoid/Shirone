@@ -1,4 +1,4 @@
-﻿# 右下角悬浮控制流（FAB）与移动端目录系统规范 — Shirone 主题
+# 右下角悬浮控制流（FAB）与移动端目录系统规范 — Shirone 主题
 
 > 本文档定义 Shirone M3E 博客主题的右下角悬浮操作体系（Floating Action Button, FAB）与移动端大纲目录系统（Floating TOC）：
 > 架构定位、原子化分层、细粒度设备受控矩阵、零额外负担原则、Swup 导航同步与无障碍标准。

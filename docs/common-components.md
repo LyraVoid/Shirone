@@ -1,4 +1,4 @@
-﻿# 通用组件规范（molecules）— Shirone 主题
+# 通用组件规范（molecules）— Shirone 主题
 
 > 记录 `src/components/molecules/` 中**跨页面 / 区块复用**的通用组件：
 > 职责、Props、用法与新增约定。配套文档：
