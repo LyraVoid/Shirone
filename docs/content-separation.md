@@ -22,6 +22,8 @@ Shirone 支持在构建前从独立的内容仓库同步文章、动态、相册
 | `data/assets/anime/` | `public/assets/anime/` |
 | `data/assets/projects/` | `public/assets/projects/` |
 
+`public/assets/banner/` 是兼容性镜像目录，只在同步内容仓库到主题仓库时生成。建立内容仓库时，横幅以 `src/assets/images/banner/` 为唯一导出来源，避免两个主题目录中的同名文件互相覆盖。
+
 `data/assets/moments/thumbnails/` 是生成资源，不参与同步。同步动态原图后，现有 `images:generate` 流程会重新生成 `public/assets/moments/thumbnails/`。
 
 ## 内容仓库中的路径写法

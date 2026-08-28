@@ -35,6 +35,7 @@ test("content mapping preserves binary assets and rewrites paths", async () => {
 		await write("src/content/moments/images/leak.webp", binary);
 		await write("public/images/moments/a.webp", binary);
 		await write("src/assets/images/banner/desktop/1.webp", binary);
+		await write("public/assets/banner/desktop/1.webp", Buffer.from([9, 8, 7]));
 		await write("public/images/albums/README.md", "ignore");
 		await write("public/images/albums/AGENTS.md", "ignore");
 		await write("public/images/albums/a/info.json", "{}");

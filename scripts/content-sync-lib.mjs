@@ -39,6 +39,9 @@ export const CONTENT_MAPPINGS = [
 		source: "data/assets/banner",
 		target: "public/assets/banner",
 		kind: "tree",
+		// This is a compatibility mirror only; the source-to-content export
+		// uses src/assets/images/banner as the canonical source.
+		directions: ["content-to-source"],
 	},
 	{
 		source: "data/assets/music/cover",
@@ -266,6 +269,9 @@ export async function mapContentTree(contentRoot, projectRoot, direction) {
 	let copied = 0;
 
 	for (const mapping of CONTENT_MAPPINGS) {
+		if (mapping.directions && !mapping.directions.includes(direction)) {
+			continue;
+		}
 		const sourceRelative =
 			direction === "content-to-source" ? mapping.source : mapping.target;
 		const targetRelative =
