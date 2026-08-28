@@ -1,0 +1,9 @@
+.custom-md .katex-display-container {
+	width: 100%;
+	max-width: 100%;
+	overflow-x: auto;
+	overflow-y: hidden;
+	margin: var(--m3e-space-4) 0;
+	padding: var(--m3e-space-2) 0;
+	-webkit-overflow-scrolling: touch;
+}

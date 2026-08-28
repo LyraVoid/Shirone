@@ -21,6 +21,11 @@ import { resolveAsset } from "@utils/asset-utils";
 import { getSortedPosts } from "@utils/content-utils";
 import { formatDateToYYYYMMDD } from "@utils/date-utils";
 import { getMarkdownStylesheetAssets } from "@utils/markdown-assets";
+import { getSourceMarkdownSyntaxSnapshot } from "@utils/markdown-source-syntaxes.mjs";
+import {
+	hasMarkdownSyntax,
+	mergeMarkdownSyntaxSnapshots,
+} from "@utils/markdown-syntaxes.mjs";
 import { getDir, getPostUrlBySlug } from "@utils/url-utils";
 import { Icon } from "astro-icon/components";
 import katexStylesheet from "katex/dist/katex.css?url";
@@ -73,13 +78,20 @@ const isEncrypted = Boolean(
 const scope = `post:${entry.id}`;
 
 const { Content, headings, remarkPluginFrontmatter } = await render(entry);
-const hasMath = Boolean(
-	remarkPluginFrontmatter.markdownFeatures?.math ??
-		remarkPluginFrontmatter.hasMath,
+const renderedMarkdownSyntaxes = remarkPluginFrontmatter.markdownSyntaxes;
+const sourceMarkdownSyntaxes = hasMarkdownSyntax(
+	renderedMarkdownSyntaxes,
+	"expressive-code",
+)
+	? undefined
+	: getSourceMarkdownSyntaxSnapshot(entry.body);
+const markdownSyntaxes = mergeMarkdownSyntaxSnapshots(
+	renderedMarkdownSyntaxes,
+	sourceMarkdownSyntaxes,
 );
-const markdownStylesheetAssets = await getMarkdownStylesheetAssets({
-	...remarkPluginFrontmatter.markdownFeatures,
-});
+const hasMath = hasMarkdownSyntax(markdownSyntaxes, "math");
+const markdownStylesheetAssets =
+	await getMarkdownStylesheetAssets(markdownSyntaxes);
 const effectiveHeadings = isEncrypted ? [] : headings;
 const imageBasePath = entry.filePath
 	? path.relative(path.resolve("src"), path.dirname(entry.filePath))

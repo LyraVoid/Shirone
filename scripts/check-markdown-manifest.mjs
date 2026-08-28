@@ -62,6 +62,69 @@ if (manifest.schema !== 1) fail(`不支持的 schema：${manifest.schema}`);
 if (!Array.isArray(manifest.syntaxes)) fail("syntaxes 必须是数组");
 
 const syntaxes = Array.isArray(manifest.syntaxes) ? manifest.syntaxes : [];
+const manifestSyntaxIds = new Set(syntaxes.map((syntax) => syntax.id));
+if (!Array.isArray(manifest.stylesheetPacks)) {
+	fail("stylesheetPacks 必须是数组");
+}
+
+const stylesheetPacks = Array.isArray(manifest.stylesheetPacks)
+	? manifest.stylesheetPacks
+	: [];
+const seenStylesheetPackIds = new Set();
+const seenStylesheetPackSyntaxes = new Set();
+const seenStylesheetPackStyles = new Set();
+let previousStylesheetPackId = "";
+
+for (const pack of stylesheetPacks) {
+	const owner = isNonEmptyString(pack.id)
+		? `stylesheetPacks.${pack.id}`
+		: "stylesheetPacks.<unknown>";
+	if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(pack.id ?? "")) {
+		fail(`${owner}.id 必须使用 kebab-case`);
+	}
+	if (seenStylesheetPackIds.has(pack.id)) {
+		fail(`重复 stylesheet pack id：${pack.id}`);
+	}
+	seenStylesheetPackIds.add(pack.id);
+	if (
+		previousStylesheetPackId &&
+		pack.id.localeCompare(previousStylesheetPackId, "en") < 0
+	) {
+		fail(
+			`stylesheetPacks 必须按 id 排序：${pack.id} 位于 ${previousStylesheetPackId} 之后`,
+		);
+	}
+	previousStylesheetPackId = pack.id;
+
+	for (const field of ["syntaxes", "styles"]) {
+		if (!Array.isArray(pack[field]) || pack[field].length === 0) {
+			fail(`${owner}.${field} 必须是非空数组`);
+		}
+	}
+	for (const syntaxId of pack.syntaxes ?? []) {
+		if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(syntaxId)) {
+			fail(`${owner}.syntaxes 包含无效语法 ID：${syntaxId}`);
+		}
+		if (!manifestSyntaxIds.has(syntaxId)) {
+			fail(`${owner}.syntaxes 引用了未登记语法：${syntaxId}`);
+		}
+		if (seenStylesheetPackSyntaxes.has(syntaxId)) {
+			fail(`语法只能属于一个 stylesheet pack：${syntaxId}`);
+		}
+		seenStylesheetPackSyntaxes.add(syntaxId);
+	}
+	for (const stylePath of pack.styles ?? []) {
+		if (!stylePath.endsWith(".css")) {
+			fail(`${owner}.styles 只能声明 CSS 文件：${stylePath}`);
+		}
+		if (seenStylesheetPackStyles.has(stylePath)) {
+			fail(`条件样式不能属于多个 pack：${stylePath}`);
+		}
+		seenStylesheetPackStyles.add(stylePath);
+		validateRepoPath(stylePath, owner, "styles");
+	}
+}
+
 const seenIds = new Set();
 let previousId = "";
 
@@ -152,6 +215,17 @@ for (const syntax of syntaxes) {
 	}
 }
 
+const syntaxStyles = new Set(
+	syntaxes.flatMap((syntax) =>
+		Array.isArray(syntax.styles) ? syntax.styles : [],
+	),
+);
+for (const stylePath of seenStylesheetPackStyles) {
+	if (!syntaxStyles.has(stylePath)) {
+		fail(`stylesheet pack 样式未由任何语法声明：${stylePath}`);
+	}
+}
+
 if (errors.length > 0) {
 	console.error(`Markdown manifest 存在 ${errors.length} 处问题：`);
 	for (const error of errors) console.error(`- ${error}`);
@@ -166,4 +240,5 @@ const statusCounts = Object.fromEntries(
 );
 console.log(`Markdown 自定义语法: ${syntaxes.length}`);
 console.log(`status: ${JSON.stringify(statusCounts)}`);
+console.log(`stylesheet packs: ${stylesheetPacks.length}`);
 console.log("✓ Markdown manifest 结构与路径有效");

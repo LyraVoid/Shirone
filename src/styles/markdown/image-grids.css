@@ -1,0 +1,80 @@
+/* :::grid owns its generated gallery geometry. Reduced motion is handled globally in main.css. */
+.custom-md .image-grid {
+	display: grid;
+	grid-template-columns: repeat(var(--image-grid-columns, 3), minmax(0, 1fr));
+	gap: var(--m3e-space-3);
+	margin: var(--m3e-space-6) 0;
+}
+
+/* !important boundary: Tailwind Typography owns prose figure margins; image-grid owns item alignment. */
+.custom-md .image-grid .image-grid__item {
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+	margin: 0 !important;
+}
+
+.custom-md .image-grid .image-grid__link {
+	display: block;
+	aspect-ratio: var(--image-grid-aspect-ratio, 16 / 10);
+	overflow: hidden;
+	border-radius: var(--shape-corner-m);
+	background: var(--surface-container-high);
+	line-height: 0;
+}
+
+.custom-md .image-grid .image-grid__link:focus-visible {
+	outline: 2px solid var(--primary);
+	outline-offset: 2px;
+}
+
+.custom-md .image-grid .image-grid__link:hover,
+.custom-md .image-grid .image-grid__link:active {
+	border-bottom: 0;
+	background: var(--surface-container-high);
+	text-decoration: none;
+}
+
+/* !important boundary: Tailwind Typography owns prose image geometry; image-grid owns media fitting inside its frame. */
+.custom-md .image-grid .image-grid__link > img {
+	display: block !important;
+	width: 100% !important;
+	height: 100% !important;
+	max-width: none !important;
+	margin: 0 !important;
+	padding: 0 !important;
+	aspect-ratio: auto;
+	border-radius: 0 !important;
+	object-fit: var(--image-grid-fit, cover) !important;
+	object-position: center;
+	transition: transform var(--m3e-duration-medium) var(--m3e-easing-standard);
+}
+
+.custom-md .image-grid .image-grid__link:hover > img {
+	transform: scale(1.025);
+}
+
+/* !important boundary: Tailwind Typography owns prose figcaption metrics; image-grid owns its compact caption variant. */
+.custom-md .image-grid .image-grid__caption {
+	margin: var(--m3e-space-2) 0 0 !important;
+	padding: 0;
+	color: var(--on-surface-variant);
+	font: var(--m3e-type-body-small) !important;
+	text-align: center;
+}
+
+@media (max-width: 47.99rem) {
+	.custom-md .image-grid {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+
+	.custom-md .image-grid[data-columns="1"] {
+		grid-template-columns: 1fr;
+	}
+}
+
+@media (max-width: 29.99rem) {
+	.custom-md .image-grid {
+		grid-template-columns: 1fr;
+	}
+}

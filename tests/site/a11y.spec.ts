@@ -7,8 +7,7 @@ import { expect, test } from "@playwright/test";
  * （首页 / 归档 / 关于 / 文章页），覆盖整站语义结构（header/nav/aside landmark）、
  * 内容层（Markdown、GitHub 卡片）与深色模式下的对比度。
  * 说明：
- * - GitHub 卡片（::github 指令）请求被 mock 为固定成功响应，
- *   避免测试环境网络/限流导致卡片停留在 fetch-waiting 骨架屏（假失败或假通过）。
+ * - GitHub 卡片（::github 指令）请求被 mock 为固定成功响应，避免外部配额或网络抖动影响扫描。
  * - 扫描前等待 onload-animation 全部收敛（opacity 1），防止动画中间帧误报。
  * - 断言页面确实处于目标模式，防止主题未应用导致“假通过”。
  */
@@ -39,12 +38,11 @@ const modes = [
 	{ name: "dark", theme: "dark", dark: true },
 ];
 
-/** GitHub 卡片 mock 数据（固定成功响应，含全字段） */
 const GITHUB_MOCK = {
 	description: "A static blog template built with Astro.",
 	language: "TypeScript",
 	stargazers_count: 4860,
-	forks: 1243,
+	forks_count: 1243,
 	owner: {
 		avatar_url:
 			"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><rect width='24' height='24' rx='12' fill='%236366f1'/></svg>",

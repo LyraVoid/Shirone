@@ -116,22 +116,22 @@ SSR 组件和首帧布局依赖的样式使用构建期特征决定条件 `<link
 
 ### D. 用户意图触发资源
 
-Fancybox、远程视频、GitHub API 和其他第三方能力必须在内容命中后继续等待用户动作或明确的视口策略。内容特征命中只表示“允许加载”，不表示必须在首屏立即加载。
+Fancybox、远程视频和其他第三方能力必须在内容命中后继续等待用户动作或明确的视口策略。GitHub card 的 `::github` 作者语法本身是该卡片元数据请求的明确启用意图，因此命中后可加载 GitHub API；普通 GitHub 链接不得触发预取。内容特征命中只表示“允许加载”，不表示必须在首屏立即加载。
 
 ## 5. 特征快照契约
 
-`remarkPluginFrontmatter.markdownFeatures` 是构建期生成数据，不是作者配置。迁移期保留已有 `hasMath`、`hasMermaid` 和 `hasCodeInteractions` 兼容字段；新消费者必须优先读取命名空间字段。
+`remarkPluginFrontmatter.markdownSyntaxes` 是构建期生成数据，不是作者配置。它取代布尔 `markdownFeatures` 与 `hasMath`、`hasMermaid`、`hasCodeInteractions` 兼容字段。若第三方 Markdown 集成在该快照可用前消费节点，页面可读取同一归一化语法链生成的专用源 AST 快照；不得改用正文正则或客户端 DOM 探测。
 
 目标快照应表达语法事实，而不是直接复制打包决策：
 
 ```ts
-type MarkdownFeatureSnapshot = {
+type MarkdownSyntaxSnapshot = {
 	schema: 1;
 	syntaxes: readonly MarkdownSyntaxId[];
 };
 ```
 
-样式包和运行时由站点注册表根据 `syntaxes` 推导。禁止让每个插件直接写入 CSS URL、chunk 名或页面模板标记，否则资源拆包会反向污染解析层。
+样式包和运行时由站点注册表根据 `syntaxes` 推导；页面级 CSS 以 manifest 顶层 `stylesheetPacks` 的语法声明为准。禁止让每个插件直接写入 CSS URL、chunk 名或页面模板标记，否则资源拆包会反向污染解析层。
 
 迁移要求：
 
@@ -139,7 +139,7 @@ type MarkdownFeatureSnapshot = {
 2. 语法 ID 必须来自 Markdown manifest；未知 ID 在开发和 CI 中报错。
 3. 离线渲染器与 Astro `render(entry)` 必须返回相同快照。
 4. 加密文章仍在构建期获得完整快照，但受保护正文不能因为资源标签泄露敏感文本。
-5. 兼容字段只能由快照派生，并在所有消费者迁移后单独退役。
+5. 兼容字段不得重新引入；需要布尔判断时由消费者调用共享快照查询函数。
 
 ## 6. 现有语法的目标分类
 
@@ -156,13 +156,15 @@ type MarkdownFeatureSnapshot = {
 | image-presentation | media | 无 | 条件 CSS，纯 SSR |
 | marker | inline enhancements | 无 | 条件 CSS，纯 SSR |
 | math | math | `katex-scroll.ts` | 条件第三方 CSS + 选择器动态 JS |
-| mermaid | Mermaid 专用样式 | `mermaid.ts`、`mermaid-interaction.ts` | 可读 fallback；运行时与增强样式首次命中加载 |
+| mermaid | Mermaid 专用样式 | `mermaid.ts`、`mermaid-interaction.ts` | 可读 fallback；样式严格按页管理，运行时首次命中加载 |
 | option-groups | option groups | `option-groups.ts` | 条件 CSS + 选择器动态 JS |
 | steps | steps | 无 | 条件 CSS，纯 SSR |
-| github-card | legacy | 内联脚本与 GitHub API | 不扩展使用面；迁移前保持兼容 |
+| github-card | legacy | `github-cards.ts` | SSR 仓库链接 + 条件 GitHub API 元数据增强 |
 | spoiler | legacy | 无 | 不扩展使用面；迁移时补齐触屏与键盘语义 |
 
-Mermaid 当前属于“首次命中按需”。若后续要求离开 Mermaid 页面后移除样式节点，应将其样式改为 Swup 管理的可选 stylesheet，而不是在运行时中手工遍历并删除 Vite 注入节点。
+Mermaid 样式由 `stylesheetPacks.mermaid` 输出为 Swup 管理的可选 style block，离开 Mermaid 页面后随页面 head 生命周期移除；`mermaid.ts` 与交互模块仍仅在首次命中 Mermaid DOM 时加载。不得在运行时中手工遍历或删除 Vite 注入节点。
+
+Legacy `github-card` 保留 `::github{repo="owner/repo"}` 作者输入。SSR 始终输出含 `noopener noreferrer` 的仓库链接；仅当页面命中该语法时，`github-cards.ts` 才动态加载并请求 GitHub API，以填充描述、星标、分叉、许可证、语言和头像。请求失败时回退为 SSR 链接，Swup 内容替换会取消尚未完成的请求。`spoiler` 仍为 legacy：在补齐原生键盘与触屏语义前，不得新增使用或作为新语法的实现参考。
 
 ## 7. Swup 生命周期
 
@@ -245,7 +247,7 @@ pnpm.cmd build
 5. 迁移纯 SSR 语法样式，确认没有引入客户端加载器。
 6. 迁移交互语法样式与运行时，继续复用 `markdown-runtime.ts`。
 7. 处理 `markdown-extend.styl` 中的遗留语法，最后再收紧基础包边界。
-8. 所有消费者迁移后删除 `hasMath` 等兼容字段。
+8. 所有消费者迁移后删除已废弃的特征映射和兼容字段。
 
 每一步必须可独立提交、可独立回滚，并保持当前文章无需修改 frontmatter。
 

@@ -60,6 +60,13 @@ const runtimeDescriptors: MarkdownRuntimeDescriptor[] = [
 			await initMermaidDiagrams();
 		},
 	},
+	{
+		selector: "[data-github-card][data-github-repo]",
+		initialize: async (root) => {
+			const { initGithubCards } = await import("./github-cards");
+			initGithubCards(root);
+		},
+	},
 ];
 
 /**

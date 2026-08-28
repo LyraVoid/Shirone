@@ -1,48 +1,44 @@
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
-
-type MarkdownAssetFeature = "trees";
-
-const treesStylesheetPath = resolve(
-	process.cwd(),
-	"src/styles/markdown/trees.css",
-);
-
-export type MarkdownFeatureSnapshot = Partial<
-	Record<MarkdownAssetFeature, boolean>
->;
-
-export type MarkdownStylesheetAsset = {
-	pack: MarkdownAssetFeature;
-	loadCss: () => Promise<string>;
+import markdownManifest from "../plugins/markdown/manifest.json" with {
+	type: "json",
 };
 
-const stylesheetAssets: Record<
-	MarkdownAssetFeature,
-	readonly MarkdownStylesheetAsset[]
-> = {
-	trees: [
-		{
-			pack: "trees",
-			loadCss: () => readFile(treesStylesheetPath, "utf8"),
-		},
-	],
+type MarkdownStylesheetPack = {
+	id: string;
+	syntaxes: readonly string[];
+	styles: readonly string[];
 };
+
+type MarkdownSyntaxSnapshot = {
+	schema: 1;
+	syntaxes: readonly string[];
+};
+
+const stylesheetPacks =
+	markdownManifest.stylesheetPacks as readonly MarkdownStylesheetPack[];
 
 /**
- * Resolves page-scoped stylesheets from the Markdown compiler's feature snapshot.
- * The template marks each style block as Swup-optional so stale syntax styles are removed.
+ * Resolves page-scoped stylesheets from manifest-owned syntax declarations.
+ * The template marks each style block as Swup-optional so stale syntax styles
+ * are removed during Swup navigation.
  */
 export async function getMarkdownStylesheetAssets(
-	features: MarkdownFeatureSnapshot,
-): Promise<Array<{ pack: MarkdownAssetFeature; css: string }>> {
-	const assets = (
-		Object.keys(stylesheetAssets) as MarkdownAssetFeature[]
-	).flatMap((feature) => (features[feature] ? stylesheetAssets[feature] : []));
+	snapshot: MarkdownSyntaxSnapshot,
+): Promise<Array<{ pack: string; css: string }>> {
+	const activePacks = stylesheetPacks.filter(({ syntaxes }) =>
+		syntaxes.some((syntaxId) => snapshot.syntaxes.includes(syntaxId)),
+	);
 	return Promise.all(
-		assets.map(async ({ pack, loadCss }) => ({
-			pack,
-			css: await loadCss(),
+		activePacks.map(async ({ id, styles }) => ({
+			pack: id,
+			css: (
+				await Promise.all(
+					styles.map((stylePath) =>
+						readFile(resolve(process.cwd(), stylePath), "utf8"),
+					),
+				)
+			).join("\n"),
 		})),
 	);
 }

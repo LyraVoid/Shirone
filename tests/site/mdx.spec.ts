@@ -4,7 +4,7 @@ const GITHUB_MOCK = {
 	description: "A static blog template built with Astro.",
 	language: "TypeScript",
 	stargazers_count: 4860,
-	forks: 1243,
+	forks_count: 1243,
 	owner: {
 		avatar_url:
 			"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><rect width='24' height='24' rx='12' fill='%236366f1'/></svg>",

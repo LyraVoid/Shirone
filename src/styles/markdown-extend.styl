@@ -74,6 +74,7 @@ a.card-github
       background-color: var(--primary)
       background-size: cover
       border-radius: var(--shape-corner-full)
+      object-fit: cover
 
   .gc-description
     margin-bottom: var(--m3e-space-3)
@@ -88,7 +89,7 @@ a.card-github
     width: fit-content
 
   .gc-language
-    display: none
+    font: var(--m3e-type-label-large)
 
   .gc-stars, .gc-forks, .gc-license, .github-logo
     font: var(--m3e-type-label-large)
@@ -151,6 +152,9 @@ a.card-github.fetch-waiting
 
   .gc-description, .gc-infobar
     border-radius: var(--shape-corner-s)
+
+  .gc-description
+    min-height: 1.5em
 
 a.card-github.fetch-error
   pointer-events: all

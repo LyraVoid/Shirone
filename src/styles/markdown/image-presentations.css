@@ -1,0 +1,16 @@
+/* Standalone Markdown images with a width token or title become figures. */
+.custom-md .markdown-image-figure {
+	margin: var(--m3e-space-6) 0;
+}
+
+.custom-md .markdown-image-figure > img {
+	display: block;
+	margin-inline: auto;
+}
+
+.custom-md .markdown-image-caption {
+	margin-top: var(--m3e-space-2);
+	color: var(--on-surface-variant);
+	font: var(--m3e-type-body-small);
+	text-align: center;
+}

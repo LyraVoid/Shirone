@@ -99,14 +99,16 @@
     "remark-directive-rehype": "^0.4.2",
     "remark-github-admonitions-to-directives": "^1.0.5",
     "remark-math": "^6.0.0",
+    "remark-parse": "11.0.0",
     "remark-sectionize": "^2.1.0",
     "sanitize-html": "^2.17.6",
     "sharp": "^0.34.5",
-    "subset-font": "2.5.0",
     "stylus": "^0.64.0",
+    "subset-font": "2.5.0",
     "svelte": "^5.56.8",
     "tailwindcss": "^4.3.3",
     "typescript": "^6.0.3",
+    "unified": "11.0.5",
     "unist-util-visit": "^5.1.0"
   },
   "devDependencies": {

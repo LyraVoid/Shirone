@@ -15,7 +15,6 @@
 @import "./markdown-typography.css" layer(utilities);
 /* Expressive Code ships unlayered reset styles, so its scoped overrides must
    also remain unlayered to participate in the same cascade. */
-@import "./expressive-code.css";
 @import "./toc.css" layer(components);
 @import "./image-bloom.css" layer(components);
 

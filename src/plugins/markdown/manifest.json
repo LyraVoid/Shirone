@@ -1,6 +1,73 @@
 {
 	"schema": 1,
 	"note": "Shirone 已支持的自定义 Markdown 作者语法单一索引。只登记生产可用语法；研究计划与未落地能力不得提前加入。",
+	"stylesheetPacks": [
+		{
+			"id": "abbreviations",
+			"syntaxes": ["abbreviation"],
+			"styles": ["src/styles/markdown/abbreviations.css"]
+		},
+		{
+			"id": "admonitions",
+			"syntaxes": ["admonition"],
+			"styles": ["src/styles/markdown/admonitions.css"]
+		},
+		{
+			"id": "collapse-panels",
+			"syntaxes": ["collapse-panels"],
+			"styles": ["src/styles/markdown/collapse-panels.css"]
+		},
+		{
+			"id": "content-annotations",
+			"syntaxes": ["content-annotation"],
+			"styles": ["src/styles/markdown/content-annotations.css"]
+		},
+		{
+			"id": "expressive-code",
+			"syntaxes": ["expressive-code"],
+			"styles": ["src/styles/markdown/expressive-code.css"]
+		},
+		{
+			"id": "image-grids",
+			"syntaxes": ["image-grid"],
+			"styles": ["src/styles/markdown/image-grids.css"]
+		},
+		{
+			"id": "image-presentations",
+			"syntaxes": ["image-presentation"],
+			"styles": ["src/styles/markdown/image-presentations.css"]
+		},
+		{
+			"id": "marker",
+			"syntaxes": ["marker"],
+			"styles": ["src/styles/markdown/marker.css"]
+		},
+		{
+			"id": "math",
+			"syntaxes": ["math"],
+			"styles": ["src/styles/markdown/math.css"]
+		},
+		{
+			"id": "mermaid",
+			"syntaxes": ["mermaid"],
+			"styles": ["src/styles/mermaid.css"]
+		},
+		{
+			"id": "option-groups",
+			"syntaxes": ["option-groups"],
+			"styles": ["src/styles/markdown/option-groups.css"]
+		},
+		{
+			"id": "steps",
+			"syntaxes": ["steps"],
+			"styles": ["src/styles/markdown/steps.css"]
+		},
+		{
+			"id": "trees",
+			"syntaxes": ["code-tree", "file-tree"],
+			"styles": ["src/styles/markdown/trees.css"]
+		}
+	],
 	"syntaxes": [
 		{
 			"id": "abbreviation",
@@ -380,7 +447,7 @@
 				"src/plugins/expressive-code/language-badge.ts"
 			],
 			"registeredIn": "astro.config.mjs",
-			"styles": ["src/styles/expressive-code.css"],
+			"styles": ["src/styles/markdown/expressive-code.css"],
 			"runtime": {
 				"mode": "client-enhanced",
 				"modules": ["src/utils/code-copy.ts", "src/utils/code-collapse.ts"],
@@ -459,7 +526,7 @@
 			"status": "legacy",
 			"category": "leaf-directive",
 			"source": "shirone",
-			"summary": "根据 owner/repo 渲染仓库卡片，并在客户端读取 GitHub API。",
+			"summary": "根据 owner/repo 渲染可访问的仓库卡片，并按需读取 GitHub API 的仓库元数据。",
 			"forms": [
 				{
 					"kind": "leaf-directive",
@@ -479,16 +546,22 @@
 			"registeredIn": "src/utils/markdown-processor.mjs",
 			"styles": ["src/styles/markdown-extend.styl"],
 			"runtime": {
-				"mode": "inline-client",
-				"modules": [],
-				"network": ["https://api.github.com/repos/{owner}/{repo}"]
+				"mode": "client-enhanced",
+				"modules": ["src/utils/github-cards.ts"],
+				"network": [
+					"https://api.github.com/repos/{owner}/{repo}",
+					"avatar_url returned by the GitHub API"
+				]
 			},
 			"docs": [
 				"src/content/posts/markdown-extended.md",
 				"src/content/posts/guide/index.md"
 			],
 			"tests": [],
-			"notes": ["保留兼容，不作为新语法实现样板；重构前不得扩大使用面。"]
+			"notes": [
+				"SSR 始终输出可点击的 owner/repo 链接；命中语法后才动态加载元数据增强模块。",
+				"客户端读取 GitHub API 的描述、星标、分叉、许可证、语言和头像；请求失败时保留 SSR 链接。"
+			]
 		},
 		{
 			"id": "image-grid",
@@ -526,7 +599,7 @@
 			],
 			"implementation": ["src/plugins/rehype-component-image-grid.mjs"],
 			"registeredIn": "src/utils/markdown-processor.mjs",
-			"styles": ["src/styles/markdown.css"],
+			"styles": ["src/styles/markdown/image-grids.css"],
 			"runtime": {
 				"mode": "client-enhanced",
 				"modules": ["src/utils/fancybox-handler.ts"],
@@ -569,7 +642,7 @@
 			],
 			"implementation": ["src/plugins/rehype-markdown-images.mjs"],
 			"registeredIn": "src/utils/markdown-processor.mjs",
-			"styles": ["src/styles/markdown.css"],
+			"styles": ["src/styles/markdown/image-presentations.css"],
 			"runtime": {
 				"mode": "none",
 				"modules": [],
@@ -652,7 +725,7 @@
 			"attributes": [],
 			"implementation": [],
 			"registeredIn": "src/utils/markdown-processor.mjs",
-			"styles": ["src/styles/markdown.css"],
+			"styles": ["src/styles/markdown/math.css"],
 			"runtime": {
 				"mode": "none",
 				"modules": [],

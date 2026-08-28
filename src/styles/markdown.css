@@ -1,13 +1,6 @@
 @reference "tailwindcss";
 
-@import "./markdown/abbreviations.css";
 @import "./markdown/disclosures.css";
-@import "./markdown/admonitions.css";
-@import "./markdown/collapse-panels.css";
-@import "./markdown/steps.css";
-@import "./markdown/content-annotations.css";
-@import "./markdown/marker.css";
-@import "./markdown/option-groups.css";
 
 .custom-md {
   h1 {
@@ -90,13 +83,6 @@
     }
   }
 
-  .expressive-code {
-    @apply my-4;
-    ::selection {
-      @apply bg-[var(--codeblock-selection)];
-    }
-  }
-
   ul,
   ol {
     li::marker {
@@ -117,16 +103,6 @@
     p:after {
       @apply content-none;
     }
-  }
-
-  .katex-display-container {
-    width: 100%;
-    max-width: 100%;
-    overflow-x: auto;
-    overflow-y: hidden;
-    margin: var(--m3e-space-4) 0;
-    padding: var(--m3e-space-2) 0;
-    -webkit-overflow-scrolling: touch;
   }
 
   img {
@@ -234,107 +210,4 @@
     margin-top: var(--m3e-space-4);
     margin-bottom: var(--m3e-space-2);
   }
-}
-
-/* --- Markdown 响应式图片画廊网格（:::grid 容器指令） ---
-   布局由 .image-grid 自身拥有；仅在 Tailwind Typography 生成规则稳定覆盖组件几何时
-   使用有边界说明的 !important。reduced-motion 由 main.css 的全局规则统一降级。 */
-.custom-md .image-grid {
-  display: grid;
-  grid-template-columns: repeat(var(--image-grid-columns, 3), minmax(0, 1fr));
-  gap: var(--m3e-space-3);
-  margin: var(--m3e-space-6) 0;
-}
-
-/* !important boundary: Tailwind Typography owns prose figure margins; image-grid owns item alignment. */
-.custom-md .image-grid .image-grid__item {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  margin: 0 !important;
-}
-
-.custom-md .image-grid .image-grid__link {
-  display: block;
-  aspect-ratio: var(--image-grid-aspect-ratio, 16 / 10);
-  overflow: hidden;
-  border-radius: var(--shape-corner-m);
-  background: var(--surface-container-high);
-  line-height: 0;
-}
-
-.custom-md .image-grid .image-grid__link:focus-visible {
-  outline: 2px solid var(--primary);
-  outline-offset: 2px;
-}
-
-.custom-md .image-grid .image-grid__link:hover,
-.custom-md .image-grid .image-grid__link:active {
-  border-bottom: 0;
-  background: var(--surface-container-high);
-  text-decoration: none;
-}
-
-/* !important boundary: Tailwind Typography owns prose image geometry; image-grid owns media fitting inside its frame. */
-.custom-md .image-grid .image-grid__link > img {
-  display: block !important;
-  width: 100% !important;
-  height: 100% !important;
-  max-width: none !important;
-  margin: 0 !important;
-  padding: 0 !important;
-  aspect-ratio: auto;
-  border-radius: 0 !important;
-  object-fit: var(--image-grid-fit, cover) !important;
-  object-position: center;
-  transition: transform var(--m3e-duration-medium) var(--m3e-easing-standard);
-}
-
-.custom-md .image-grid .image-grid__link:hover > img {
-  transform: scale(1.025);
-}
-
-/* !important boundary: Tailwind Typography owns prose figcaption metrics; image-grid owns its compact caption variant. */
-.custom-md .image-grid .image-grid__caption {
-  margin: var(--m3e-space-2) 0 0 !important;
-  padding: 0;
-  color: var(--on-surface-variant);
-  font: var(--m3e-type-body-small) !important;
-  text-align: center;
-}
-
-/* 响应式断点：平板降为 2 列（单列声明保持 1 列） */
-@media (max-width: 47.99rem) {
-  .custom-md .image-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .custom-md .image-grid[data-columns="1"] {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* 窄屏降为 1 列 */
-@media (max-width: 29.99rem) {
-  .custom-md .image-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* --- Markdown 独立图片增强（w-N% 宽度 / 标题图注） ---
-   宽度与居中由插件内联样式控制；这里只负责 figure 间距与图注排版。 */
-.custom-md .markdown-image-figure {
-  margin: var(--m3e-space-6) 0;
-}
-
-.custom-md .markdown-image-figure > img {
-  display: block;
-  margin-inline: auto;
-}
-
-.custom-md .markdown-image-caption {
-  margin-top: var(--m3e-space-2);
-  color: var(--on-surface-variant);
-  font: var(--m3e-type-body-small);
-  text-align: center;
 }

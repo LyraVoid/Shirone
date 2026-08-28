@@ -388,7 +388,6 @@ export function scheduleMermaidRender(): void {
 }
 
 async function initializeMermaidDiagrams(): Promise<void> {
-	await import("../styles/mermaid.css");
 	lastThemeSignature = readTheme().signature;
 
 	const themeObserver = new MutationObserver(() => {
