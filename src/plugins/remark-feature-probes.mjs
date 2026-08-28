@@ -31,8 +31,7 @@ export function remarkFeatureProbes() {
 			}
 			if (
 				node.type === "fileTree" ||
-				(node.type === "containerDirective" &&
-					node.name === "file-tree") ||
+				(node.type === "containerDirective" && node.name === "file-tree") ||
 				(node.type === "containerDirective" &&
 					node.name === "code-tree" &&
 					node.children?.some((child) => child.type === "code"))

@@ -36,9 +36,9 @@ const stylesheetAssets: Record<
 export async function getMarkdownStylesheetAssets(
 	features: MarkdownFeatureSnapshot,
 ): Promise<Array<{ pack: MarkdownAssetFeature; css: string }>> {
-	const assets = (Object.keys(stylesheetAssets) as MarkdownAssetFeature[]).flatMap(
-		(feature) => (features[feature] ? stylesheetAssets[feature] : []),
-	);
+	const assets = (
+		Object.keys(stylesheetAssets) as MarkdownAssetFeature[]
+	).flatMap((feature) => (features[feature] ? stylesheetAssets[feature] : []));
 	return Promise.all(
 		assets.map(async ({ pack, loadCss }) => ({
 			pack,

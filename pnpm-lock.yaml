@@ -152,12 +152,12 @@ importers:
       sharp:
         specifier: ^0.34.5
         version: 0.34.5
-      subset-font:
-        specifier: 2.5.0
-        version: 2.5.0
       stylus:
         specifier: ^0.64.0
         version: 0.64.0
+      subset-font:
+        specifier: 2.5.0
+        version: 2.5.0
       svelte:
         specifier: ^5.56.8
         version: 5.56.8

@@ -47,7 +47,9 @@ export function cleanMarkdownForLLM(rawMarkdown: string): string {
 			const cleanBody = body ? body.trim() : "";
 
 			if (["note", "tip", "important", "warning", "caution"].includes(type)) {
-				const header = label ? `**[${label}]**\n` : `**[${type.toUpperCase()}]**\n`;
+				const header = label
+					? `**[${label}]**\n`
+					: `**[${type.toUpperCase()}]**\n`;
 				const quoted = cleanBody
 					.split("\n")
 					.map((line: string) => `> ${line}`)
@@ -60,7 +62,18 @@ export function cleanMarkdownForLLM(rawMarkdown: string): string {
 				return `\n${header}${cleanBody}\n`;
 			}
 
-			if (["code-group", "tabs", "file-tree", "steps", "card", "field", "card-grid", "field-group"].includes(type)) {
+			if (
+				[
+					"code-group",
+					"tabs",
+					"file-tree",
+					"steps",
+					"card",
+					"field",
+					"card-grid",
+					"field-group",
+				].includes(type)
+			) {
 				return `\n${cleanBody}\n`;
 			}
 
@@ -127,7 +140,9 @@ export function generateLlmsTxt(options: GenerateLlmsTxtOptions): string {
 		output += `## Core Pages\n`;
 		for (const page of corePages) {
 			const fullUrl = toAbsoluteUrl(page.url, baseUrl);
-			const desc = page.description ? `: ${truncateDescription(page.description, maxLen)}` : "";
+			const desc = page.description
+				? `: ${truncateDescription(page.description, maxLen)}`
+				: "";
 			output += `- [${page.title}](${fullUrl})${desc}\n`;
 		}
 		output += "\n";
@@ -143,7 +158,9 @@ export function generateLlmsTxt(options: GenerateLlmsTxtOptions): string {
 			}
 			for (const item of section.items) {
 				const fullUrl = toAbsoluteUrl(item.url, baseUrl);
-				const desc = item.description ? `: ${truncateDescription(item.description, maxLen)}` : "";
+				const desc = item.description
+					? `: ${truncateDescription(item.description, maxLen)}`
+					: "";
 				output += `- [${item.title}](${fullUrl})${desc}\n`;
 			}
 			output += "\n";
@@ -182,7 +199,9 @@ export interface GenerateLlmsFullTxtOptions {
 /**
  * 生成 /llms-full.txt 全量公开正文聚合纯文本
  */
-export function generateLlmsFullTxt(options: GenerateLlmsFullTxtOptions): string {
+export function generateLlmsFullTxt(
+	options: GenerateLlmsFullTxtOptions,
+): string {
 	const { posts, baseUrl, siteTitle } = options;
 	const dateStr = new Intl.DateTimeFormat("en-CA").format(new Date());
 
@@ -201,8 +220,10 @@ export function generateLlmsFullTxt(options: GenerateLlmsFullTxtOptions): string
 		output += `- **URL**: ${postUrl}\n`;
 		if (pubDate) output += `- **Published**: ${pubDate}\n`;
 		if (post.data.category) output += `- **Category**: ${post.data.category}\n`;
-		if (post.data.tags?.length) output += `- **Tags**: ${post.data.tags.join(", ")}\n`;
-		if (post.data.description) output += `- **Description**: ${post.data.description}\n`;
+		if (post.data.tags?.length)
+			output += `- **Tags**: ${post.data.tags.join(", ")}\n`;
+		if (post.data.description)
+			output += `- **Description**: ${post.data.description}\n`;
 		output += "\n";
 
 		const cleanedBody = cleanMarkdownForLLM(post.body || "");
