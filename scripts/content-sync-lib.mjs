@@ -36,6 +36,11 @@ export const CONTENT_MAPPINGS = [
 		kind: "tree",
 	},
 	{
+		source: "data/assets/banner",
+		target: "public/assets/banner",
+		kind: "tree",
+	},
+	{
 		source: "data/assets/music/cover",
 		target: "src/assets/images/music",
 		kind: "tree",

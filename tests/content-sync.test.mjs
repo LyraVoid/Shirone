@@ -34,6 +34,7 @@ test("content mapping preserves binary assets and rewrites paths", async () => {
 		await write("src/content/moments/one.md", "![x](/images/moments/a.webp)");
 		await write("src/content/moments/images/leak.webp", binary);
 		await write("public/images/moments/a.webp", binary);
+		await write("src/assets/images/banner/desktop/1.webp", binary);
 		await write("public/images/albums/README.md", "ignore");
 		await write("public/images/albums/AGENTS.md", "ignore");
 		await write("public/images/albums/a/info.json", "{}");
@@ -42,7 +43,7 @@ test("content mapping preserves binary assets and rewrites paths", async () => {
 			'export const x = "/assets/music/url/a.mp3";',
 		);
 
-		assert.equal(await mapContentTree(content, source, "source-to-content"), 6);
+		assert.equal(await mapContentTree(content, source, "source-to-content"), 7);
 		await assert.rejects(
 			fs.stat(path.join(content, "moments/images/leak.webp")),
 		);
@@ -59,6 +60,12 @@ test("content mapping preserves binary assets and rewrites paths", async () => {
 			await fs.readFile(path.join(content, "data/music.ts"), "utf8"),
 			/data\/assets\/music\/url\/a\.mp3/,
 		);
+		assert.deepEqual(
+			await fs.readFile(
+				path.join(content, "data/assets/banner/desktop/1.webp"),
+			),
+			binary,
+		);
 
 		await mapContentTree(content, target, "content-to-source");
 		assert.deepEqual(
@@ -71,6 +78,12 @@ test("content mapping preserves binary assets and rewrites paths", async () => {
 				"utf8",
 			),
 			/\/images\/albums\/a\.webp/,
+		);
+		assert.deepEqual(
+			await fs.readFile(
+				path.join(target, "public/assets/banner/desktop/1.webp"),
+			),
+			binary,
 		);
 	} finally {
 		await fs.rm(root, { recursive: true, force: true });

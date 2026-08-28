@@ -16,6 +16,7 @@ Shirone 支持在构建前从独立的内容仓库同步文章、动态、相册
 | `data/*.ts` | `src/data/*.ts` |
 | `data/anime-snapshots/` | `src/data/anime-snapshots/` |
 | `data/assets/banner/` | `src/assets/images/banner/` |
+| `data/assets/banner/` | `public/assets/banner/` |
 | `data/assets/music/cover/` | `src/assets/images/music/` |
 | `data/assets/music/url/` | `public/assets/music/url/` |
 | `data/assets/anime/` | `public/assets/anime/` |
