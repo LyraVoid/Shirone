@@ -99,7 +99,9 @@ const PATH_PAIRS = [
 
 function isPathBoundary(value, index) {
 	if (index === 0) return true;
-	return /[\s("'`:=([\]]/.test(value[index - 1]);
+	// `=` is intentionally excluded so query parameters such as
+	// `?src=/images/albums/photo.webp` are not treated as local paths.
+	return /[\s("'`:([\]]/.test(value[index - 1]);
 }
 
 function replaceExternalPath(text, external, source) {
@@ -337,6 +339,131 @@ async function collectFilesSafe(root, options = {}) {
 		return await collectFiles(root, "", options);
 	} catch (error) {
 		if (error?.code === "ENOENT") return [];
+		throw error;
+	}
+}
+
+async function collectDataFiles(root) {
+	const files = [];
+	try {
+		const entries = await fs.readdir(root, { withFileTypes: true });
+		for (const entry of entries) {
+			if (entry.isSymbolicLink()) {
+				throw new Error(`Symbolic links are not allowed: data/${entry.name}`);
+			}
+			if (entry.isFile() && path.extname(entry.name) === ".ts") {
+				files.push(normalizeRelative(entry.name));
+			}
+		}
+	} catch (error) {
+		if (error?.code !== "ENOENT") throw error;
+	}
+	files.push(
+		...(await collectFilesSafe(path.join(root, "anime-snapshots"))).map(
+			(relativePath) => path.join("anime-snapshots", relativePath),
+		),
+	);
+	return files;
+}
+
+async function mappingFiles(root, mapping) {
+	if (mapping.kind === "data-files") return collectDataFiles(root);
+	return collectFilesSafe(root, mapping);
+}
+
+/**
+ * Applies a fully prepared content mapping with rollback on normal write
+ * failures. The caller must build the mapping in an isolated staging root.
+ */
+export async function applyMappedContent(stageRoot, projectRoot) {
+	const operations = [];
+	const incomingTargets = new Set();
+
+	for (const mapping of CONTENT_MAPPINGS) {
+		if (mapping.directions && !mapping.directions.includes("content-to-source")) {
+			continue;
+		}
+		const stageTarget = path.resolve(stageRoot, mapping.target);
+		const projectTarget = path.resolve(projectRoot, mapping.target);
+		const incoming = await mappingFiles(stageTarget, mapping);
+		const existing = await mappingFiles(projectTarget, mapping);
+		for (const relativePath of incoming) {
+			const targetPath = path.join(projectTarget, relativePath);
+			if (incomingTargets.has(targetPath)) {
+				throw new Error(`Duplicate mapped target: ${targetPath}`);
+			}
+			incomingTargets.add(targetPath);
+			operations.push({
+				kind: "copy",
+				sourcePath: path.join(stageTarget, relativePath),
+				targetPath,
+			});
+		}
+		for (const relativePath of existing) {
+			const targetPath = path.join(projectTarget, relativePath);
+			if (!incomingTargets.has(targetPath)) {
+				operations.push({ kind: "remove", targetPath });
+			}
+		}
+	}
+
+	if (operations.length === 0) return 0;
+
+	const backupRoot = await fs.mkdtemp(
+		path.join(projectRoot, ".temp", "content-backup-"),
+	);
+	const backups = [];
+	const writtenTargets = new Set();
+	const backedUpTargets = new Set();
+	try {
+		for (const operation of operations) {
+			const { targetPath } = operation;
+			if (backedUpTargets.has(targetPath)) continue;
+			try {
+				const stat = await fs.lstat(targetPath);
+				if (stat.isDirectory() || stat.isSymbolicLink()) {
+					throw new Error(`Mapped target is not a regular file: ${targetPath}`);
+				}
+				const backupPath = path.join(
+					backupRoot,
+					String(backups.length),
+				);
+				await fs.mkdir(path.dirname(backupPath), { recursive: true });
+				await fs.copyFile(targetPath, backupPath);
+				backups.push({ backupPath, targetPath });
+				backedUpTargets.add(targetPath);
+			} catch (error) {
+				if (error?.code !== "ENOENT") throw error;
+			}
+		}
+
+		for (const operation of operations) {
+			if (operation.kind === "copy") {
+				await fs.mkdir(path.dirname(operation.targetPath), { recursive: true });
+				writtenTargets.add(operation.targetPath);
+				await fs.copyFile(operation.sourcePath, operation.targetPath);
+			}
+		}
+		for (const operation of operations) {
+			if (operation.kind === "remove") {
+				await fs.rm(operation.targetPath, { force: true });
+			}
+		}
+		await fs.rm(backupRoot, { recursive: true, force: true });
+		return operations.filter(({ kind }) => kind === "copy").length;
+	} catch (error) {
+		for (const targetPath of writtenTargets) {
+			await fs.rm(targetPath, { recursive: true, force: true }).catch(() => {});
+		}
+		for (const { backupPath, targetPath } of backups.reverse()) {
+			try {
+				await fs.mkdir(path.dirname(targetPath), { recursive: true });
+				await fs.copyFile(backupPath, targetPath);
+			} catch {
+				// Preserve the original error while making the best effort to restore.
+			}
+		}
+		await fs.rm(backupRoot, { recursive: true, force: true });
 		throw error;
 	}
 }

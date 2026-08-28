@@ -3,11 +3,62 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import test from "node:test";
-import { mapContentTree, rewritePaths } from "../scripts/content-sync-lib.mjs";
+import {
+	applyMappedContent,
+	mapContentTree,
+	rewritePaths,
+} from "../scripts/content-sync-lib.mjs";
 
 test("path rewriting leaves external URLs intact", () => {
 	const externalUrl = "https://example.test/images/albums/photo.webp";
 	assert.equal(rewritePaths(externalUrl, "source-to-content"), externalUrl);
+	const queryUrl = "https://example.test/?src=/images/albums/photo.webp";
+	assert.equal(rewritePaths(queryUrl, "source-to-content"), queryUrl);
+});
+
+test("staged content replaces managed files and preserves album instructions", async () => {
+	const root = await fs.mkdtemp(path.join(os.tmpdir(), "shirone-content-stage-"));
+	const project = path.join(root, "project");
+	const stage = path.join(root, "stage");
+
+	const write = async (base, relativePath, value) => {
+		const filePath = path.join(base, relativePath);
+		await fs.mkdir(path.dirname(filePath), { recursive: true });
+		await fs.writeFile(filePath, value);
+	};
+
+	try {
+		await fs.mkdir(path.join(project, ".temp"), { recursive: true });
+		await write(project, "src/content/posts/old.md", "old");
+		await write(project, "public/images/albums/old.webp", Buffer.from([1]));
+		await write(project, "public/images/albums/AGENTS.md", "keep");
+		await write(stage, "src/content/posts/new.md", "new");
+		await write(stage, "public/images/albums/new.webp", Buffer.from([2]));
+		await write(stage, "src/data/anime-snapshots/.gitkeep", "");
+
+		assert.equal(await applyMappedContent(stage, project), 3);
+		await assert.rejects(fs.stat(path.join(project, "src/content/posts/old.md")));
+		await assert.rejects(
+			fs.stat(path.join(project, "public/images/albums/old.webp")),
+		);
+		assert.equal(
+			await fs.readFile(path.join(project, "public/images/albums/AGENTS.md"), "utf8"),
+			"keep",
+		);
+		assert.equal(
+			await fs.readFile(path.join(project, "src/content/posts/new.md"), "utf8"),
+			"new",
+		);
+		assert.equal(
+			await fs.readFile(
+				path.join(project, "src/data/anime-snapshots/.gitkeep"),
+				"utf8",
+			),
+			"",
+		);
+	} finally {
+		await fs.rm(root, { recursive: true, force: true });
+	}
 });
 
 test("content mapping preserves binary assets and rewrites paths", async () => {
