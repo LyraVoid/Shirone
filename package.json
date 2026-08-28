@@ -24,8 +24,8 @@
     "tailwindcss-4"
   ],
   "scripts": {
-    "dev": "node scripts/icons/generate-local-icons.mjs && node scripts/images/generate-moment-thumbnails.mjs && astro dev",
-    "start": "node scripts/icons/generate-local-icons.mjs && node scripts/images/generate-moment-thumbnails.mjs && astro dev",
+    "dev": "node scripts/sync-content.mjs && node scripts/icons/generate-local-icons.mjs && node scripts/images/generate-moment-thumbnails.mjs && astro dev",
+    "start": "node scripts/sync-content.mjs && node scripts/icons/generate-local-icons.mjs && node scripts/images/generate-moment-thumbnails.mjs && astro dev",
     "check": "astro check",
     "design:lint": "node scripts/check-design.mjs",
     "check:manifest": "node scripts/check-manifest.mjs && node scripts/check-markdown-manifest.mjs",
@@ -33,9 +33,11 @@
     "icons:generate": "node scripts/icons/generate-local-icons.mjs",
     "images:generate": "node scripts/images/generate-moment-thumbnails.mjs",
     "anime:sync": "node scripts/anime/sync.mjs",
+    "content-separation": "node scripts/content-separation.mjs",
+    "sync-content": "node scripts/sync-content.mjs",
     "fonts:check": "node scripts/fonts/check-fonts.mjs",
     "fonts:subset": "node scripts/fonts/subset-fonts.mjs",
-    "build": "node scripts/icons/generate-local-icons.mjs && node scripts/images/generate-moment-thumbnails.mjs && node scripts/fonts/subset-fonts.mjs && astro build && npx pagefind --site dist && node scripts/fonts/check-fonts.mjs",
+    "build": "node scripts/sync-content.mjs && node scripts/icons/generate-local-icons.mjs && node scripts/images/generate-moment-thumbnails.mjs && node scripts/fonts/subset-fonts.mjs && astro build && npx pagefind --site dist && node scripts/fonts/check-fonts.mjs",
     "preview": "astro preview",
     "lighthouse:collect": "lhci collect --config=lighthouserc.cjs",
     "lighthouse:assert": "lhci assert --config=lighthouserc.cjs",
