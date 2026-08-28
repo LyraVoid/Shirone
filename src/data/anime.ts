@@ -1,4 +1,9 @@
 /**
+ * Content repository paths are relative to its root.
+ * sync-content.mjs rewrites content-relative media references to the
+ * theme repository's existing /images and /assets paths before build.
+ */
+/**
  * 番剧收藏数据（本地数据源）。
  * 用于番剧页：src/pages/anime.astro → organisms/AnimeSection → molecules/AnimeCard。
  *

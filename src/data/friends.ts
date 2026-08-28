@@ -1,4 +1,9 @@
 /**
+ * Content repository paths are relative to its root.
+ * sync-content.mjs rewrites content-relative media references to the
+ * theme repository's existing /images and /assets paths before build.
+ */
+/**
  * 友情链接数据配置（结构与 Mizuki 同款，便于互相迁移）。
  * 用于管理友情链接页面的数据：src/pages/friends.astro → organisms/FriendSection。
  *

@@ -1,3 +1,8 @@
+/**
+ * Content repository paths are relative to its root.
+ * sync-content.mjs rewrites content-relative media references to the
+ * theme repository's existing /images and /assets paths before build.
+ */
 import type { TrackDescriptor } from "@/types/musicConfig";
 
 /**

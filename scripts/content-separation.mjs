@@ -58,7 +58,7 @@ try {
 await fs.mkdir(targetRoot, { recursive: true });
 let copied;
 try {
-	copied = await mapContentTree(projectRoot, targetRoot, "source-to-content");
+	copied = await mapContentTree(targetRoot, projectRoot, "source-to-content");
 } catch (error) {
 	await fs.rm(targetRoot, { recursive: true, force: true });
 	throw error;

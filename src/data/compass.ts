@@ -1,4 +1,9 @@
 /**
+ * Content repository paths are relative to its root.
+ * sync-content.mjs rewrites content-relative media references to the
+ * theme repository's existing /images and /assets paths before build.
+ */
+/**
  * 站点罗盘数据（本地数据源）。
  * 用途：src/pages/compass.astro → organisms/CompassSection → molecules/CompassTile。
  * 添加站点：往对应 Shelf.entries 追加一项；数组顺序即展示顺序。

@@ -1,4 +1,9 @@
 /**
+ * Content repository paths are relative to its root.
+ * sync-content.mjs rewrites content-relative media references to the
+ * theme repository's existing /images and /assets paths before build.
+ */
+/**
  * 项目页数据源（纯内容）。
  * 页面展示与筛选规则由 src/config/projectsConfig.ts 控制。
  */
