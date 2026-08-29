@@ -324,6 +324,25 @@ function toggleDay(cell: DayCell) {
 			gap: 0.125rem
 			max-height: 9.5rem
 			overflow-y: auto
+			overscroll-behavior: contain
+			scrollbar-width: thin
+			scrollbar-color: var(--scrollbar-bg) transparent
+
+			&::-webkit-scrollbar
+				width: var(--m3e-space-2)
+
+			&::-webkit-scrollbar-track
+				background: transparent
+
+			&::-webkit-scrollbar-thumb
+				background: var(--scrollbar-bg)
+				border-radius: var(--shape-corner-full)
+
+				&:hover
+					background: var(--scrollbar-bg-hover)
+
+				&:active
+					background: var(--scrollbar-bg-active)
 
 		&__post
 			display: flex
