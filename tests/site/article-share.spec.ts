@@ -324,12 +324,10 @@ test.describe("article share page integration", () => {
 		await context.grantPermissions(["clipboard-read", "clipboard-write"], {
 			origin: "http://localhost:4321",
 		});
-		await page.goto("/posts/guide/", { waitUntil: "networkidle" });
-		const target = page
-			.locator("[data-article-discovery] .article-discovery-item__link")
-			.first();
-		await expect(target).toBeVisible();
-		await target.click();
+		await page.goto("/", { waitUntil: "networkidle" });
+		await page.waitForFunction(() => Boolean(window.swup?.navigate));
+		await page.evaluate(() => window.swup?.navigate("/posts/guide/"));
+		await expect(page).toHaveURL(/\/posts\/guide\/?$/);
 		await expect(page.locator("#copy-post-link")).toBeVisible();
 
 		await page.locator("#copy-post-link").click();

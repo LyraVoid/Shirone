@@ -262,6 +262,9 @@ const hasMonoFont =
 import { initLastUpdatedNotices } from "../utils/last-updated-notice";
 import {getHue, getStoredTheme, setHue, setTheme} from "../utils/setting-utils";
 import { WALLPAPER_MODE_CHANGE_EVENT, BANNER_HEIGHT, BANNER_HEIGHT_EXTEND } from "../constants/constants";
+import { showSnackbar } from "../utils/snackbar";
+import I18nKey from "../i18n/i18nKey";
+import { i18n } from "../i18n/translation";
 
 function setClickOutsideToClose(panel: string, ignores: string[]) {
 	document.addEventListener('click', event => {
@@ -287,6 +290,18 @@ function init() {
 }
 init();
 initLastUpdatedNotices();
+
+document.addEventListener("click", async (event) => {
+	const target = event.target;
+	if (!(target instanceof Element) || !target.closest("#copy-post-link")) return;
+
+	try {
+		await navigator.clipboard.writeText(window.location.href);
+		showSnackbar(i18n(I18nKey.copySuccess), { icon: "material-symbols:link" });
+	} catch {
+		showSnackbar(i18n(I18nKey.copyFailed));
+	}
+});
 
 const setup = () => {
 	if (!window.swup || window.__shironeNavigationBound) return;

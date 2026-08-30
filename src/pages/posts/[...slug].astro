@@ -349,29 +349,3 @@ const jsonLd = {
 		&--next:hover .post-nav__arrow
 			transform: translateX(0.25rem)
 </style>
-
-<script>
-    import { showSnackbar } from "@utils/snackbar";
-    import I18nKey from "@i18n/i18nKey";
-    import { i18n } from "@i18n/translation";
-
-    // The post container is replaced by Swup, so bind at the document level.
-    // This keeps the title action working for both direct loads and client navigation.
-    const copyLinkRoot = document.documentElement;
-    if (copyLinkRoot.dataset.copyPostLinkBound !== "true") {
-        copyLinkRoot.dataset.copyPostLinkBound = "true";
-        document.addEventListener("click", async (event) => {
-            const target = event.target;
-            if (!(target instanceof Element)) return;
-            const copyBtn = target.closest("#copy-post-link");
-            if (!(copyBtn instanceof HTMLElement)) return;
-
-            try {
-                await navigator.clipboard.writeText(window.location.href);
-                showSnackbar(i18n(I18nKey.copySuccess), { icon: "material-symbols:link" });
-            } catch {
-                showSnackbar(i18n(I18nKey.copyFailed));
-            }
-        });
-    }
-</script>
