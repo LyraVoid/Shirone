@@ -3,7 +3,12 @@ import { createHash } from "node:crypto";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import type { ResolvedShironesPaths } from "./types.ts";
-import { createOverlayTargets, resolveOverride } from "./overlay.ts";
+import {
+	createOverlayTargets,
+	overrideKey,
+	resolveOverride,
+	type OverrideRegistryRef,
+} from "./registry.ts";
 
 /**
  * The integration needs values from user-authored TypeScript *before* Vite
@@ -66,11 +71,18 @@ const ALIAS_MAP: Record<string, string> = {
  * esbuild plugin mirroring the Vite overlay so Node-side and browser-side
  * resolve to the same files.
  */
-function overlayEsbuildPlugin(paths: ResolvedShironesPaths) {
+function overlayEsbuildPlugin(
+	paths: ResolvedShironesPaths,
+	registryRef?: OverrideRegistryRef,
+) {
 	const targets = createOverlayTargets(paths);
 
+	// Prefer the pre-built registry (a single scan); fall back to a probe when
+	// no registry was supplied.
 	const redirect = (absolute: string): string =>
-		resolveOverride(targets, absolute) ?? absolute;
+		registryRef
+			? (registryRef.overrides.get(overrideKey(absolute)) ?? absolute)
+			: (resolveOverride(targets, absolute) ?? absolute);
 
 	return {
 		name: "shirones-overlay",
@@ -128,6 +140,7 @@ export async function loadModuleFile(
 	paths: ResolvedShironesPaths,
 	entry: string,
 	cacheKey = entry,
+	registryRef?: OverrideRegistryRef,
 ): Promise<LoadedModule> {
 	const cached = cache.get(cacheKey);
 	if (cached) return cached;
@@ -153,7 +166,7 @@ export async function loadModuleFile(
 				"import { createRequire as __shironesCreateRequire } from 'node:module';\n" +
 				"const require = __shironesCreateRequire(import.meta.url);",
 		},
-		plugins: [overlayEsbuildPlugin(paths)],
+		plugins: [overlayEsbuildPlugin(paths, registryRef)],
 	});
 
 	const code = result.outputFiles?.[0]?.text ?? "";
@@ -178,6 +191,7 @@ function sanitise(value: string): string {
 export async function loadConfigModule(
 	paths: ResolvedShironesPaths,
 	name: string,
+	registryRef?: OverrideRegistryRef,
 ): Promise<LoadedModule> {
 	const entry =
 		probeFile(join(paths.configDir, name)) ??
@@ -191,7 +205,7 @@ export async function loadConfigModule(
 				"  Run `npx shirones init` to scaffold the default configuration.",
 		);
 	}
-	return loadModuleFile(paths, entry, `config:${name}`);
+	return loadModuleFile(paths, entry, `config:${name}`, registryRef);
 }
 
 /** Load a module that ships with the package (never user-provided). */

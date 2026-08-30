@@ -249,8 +249,9 @@ export async function buildFontDeclarations(
 	paths: ResolvedShironesPaths,
 	options: { subset: boolean; extraCharacters: string },
 	logger: { info: (m: string) => void; warn: (m: string) => void },
+	registryRef?: { overrides: Map<string, string> },
 ): Promise<unknown[]> {
-	const configModule = await loadConfigModule(paths, "fontConfig");
+	const configModule = await loadConfigModule(paths, "fontConfig", registryRef);
 	const fontConfig = configModule.fontConfig as FontConfigLike | undefined;
 	const resolvedFontOptions = configModule.resolvedFontOptions as
 		| {

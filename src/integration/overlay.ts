@@ -1,108 +1,21 @@
 import { existsSync, readFileSync } from "node:fs";
-import { dirname, extname, isAbsolute, join, relative, resolve } from "node:path";
+import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import type { Plugin } from "vite";
 import { normalisePath } from "./paths.ts";
+import {
+	createOverlayTargets,
+	overrideKey,
+	probe,
+	type OverrideRegistryRef,
+} from "./registry.ts";
 import type { ResolvedShironesPaths } from "./types.ts";
-
-/**
- * Extensions probed when a user override is looked up without one.
- * Order matters: the first hit wins.
- */
-const CONFIG_EXTENSIONS = [".ts", ".mts", ".js", ".mjs"];
-const COMPONENT_EXTENSIONS = [".astro", ".svelte", ".ts", ".js"];
-
-function probe(basePath: string, extensions: string[]): string | null {
-	// Exact path first (the importer already carried an extension).
-	if (extname(basePath) && existsSync(basePath)) return basePath;
-
-	const withoutExt = basePath.replace(/\.(ts|mts|js|mjs|astro|svelte)$/, "");
-	for (const ext of extensions) {
-		const candidate = `${withoutExt}${ext}`;
-		if (existsSync(candidate)) return candidate;
-	}
-	return null;
-}
-
-export interface OverlayTarget {
-	/** Directory inside the package that may be overridden. */
-	packageDir: string;
-	/** Directory in the user's project that takes precedence. */
-	userDir: string;
-	/** Extensions probed when resolving. */
-	extensions: string[];
-	/** Human readable label used in debug logs. */
-	label: string;
-}
-
-/**
- * Build the overlay table describing which package directories can be shadowed
- * by files in the user's project.
- *
- * | package                | user project                  |
- * |------------------------|-------------------------------|
- * | `src/config/*`         | `shirones/config/*`           |
- * | `src/data/*`           | `shirones/config/data/*`      |
- * | `src/components/**`    | `src/components/**`           |
- * | `src/layouts/**`       | `src/layouts/**`              |
- */
-export function createOverlayTargets(paths: ResolvedShironesPaths): OverlayTarget[] {
-	return [
-		{
-			label: "config",
-			packageDir: join(paths.packageSrc, "config"),
-			userDir: paths.configDir,
-			extensions: CONFIG_EXTENSIONS,
-		},
-		{
-			label: "data",
-			packageDir: join(paths.packageSrc, "data"),
-			userDir: paths.dataDir,
-			extensions: CONFIG_EXTENSIONS,
-		},
-		{
-			label: "components",
-			packageDir: join(paths.packageSrc, "components"),
-			userDir: join(paths.projectRoot, "src", "components"),
-			extensions: COMPONENT_EXTENSIONS,
-		},
-		{
-			label: "layouts",
-			packageDir: join(paths.packageSrc, "layouts"),
-			userDir: join(paths.projectRoot, "src", "layouts"),
-			extensions: COMPONENT_EXTENSIONS,
-		},
-	];
-}
-
-/**
- * Resolve a package-internal path to a user override, if one exists.
- * Returns `null` when the path is not overridable or no override is present.
- */
-export function resolveOverride(
-	targets: OverlayTarget[],
-	absolutePath: string,
-): string | null {
-	const normalised = normalisePath(absolutePath);
-
-	for (const target of targets) {
-		const packageDir = normalisePath(target.packageDir);
-		if (!normalised.startsWith(`${packageDir}/`)) continue;
-
-		const rel = relative(target.packageDir, absolutePath);
-		// `index.ts` barrels stay owned by the package: overriding them would
-		// break the named-export contract the theme relies on.
-		if (/^index\.(ts|js|mts|mjs)$/.test(rel)) continue;
-
-		const hit = probe(join(target.userDir, rel), target.extensions);
-		if (hit) return hit;
-	}
-	return null;
-}
 
 export interface OverlayPluginOptions {
 	paths: ResolvedShironesPaths;
 	/** Explicit component override map from `ShironesOptions.components`. */
 	components?: Record<string, string>;
+	/** Compiled override registry (mutable; the integration rebuilds it in dev). */
+	registryRef: OverrideRegistryRef;
 	/** Emit a line per applied override. */
 	verbose?: boolean;
 }
@@ -137,7 +50,7 @@ function splitQuery(id: string): [string, string] {
  * and returns `null` for everything else, leaving Vite's resolution untouched.
  */
 export function shironesOverlay(options: OverlayPluginOptions): Plugin {
-	const { paths, components = {}, verbose = false } = options;
+	const { paths, components = {}, registryRef, verbose = false } = options;
 	const targets = createOverlayTargets(paths);
 	const packageSrc = normalisePath(paths.packageSrc);
 	const logged = new Set<string>();
@@ -185,7 +98,13 @@ export function shironesOverlay(options: OverlayPluginOptions): Plugin {
 	}
 
 	function overrideFor(absolutePath: string): string | null {
-		return explicitOverrideFor(absolutePath) ?? resolveOverride(targets, absolutePath);
+		// Explicit config map wins, then the pre-built registry (a single scan
+		// at startup instead of a filesystem probe per import).
+		return (
+			explicitOverrideFor(absolutePath) ??
+			registryRef.overrides.get(overrideKey(absolutePath)) ??
+			null
+		);
 	}
 
 	function report(from: string, to: string): void {

@@ -11,7 +11,8 @@ import {
 	loadPackageModule,
 } from "./load-config.ts";
 import { shironesOverlay } from "./overlay.ts";
-import { resolvePaths } from "./paths.ts";
+import { normalisePath, resolvePaths } from "./paths.ts";
+import { buildOverrideRegistry, createOverlayTargets } from "./registry.ts";
 import { collectRoutes, filterRoutes } from "./routes.ts";
 import { shironesSsrNodeShims } from "./ssr-node-shims.ts";
 import type { ResolvedShironesPaths, ShironesOptions } from "./types.ts";
@@ -153,6 +154,27 @@ export function shirones(options: ShironesOptions = {}): AstroIntegration {
 					`${paths.isPluginMode ? "plugin" : "source"} mode | content: ${paths.contentDir}`,
 				);
 
+				// Scan the package + user project once and register every
+				// override. Resolution becomes a table lookup; in dev the table
+				// is rebuilt when an override file changes (see server:setup).
+				const registry = buildOverrideRegistry(paths);
+				const registryRef: { overrides: Map<string, string> } = {
+					overrides: registry.overrides,
+				};
+				{
+					const total = Object.values(registry.counts).reduce(
+						(sum, n) => sum + n,
+						0,
+					);
+					if (total > 0) {
+						logger.info(
+							`[overrides] ${total} registered (${Object.entries(registry.counts)
+								.map(([label, n]) => `${label}:${n}`)
+								.join(", ")})`,
+						);
+					}
+				}
+
 				if (paths.isPluginMode && !existsSync(paths.configDir)) {
 					logger.warn(
 						`No configuration found at ${paths.configDir}. ` +
@@ -161,25 +183,25 @@ export function shirones(options: ShironesOptions = {}): AstroIntegration {
 				}
 
 				// ── 1. Load user configuration (Node side) ──────────────────────
-				const siteModule = await loadConfigModule(paths, "siteConfig");
+				const siteModule = await loadConfigModule(paths, "siteConfig", registryRef);
 				const siteConfig = siteModule.siteConfig as {
 					site?: string;
 					base?: string;
 				};
 
-				const sidebarModule = await loadConfigModule(paths, "sidebarConfig");
+				const sidebarModule = await loadConfigModule(paths, "sidebarConfig", registryRef);
 				const sidebarConfig = sidebarModule.sidebarConfig as {
 					enable?: boolean;
 					components?: { type: string; enable: boolean }[];
 				};
 
-				const musicModule = await loadConfigModule(paths, "musicConfig");
+				const musicModule = await loadConfigModule(paths, "musicConfig", registryRef);
 				const musicConfig = musicModule.musicConfig;
 				const resolveMusicOptions = musicModule.resolveMusicOptions as (
 					c: unknown,
 				) => unknown;
 
-				const umamiModule = await loadConfigModule(paths, "umamiConfig");
+				const umamiModule = await loadConfigModule(paths, "umamiConfig", registryRef);
 				const umamiConfig = umamiModule.umamiConfig as { shareUrl: string };
 				const resolveUmamiOptions = umamiModule.resolveUmamiOptions as (
 					c: unknown,
@@ -211,6 +233,7 @@ export function shirones(options: ShironesOptions = {}): AstroIntegration {
 						info: (m) => logger.info(`[fonts] ${m}`),
 						warn: (m) => logger.warn(`[fonts] ${m}`),
 					},
+					registryRef,
 				);
 
 				// ── 4. Markdown processor ───────────────────────────────────────
@@ -224,10 +247,15 @@ export function shirones(options: ShironesOptions = {}): AstroIntegration {
 				const integrations =
 					options.bundledIntegrations === false
 						? []
-						: await createBundledIntegrations(paths, command, {
-								umamiConfig,
-								umamiEnabled,
-							});
+						: await createBundledIntegrations(
+								paths,
+								command,
+								{
+									umamiConfig,
+									umamiEnabled,
+								},
+								registryRef,
+							);
 
 				// ── 6. Push everything into the Astro config ────────────────────
 				updateConfig({
@@ -243,6 +271,7 @@ export function shirones(options: ShironesOptions = {}): AstroIntegration {
 							shironesOverlay({
 								paths,
 								components: options.components,
+								registryRef,
 								verbose: command === "dev",
 							}),
 							shironesFallbackResolver(paths),
@@ -304,10 +333,19 @@ export function shirones(options: ShironesOptions = {}): AstroIntegration {
 			},
 
 			"astro:server:setup": ({ server }) => {
-				// Editing a config file invalidates the Node-side bundle cache.
+				// Rebuild the override registry when an override file changes so
+				// dev picks new/moved/removed overrides up immediately.
+				const overrideDirs = createOverlayTargets(paths).map((t) =>
+					normalisePath(t.userDir),
+				);
 				server.watcher.on("all", (_event, file) => {
-					if (typeof file === "string" && file.startsWith(paths.configDir)) {
+					if (typeof file !== "string") return;
+					// Editing a config file invalidates the Node-side bundle cache.
+					if (file.startsWith(paths.configDir)) {
 						invalidateConfigCache();
+					}
+					if (overrideDirs.some((dir) => file.startsWith(`${dir}/`))) {
+						registryRef.overrides = buildOverrideRegistry(paths).overrides;
 					}
 				});
 			},
@@ -363,6 +401,7 @@ async function createBundledIntegrations(
 	paths: ResolvedShironesPaths,
 	command: string,
 	options: { umamiConfig: { shareUrl: string }; umamiEnabled: boolean },
+	registryRef?: { overrides: Map<string, string> },
 ) {
 	const [
 		{ default: swup },
@@ -391,7 +430,7 @@ async function createBundledIntegrations(
 			})
 		: null;
 
-	const ecModule = await loadConfigModule(paths, "expressiveCodeConfig");
+	const ecModule = await loadConfigModule(paths, "expressiveCodeConfig", registryRef);
 	const expressiveCodeConfig = ecModule.expressiveCodeConfig as {
 		theme: string;
 		lightTheme?: string;
