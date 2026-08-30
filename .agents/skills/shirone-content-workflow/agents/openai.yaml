@@ -1,0 +1,4 @@
+interface:
+  display_name: "Shirone Content Workflow"
+  short_description: "Operate content separation sync, export, clean, and dual-repo CI/CD."
+  default_prompt: "Use $shirone-content-workflow to operate content separation, synchronize or export content, and manage dual-repository CI/CD."

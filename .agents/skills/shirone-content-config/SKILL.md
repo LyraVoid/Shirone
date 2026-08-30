@@ -1,11 +1,11 @@
 ---
 name: shirone-content-config
-description: Configure Shirone content separation and external content repositories. Use when setting up or changing CONTENT_DIR, CONTENT_REPO_URL, CONTENT_REPO_REF, shirone.content.json, content-repository mounts, config/*.yaml overlays, source precedence, or content-repository configuration validation. Use shirone-content for day-to-day sync, export, clean, status, and deployment operations after configuration is established.
+description: Configure Shirone content separation and external content repositories. Use when setting up or changing CONTENT_DIR, CONTENT_REPO_URL, CONTENT_REPO_REF, shirone.content.json, content-repository mounts, config/*.yaml overlays, source precedence, or content-repository configuration validation. Use shirone-content-workflow for day-to-day sync, export, clean, status, and deployment operations after configuration is established.
 ---
 
 # Shirone 内容分离配置
 
-本技能负责把代码仓和内容仓正确连接，并让内容仓的 YAML 覆盖可验证、可升级。它不承担日常同步、导出、清理或部署执行；这些操作交给 `shirone-content`。
+本技能负责把代码仓和内容仓正确连接，并让内容仓的 YAML 覆盖可验证、可升级。它不承担日常同步、导出、清理或部署执行；这些操作交给 `shirone-content-workflow`。
 
 ## 先读什么
 
@@ -43,4 +43,4 @@ pnpm.cmd content:status
 pnpm.cmd content:status --remote
 ```
 
-仅在来源、映射和 YAML 均通过验证后，再交给 `shirone-content` 执行 `content:sync`、`content:watch`、`content:export`、`content:clean` 或双仓部署。涉及主题源码或配置领域扩展时，同时遵守 `shirone-config` 与 `docs/packaging-contract.md` 的双模式约束。
+仅在来源、映射和 YAML 均通过验证后，再交给 `shirone-content-workflow` 执行 `content:sync`、`content:watch`、`content:export`、`content:clean` 或双仓部署。涉及主题源码或配置领域扩展时，同时遵守 `shirone-config` 与 `docs/packaging-contract.md` 的双模式约束。
