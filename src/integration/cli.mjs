@@ -68,15 +68,15 @@ async function readPackageManager() {
 	}
 }
 
-async function copyEntry(from, to, { force }) {
+async function copyEntry(from, to, { force, quiet = false }) {
 	if (!existsSync(from)) return { copied: false, reason: "missing" };
 	if (existsSync(to) && !force) {
-		log.skip(`${relative(CWD, to) || "."} already exists (use --force to overwrite)`);
+		if (!quiet) log.skip(`${relative(CWD, to) || "."} already exists (use --force to overwrite)`);
 		return { copied: false, reason: "exists" };
 	}
 	await mkdir(dirname(to), { recursive: true });
 	await cp(from, to, { recursive: true, force: true });
-	log.ok(relative(CWD, to) || ".");
+	if (!quiet) log.ok(relative(CWD, to) || ".");
 	return { copied: true };
 }
 
@@ -357,9 +357,22 @@ const ROOT_FILES = [
 ];
 
 async function installRootFiles({ force }) {
+	let added = 0;
+	let skipped = 0;
 	for (const entry of ROOT_FILES) {
 		const [srcName, dstName] = Array.isArray(entry) ? entry : [entry, entry];
-		await copyEntry(join(TEMPLATE_DIR, srcName), join(CWD, dstName), { force });
+		const result = await copyEntry(
+			join(TEMPLATE_DIR, srcName),
+			join(CWD, dstName),
+			{ force, quiet: true },
+		);
+		if (result.copied) added += 1;
+		else if (result.reason === "exists") skipped += 1;
+	}
+	if (added === 0 && skipped > 0) {
+		log.skip(`root files already present (${skipped} kept)`);
+	} else if (added > 0) {
+		log.ok(`root files (${added} added${skipped ? `, ${skipped} kept` : ""})`);
 	}
 }
 
@@ -557,6 +570,265 @@ async function clearStarterFiles() {
 	}
 }
 
+// ══ State check: `init` on an already-initialised project ══════════════════
+
+/** Recursively list relative file paths (POSIX separators) under `dir`. */
+async function listRelative(dir) {
+	const out = [];
+	if (!existsSync(dir)) return out;
+	for (const entry of await readdir(dir, { withFileTypes: true })) {
+		const full = join(dir, entry.name);
+		if (entry.isDirectory()) {
+			for (const sub of await listRelative(full)) out.push(join(entry.name, sub));
+		} else {
+			out.push(entry.name);
+		}
+	}
+	return out;
+}
+
+/** Top-level `export … NAME` declarations in a TypeScript source. */
+function tsExportNames(src) {
+	const names = new Set();
+	const re = /^\s*export\s+(?:const|let|var|function|class|type|interface|enum)\s+([A-Za-z0-9_$]+)/gm;
+	for (const m of src.matchAll(re)) names.add(m[1]);
+	return names;
+}
+
+/** Skip past a quoted string starting at `src[i]`; returns the closing index. */
+function skipString(src, i) {
+	const quote = src[i];
+	for (let j = i + 1; j < src.length; j++) {
+		if (src[j] === "\\") {
+			j++;
+			continue;
+		}
+		if (src[j] === quote) return j;
+	}
+	return src.length - 1;
+}
+
+/** Text between the `{` at `open` and its matching `}`, or null. */
+function balancedBody(src, open) {
+	let depth = 0;
+	for (let i = open; i < src.length; i++) {
+		const ch = src[i];
+		if (ch === "{") {
+			depth++;
+		} else if (ch === "}") {
+			depth--;
+			if (depth === 0) return src.slice(open + 1, i);
+		} else if (ch === '"' || ch === "'" || ch === "`") {
+			i = skipString(src, i);
+		}
+	}
+	return null;
+}
+
+/** Top-level `key:` names of an object body (depth 1 only). */
+function topKeys(body) {
+	const keys = new Set();
+	let depth = 0;
+	let i = 0;
+	while (i < body.length) {
+		const ch = body[i];
+		if (ch === '"' || ch === "'" || ch === "`") {
+			i = skipString(body, i) + 1;
+			continue;
+		}
+		// Skip comments so `:` inside them is not mistaken for a field.
+		if (ch === "/" && body[i + 1] === "/") {
+			while (i < body.length && body[i] !== "\n") i++;
+			continue;
+		}
+		if (ch === "/" && body[i + 1] === "*") {
+			const end = body.indexOf("*/", i + 2);
+			i = end === -1 ? body.length : end + 2;
+			continue;
+		}
+		if (ch === "{") {
+			depth++;
+			i++;
+			continue;
+		}
+		if (ch === "}") {
+			depth--;
+			i++;
+			continue;
+		}
+		if (ch === ":" && depth === 0) {
+			let j = i - 1;
+			while (j >= 0 && /\s/.test(body[j])) j--;
+			let k = j;
+			while (k >= 0 && /[A-Za-z0-9_$]/.test(body[k])) k--;
+			const key = body.slice(k + 1, j + 1);
+			if (key && !/^\d+$/.test(key)) keys.add(key);
+		}
+		i++;
+	}
+	return keys;
+}
+
+/**
+ * Top-level keys of every `export const NAME = …{…}` object in a source.
+ * The declaration may carry a type annotation and wrap the object in a call
+ * (`withUserConfig("site", { … })`), so the `{` is located by scanning ahead
+ * from the declaration instead of requiring `= {` on one line.
+ */
+function objectFieldKeys(src) {
+	const fields = new Map();
+	const re = /export\s+const\s+([A-Za-z0-9_$]+)/g;
+	for (const m of src.matchAll(re)) {
+		const name = m[1];
+		let open = -1;
+		for (let i = m.index + m[0].length; i < src.length; i++) {
+			const ch = src[i];
+			if (ch === '"' || ch === "'" || ch === "`") {
+				i = skipString(src, i);
+				continue;
+			}
+			if (ch === "{" ) {
+				open = i;
+				break;
+			}
+		}
+		if (open === -1) continue;
+		const body = balancedBody(src, open);
+		if (body !== null) fields.set(name, topKeys(body));
+	}
+	return fields;
+}
+
+/** Compare one config file against its template counterpart. */
+async function diffConfigFile(tplPath, usrPath) {
+	const tpl = await readFile(tplPath, "utf8");
+	const usr = await readFile(usrPath, "utf8");
+
+	const tplNames = tsExportNames(tpl);
+	const usrNames = tsExportNames(usr);
+	const missingExports = [...tplNames].filter((n) => !usrNames.has(n));
+	const extraExports = [...usrNames].filter((n) => !tplNames.has(n));
+
+	const tplFields = objectFieldKeys(tpl);
+	const usrFields = objectFieldKeys(usr);
+	const missingFields = {};
+	for (const [name, keys] of tplFields) {
+		const usr = usrFields.get(name) ?? new Set();
+		const miss = [...keys].filter((k) => !usr.has(k));
+		if (miss.length) missingFields[name] = miss;
+	}
+	const extraFields = {};
+	for (const [name, keys] of usrFields) {
+		const tplSet = tplFields.get(name) ?? new Set();
+		const extra = [...keys].filter((k) => !tplSet.has(k));
+		if (extra.length) extraFields[name] = extra;
+	}
+
+	return { missingExports, extraExports, missingFields, extraFields };
+}
+
+/** Collect the differences between the template config and the user's copy. */
+async function checkState() {
+	const tplConfig = join(TEMPLATE_DIR, CONTENT_ROOT, "config");
+	const usrConfig = join(CWD, CONTENT_ROOT, "config");
+
+	const tplFiles = await listRelative(tplConfig);
+	const usrFiles = await listRelative(usrConfig);
+	const tplSet = new Set(tplFiles);
+	const usrSet = new Set(usrFiles);
+
+	const missing = tplFiles.filter((f) => !usrSet.has(f)).sort();
+	const stale = usrFiles.filter((f) => !tplSet.has(f)).sort();
+
+	const fieldDiffs = [];
+	for (const rel of tplFiles.filter((f) => f.endsWith(".ts") && usrSet.has(f))) {
+		const diff = await diffConfigFile(
+			join(tplConfig, rel),
+			join(usrConfig, rel),
+		);
+		if (
+			diff.missingExports.length ||
+			diff.extraExports.length ||
+			Object.keys(diff.missingFields).length ||
+			Object.keys(diff.extraFields).length
+		) {
+			fieldDiffs.push({ rel, ...diff });
+		}
+	}
+
+	return { missing, stale, fieldDiffs };
+}
+
+/**
+ * `init` on an already-initialised project: report what drifted from the
+ * template (missing files, removed/obsolete files, missing or extra fields)
+ * and repair the safe bits — missing files are restored, nothing the user
+ * wrote is overwritten.
+ */
+async function checkAndUpdate(packageName) {
+	const usrConfig = join(CWD, CONTENT_ROOT, "config");
+	const { missing, stale, fieldDiffs } = await checkState();
+
+	const clean =
+		missing.length === 0 && stale.length === 0 && fieldDiffs.length === 0;
+
+	if (clean) {
+		console.log(`\n${colours.green}${colours.bold}Up to date.${colours.reset}\n`);
+	} else {
+		console.log(`\n${colours.bold}Found ${missing.length + stale.length + fieldDiffs.length} difference(s) from the template:${colours.reset}\n`);
+
+		if (missing.length) {
+			log.warn(`${missing.length} file(s) missing from ${CONTENT_ROOT}/config/`);
+			for (const f of missing) console.log(`    ${colours.dim}− ${f}${colours.reset}`);
+		}
+		if (stale.length) {
+			log.warn(`${stale.length} file(s) no longer exist in the template (kept)`);
+			for (const f of stale) console.log(`    ${colours.dim}− ${f}${colours.reset}`);
+		}
+		for (const d of fieldDiffs) {
+			log.warn(`${join(CONTENT_ROOT, "config", d.rel)} differs from the template`);
+			for (const n of d.missingExports) console.log(`    ${colours.dim}− missing export: ${n}${colours.reset}`);
+			for (const n of d.extraExports) console.log(`    ${colours.dim}− extra export (yours): ${n}${colours.reset}`);
+			for (const [name, keys] of Object.entries(d.missingFields))
+				console.log(`    ${colours.dim}− ${name}: missing field(s): ${keys.join(", ")}${colours.reset}`);
+			for (const [name, keys] of Object.entries(d.extraFields))
+				console.log(`    ${colours.dim}− ${name}: field(s) not in template: ${keys.join(", ")}${colours.reset}`);
+		}
+
+		// Restore missing files (never touch the user's own files).
+		if (missing.length) {
+			log.step(`restoring ${missing.length} missing file(s)`);
+			for (const rel of missing) {
+				await copyEntry(
+					join(TEMPLATE_DIR, CONTENT_ROOT, "config", rel),
+					join(usrConfig, rel),
+					{ force: false, quiet: true },
+				);
+			}
+			log.ok(`${missing.length} file(s) restored under ${CONTENT_ROOT}/config/`);
+		}
+	}
+
+	// The remaining pieces are idempotent: they only add what is missing.
+	await ensureAstroConfig(packageName, { force: false });
+	await copyEntry(
+		join(TEMPLATE_DIR, "src/content.config.ts"),
+		join(CWD, "src/content.config.ts"),
+		{ force: false },
+	);
+	await ensureTsConfig(packageName, { force: false });
+	const addedDeps = await ensurePackageJson(packageName);
+	await ensurePnpmWorkspace();
+
+	if (addedDeps.length > 0) {
+		await installDependencies();
+	} else {
+		log.skip("dependencies already declared");
+	}
+
+	if (!clean) console.log(`\n${colours.green}${colours.bold}Done.${colours.reset}\n`);
+}
+
 async function init(args) {
 	const force = args.includes("--force") || args.includes("-f");
 	const packageName = await readPackageName();
@@ -568,6 +840,12 @@ async function init(args) {
 		);
 		process.exitCode = 1;
 		return;
+	}
+
+	// Already initialised? Report drift from the template and repair the safe
+	// bits instead of re-scaffolding (never overwrites the user's files).
+	if (existsSync(join(CWD, CONTENT_ROOT)) && !force) {
+		return checkAndUpdate(packageName);
 	}
 
 	console.log(`\n${colours.bold}Shirone${colours.reset} · initialising project\n`);
@@ -652,7 +930,7 @@ function help() {
 	console.log(`
 ${colours.bold}Shirone CLI${colours.reset}
 
-  ${colours.cyan}init${colours.reset} [--force]   Scaffold configuration, content and static assets
+  ${colours.cyan}init${colours.reset} [--force]   Scaffold the project — or check an existing one for drift (missing/obsolete files, fields)
   ${colours.cyan}info${colours.reset}             Show resolved paths and package status
   ${colours.cyan}help${colours.reset}             Show this message
 `);
