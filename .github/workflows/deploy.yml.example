@@ -22,7 +22,7 @@ on:
       - "rules/**"
       - "README*.md"
       - "*.md"
-  # 内容仓推送后由 trigger-build.yml 发来的事件。
+  # 内容仓推送后由 trigger-build.yml 发来的事件（由 trigger-build.yml.example 去掉 .example 启用）。
   repository_dispatch:
     types: [content-updated]
   # 手动触发；回滚时把 content_ref 填成旧的内容 SHA。
@@ -36,6 +36,10 @@ on:
   schedule:
     - cron: "17 4 * * *"
 
+# 并发控制：同一时间只允许一个部署流水线运行。
+# 无论是代码仓代码推送（push）还是内容仓触发（repository_dispatch），
+# 均归入同一个 deploy 并发通道。新的构建请求会自动取消正在运行中的旧构建，
+# 确保始终以最新一次提交（最新代码 + 最新内容）为准，杜绝并发竞争。
 concurrency:
   group: deploy
   cancel-in-progress: true

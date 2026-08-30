@@ -36,6 +36,7 @@ sequenceDiagram
 
 #### 2. 流水线的核心保障机制
 - **精确锁定内容版本**：每次触发构建时，均严格按照触发信号中携带的具体版本号检出内容，而不是盲目拉取最新的分支顶端。这保证了构建的内容与你的提交严格对应，杜绝连续推送时的版本错乱；
+- **并发构建自动打断与后发先至（Concurrency Control）**：代码仓 `deploy.yml` 声明了全局 `concurrency: group: deploy, cancel-in-progress: true`。当博主在短时间内同时推送了代码仓与内容仓、或多次高频提交时，后续新触发的构建会自动强制取消正在执行中的前一个旧构建，并自动结合最新代码与最新内容完成打包，杜绝并发竞争冲突；
 - **独立物化与防止缺字**：流水线会先执行 `pnpm content:sync` 将文章与配置同步到位，再进行中文字体子集裁剪与打包，确保字体绝对不会缺字；同时在 Actions 运行日志中将“内容同步”与“前端构建”明确分离，出错时极易排查；
 - **增量缓存优化构建**：说说缩略图与本地编译缓存具备内容指纹缓存机制。每次部署时，未修改的静态资源直接命中缓存，仅对新增或修改过的图片进行重新计算，大幅缩短每次线上构建时间；
 - **复用预检流程**：仓库内另提供了 `content-validate.yml`，可供内容仓在提交合并请求时跨仓调用，在合并前自动完成内容语法与类型安全检查。
@@ -44,7 +45,8 @@ sequenceDiagram
 
 运行 `pnpm content:eject` 初始化双仓时，已自动在内容仓的 `.github/workflows/trigger-build.yml` 生成了触发工作流：
 - **精准路径过滤**：仅当推送改动涉及文章、数据、图片或配置文件时才触发跨仓构建，修改说明文档或草稿不会浪费 Actions 额度；
-- **携带版本信息**：自动抓取当前提交的版本号并发送给代码仓，实现跨仓库精准对齐。
+- **携带版本信息**：自动抓取当前提交的版本号并发送给代码仓，实现跨仓库精准对齐；
+- **并发防抖截断**：配置了 `concurrency: group: trigger-build, cancel-in-progress: true`，在连续快速提交时自动取消前一次排队中的派发作业，仅向代码仓发送最新一次触发。
 
 ### Secrets 密钥与权限配置
 
@@ -106,8 +108,9 @@ git push -u origin main
 
 ### 第三步：配置自动化工作流与密钥
 
-1. **启用代码仓部署流水线**：在代码仓将 `.github/workflows/deploy.yml.example` 复制为 `deploy.yml`，并将里面的 `CONTENT_REPOSITORY` 修改为你的内容仓库名（如 `OWNER/shirone-content`）；
-2. **配置仓库访问密钥**：
+1. **启用代码仓部署流水线**：在代码仓将 `.github/workflows/deploy.yml.example` 复制或重命名为 `deploy.yml`（去掉 `.example` 后缀），并将里面的 `CONTENT_REPOSITORY` 修改为你的内容仓库名（如 `OWNER/shirone-content`）；
+2. **启用内容仓触发流水线**：若从模板仓库克隆内容仓，在内容仓将 `.github/workflows/trigger-build.yml.example` 复制或重命名为 `trigger-build.yml`（去掉 `.example` 后缀生效；通过 `pnpm content:eject` 自动生成的文件已默认就绪）；
+3. **配置仓库访问密钥**：
    - 在**内容仓库**的 `Settings > Secrets and variables > Actions` 中添加 Secret `DISPATCH_TOKEN`（个人访问令牌，需对代码仓拥有读写权限）；
    - 在**代码仓库**的 `Settings > Secrets and variables > Actions` 中添加 Secret `CONTENT_REPO_TOKEN`（若内容仓为私有，填入对内容仓拥有读取权限的个人访问令牌）；
-3. **大功告成**：此后只需在内容仓专心写作，每次 `git push` 就会全自动触发代码仓拉取最新文章进行打包构建，并自动发布上线！
+4. **大功告成**：此后只需在内容仓专心写作，每次 `git push` 就会全自动触发代码仓拉取最新文章进行打包构建，并自动发布上线！
