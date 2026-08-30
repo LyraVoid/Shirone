@@ -129,8 +129,13 @@ enum I18nKey {
 	recentPosts = "recentPosts",
 	tableOfContents = "tableOfContents",
 	formulaScrollable = "formulaScrollable",
+	fieldRequired = "fieldRequired",
+	fieldOptional = "fieldOptional",
+	fieldDeprecated = "fieldDeprecated",
 	codeBlockExpand = "codeBlockExpand",
 	codeBlockCollapse = "codeBlockCollapse",
+	codeTreeExpand = "codeTreeExpand",
+	codeTreeCollapse = "codeTreeCollapse",
 	announcement = "announcement",
 	announcementClose = "announcementClose",
 
@@ -269,7 +274,9 @@ enum I18nKey {
 
 	copySuccess = "copySuccess",
 	copyLink = "copyLink",
+	copySelection = "copySelection",
 	copyFailed = "copyFailed",
+	sharePageLink = "sharePageLink",
 
 	shareArticle = "shareArticle",
 	shareArticleDescription = "shareArticleDescription",

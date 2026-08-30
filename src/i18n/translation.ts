@@ -1,17 +1,17 @@
 // 循环依赖规避：navBarConfig 等配置消费 i18n，本模块只允许从具体文件导入 siteConfig，
 // 禁止走 @/config barrel（见 src/config/README.md）
-import { siteConfig } from "@/config/siteConfig";
-import type I18nKey from "./i18nKey";
-import { en } from "./languages/en";
-import { es } from "./languages/es";
-import { id } from "./languages/id";
-import { ja } from "./languages/ja";
-import { ko } from "./languages/ko";
-import { th } from "./languages/th";
-import { tr } from "./languages/tr";
-import { vi } from "./languages/vi";
-import { zh_CN } from "./languages/zh_CN";
-import { zh_TW } from "./languages/zh_TW";
+import { siteConfig } from "../config/siteConfig.ts";
+import type I18nKey from "./i18nKey.ts";
+import { en } from "./languages/en.ts";
+import { es } from "./languages/es.ts";
+import { id } from "./languages/id.ts";
+import { ja } from "./languages/ja.ts";
+import { ko } from "./languages/ko.ts";
+import { th } from "./languages/th.ts";
+import { tr } from "./languages/tr.ts";
+import { vi } from "./languages/vi.ts";
+import { zh_CN } from "./languages/zh_CN.ts";
+import { zh_TW } from "./languages/zh_TW.ts";
 
 export type Translation = {
 	[K in I18nKey]: string;

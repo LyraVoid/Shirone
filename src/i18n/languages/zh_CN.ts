@@ -1,5 +1,5 @@
-import Key from "../i18nKey";
-import type { Translation } from "../translation";
+import Key from "../i18nKey-runtime.mjs";
+import type { Translation } from "../translation.ts";
 
 export const zh_CN: Translation = {
 	[Key.home]: "主页",
@@ -133,8 +133,13 @@ export const zh_CN: Translation = {
 	[Key.recentPosts]: "最新文章",
 	[Key.tableOfContents]: "文章目录",
 	[Key.formulaScrollable]: "可横向滚动的公式",
+	[Key.fieldRequired]: "必填",
+	[Key.fieldOptional]: "可选",
+	[Key.fieldDeprecated]: "已弃用",
 	[Key.codeBlockExpand]: "展开代码块",
 	[Key.codeBlockCollapse]: "折叠代码块",
+	[Key.codeTreeExpand]: "放大代码树",
+	[Key.codeTreeCollapse]: "退出放大",
 	[Key.announcement]: "公告",
 	[Key.announcementClose]: "关闭公告",
 
@@ -247,7 +252,9 @@ export const zh_CN: Translation = {
 	[Key.randomReadingSubtitle]: "从其他文章中稳定抽取",
 	[Key.copySuccess]: "已复制到剪贴板",
 	[Key.copyLink]: "复制链接",
+	[Key.copySelection]: "复制",
 	[Key.copyFailed]: "复制失败，请手动复制",
+	[Key.sharePageLink]: "分享页面链接",
 
 	[Key.shareArticle]: "分享文章",
 	[Key.shareArticleDescription]: "生成精美分享图或复制链接，与更多人分享本文。",

@@ -1,4 +1,64 @@
+import { prefersReducedMotion } from "./motion";
+
 let codeTreesInitialized = false;
+let activeModalDialog: HTMLDialogElement | null = null;
+let lastFocusedExpandBtn: HTMLElement | null = null;
+let originalCodeTreePlaceholder: HTMLDivElement | null = null;
+let mountedCodeTree: HTMLElement | null = null;
+let unlockPageScroll: (() => void) | null = null;
+
+function setExpandButtonState(
+	button: HTMLButtonElement,
+	expanded: boolean,
+): void {
+	const label = expanded
+		? button.dataset.collapseLabel
+		: button.dataset.expandLabel;
+	if (label) {
+		button.setAttribute("aria-label", label);
+		button.title = label;
+	}
+	button
+		.querySelector(".m3-code-tree__icon-expand")
+		?.classList.toggle("hidden", expanded);
+	button
+		.querySelector(".m3-code-tree__icon-collapse")
+		?.classList.toggle("hidden", !expanded);
+}
+
+function lockPageScroll(): void {
+	const root = document.documentElement;
+	const body = document.body;
+	const previousOverflow = body.style.overflow;
+	const previousPaddingInlineEnd = body.style.paddingInlineEnd;
+	const scrollbarWidth = window.innerWidth - root.clientWidth;
+
+	if (scrollbarWidth > 0) {
+		const currentPadding =
+			Number.parseFloat(getComputedStyle(body).paddingInlineEnd) || 0;
+		body.style.paddingInlineEnd = `${currentPadding + scrollbarWidth}px`;
+	}
+	body.style.overflow = "hidden";
+
+	unlockPageScroll = () => {
+		body.style.overflow = previousOverflow;
+		body.style.paddingInlineEnd = previousPaddingInlineEnd;
+		unlockPageScroll = null;
+	};
+}
+
+function createCodeTreePlaceholder(codeTree: HTMLElement): HTMLDivElement {
+	const rect = codeTree.getBoundingClientRect();
+	const styles = getComputedStyle(codeTree);
+	const placeholder = document.createElement("div");
+	placeholder.className = "m3-code-tree-placeholder";
+	placeholder.setAttribute("aria-hidden", "true");
+	placeholder.style.height = `${rect.height}px`;
+	placeholder.style.marginBlock = `${styles.marginBlockStart} ${styles.marginBlockEnd}`;
+	placeholder.style.marginInline = `${styles.marginInlineStart} ${styles.marginInlineEnd}`;
+	placeholder.style.pointerEvents = "none";
+	return placeholder;
+}
 
 function isElementVisible(
 	button: HTMLButtonElement,
@@ -66,9 +126,101 @@ function switchCodeTreeFile(
 	}
 }
 
+function closeCodeTreeModal(): void {
+	if (!activeModalDialog) return;
+
+	const dialog = activeModalDialog;
+	const restoreDom = () => {
+		if (mountedCodeTree && originalCodeTreePlaceholder?.parentNode) {
+			originalCodeTreePlaceholder.parentNode.replaceChild(
+				mountedCodeTree,
+				originalCodeTreePlaceholder,
+			);
+		}
+		mountedCodeTree = null;
+		originalCodeTreePlaceholder = null;
+
+		if (dialog.open) {
+			dialog.close();
+		}
+		dialog.remove();
+		activeModalDialog = null;
+
+		unlockPageScroll?.();
+
+		if (lastFocusedExpandBtn?.isConnected) {
+			setExpandButtonState(lastFocusedExpandBtn as HTMLButtonElement, false);
+			lastFocusedExpandBtn.focus();
+		}
+		lastFocusedExpandBtn = null;
+	};
+
+	if (prefersReducedMotion()) {
+		restoreDom();
+	} else {
+		dialog.classList.add("closing");
+		dialog.addEventListener(
+			"animationend",
+			() => {
+				restoreDom();
+			},
+			{ once: true },
+		);
+	}
+}
+
+function openCodeTreeModal(
+	codeTree: HTMLElement,
+	triggerBtn: HTMLButtonElement,
+): void {
+	if (activeModalDialog) {
+		closeCodeTreeModal();
+	}
+
+	lastFocusedExpandBtn = triggerBtn;
+
+	// Create dialog element within .custom-md wrapper to retain markdown styles
+	const dialog = document.createElement("dialog");
+	dialog.className = "m3-code-tree-dialog custom-md";
+	dialog.setAttribute("aria-label", "Expanded Code Tree");
+
+	// Move DOM node into dialog with placeholder anchor for restoration
+	originalCodeTreePlaceholder = createCodeTreePlaceholder(codeTree);
+	codeTree.parentNode?.insertBefore(originalCodeTreePlaceholder, codeTree);
+	mountedCodeTree = codeTree;
+	dialog.appendChild(codeTree);
+
+	document.body.appendChild(dialog);
+	activeModalDialog = dialog;
+
+	// Backdrop click handler
+	dialog.addEventListener("click", (event) => {
+		if (event.target === dialog) {
+			closeCodeTreeModal();
+		}
+	});
+
+	// Native cancel (ESC) handler
+	dialog.addEventListener("cancel", (event) => {
+		event.preventDefault();
+		closeCodeTreeModal();
+	});
+
+	lockPageScroll();
+	dialog.showModal();
+
+	const modalExpandBtn = codeTree.querySelector<HTMLButtonElement>(
+		".m3-code-tree__expand-btn",
+	);
+	if (modalExpandBtn) {
+		setExpandButtonState(modalExpandBtn, true);
+		modalExpandBtn.focus();
+	}
+}
+
 /**
- * Initializes client-side interactive file navigation and panel switching
- * for M3E Code Trees with delegated listeners, directory disclosures, and full keyboard a11y.
+ * Initializes client-side interactive file navigation, panel switching,
+ * and fullscreen modal expansion for M3E Code Trees with delegated listeners.
  */
 export function initCodeTrees(): void {
 	if (typeof document === "undefined") return;
@@ -80,6 +232,23 @@ export function initCodeTrees(): void {
 		const target = event.target as HTMLElement | null;
 		if (!target) return;
 
+		// 1. Expand / Collapse button click
+		const expandBtn = target.closest<HTMLButtonElement>(
+			".m3-code-tree__expand-btn",
+		);
+		if (expandBtn) {
+			const codeTree = expandBtn.closest<HTMLElement>(".m3-code-tree");
+			if (!codeTree) return;
+
+			if (activeModalDialog?.contains(expandBtn)) {
+				closeCodeTreeModal();
+			} else {
+				openCodeTreeModal(codeTree, expandBtn);
+			}
+			return;
+		}
+
+		// 2. File button click
 		const fileBtn = target.closest<HTMLButtonElement>(
 			".m3-code-tree__file-btn",
 		);

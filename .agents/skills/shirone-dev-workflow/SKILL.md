@@ -3,6 +3,12 @@ name: shirone-dev-workflow
 description: Daily development workflow for the Shirone Astro blog theme - environment setup, validation gates, cache clearing, commit conventions, npm package-mode smoke tests, and release validation. Use when building, testing, validating, formatting, committing, or preparing a Shirone package release.
 ---
 
+## CI 与 Node 测试排查
+
+修改 Markdown、i18n 或 Node 直接加载的测试路径时，先阅读 `docs/ci-and-node-tests.md`。Node 22/24 不能执行运行时 TypeScript `enum`；需要 enum 形状的 key 时使用 `.mjs` 运行时桥接和 `.d.mts` 类型声明。翻译仍必须通过 `i18n()` 和 locale 注册表。
+
+将 `node --test "tests/**/*.test.mjs"` 与 `npx.cmd astro check` 串行执行：Astro check 会触发内容同步，可能与 `tests/content/*` 夹具竞争。检查 GitHub 失败时，先用 `gh run view <run-id> --json status,conclusion,headSha,jobs,url` 查看摘要，再用 `gh run view <run-id> --job <job-id> --log-failed` 查看失败日志。
+
 # Shirone 开发工作流
 
 Shirone 是 Astro 7 + Svelte 5 + Tailwind 4 + Stylus + pnpm 的 M3E 博客主题,开发环境为 Windows。本技能覆盖日常开发的环境、验证与提交流程;架构与组件规范见 `shirone-component-dev` 等专项技能。

@@ -1,5 +1,5 @@
-import Key from "../i18nKey";
-import type { Translation } from "../translation";
+import Key from "../i18nKey-runtime.mjs";
+import type { Translation } from "../translation.ts";
 
 export const id: Translation = {
 	[Key.home]: "Beranda",
@@ -142,8 +142,13 @@ export const id: Translation = {
 	[Key.recentPosts]: "Postingan Terbaru",
 	[Key.tableOfContents]: "Daftar Isi",
 	[Key.formulaScrollable]: "Rumus yang dapat digulir secara horizontal",
+	[Key.fieldRequired]: "Wajib",
+	[Key.fieldOptional]: "Opsional",
+	[Key.fieldDeprecated]: "Usang",
 	[Key.codeBlockExpand]: "Perluas blok kode",
 	[Key.codeBlockCollapse]: "Ciutkan blok kode",
+	[Key.codeTreeExpand]: "Perluas pohon kode",
+	[Key.codeTreeCollapse]: "Tutup tampilan diperluas",
 	[Key.announcement]: "Pengumuman",
 	[Key.announcementClose]: "Tutup pengumuman",
 
@@ -259,7 +264,9 @@ export const id: Translation = {
 	[Key.randomReadingSubtitle]: "Pilihan konsisten dari artikel lain",
 	[Key.copySuccess]: "Disalin ke papan klip",
 	[Key.copyLink]: "Salin tautan",
+	[Key.copySelection]: "Salin",
 	[Key.copyFailed]: "Gagal menyalin tautan. Silakan salin manual.",
+	[Key.sharePageLink]: "Bagikan tautan halaman",
 
 	[Key.shareArticle]: "Bagikan Artikel",
 	[Key.shareArticleDescription]:

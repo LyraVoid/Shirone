@@ -1,0 +1,35 @@
+.custom-md .m3-field-group {
+	box-sizing: border-box;
+	width: 100%;
+	max-width: 100%;
+	margin: var(--m3e-space-4) 0;
+	padding: 0 var(--m3e-space-6);
+	border: 1px solid var(--outline-variant);
+	border-radius: var(--shape-corner-m);
+	background: var(--surface-container-lowest);
+	color: var(--on-surface);
+}
+
+.custom-md .m3-field { margin: var(--m3e-space-4) 0; min-width: 0; }
+.custom-md .m3-field + .m3-field { padding-top: var(--m3e-space-2); border-top: 1px solid var(--outline-variant); }
+.custom-md .m3-field__meta { display: flex; align-items: center; gap: var(--m3e-space-2); min-width: 0; margin: var(--m3e-space-2) 0; }
+.custom-md .m3-field__name { min-width: 0; color: var(--on-surface); font: var(--m3e-type-title-medium); font-weight: 600; overflow-wrap: anywhere; }
+.custom-md .m3-field__status { flex: 0 0 auto; padding: 2px var(--m3e-space-2); border: 1px solid currentColor; border-radius: var(--shape-corner-full); color: var(--on-surface-variant); font: var(--m3e-type-label-small); font-style: italic; line-height: 1.2; }
+.custom-md .m3-field__status--required { color: var(--primary); }
+.custom-md .m3-field__status--deprecated { color: var(--error); }
+.custom-md .m3-field__type { min-width: 0; margin-inline-start: auto; padding: 2px var(--m3e-space-2); border: 0; border-radius: var(--shape-corner-xs); background: var(--inline-code-bg); color: var(--inline-code-color); font: var(--m3e-type-code); overflow-wrap: anywhere; text-align: end; }
+.custom-md .m3-field__default { display: block; margin: 0 0 var(--m3e-space-1); padding: 0; border: 0; border-radius: 0; background: transparent; color: var(--inline-code-color); font: var(--m3e-type-code); }
+.custom-md .m3-field__description { color: var(--on-surface-variant); font: var(--m3e-type-body-large); overflow-wrap: anywhere; }
+.custom-md .m3-field__description :is(p, ul, ol) { margin: var(--m3e-space-2) 0; }
+.custom-md .m3-field__description > :first-child { margin-top: 0; }
+.custom-md .m3-field__description > :last-child { margin-bottom: 0; }
+
+@media (max-width: 39.99rem) {
+	.custom-md .m3-field-group { padding-inline: var(--m3e-space-4); }
+	.custom-md .m3-field__meta { display: flex; flex-wrap: wrap; align-items: center; }
+	.custom-md .m3-field__type { flex: 0 1 auto; max-width: 100%; margin-inline-start: auto; text-align: end; }
+}
+
+@media print {
+	.custom-md .m3-field-group { break-inside: avoid; }
+}

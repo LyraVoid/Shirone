@@ -7,6 +7,7 @@ import remarkDirective from "remark-directive"; /* Handle directives */
 import remarkMath from "remark-math";
 import remarkSectionize from "remark-sectionize";
 import { siteConfig } from "../config/siteConfig.ts";
+import { i18n } from "../i18n/translation.ts";
 import { remarkCodeTree } from "../plugins/markdown/code/remark-code-tree.mjs";
 import { remarkFileTree } from "../plugins/markdown/code/remark-file-tree.mjs";
 import { CodeTreeComponent } from "../plugins/markdown/containers/rehype-code-tree.mjs";
@@ -14,6 +15,10 @@ import {
 	CollapsePanelsComponent,
 	rehypeCollapseGroups,
 } from "../plugins/markdown/containers/rehype-collapse-panels.mjs";
+import {
+	FieldComponent,
+	FieldGroupComponent,
+} from "../plugins/markdown/containers/rehype-fields.mjs";
 import { FileTreeComponent } from "../plugins/markdown/containers/rehype-file-tree.mjs";
 import {
 	OptionGroupsComponent,
@@ -22,18 +27,19 @@ import {
 import { StepsComponent } from "../plugins/markdown/containers/rehype-steps.mjs";
 import { remarkAbbreviations } from "../plugins/markdown/remark-abbreviations.mjs";
 import { remarkAcFun } from "../plugins/markdown/remark-acfun.mjs";
+import { remarkAdmonitions } from "../plugins/markdown/remark-admonitions.mjs";
 import { remarkArtPlayer } from "../plugins/markdown/remark-artplayer.mjs";
 import { remarkAudioReader } from "../plugins/markdown/remark-audio-reader.mjs";
-import { remarkAdmonitions } from "../plugins/markdown/remark-admonitions.mjs";
 import { remarkBilibili } from "../plugins/markdown/remark-bilibili.mjs";
 import { remarkCollapsePanels } from "../plugins/markdown/remark-collapse-panels.mjs";
 import { remarkContentAnnotations } from "../plugins/markdown/remark-content-annotations.mjs";
+import { remarkFields } from "../plugins/markdown/remark-fields.mjs";
 import { remarkIncludes } from "../plugins/markdown/remark-includes.mjs";
 import { remarkMarker } from "../plugins/markdown/remark-marker.mjs";
 import { remarkOptionGroups } from "../plugins/markdown/remark-option-groups.mjs";
 import { remarkYouTube } from "../plugins/markdown/remark-youtube.mjs";
-import { AdmonitionComponent } from "../plugins/rehype-component-admonition.mjs";
 import { AcFunComponent } from "../plugins/rehype-component-acfun.mjs";
+import { AdmonitionComponent } from "../plugins/rehype-component-admonition.mjs";
 import { ArtPlayerComponent } from "../plugins/rehype-component-artplayer.mjs";
 import { AudioReaderComponent } from "../plugins/rehype-component-audio-reader.mjs";
 import { BilibiliComponent } from "../plugins/rehype-component-bilibili.mjs";
@@ -51,6 +57,14 @@ import { remarkFeatureProbes } from "../plugins/remark-feature-probes.mjs";
 import { remarkMermaid } from "../plugins/remark-mermaid.mjs";
 import { remarkReadingTime } from "../plugins/remark-reading-time.mjs";
 
+// This processor is executed directly by Node tests, so avoid runtime imports
+// of TypeScript enums (unsupported by Node's strip-only TypeScript loader).
+const fieldI18nKeys = {
+	required: "fieldRequired",
+	optional: "fieldOptional",
+	deprecated: "fieldDeprecated",
+};
+
 /**
  * 站点统一 Remark 插件链（单一事实来源）
  */
@@ -66,6 +80,7 @@ export const siteRemarkPlugins = [
 	remarkMath,
 	remarkFileTree,
 	remarkCodeTree,
+	remarkFields,
 	remarkMermaid,
 	remarkReadingTime,
 	remarkExcerpt,
@@ -100,6 +115,17 @@ export const siteRehypePlugins = [
 				collapse: CollapsePanelsComponent,
 				tabs: OptionGroupsComponent,
 				"file-tree": FileTreeComponent,
+				"field-group": FieldGroupComponent,
+				field: (properties, children) =>
+					FieldComponent(
+						{
+							...properties,
+							"label-required": i18n(fieldI18nKeys.required),
+							"label-optional": i18n(fieldI18nKeys.optional),
+							"label-deprecated": i18n(fieldI18nKeys.deprecated),
+						},
+						children,
+					),
 				"code-tree": CodeTreeComponent,
 				steps: StepsComponent,
 				github: GithubCardComponent,

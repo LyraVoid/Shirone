@@ -14,6 +14,8 @@ const MATERIAL_ICON_NAMES = {
 	file: "draft-outline-rounded",
 	data: "data-object-rounded",
 	markdown: "markdown-outline-rounded",
+	fullscreen: "fullscreen-rounded",
+	fullscreenExit: "fullscreen-exit-rounded",
 };
 
 const EXACT_FILE_ICONS = new Map([
@@ -146,5 +148,19 @@ export function createFileTreeDisclosureIcon() {
 	return createSvg(
 		{ collection: "material", name: "disclosure", tone: "default" },
 		"m3-file-tree__disclosure-icon",
+	);
+}
+
+export function createCodeTreeExpandIcon() {
+	return createSvg(
+		{ collection: "material", name: "fullscreen", tone: "default" },
+		"m3-code-tree__action-icon",
+	);
+}
+
+export function createCodeTreeCompressIcon() {
+	return createSvg(
+		{ collection: "material", name: "fullscreenExit", tone: "default" },
+		"m3-code-tree__action-icon",
 	);
 }

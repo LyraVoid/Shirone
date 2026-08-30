@@ -1,5 +1,5 @@
-import Key from "../i18nKey";
-import type { Translation } from "../translation";
+import Key from "../i18nKey-runtime.mjs";
+import type { Translation } from "../translation.ts";
 
 export const ko: Translation = {
 	[Key.home]: "홈",
@@ -138,8 +138,13 @@ export const ko: Translation = {
 	[Key.recentPosts]: "최근 게시물",
 	[Key.tableOfContents]: "목차",
 	[Key.formulaScrollable]: "가로로 스크롤 가능한 수식",
+	[Key.fieldRequired]: "필수",
+	[Key.fieldOptional]: "선택 사항",
+	[Key.fieldDeprecated]: "사용 중단",
 	[Key.codeBlockExpand]: "코드 블록 펼치기",
 	[Key.codeBlockCollapse]: "코드 블록 접기",
+	[Key.codeTreeExpand]: "코드 트리 확대",
+	[Key.codeTreeCollapse]: "확대 닫기",
 	[Key.announcement]: "공지사항",
 	[Key.announcementClose]: "공지 닫기",
 
@@ -254,7 +259,9 @@ export const ko: Translation = {
 	[Key.randomReadingSubtitle]: "다른 글에서 일관된 기준으로 선정",
 	[Key.copySuccess]: "클립보드에 복사되었습니다",
 	[Key.copyLink]: "링크 복사",
+	[Key.copySelection]: "복사",
 	[Key.copyFailed]: "링크 복사에 실패했습니다. 직접 복사해 주세요.",
+	[Key.sharePageLink]: "페이지 링크 공유",
 
 	[Key.shareArticle]: "게시글 공유",
 	[Key.shareArticleDescription]:

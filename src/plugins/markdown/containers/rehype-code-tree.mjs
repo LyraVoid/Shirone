@@ -1,6 +1,8 @@
 import { h } from "hastscript";
 import { createDisclosure } from "../core/disclosure.mjs";
 import {
+	createCodeTreeCompressIcon,
+	createCodeTreeExpandIcon,
 	createCodeTreeHeaderIcon,
 	createFileTreeDisclosureIcon,
 	createFileTreeIcon,
@@ -199,12 +201,34 @@ function renderPanels(files, codeChildren, activePath, title) {
 }
 
 function renderHeader(title) {
-	if (!title) return null;
 	return h("div", { class: "m3-code-tree__header" }, [
-		h("span", { class: "m3-code-tree__header-icon", "aria-hidden": "true" }, [
-			createCodeTreeHeaderIcon(),
+		h("div", { class: "m3-code-tree__header-start" }, [
+			h("span", { class: "m3-code-tree__header-icon", "aria-hidden": "true" }, [
+				createCodeTreeHeaderIcon(),
+			]),
+			h("span", { class: "m3-code-tree__title" }, title || "Project"),
 		]),
-		h("span", { class: "m3-code-tree__title" }, title),
+		h("div", { class: "m3-code-tree__header-actions" }, [
+			h(
+				"button",
+				{
+					type: "button",
+					class: "m3-code-tree__action-btn m3-code-tree__expand-btn",
+					"aria-label": "放大代码树",
+					"data-expand-label": "放大代码树",
+					"data-collapse-label": "退出放大",
+					title: "放大代码树",
+				},
+				[
+					h("span", { class: "m3-code-tree__icon-expand" }, [
+						createCodeTreeExpandIcon(),
+					]),
+					h("span", { class: "m3-code-tree__icon-collapse hidden" }, [
+						createCodeTreeCompressIcon(),
+					]),
+				],
+			),
+		]),
 	]);
 }
 
@@ -278,13 +302,10 @@ export function CodeTreeComponent(properties, children) {
 	const main = renderPanels(files, codeChildren, activePath, title);
 
 	const bodyChildren = [nav, main];
-	const containerChildren = [];
-	if (header) {
-		containerChildren.push(header);
-	}
-	containerChildren.push(
+	const containerChildren = [
+		header,
 		h("div", { class: "m3-code-tree__body" }, bodyChildren),
-	);
+	];
 
 	return h(
 		"div",

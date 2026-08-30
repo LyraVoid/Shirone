@@ -1,6 +1,6 @@
 ---
 name: shirone-markdown-syntax
-description: Authoring content with Shirone's custom Markdown syntaxes - admonitions, code trees, tabs, steps, marker highlights, math, mermaid, image grids and sizing, abbreviations, annotations, spoilers, includes, and GitHub cards. Use when writing or editing Markdown/MDX content and choosing the right syntax.
+description: Authoring content with Shirone's custom Markdown syntaxes - admonitions, code trees, tabs, steps, field parameter cards, marker highlights, math, mermaid, image grids and sizing, abbreviations, annotations, spoilers, includes, and GitHub cards. Use when writing or editing Markdown/MDX content and choosing the right syntax.
 ---
 
 # Shirone 自定义 Markdown 语法(作者向)
@@ -9,6 +9,7 @@ description: Authoring content with Shirone's custom Markdown syntaxes - admonit
 
 | 语法 | 写法 | 演示文章 |
 |---|---|---|
+| Field cards / 字段卡片 | `:::: field-group` + `::: field name` with `@type`, `@default`, and required-state metadata | `markdown-fields.md` |
 | 提示容器 | `:::tip[标题] ... :::` 或 `> [!NOTE]`,类型:`note/info/tip/important/warning/caution/details` | `admonitions.md` |
 | 折叠面板 | `::: collapse [accordion] [expand]` 包裹无序列表,项首 `:+`/`:-` 控制开合 | `collapse-panels.md` |
 | 选项组(Tabs) | `::: tabs[#同步id]` + `@tab 标题#值`,值相同的组跨页同步 | `option-groups.md` |
@@ -26,6 +27,37 @@ description: Authoring content with Shirone's custom Markdown syntaxes - admonit
 | GitHub 卡片 | `::github{repo="owner/repo"}`,客户端按需取仓库元数据 | `markdown-extended.md` |
 | 文件包含 | `<!-- @include: 路径 -->`,支持 `{2-6}` 行范围与 `#region` | `markdown-includes.md` |
 | 代码块元数据 | Expressive Code:`title`、`ins={2}`、`del={3-5}`、`collapse={4-8}`、`showLineNumbers`、`frame` 等 | `expressive-code.md` |
+
+## Field Cards / 字段卡片
+
+Use a `field-group` container for a compact list of API or configuration parameters. Each child `field` starts with a name and may declare metadata lines before its Markdown description:
+
+```md
+:::: field-group
+
+::: field title
+@type string
+@required
+
+The visible title.
+:::
+
+::: field disabled
+@type boolean
+@default `false`
+@optional
+
+Whether the control is disabled.
+:::
+
+::::
+```
+
+Supported metadata is `@name`, `@type`, `@default`, `@required`, `@optional`, `@deprecated`, and `@description`. The field name after `field` is the fallback for `@name`; metadata must appear before the first description paragraph. Remaining Markdown becomes the visible description, so links, lists, and inline code are allowed.
+
+Use four-colon fences for `field-group` when nesting three-colon `field` blocks. A single `field` can also be used without a group. Unknown or malformed `@tags` are preserved as ordinary description text instead of being discarded. Rendering is SSR-only: the cards add no JavaScript or network requests.
+
+Reference implementation and copyable example: `src/plugins/markdown/manifest.json` and `src/content/posts/markdown-fields.md`.
 
 ## Bilibili 视频
 

@@ -27,6 +27,7 @@ export {
 	type ResolvedCommentOptions,
 	resolveCommentOptions,
 } from "./commentConfig";
+export { contextMenuConfig } from "./contextMenuConfig";
 export { devicesConfig } from "./devicesConfig";
 export { expressiveCodeConfig } from "./expressiveCodeConfig";
 export { fabConfig } from "./fabConfig";
@@ -63,7 +64,7 @@ export {
 export { skillsConfig } from "./skillsConfig";
 export { timelineConfig } from "./timelineConfig";
 export {
-	umamiConfig,
 	type ResolvedUmamiOptions,
 	resolveUmamiOptions,
+	umamiConfig,
 } from "./umamiConfig";

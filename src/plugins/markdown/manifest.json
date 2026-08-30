@@ -48,6 +48,11 @@
 			"styles": ["src/styles/markdown/expressive-code.css"]
 		},
 		{
+			"id": "fields",
+			"syntaxes": ["fields"],
+			"styles": ["src/styles/markdown/fields.css"]
+		},
+		{
 			"id": "github-card",
 			"syntaxes": ["github-card"],
 			"styles": ["src/styles/markdown/github-card.css"]
@@ -733,6 +738,28 @@
 			"docs": ["src/content/posts/expressive-code.md"],
 			"tests": ["tests/site/post-encryption.spec.ts"],
 			"notes": ["元数据具体解析规则由 Expressive Code 及已注册插件定义。"]
+		},
+		{
+			"id": "fields",
+			"name": "Field Cards",
+			"status": "stable",
+			"category": "container",
+			"source": "shirone",
+			"summary": "将 API、组件 Props 或配置字段渲染为结构化参数卡片。",
+			"forms": [{"kind": "container-directive", "pattern": ":::: field-group ... ::: field name ... ::::", "example": ":::: field-group\\n\\n::: field title\\n@type string\\n@optional\\n\\nDescription.\\n:::\\n\\n::::"}],
+			"attributes": [
+				{"name": "name", "required": true, "values": "non-empty text", "default": null},
+				{"name": "@type", "required": false, "values": "text", "default": null},
+				{"name": "@default", "required": false, "values": "text", "default": null},
+				{"name": "@required | @optional | @deprecated", "required": false, "values": "flag", "default": null}
+			],
+			"implementation": ["src/plugins/markdown/remark-fields.mjs", "src/plugins/markdown/containers/rehype-fields.mjs"],
+			"registeredIn": "src/utils/markdown-processor.mjs",
+			"styles": ["src/styles/markdown/fields.css"],
+			"runtime": {"mode": "none", "modules": [], "network": []},
+			"docs": ["src/content/posts/markdown-fields.md", "docs/markdown-extensions.md"],
+			"tests": ["tests/plugins/markdown/containers/fields.test.mjs"],
+			"notes": ["无效或不完整的字段标签保留为可读 Markdown；组件为纯 SSR 输出，不增加客户端运行时。"]
 		},
 		{
 			"id": "file-tree",

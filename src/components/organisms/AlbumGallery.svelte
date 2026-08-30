@@ -23,7 +23,10 @@ function photoRatio(photo: AlbumPhoto): number | undefined {
 }
 
 function orientationPriority(photo: AlbumPhoto): number {
-	const value = photoRatio(photo);
+	// Only authoritative metadata may affect ordering; measured image ratios arrive
+	// asynchronously and must not reshuffle an already rendered masonry grid.
+	const value =
+		photo.width && photo.height ? photo.width / photo.height : undefined;
 	if (value === undefined || value === 1) return 1;
 	return value < 1 ? 0 : 2;
 }
@@ -76,8 +79,10 @@ function ratio(photo: AlbumPhoto): string {
 				>
 					<img
 					src={photo.thumbnail || photo.src}
-					alt={photo.alt}
-					loading="lazy"
+						alt={photo.alt}
+						width={photo.width}
+						height={photo.height}
+						loading="lazy"
 					decoding="async"
 					referrerpolicy="no-referrer"
 					onload={(event) => rememberNaturalRatio(photo, event)}

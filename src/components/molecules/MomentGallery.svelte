@@ -31,6 +31,7 @@ let lastIndex = 0;
 /** 瓦片图片加载进度：lazy 触发 loadstart 后才挂载指示器（离屏瓦片不空转 rAF） */
 let startedTiles = $state(new Set<string>());
 let loadedTiles = $state(new Set<string>());
+let loadedViewerImages = $state(new Set<string>());
 
 const current = $derived(images[index] ?? images[0]);
 const visibleImages = $derived(
@@ -57,7 +58,9 @@ async function collapseViewer() {
 	viewing = false;
 	// 等网格重新挂载后，把焦点还给当初点击的瓦片
 	await tick();
-	(gridEl?.children[lastIndex] as HTMLButtonElement | undefined)?.focus();
+	(gridEl?.children[lastIndex] as HTMLButtonElement | undefined)?.focus({
+		preventScroll: true,
+	});
 }
 
 function openLightbox(i: number) {
@@ -106,6 +109,10 @@ function tileLabel(i: number) {
 
 function thumbnailSrc(image: MomentImage) {
 	return image.thumbnailSrc ?? image.src;
+}
+
+function markViewerImageLoaded(src: string) {
+	loadedViewerImages = new Set(loadedViewerImages).add(src);
 }
 
 function tileSizes(i: number) {
@@ -185,7 +192,21 @@ $effect(() => {
 						: i18n(I18nKey.viewOriginal)}
 					onclick={() => openLightbox(index)}
 				>
-					<img src={current.src} alt="" loading="eager" decoding="async" />
+					{#if !loadedViewerImages.has(current.src)}
+						<span class="moment-viewer__stage-loading" aria-hidden="true">
+							<LoadingIndicator contained size={32} />
+						</span>
+					{/if}
+					<img
+						src={current.src}
+						alt=""
+						loading="eager"
+						decoding="async"
+						class:moment-viewer__stage-img--loaded={loadedViewerImages.has(
+							current.src,
+						)}
+						onload={() => markViewerImageLoaded(current.src)}
+					/>
 				</button>
 			{/key}
 			<IconButton
@@ -382,13 +403,17 @@ $effect(() => {
 		gap: 0.5rem
 
 	&__stage-btn
+		position: relative
 		flex: 1
 		min-width: 0
 		display: flex
+		align-items: center
 		justify-content: center
+		aspect-ratio: 16 / 9
+		max-height: 26rem
 		padding: 0
 		border: none
-		background: none
+		background: var(--surface-container-high)
 		border-radius: var(--shape-corner-m)
 		overflow: hidden
 		cursor: zoom-in
@@ -397,11 +422,21 @@ $effect(() => {
 			outline-offset: 2px
 		> img
 			display: block
-			width: auto
-			max-width: 100%
-			max-height: 26rem
-			height: auto
-			animation: moment-stage-swap var(--m3e-duration-short) var(--m3e-easing-standard)
+			width: 100%
+			height: 100%
+			object-fit: contain
+			opacity: 0
+			transition: opacity var(--m3e-duration-short) var(--m3e-easing-standard)
+
+		> img.moment-viewer__stage-img--loaded
+			opacity: 1
+
+	&__stage-loading
+		position: absolute
+		inset: 0
+		display: grid
+		place-items: center
+		pointer-events: none
 
 	&__caption
 		margin: 0
@@ -458,19 +493,19 @@ $effect(() => {
 		opacity: 1
 		transform: scale(1)
 
-/* 主舞台切图淡入 */
-@keyframes moment-stage-swap
-	from
-		opacity: 0
-	to
-		opacity: 1
-
 @media (max-width: bp-sm - 1px)
 	.moment-viewer
-		&__stage-btn > img
+		&__stage-btn
 			max-height: 18rem
 
 		&__thumb
 			width: 2.75rem
 			height: 2.75rem
+
+:global(html.motion-reduced) .moment-viewer__stage-btn > img
+	transition: none
+
+@media (prefers-reduced-motion: reduce)
+	.moment-viewer__stage-btn > img
+		transition: none
 </style>

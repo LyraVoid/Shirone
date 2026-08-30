@@ -90,10 +90,12 @@ $effect(() => {
 <style lang="stylus">
 .m3-menu
     min-width: 7rem
+    max-width: 17.5rem
     width: max-content
-    padding: 0.25rem
-    border-radius: var(--shape-corner-l)
-    background: var(--surface-container)
+    padding: 0.5rem 0.25rem
+    border-radius: var(--shape-corner-xs)
+    /* StandardMenuTokens.ContainerColor = SurfaceContainerLow. */
+    background: var(--surface-container-low)
     box-shadow: var(--m3e-elevation-2)
     max-height: 20rem
     overflow-y: auto
@@ -121,10 +123,10 @@ $effect(() => {
     :global(.m3-menu-item)
         display: flex
         align-items: center
-        gap: 0.5rem
+        gap: 0.75rem
         width: 100%
-        height: 2.75rem
-        padding: 0 1rem
+        min-height: 3rem
+        padding: 0 0.75rem
         border: none
         border-radius: var(--shape-corner-s)
         background: transparent
@@ -132,9 +134,12 @@ $effect(() => {
         font: var(--m3e-type-label-large)
         text-align: left
         white-space: nowrap
+        overflow: hidden
+        text-overflow: ellipsis
         cursor: pointer
         transition: background-color var(--m3e-duration-short) var(--m3e-easing-standard)
-        &:hover
+        /* Keep a fallback hover for consumers that do not opt into m3-state-layer. */
+        &:not(.m3-state-layer):hover
             background: unquote("color-mix(in oklab, var(--on-surface) 8%, transparent)")
         &:focus-visible
             outline: 2px solid var(--primary)
@@ -143,8 +148,8 @@ $effect(() => {
     /* 选中/勾选态（M3 菜单规范）：.selected 单选高亮、.checked 勾选 */
     :global(.m3-menu-item.selected),
     :global(.m3-menu-item.checked)
-        background: var(--secondary-container)
-        color: var(--on-secondary-container)
+        background: var(--tertiary-container)
+        color: var(--on-tertiary-container)
 
     /* 勾选图标动画（官方 expandHorizontally + fadeIn）：调用方给 check 图标加该类 */
     :global(.m3-menu-item__check)
@@ -179,6 +184,11 @@ $effect(() => {
         font: var(--m3e-type-body-small)
         color: var(--on-surface-variant)
         white-space: nowrap
+
+    :global(.m3-menu-item:disabled)
+        color: unquote("color-mix(in oklab, var(--on-surface) 38%, transparent)")
+        cursor: default
+        pointer-events: none
 
     /* 分组（官方 SegmentedMenuTokens）：surface-container-low 背景 + 4px padding，
        组间 2px 间距；hover 聚焦时圆角 8→16 变形（FastSpatial 动效感） */

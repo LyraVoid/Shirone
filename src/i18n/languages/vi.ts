@@ -1,5 +1,5 @@
-import Key from "../i18nKey";
-import type { Translation } from "../translation";
+import Key from "../i18nKey-runtime.mjs";
+import type { Translation } from "../translation.ts";
 
 export const vi: Translation = {
 	[Key.home]: "Trang chủ",
@@ -142,8 +142,13 @@ export const vi: Translation = {
 	[Key.recentPosts]: "Bài viết mới nhất",
 	[Key.tableOfContents]: "Mục lục",
 	[Key.formulaScrollable]: "Công thức có thể cuộn ngang",
+	[Key.fieldRequired]: "Bắt buộc",
+	[Key.fieldOptional]: "Tùy chọn",
+	[Key.fieldDeprecated]: "Đã lỗi thời",
 	[Key.codeBlockExpand]: "Mở rộng khối mã",
 	[Key.codeBlockCollapse]: "Thu gọn khối mã",
+	[Key.codeTreeExpand]: "Mở rộng cây mã",
+	[Key.codeTreeCollapse]: "Đóng chế độ mở rộng",
 	[Key.announcement]: "Thông báo",
 	[Key.announcementClose]: "Đóng thông báo",
 
@@ -257,7 +262,9 @@ export const vi: Translation = {
 	[Key.randomReadingSubtitle]: "Một lựa chọn ổn định từ các bài viết khác",
 	[Key.copySuccess]: "Đã sao chép vào bộ nhớ tạm",
 	[Key.copyLink]: "Sao chép liên kết",
+	[Key.copySelection]: "Sao chép",
 	[Key.copyFailed]: "Sao chép liên kết thất bại. Vui lòng sao chép thủ công.",
+	[Key.sharePageLink]: "Chia sẻ liên kết trang",
 
 	[Key.shareArticle]: "Chia sẻ bài viết",
 	[Key.shareArticleDescription]:

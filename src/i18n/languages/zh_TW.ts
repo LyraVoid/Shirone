@@ -1,5 +1,5 @@
-import Key from "../i18nKey";
-import type { Translation } from "../translation";
+import Key from "../i18nKey-runtime.mjs";
+import type { Translation } from "../translation.ts";
 
 export const zh_TW: Translation = {
 	[Key.home]: "首頁",
@@ -133,8 +133,13 @@ export const zh_TW: Translation = {
 	[Key.recentPosts]: "最新文章",
 	[Key.tableOfContents]: "文章目錄",
 	[Key.formulaScrollable]: "可橫向捲動的公式",
+	[Key.fieldRequired]: "必填",
+	[Key.fieldOptional]: "可選",
+	[Key.fieldDeprecated]: "已棄用",
 	[Key.codeBlockExpand]: "展開程式碼區塊",
 	[Key.codeBlockCollapse]: "摺疊程式碼區塊",
+	[Key.codeTreeExpand]: "放大程式碼樹",
+	[Key.codeTreeCollapse]: "退出放大",
 	[Key.announcement]: "公告",
 	[Key.announcementClose]: "關閉公告",
 
@@ -247,7 +252,9 @@ export const zh_TW: Translation = {
 	[Key.randomReadingSubtitle]: "從其他文章中穩定抽取",
 	[Key.copySuccess]: "已複製到剪貼簿",
 	[Key.copyLink]: "複製連結",
+	[Key.copySelection]: "複製",
 	[Key.copyFailed]: "複製失敗，請手動複製",
+	[Key.sharePageLink]: "分享頁面連結",
 
 	[Key.shareArticle]: "分享文章",
 	[Key.shareArticleDescription]: "生成精美分享圖或複製連結，與更多人分享本文。",

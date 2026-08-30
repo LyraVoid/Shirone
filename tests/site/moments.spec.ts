@@ -106,13 +106,102 @@ test.describe("动态页", () => {
 		await page.keyboard.press("ArrowLeft");
 		await expect(viewer.locator(".moment-viewer__counter")).toHaveText("1 / 3");
 		// Esc 收起回网格，焦点返回被点击的瓦片
+		await viewer.scrollIntoViewIfNeeded();
+		const scrollBeforeCollapse = await page.evaluate(() => window.scrollY);
 		await page.keyboard.press("Escape");
 		await expect(viewer).toHaveCount(0);
 		await expect(page.locator(".moment-card__gallery--mosaic")).toBeVisible();
+		await expect
+			.poll(() => page.evaluate(() => window.scrollY))
+			.toBe(scrollBeforeCollapse);
 		const focused = await page.evaluate(() =>
 			document.activeElement?.getAttribute("aria-label"),
 		);
 		expect(focused).toBe("Open image 1");
+	});
+
+	test("多图切换期间保持主舞台和卡片布局稳定", async ({ page }) => {
+		let releaseSecondImage!: () => void;
+		const secondImageGate = new Promise<void>((resolve) => {
+			releaseSecondImage = resolve;
+		});
+		await page.route(
+			"**/images/moments/girls-roll/roll-2.webp",
+			async (route) => {
+				await secondImageGate;
+				await route.continue();
+			},
+		);
+
+		const card = page.locator(".moment-card").filter({
+			hasText: "Went through my whole wallpaper library",
+		});
+		await card.locator(".moment-card__tile").first().click();
+		const viewer = card.locator(".moment-viewer");
+		const currentImage = viewer.locator(".moment-viewer__stage-btn img");
+		await expect
+			.poll(() =>
+				currentImage.evaluate(
+					(image) => image.complete && image.naturalWidth > 0,
+				),
+			)
+			.toBe(true);
+
+		const readLayout = () =>
+			viewer.evaluate((element) => {
+				const stage = element.querySelector<HTMLElement>(
+					".moment-viewer__stage-btn",
+				);
+				const image = stage?.querySelector<HTMLImageElement>("img");
+				const card = element.closest<HTMLElement>(".moment-card");
+				return {
+					stageHeight: stage?.getBoundingClientRect().height ?? 0,
+					viewerHeight: element.getBoundingClientRect().height,
+					cardHeight: card?.getBoundingClientRect().height ?? 0,
+					imageLoaded: Boolean(image?.complete && image.naturalWidth > 0),
+					objectFit: image ? getComputedStyle(image).objectFit : "",
+				};
+			});
+
+		const before = await readLayout();
+		const expectStableLayout = (layout: typeof before) => {
+			expect(
+				Math.abs(layout.stageHeight - before.stageHeight),
+			).toBeLessThanOrEqual(1);
+			expect(
+				Math.abs(layout.viewerHeight - before.viewerHeight),
+			).toBeLessThanOrEqual(1);
+			expect(
+				Math.abs(layout.cardHeight - before.cardHeight),
+			).toBeLessThanOrEqual(1);
+		};
+		await page.keyboard.press("ArrowRight");
+		await expect(viewer.locator(".moment-viewer__counter")).toHaveText("2 / 7");
+		await expect(currentImage).toHaveAttribute(
+			"src",
+			/girls-roll\/roll-2\.webp/,
+		);
+		await expect(viewer.locator(".moment-viewer__stage-loading")).toBeVisible();
+		const whileLoading = await readLayout();
+
+		expect(whileLoading.imageLoaded).toBe(false);
+		expectStableLayout(whileLoading);
+
+		releaseSecondImage();
+		await expect
+			.poll(() =>
+				currentImage.evaluate(
+					(image) => image.complete && image.naturalWidth > 0,
+				),
+			)
+			.toBe(true);
+		await expect(viewer.locator(".moment-viewer__stage-loading")).toHaveCount(
+			0,
+		);
+		const after = await readLayout();
+
+		expect(after.objectFit).toBe("contain");
+		expectStableLayout(after);
 	});
 
 	test("两段式看图：查看器「查看原图」进 Fancybox 灯箱", async ({ page }) => {

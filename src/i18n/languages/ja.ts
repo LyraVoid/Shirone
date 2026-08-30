@@ -1,5 +1,5 @@
-import Key from "../i18nKey";
-import type { Translation } from "../translation";
+import Key from "../i18nKey-runtime.mjs";
+import type { Translation } from "../translation.ts";
 
 export const ja: Translation = {
 	[Key.home]: "Home",
@@ -139,8 +139,13 @@ export const ja: Translation = {
 	[Key.recentPosts]: "最近の投稿",
 	[Key.tableOfContents]: "目次",
 	[Key.formulaScrollable]: "横スクロール可能な数式",
+	[Key.fieldRequired]: "必須",
+	[Key.fieldOptional]: "任意",
+	[Key.fieldDeprecated]: "非推奨",
 	[Key.codeBlockExpand]: "コードブロックを展開",
 	[Key.codeBlockCollapse]: "コードブロックを折りたたむ",
+	[Key.codeTreeExpand]: "コードツリーを拡大",
+	[Key.codeTreeCollapse]: "拡大表示を閉じる",
 	[Key.announcement]: "お知らせ",
 	[Key.announcementClose]: "告知を閉じる",
 
@@ -255,7 +260,9 @@ export const ja: Translation = {
 	[Key.randomReadingSubtitle]: "ほかの記事から一貫した基準で選出",
 	[Key.copySuccess]: "クリップボードにコピーしました",
 	[Key.copyLink]: "リンクをコピー",
+	[Key.copySelection]: "コピー",
 	[Key.copyFailed]: "リンクのコピーに失敗しました。手動でコピーしてください。",
+	[Key.sharePageLink]: "ページリンクを共有",
 
 	[Key.shareArticle]: "記事をシェア",
 	[Key.shareArticleDescription]:

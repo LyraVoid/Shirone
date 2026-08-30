@@ -1,5 +1,5 @@
-import Key from "../i18nKey";
-import type { Translation } from "../translation";
+import Key from "../i18nKey-runtime.mjs";
+import type { Translation } from "../translation.ts";
 
 export const en: Translation = {
 	[Key.home]: "Home",
@@ -140,8 +140,13 @@ export const en: Translation = {
 	[Key.recentPosts]: "Recent Posts",
 	[Key.tableOfContents]: "Table of Contents",
 	[Key.formulaScrollable]: "Horizontally scrollable formula",
+	[Key.fieldRequired]: "Required",
+	[Key.fieldOptional]: "Optional",
+	[Key.fieldDeprecated]: "Deprecated",
 	[Key.codeBlockExpand]: "Expand code block",
 	[Key.codeBlockCollapse]: "Collapse code block",
+	[Key.codeTreeExpand]: "Expand code tree",
+	[Key.codeTreeCollapse]: "Collapse code tree",
 	[Key.announcement]: "Announcement",
 	[Key.announcementClose]: "Close Announcement",
 
@@ -255,7 +260,9 @@ export const en: Translation = {
 	[Key.randomReadingSubtitle]: "A consistent pick from other articles",
 	[Key.copySuccess]: "Copied to clipboard",
 	[Key.copyLink]: "Copy link",
+	[Key.copySelection]: "Copy",
 	[Key.copyFailed]: "Failed to copy link. Please copy manually.",
+	[Key.sharePageLink]: "Share page link",
 
 	[Key.shareArticle]: "Share Article",
 	[Key.shareArticleDescription]:

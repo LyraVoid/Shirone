@@ -73,6 +73,12 @@ export const CONFIG_DOMAINS = Object.freeze([
 		type: "CommentConfig",
 		module: "@/types/commentConfig",
 	},
+	{
+		key: "contextMenu",
+		file: "context-menu",
+		type: "ContextMenuConfig",
+		module: "@/types/contextMenuConfig",
+	},
 	{ key: "fab", file: "fab", type: "FabConfig", module: "@/types/fabConfig" },
 	{
 		key: "sidebar",

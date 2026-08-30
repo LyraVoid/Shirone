@@ -28,6 +28,7 @@
 |---|---|
 | [shirone-dev-workflow](shirone-dev-workflow/SKILL.md) | 日常开发与 npm 包发布工作流:环境、双模式验证、缓存清理、提交约定 |
 | [shirone-component-dev](shirone-component-dev/SKILL.md) | 新增/修改/移动组件:分层、M3E 令牌、图标、动效、无障碍 |
+| [shirone-context-menu](shirone-context-menu/SKILL.md) | 扩展桌面右键菜单:动作注册、定位、生命周期与 Markdown 内容能力契约 |
 | [shirone-markdown-dev](shirone-markdown-dev/SKILL.md) | 开发自定义 Markdown 语法与 remark/rehype 插件 |
 | [shirone-i18n](shirone-i18n/SKILL.md) | 新增/修改 UI 文案与语言包 |
 | [shirone-feature](shirone-feature/SKILL.md) | 新增可选功能/第三方集成(零额外负担) |

@@ -1,6 +1,7 @@
 ---
 import BannerStage from "@components/organisms/BannerStage.astro";
 import CategoryBar from "@components/organisms/CategoryBar.astro";
+import ContextMenu from "@components/organisms/ContextMenu.svelte";
 import FloatingControls from "@components/organisms/FloatingControls.astro";
 import Footer from "@components/organisms/Footer.astro";
 import RouteProgress from "@components/organisms/RouteProgress.svelte";
@@ -16,6 +17,7 @@ import {
 	isDualColumn,
 } from "@utils/responsive-utils";
 import type { MarkdownHeading } from "astro";
+import { contextMenuConfig } from "@/config";
 import type { SidebarPage } from "@/types/sidebarConfig";
 import Layout from "./Layout.astro";
 
@@ -118,5 +120,12 @@ const mainContentClasses = generateMainContentClasses(sidebarResponsive);
 </div>
 
 <SiteNavigationDrawer client:load />
+{contextMenuConfig.enable && (
+	<ContextMenu
+		actions={contextMenuConfig.actions}
+		pages={contextMenuConfig.pages}
+		client:load
+	/>
+)}
 
 </Layout>

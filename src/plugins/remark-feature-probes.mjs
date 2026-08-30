@@ -141,6 +141,9 @@ export function remarkFeatureProbes() {
 			if (node.type === "containerDirective" && node.name === "tabs") {
 				syntaxes.add("option-groups");
 			}
+			if (node.type === "containerDirective" && ["field", "field-group"].includes(node.name)) {
+				syntaxes.add("fields");
+			}
 		});
 
 		data.astro.frontmatter.markdownSyntaxes = createMarkdownSyntaxSnapshot([
