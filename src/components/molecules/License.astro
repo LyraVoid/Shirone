@@ -16,7 +16,15 @@ const { title, pubDate } = Astro.props;
 const className = Astro.props.class;
 const profileConf = profileConfig;
 const licenseConf = licenseConfig;
-const postUrl = decodeURIComponent(Astro.url.toString());
+// `Astro.url` in a static build does not inherit an integration-set `site`
+// (see Layout.astro); derive the absolute URL from `Astro.site` instead so
+// the shown post link is the real deployed URL, not localhost.
+const postUrl = decodeURIComponent(
+	(Astro.site
+		? new URL(Astro.url.pathname + Astro.url.search, Astro.site)
+		: Astro.url
+	).toString(),
+);
 ---
 <div class={`relative transition overflow-hidden bg-[var(--license-block-bg)] py-5 px-6 ${className}`}>
     <div class="transition font-bold text-[var(--on-surface)]">

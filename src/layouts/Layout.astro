@@ -46,6 +46,14 @@ let { title, description, lang, setOGTypeArticle, page } = Astro.props;
 const initialPage =
 	page ?? (pathsEqual(Astro.url.pathname, url("/")) ? "home" : undefined);
 
+// `Astro.url` in a static build does not inherit a `site` set through an
+// integration's `updateConfig()` — Astro snapshots the build origin in the
+// build constructor before the `astro:config:setup` hook runs. Derive the
+// absolute URL from `Astro.site` ourselves so og/twitter URLs stay correct.
+const canonicalUrl = Astro.site
+	? new URL(Astro.url.pathname + Astro.url.search, Astro.site)
+	: Astro.url;
+
 const configHue = siteConfig.themeColor.hue;
 const lightTheme =
 	expressiveCodeConfig.lightTheme ?? expressiveCodeConfig.theme;
@@ -96,7 +104,7 @@ const hasMonoFont =
 		<meta name="author" content={profileConfig.name}>
 
 		<meta property="og:site_name" content={siteConfig.title}>
-		<meta property="og:url" content={Astro.url}>
+		<meta property="og:url" content={canonicalUrl}>
 		<meta property="og:title" content={pageTitle}>
 		<meta property="og:description" content={description || pageTitle}>
 		{setOGTypeArticle ? (
@@ -106,7 +114,7 @@ const hasMonoFont =
 		)}
 
 		<meta name="twitter:card" content="summary_large_image">
-		<meta property="twitter:url" content={Astro.url}>
+		<meta property="twitter:url" content={canonicalUrl}>
 		<meta name="twitter:title" content={pageTitle}>
 		<meta name="twitter:description" content={description || pageTitle}>
 

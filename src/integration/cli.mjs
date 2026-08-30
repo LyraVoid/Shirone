@@ -59,6 +59,15 @@ async function readPackageVersion() {
 	}
 }
 
+async function readPackageManager() {
+	try {
+		const raw = await readFile(join(PACKAGE_ROOT, "package.json"), "utf8");
+		return JSON.parse(raw).packageManager ?? null;
+	} catch {
+		return null;
+	}
+}
+
 async function copyEntry(from, to, { force }) {
 	if (!existsSync(from)) return { copied: false, reason: "missing" };
 	if (existsSync(to) && !force) {
@@ -220,6 +229,7 @@ async function ensurePnpmWorkspace() {
 async function ensurePackageJson(packageName) {
 	const pkgPath = join(CWD, "package.json");
 	const peers = await themePeers();
+	const packageManager = await readPackageManager();
 
 	// A completely empty directory has no package.json at all. Write a minimal
 	// one so a single `pnpm install` pulls in astro, the theme and its peer
@@ -236,6 +246,10 @@ async function ensurePackageJson(packageName) {
 			version: "0.0.1",
 			private: true,
 			type: "module",
+			// Pin the same package manager the theme is developed with (e.g.
+			// pnpm@9.x) so `.npmrc`'s `manage-package-manager-versions` and
+			// CI hosts (Vercel, corepack) resolve the intended pnpm.
+			...(packageManager ? { packageManager } : {}),
 			scripts: {
 				dev: "astro dev",
 				build: "astro build",
@@ -287,6 +301,13 @@ async function ensurePackageJson(packageName) {
 	}
 	if (pkg.type !== "module") {
 		pkg.type = "module";
+		changed = true;
+	}
+
+	// Same package-manager pin as the freshly-created case, but never clobber
+	// a version the user already chose themselves.
+	if (packageManager && !pkg.packageManager) {
+		pkg.packageManager = packageManager;
 		changed = true;
 	}
 
