@@ -12,7 +12,7 @@ import {
 } from "./load-config.ts";
 import { shironesOverlay } from "./overlay.ts";
 import { normalisePath, resolvePaths } from "./paths.ts";
-import { buildOverrideRegistry, createOverlayTargets } from "./registry.ts";
+import { buildOverrideRegistry, createOverlayTargets, type OverrideRegistryRef } from "./registry.ts";
 import { collectRoutes, filterRoutes } from "./routes.ts";
 import { shironesSsrNodeShims } from "./ssr-node-shims.ts";
 import type { ResolvedShironesPaths, ShironesOptions } from "./types.ts";
@@ -136,6 +136,9 @@ function createMusicSidebarPlugin(
  */
 export function shirones(options: ShironesOptions = {}): AstroIntegration {
 	let paths: ResolvedShironesPaths;
+	// Mutable holder shared by config:setup (which builds the registry) and
+	// server:setup (which rebuilds it when an override file changes in dev).
+	const registryRef: OverrideRegistryRef = { overrides: new Map() };
 
 	return {
 		name: "shirones",
@@ -158,9 +161,7 @@ export function shirones(options: ShironesOptions = {}): AstroIntegration {
 				// override. Resolution becomes a table lookup; in dev the table
 				// is rebuilt when an override file changes (see server:setup).
 				const registry = buildOverrideRegistry(paths);
-				const registryRef: { overrides: Map<string, string> } = {
-					overrides: registry.overrides,
-				};
+				registryRef.overrides = registry.overrides;
 				{
 					const total = Object.values(registry.counts).reduce(
 						(sum, n) => sum + n,
