@@ -21,12 +21,17 @@ const THEME_PROPERTIES = [
 	"--mc-surface-container-high",
 	"--mc-on-surface",
 	"--mc-on-surface-variant",
+	"--mc-inverse-surface",
+	"--mc-inverse-on-surface",
 	"--mc-outline",
 	"--mc-outline-variant",
 	"--mc-error",
 	"--mc-error-container",
 	"--mc-on-error-container",
 ] as const;
+
+const MERMAID_TEXT_CONTRAST = 4.5;
+const MERMAID_LINE_CONTRAST = 3;
 
 let initializationPromise: Promise<void> | undefined;
 let renderTimer: number | undefined;
@@ -68,6 +73,66 @@ function readTheme() {
 	return { isDark, values, signature };
 }
 
+function parseColor(color: string): [number, number, number] | null {
+	const value = color.trim().toLowerCase();
+	const hex = value.match(/^#([\da-f]{3}|[\da-f]{6})$/)?.[1];
+	if (hex) {
+		const expanded =
+			hex.length === 3
+				? hex
+						.split("")
+						.map((channel) => channel + channel)
+						.join("")
+				: hex;
+		return [
+			Number.parseInt(expanded.slice(0, 2), 16),
+			Number.parseInt(expanded.slice(2, 4), 16),
+			Number.parseInt(expanded.slice(4, 6), 16),
+		];
+	}
+	const rgb = value.match(/^rgba?\(\s*([\d.]+)[,\s]+([\d.]+)[,\s]+([\d.]+)/);
+	return rgb ? [Number(rgb[1]), Number(rgb[2]), Number(rgb[3])] : null;
+}
+
+function relativeLuminance(color: string): number | null {
+	const channels = parseColor(color);
+	if (!channels) return null;
+	const linear = channels.map((channel) => {
+		const normalized = channel / 255;
+		return normalized <= 0.03928
+			? normalized / 12.92
+			: ((normalized + 0.055) / 1.055) ** 2.4;
+	});
+	return 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2];
+}
+
+function contrastRatio(foreground: string, background: string): number {
+	const foregroundLuminance = relativeLuminance(foreground);
+	const backgroundLuminance = relativeLuminance(background);
+	if (foregroundLuminance === null || backgroundLuminance === null) return 0;
+	const lighter = Math.max(foregroundLuminance, backgroundLuminance);
+	const darker = Math.min(foregroundLuminance, backgroundLuminance);
+	return (lighter + 0.05) / (darker + 0.05);
+}
+
+function readableColor(
+	background: string,
+	candidates: string[],
+	minimumContrast: number,
+): string {
+	let best = candidates[0] ?? background;
+	let bestContrast = contrastRatio(best, background);
+	for (const candidate of candidates) {
+		const contrast = contrastRatio(candidate, background);
+		if (contrast > bestContrast) {
+			best = candidate;
+			bestContrast = contrast;
+		}
+		if (contrast >= minimumContrast) return candidate;
+	}
+	return best;
+}
+
 function createThemeVariables(values: Record<string, string>, isDark: boolean) {
 	const surfaceLowest =
 		values["--mc-surface-container-lowest"] || (isDark ? "#0f0e0c" : "#ffffff");
@@ -81,9 +146,8 @@ function createThemeVariables(values: Record<string, string>, isDark: boolean) {
 		values["--mc-on-surface"] || (isDark ? "#e6e1db" : "#1c1b18");
 	const onSurfaceVariant =
 		values["--mc-on-surface-variant"] || (isDark ? "#cdc4be" : "#4b4540");
-	const outline = values["--mc-outline"] || (isDark ? "#968e88" : "#7d7570");
-	const outlineVariant =
-		values["--mc-outline-variant"] || (isDark ? "#4b4540" : "#cdc4be");
+	const inverseOnSurface =
+		values["--mc-inverse-on-surface"] || (isDark ? "#1c1b18" : "#e6e1db");
 
 	const primary = values["--mc-primary"] || (isDark ? "#d0bcff" : "#6750a4");
 	const onPrimary =
@@ -95,12 +159,16 @@ function createThemeVariables(values: Record<string, string>, isDark: boolean) {
 
 	const secondary =
 		values["--mc-secondary"] || (isDark ? "#ccc2dc" : "#625b71");
+	const onSecondary =
+		values["--mc-on-secondary"] || (isDark ? "#332d3f" : "#ffffff");
 	const secondaryContainer =
 		values["--mc-secondary-container"] || (isDark ? "#4a4458" : "#e8def8");
 	const onSecondaryContainer =
 		values["--mc-on-secondary-container"] || (isDark ? "#e8def8" : "#1d192b");
 
 	const tertiary = values["--mc-tertiary"] || (isDark ? "#efb8c8" : "#7d5260");
+	const onTertiary =
+		values["--mc-on-tertiary"] || (isDark ? "#492532" : "#ffffff");
 	const tertiaryContainer =
 		values["--mc-tertiary-container"] || (isDark ? "#633b48" : "#ffd8e4");
 	const onTertiaryContainer =
@@ -110,123 +178,198 @@ function createThemeVariables(values: Record<string, string>, isDark: boolean) {
 	const errorContainer =
 		values["--mc-error-container"] || (isDark ? "#8c1d18" : "#f9dedc");
 
+	const canvasText = readableColor(
+		surfaceLowest,
+		[onSurface, onSurfaceVariant, inverseOnSurface, onPrimaryContainer],
+		MERMAID_TEXT_CONTRAST,
+	);
+	const canvasLine = readableColor(
+		surfaceLowest,
+		[onSurfaceVariant, onSurface, inverseOnSurface, onPrimaryContainer],
+		MERMAID_LINE_CONTRAST,
+	);
+	const primaryText = readableColor(
+		primaryContainer,
+		[onPrimaryContainer, onPrimary, canvasText, inverseOnSurface],
+		MERMAID_TEXT_CONTRAST,
+	);
+	const secondaryText = readableColor(
+		secondaryContainer,
+		[onSecondaryContainer, onSecondary, canvasText, inverseOnSurface],
+		MERMAID_TEXT_CONTRAST,
+	);
+	const tertiaryText = readableColor(
+		tertiaryContainer,
+		[onTertiaryContainer, onTertiary, canvasText, inverseOnSurface],
+		MERMAID_TEXT_CONTRAST,
+	);
+	const surfaceLowText = readableColor(
+		surfaceLow,
+		[onSurface, onSurfaceVariant, inverseOnSurface, onPrimaryContainer],
+		MERMAID_TEXT_CONTRAST,
+	);
+	const surfaceContainerText = readableColor(
+		surfaceContainer,
+		[onSurface, onSurfaceVariant, inverseOnSurface, onPrimaryContainer],
+		MERMAID_TEXT_CONTRAST,
+	);
+	const surfaceHighText = readableColor(
+		surfaceHigh,
+		[onSurface, onSurfaceVariant, inverseOnSurface, onPrimaryContainer],
+		MERMAID_TEXT_CONTRAST,
+	);
+	const gitLabelText = readableColor(
+		surfaceContainer,
+		[onSurface, onSurfaceVariant, inverseOnSurface, onPrimaryContainer],
+		MERMAID_TEXT_CONTRAST,
+	);
+	const primaryBorder = readableColor(
+		primaryContainer,
+		[primary, canvasLine, inverseOnSurface],
+		MERMAID_LINE_CONTRAST,
+	);
+	const secondaryBorder = readableColor(
+		secondaryContainer,
+		[secondary, canvasLine, inverseOnSurface],
+		MERMAID_LINE_CONTRAST,
+	);
+	const tertiaryBorder = readableColor(
+		tertiaryContainer,
+		[tertiary, canvasLine, inverseOnSurface],
+		MERMAID_LINE_CONTRAST,
+	);
+
 	return {
 		darkMode: isDark,
 		fontFamily: getComputedStyle(document.body).fontFamily,
 		background: surfaceLowest,
 		mainBkg: primaryContainer,
-		textColor: onSurface,
+		textColor: canvasText,
+		journeySectionBackground: surfaceLow,
+		journeySectionTextColor: surfaceLowText,
+		journeyTaskBackground: surfaceContainer,
+		journeyTaskTextColor: surfaceContainerText,
+		timelineNodeBackground: surfaceHigh,
+		timelineNodeTextColor: surfaceHighText,
+		gitLabelBackground: surfaceContainer,
+		gitLabelTextColor: gitLabelText,
+		kanbanColumnBackground: surfaceLow,
+		kanbanColumnTextColor: surfaceLowText,
+		kanbanCardBackground: surfaceContainer,
+		kanbanCardTextColor: surfaceContainerText,
+		classEdgeLabelBackground: primaryContainer,
+		classEdgeLabelTextColor: primaryText,
 
 		// Primary / Node tokens
 		primaryColor: primaryContainer,
-		primaryTextColor: onPrimaryContainer,
-		primaryBorderColor: primary,
+		primaryTextColor: primaryText,
+		primaryBorderColor: primaryBorder,
 		nodeBkg: primaryContainer,
-		nodeTextColor: onPrimaryContainer,
-		nodeBorder: primary,
+		nodeTextColor: primaryText,
+		nodeBorder: primaryBorder,
 
 		// Secondary tokens
 		secondaryColor: secondaryContainer,
-		secondaryTextColor: onSecondaryContainer,
-		secondaryBorderColor: secondary,
+		secondaryTextColor: secondaryText,
+		secondaryBorderColor: secondaryBorder,
 
 		// Tertiary tokens
 		tertiaryColor: tertiaryContainer,
-		tertiaryTextColor: onTertiaryContainer,
-		tertiaryBorderColor: tertiary,
+		tertiaryTextColor: tertiaryText,
+		tertiaryBorderColor: tertiaryBorder,
 
 		// Lines & Arrows
-		lineColor: onSurfaceVariant,
-		arrowheadColor: onSurfaceVariant,
-		defaultLinkColor: onSurfaceVariant,
+		lineColor: canvasLine,
+		arrowheadColor: canvasLine,
+		defaultLinkColor: canvasLine,
 
 		// Clusters & Subgraphs
 		clusterBkg: surfaceLow,
-		clusterBorder: outlineVariant,
-		titleColor: onSurface,
+		clusterBorder: canvasLine,
+		titleColor: canvasText,
 
 		// Edge & Link labels (must contrast against diagram canvas)
 		edgeLabelBackground: surfaceLowest,
 		labelBackground: surfaceLowest,
-		labelTextColor: onSurface,
+		labelTextColor: canvasText,
 
 		// Sequence diagram
 		actorBkg: primaryContainer,
-		actorBorder: primary,
-		actorTextColor: onPrimaryContainer,
-		actorLineColor: outlineVariant,
-		signalColor: onSurface,
-		signalTextColor: onSurface,
+		actorBorder: primaryBorder,
+		actorTextColor: primaryText,
+		actorLineColor: canvasLine,
+		signalColor: canvasLine,
+		signalTextColor: canvasText,
 		labelBoxBkgColor: surfaceContainer,
-		labelBoxBorderColor: outlineVariant,
-		loopTextColor: onSurface,
+		labelBoxBorderColor: canvasLine,
+		loopTextColor: canvasText,
 		noteBkgColor: tertiaryContainer,
-		noteTextColor: onTertiaryContainer,
-		noteBorderColor: tertiary,
+		noteTextColor: tertiaryText,
+		noteBorderColor: tertiaryBorder,
 		activationBkgColor: secondaryContainer,
-		activationBorderColor: secondary,
+		activationBorderColor: secondaryBorder,
 		sequenceNumberColor: onPrimary,
 
 		// State diagram
 		stateBkg: primaryContainer,
-		stateLabelColor: onPrimaryContainer,
-		transitionColor: onSurfaceVariant,
-		transitionLabelColor: onSurface,
+		stateLabelColor: primaryText,
+		transitionColor: canvasLine,
+		transitionLabelColor: canvasText,
 		labelBackgroundColor: surfaceLowest,
 		altBackground: surfaceLowest,
 		compositeBackground: surfaceLow,
-		compositeBorder: outlineVariant,
+		compositeBorder: canvasLine,
 		compositeTitleBackground: surfaceContainer,
 		specialStateColor: primary,
-		innerEndBackground: onSurface,
+		innerEndBackground: canvasText,
 
 		// Class diagram
-		classText: onSurface,
+		classText: canvasText,
 
 		// ER diagram
-		relationColor: onSurfaceVariant,
-		relationLabelColor: onSurface,
+		relationColor: canvasLine,
+		relationLabelColor: canvasText,
 		relationLabelBackground: surfaceLowest,
 		attributeBackgroundColorOdd: surfaceLowest,
 		attributeBackgroundColorEven: surfaceLow,
 
 		// GitGraph
-		branchLabelColor: onSurface,
-		gitBranchLabel0: onSurface,
-		gitBranchLabel1: onSurface,
-		gitBranchLabel2: onSurface,
-		gitBranchLabel3: onSurface,
-		gitBranchLabel4: onSurface,
-		gitBranchLabel5: onSurface,
-		gitBranchLabel6: onSurface,
-		gitBranchLabel7: onSurface,
-		tagLabelColor: onPrimaryContainer,
+		branchLabelColor: canvasText,
+		gitBranchLabel0: canvasText,
+		gitBranchLabel1: canvasText,
+		gitBranchLabel2: canvasText,
+		gitBranchLabel3: canvasText,
+		gitBranchLabel4: canvasText,
+		gitBranchLabel5: canvasText,
+		gitBranchLabel6: canvasText,
+		gitBranchLabel7: canvasText,
+		tagLabelColor: primaryText,
 		tagLabelBackground: primaryContainer,
-		tagLabelBorder: primary,
-		commitLabelColor: onSurface,
+		tagLabelBorder: primaryBorder,
+		commitLabelColor: canvasText,
 		commitLabelBackground: surfaceLowest,
 
 		// Pie chart
-		pieTitleTextColor: onSurface,
-		pieLegendTextColor: onSurface,
+		pieTitleTextColor: canvasText,
+		pieLegendTextColor: canvasText,
 		pieStrokeColor: surfaceLowest,
 
 		// Gantt chart
-		gridColor: outlineVariant,
+		gridColor: canvasLine,
 		todayLineColor: error,
 		sectionBkgColor: surfaceLow,
 		altSectionBkgColor: surfaceLowest,
 		sectionBkgColor2: surfaceContainer,
-		taskBorderColor: primary,
+		taskBorderColor: primaryBorder,
 		taskBkgColor: primaryContainer,
-		taskTextColor: onPrimaryContainer,
-		taskTextLightColor: onSurface,
-		taskTextDarkColor: onSurface,
-		taskTextOutsideColor: onSurface,
-		activeTaskBorderColor: primary,
+		taskTextColor: primaryText,
+		taskTextLightColor: canvasText,
+		taskTextDarkColor: canvasText,
+		taskTextOutsideColor: canvasText,
+		activeTaskBorderColor: primaryBorder,
 		activeTaskBkgColor: primary,
 		doneTaskBkgColor: surfaceHigh,
-		doneTaskBorderColor: outline,
+		doneTaskBorderColor: canvasLine,
 		critBorderColor: error,
 		critBkgColor: errorContainer,
 	};
@@ -297,15 +440,92 @@ async function renderDiagrams() {
 	rendering = true;
 	try {
 		const { default: mermaid } = await import("mermaid");
+		const themeVariables = createThemeVariables(theme.values, theme.isDark);
 		mermaid.initialize({
 			startOnLoad: false,
 			securityLevel: "strict",
 			suppressErrorRendering: true,
 			theme: "base",
-			themeVariables: createThemeVariables(theme.values, theme.isDark),
+			themeVariables,
 		});
 
 		for (const diagram of targets) {
+			diagram.style.setProperty(
+				"--mermaid-canvas-text",
+				themeVariables.textColor,
+			);
+			diagram.style.setProperty(
+				"--mermaid-canvas-line",
+				themeVariables.lineColor,
+			);
+			diagram.style.setProperty(
+				"--mermaid-canvas-background",
+				themeVariables.background,
+			);
+			diagram.style.setProperty(
+				"--mermaid-node-text",
+				themeVariables.primaryTextColor,
+			);
+			diagram.style.setProperty(
+				"--mermaid-node-background",
+				themeVariables.primaryColor,
+			);
+			diagram.style.setProperty(
+				"--mermaid-journey-section-background",
+				themeVariables.journeySectionBackground,
+			);
+			diagram.style.setProperty(
+				"--mermaid-journey-section-text",
+				themeVariables.journeySectionTextColor,
+			);
+			diagram.style.setProperty(
+				"--mermaid-journey-task-background",
+				themeVariables.journeyTaskBackground,
+			);
+			diagram.style.setProperty(
+				"--mermaid-journey-task-text",
+				themeVariables.journeyTaskTextColor,
+			);
+			diagram.style.setProperty(
+				"--mermaid-timeline-node-background",
+				themeVariables.timelineNodeBackground,
+			);
+			diagram.style.setProperty(
+				"--mermaid-timeline-node-text",
+				themeVariables.timelineNodeTextColor,
+			);
+			diagram.style.setProperty(
+				"--mermaid-git-label-background",
+				themeVariables.gitLabelBackground,
+			);
+			diagram.style.setProperty(
+				"--mermaid-git-label-text",
+				themeVariables.gitLabelTextColor,
+			);
+			diagram.style.setProperty(
+				"--mermaid-kanban-column-background",
+				themeVariables.kanbanColumnBackground,
+			);
+			diagram.style.setProperty(
+				"--mermaid-kanban-column-text",
+				themeVariables.kanbanColumnTextColor,
+			);
+			diagram.style.setProperty(
+				"--mermaid-kanban-card-background",
+				themeVariables.kanbanCardBackground,
+			);
+			diagram.style.setProperty(
+				"--mermaid-kanban-card-text",
+				themeVariables.kanbanCardTextColor,
+			);
+			diagram.style.setProperty(
+				"--mermaid-class-edge-label-background",
+				themeVariables.classEdgeLabelBackground,
+			);
+			diagram.style.setProperty(
+				"--mermaid-class-edge-label-text",
+				themeVariables.classEdgeLabelTextColor,
+			);
 			const source = readDiagramSource(diagram);
 			const output = diagram.querySelector<HTMLElement>(
 				".markdown-mermaid__diagram",

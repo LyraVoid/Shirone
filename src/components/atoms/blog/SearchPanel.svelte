@@ -57,24 +57,28 @@ let {
 .m3-blog-searchpanel
 	display: flex
 	flex-direction: column
-	width: max-content
-	min-width: 18rem
-	max-width: 30rem
+	/* Keep the floating panel inside the viewport. max-content made the
+	 * mobile panel grow from result text and fight its left/right anchors. */
+	width: unquote("min(30rem, calc(100vw - 1.5rem))")
+	min-width: 0
+	max-width: calc(100vw - 1.5rem)
 	box-sizing: border-box
 	padding: 0.5rem
 	border-radius: var(--shape-corner-l)
 	background: var(--float-panel-bg)
 	color: var(--on-surface)
 	box-shadow: var(--m3e-elevation-3)
-	max-height: calc(100vh - 100px)
+	max-height: unquote("min(36rem, calc(100dvh - 5.5rem))")
 	overflow-y: auto
+	overflow-x: hidden
+	overscroll-behavior: contain
 
 	/* 面板内搜索条（M3 胶囊填充式） */
 	&__input
 		display: flex
 		align-items: center
 		gap: 0.5rem
-		height: 2.75rem
+		flex: 0 0 2.75rem
 		margin-bottom: 0.25rem
 		padding: 0 0.875rem
 		border-radius: var(--shape-corner-full)
@@ -106,6 +110,7 @@ let {
 		padding: 0.5rem 0.75rem
 		border-radius: var(--shape-corner-l)
 		text-decoration: none
+		min-width: 0
 		transition: background-color var(--m3e-duration-short) var(--m3e-easing-standard)
 		&:hover
 			background: unquote("color-mix(in oklab, var(--on-surface) 6%, transparent)")
@@ -119,18 +124,22 @@ let {
 		font: var(--m3e-type-body-large)
 		font-weight: 700
 		color: var(--on-surface)
+		max-width: 100%
 		transition: color var(--m3e-duration-short) var(--m3e-easing-standard)
 		.m3-blog-searchpanel__item:hover &
 			color: var(--primary)
 		> :global(svg)
 			width: 0.75rem
 			height: 0.75rem
+			flex: 0 0 auto
 			color: var(--primary)
 			transform: translateX(0.25rem)
 
 	&__excerpt
 		display: block
 		margin-top: 0.125rem
+		max-width: 100%
+		overflow-wrap: anywhere
 		font: var(--m3e-type-body-small)
 		color: var(--on-surface-variant)
 		:global(mark)

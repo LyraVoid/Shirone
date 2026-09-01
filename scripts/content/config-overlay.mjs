@@ -18,6 +18,7 @@ import {
 	mkdirSync,
 	readdirSync,
 	readFileSync,
+	renameSync,
 	rmSync,
 	writeFileSync,
 } from "node:fs";
@@ -71,6 +72,12 @@ export const userConfigOverrides: Readonly<Record<string, unknown>> = {};
 /** 本次生成消费了内容仓中的哪些文件，用于溯源与错误提示。 */
 export const userConfigSources: readonly string[] = [];
 `;
+
+function writeAtomically(path, contents) {
+	const temporaryPath = `${path}.${process.pid}.${Date.now()}.tmp`;
+	writeFileSync(temporaryPath, contents);
+	renameSync(temporaryPath, path);
+}
 
 function fail(message) {
 	throw new Error(`[content] ${message}`);
@@ -459,7 +466,7 @@ export function syncUserConfig({
 
 	if (changed) {
 		mkdirSync(dirname(targetPath), { recursive: true });
-		writeFileSync(targetPath, source);
+		writeAtomically(targetPath, source);
 	}
 	try {
 		// 校验读的是磁盘上的文件，所以必须发生在落盘之后。
@@ -477,7 +484,7 @@ export function syncUserConfig({
 	} finally {
 		// dry-run 先写后还原，净效果仍是「校验了，但没改动仓库」。
 		if (dryRun && changed) {
-			if (existedBefore) writeFileSync(targetPath, current);
+			if (existedBefore) writeAtomically(targetPath, current);
 			else rmSync(targetPath, { force: true });
 		}
 	}

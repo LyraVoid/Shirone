@@ -489,4 +489,407 @@ test.describe("Mermaid diagrams", () => {
 				.violations,
 		).toEqual([]);
 	});
+
+	test("keeps Mind Map branches and nodes readable", async ({ page }) => {
+		await page.goto(DEMO_PATH, { waitUntil: "domcontentloaded" });
+		const mindMap = page.locator("svg.mindmapDiagram");
+		await expect(mindMap).toHaveCount(1);
+		const labels = mindMap.locator(".mindmap-node .nodeLabel");
+		const labelCount = await labels.count();
+		expect(labelCount).toBeGreaterThan(0);
+		await expect(labels.first()).toBeVisible();
+
+		const colors = await mindMap.evaluate((svg) => {
+			const node = svg.querySelector<SVGElement>(
+				".mindmap-node .node-bkg, .mindmap-node circle",
+			);
+			const edge = svg.querySelector<SVGElement>(".edgePaths path");
+			const label = svg.querySelector<HTMLElement>(".mindmap-node .nodeLabel");
+			if (!node || !edge || !label) {
+				throw new Error("Mind Map SVG elements are missing");
+			}
+			return {
+				nodeFill: getComputedStyle(node).fill,
+				nodeStroke: getComputedStyle(node).stroke,
+				edgeStroke: getComputedStyle(edge).stroke,
+				labelColor: getComputedStyle(label).color,
+			};
+		});
+
+		expect(colors.nodeFill).not.toBe("rgb(0, 0, 0)");
+		expect(colors.nodeStroke).not.toBe("rgb(0, 0, 0)");
+		expect(colors.edgeStroke).not.toBe("rgb(0, 0, 0)");
+		expect(colors.labelColor).not.toBe("rgb(0, 0, 0)");
+	});
+
+	test("keeps Journey task labels readable on their fills", async ({
+		page,
+	}) => {
+		await page.goto(DEMO_PATH, { waitUntil: "domcontentloaded" });
+		const journey = page.locator('svg[aria-roledescription="journey"]');
+		await expect(journey).toHaveCount(1);
+
+		const contrastRatios = await journey.evaluate((svg) => {
+			const toRgb = (value: string): [number, number, number] | null => {
+				const channels = value
+					.match(/[\d.]+/g)
+					?.slice(0, 3)
+					.map(Number);
+				return channels?.length === 3
+					? [channels[0], channels[1], channels[2]]
+					: null;
+			};
+			const luminance = (value: string): number | null => {
+				const channels = toRgb(value);
+				if (!channels) return null;
+				const linear = channels.map((channel) => {
+					const normalized = channel / 255;
+					return normalized <= 0.03928
+						? normalized / 12.92
+						: ((normalized + 0.055) / 1.055) ** 2.4;
+				});
+				return 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2];
+			};
+			return [
+				...svg.querySelectorAll<HTMLElement>("div.journey-section, div.task"),
+			].map((label) => {
+				const fill = label
+					.closest("g")
+					?.querySelector<SVGElement>("rect.journey-section, rect.task");
+				const foreground = luminance(getComputedStyle(label).color);
+				const background = fill && luminance(getComputedStyle(fill).fill);
+				if (foreground === null || background === null) return 0;
+				const lighter = Math.max(foreground, background);
+				const darker = Math.min(foreground, background);
+				return (lighter + 0.05) / (darker + 0.05);
+			});
+		});
+
+		expect(contrastRatios.length).toBeGreaterThan(0);
+		for (const ratio of contrastRatios) {
+			expect(ratio).toBeGreaterThanOrEqual(4.5);
+		}
+	});
+
+	test("keeps Timeline labels readable on generated section fills", async ({
+		page,
+	}) => {
+		await page.goto(DEMO_PATH, { waitUntil: "domcontentloaded" });
+		const timeline = page.locator('svg[aria-roledescription="timeline"]');
+		await expect(timeline).toHaveCount(1);
+
+		const contrastRatios = await timeline.evaluate((svg) => {
+			const toRgb = (value: string): [number, number, number] | null => {
+				const channels = value
+					.match(/[\d.]+/g)
+					?.slice(0, 3)
+					.map(Number);
+				return channels?.length === 3
+					? [channels[0], channels[1], channels[2]]
+					: null;
+			};
+			const luminance = (value: string): number | null => {
+				const channels = toRgb(value);
+				if (!channels) return null;
+				const linear = channels.map((channel) => {
+					const normalized = channel / 255;
+					return normalized <= 0.03928
+						? normalized / 12.92
+						: ((normalized + 0.055) / 1.055) ** 2.4;
+				});
+				return 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2];
+			};
+			return [...svg.querySelectorAll<SVGGElement>(".timeline-node")].map(
+				(node) => {
+					const fill = node.querySelector<SVGElement>(".node-bkg");
+					const label = node.querySelector<SVGTextElement>("text");
+					const foreground = label && luminance(getComputedStyle(label).fill);
+					const background = fill && luminance(getComputedStyle(fill).fill);
+					if (foreground === null || background === null) {
+						return 0;
+					}
+					const lighter = Math.max(foreground, background);
+					const darker = Math.min(foreground, background);
+					return (lighter + 0.05) / (darker + 0.05);
+				},
+			);
+		});
+
+		expect(contrastRatios.length).toBeGreaterThan(0);
+		for (const ratio of contrastRatios) {
+			expect(ratio).toBeGreaterThanOrEqual(4.5);
+		}
+	});
+
+	test("keeps Git Graph and Kanban labels readable in dark palettes", async ({
+		page,
+	}) => {
+		await page.goto(DEMO_PATH, { waitUntil: "domcontentloaded" });
+		const gitGraph = page.locator('svg[aria-roledescription="gitGraph"]');
+		const kanban = page.locator('svg[aria-roledescription="kanban"]');
+		const gitHost = page
+			.locator(".markdown-mermaid")
+			.filter({ has: gitGraph })
+			.first();
+		await expect(gitGraph).toHaveCount(1);
+		await expect(kanban).toHaveCount(1);
+		await expect(gitHost).toHaveAttribute("data-mermaid-state", "ready", {
+			timeout: 15_000,
+		});
+
+		await page.evaluate(() => {
+			const root = document.documentElement;
+			root.classList.add("dark");
+			root.style.setProperty("--mc-surface-container-lowest", "#101010");
+			root.style.setProperty("--mc-surface-container-low", "#1c1c1c");
+			root.style.setProperty("--mc-surface-container", "#262626");
+			root.style.setProperty("--mc-surface-container-high", "#303030");
+			root.style.setProperty("--mc-on-surface", "#f5f5f5");
+			root.style.setProperty("--mc-on-surface-variant", "#d0d0d0");
+			root.style.setProperty("--mc-inverse-on-surface", "#101010");
+		});
+		await expect
+			.poll(() => gitHost.getAttribute("data-mermaid-theme"), {
+				timeout: 15_000,
+			})
+			.toContain("|#101010|");
+
+		const ratios = await page.evaluate(() => {
+			const luminance = (value: string): number | null => {
+				const channels = value
+					.match(/[\d.]+/g)
+					?.slice(0, 3)
+					.map(Number);
+				if (channels?.length !== 3) return null;
+				const linear = channels.map((channel) => {
+					const normalized = channel / 255;
+					return normalized <= 0.03928
+						? normalized / 12.92
+						: ((normalized + 0.055) / 1.055) ** 2.4;
+				});
+				return 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2];
+			};
+			const ratio = (foreground: Element, background: Element): number => {
+				const foregroundLuminance = luminance(
+					getComputedStyle(foreground).fill,
+				);
+				const backgroundLuminance = luminance(
+					getComputedStyle(background).fill,
+				);
+				if (foregroundLuminance === null || backgroundLuminance === null)
+					return 0;
+				const lighter = Math.max(foregroundLuminance, backgroundLuminance);
+				const darker = Math.min(foregroundLuminance, backgroundLuminance);
+				return (lighter + 0.05) / (darker + 0.05);
+			};
+			const pair = (
+				root: ParentNode,
+				foregroundSelector: string,
+				backgroundSelector: string,
+			): number[] => {
+				const foregrounds = [...root.querySelectorAll(foregroundSelector)];
+				const backgrounds = [...root.querySelectorAll(backgroundSelector)];
+				return foregrounds.map((foreground, index) => {
+					const background = backgrounds[index];
+					return background ? ratio(foreground, background) : 0;
+				});
+			};
+			const git = document.querySelector(
+				'svg[aria-roledescription="gitGraph"]',
+			);
+			const board = document.querySelector(
+				'svg[aria-roledescription="kanban"]',
+			);
+			if (!git || !board) return null;
+			return {
+				gitBranches: pair(git, ".branchLabel text", ".branchLabelBkg"),
+				gitCommits: pair(git, ".commit-label", ".commit-label-bkg"),
+				kanbanColumns: pair(
+					board,
+					".cluster-label .nodeLabel",
+					".cluster > rect",
+				),
+				kanbanCards: pair(
+					board,
+					".node .markdown-node-label",
+					".node .label-container",
+				),
+			};
+		});
+
+		expect(ratios).not.toBeNull();
+		for (const group of Object.values(ratios ?? {})) {
+			expect(group.length).toBeGreaterThan(0);
+			for (const ratio of group) expect(ratio).toBeGreaterThanOrEqual(4.5);
+		}
+	});
+
+	test("keeps Class Diagram relation labels readable", async ({ page }) => {
+		await page.goto(DEMO_PATH, { waitUntil: "domcontentloaded" });
+		const classDiagram = page.locator(
+			'svg[aria-roledescription="classDiagram"]',
+		);
+		const classHost = page.locator(".markdown-mermaid").filter({
+			has: classDiagram,
+		});
+		await expect(classDiagram).toHaveCount(1);
+		await expect(classHost).toHaveAttribute("data-mermaid-state", "ready", {
+			timeout: 15_000,
+		});
+		await page.evaluate(() => {
+			const root = document.documentElement;
+			root.classList.add("dark");
+			root.style.setProperty("--mc-surface-container-lowest", "#101010");
+			root.style.setProperty("--mc-on-surface", "#f5f5f5");
+			root.style.setProperty("--mc-on-surface-variant", "#d0d0d0");
+			root.style.setProperty("--mc-inverse-on-surface", "#101010");
+			root.style.setProperty("--mc-primary-container", "#3f3f3f");
+			root.style.setProperty("--mc-on-primary-container", "#202020");
+		});
+		await expect
+			.poll(() => classHost.getAttribute("data-mermaid-theme"), {
+				timeout: 15_000,
+			})
+			.toContain("|#3f3f3f|");
+
+		const ratios = await classDiagram.evaluate((svg) => {
+			const luminance = (value: string): number | null => {
+				const channels = value
+					.match(/[\d.]+/g)
+					?.slice(0, 3)
+					.map(Number);
+				if (channels?.length !== 3) return null;
+				const linear = channels.map((channel) => {
+					const normalized = channel / 255;
+					return normalized <= 0.03928
+						? normalized / 12.92
+						: ((normalized + 0.055) / 1.055) ** 2.4;
+				});
+				return 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2];
+			};
+			const edgeRatios = [
+				...svg.querySelectorAll<HTMLElement>(".edgeLabel .labelBkg"),
+			].map((label) => {
+				const foreground = luminance(
+					getComputedStyle(label.querySelector(".edgeLabel") ?? label).color,
+				);
+				const background = luminance(getComputedStyle(label).backgroundColor);
+				if (foreground === null || background === null) return 0;
+				const lighter = Math.max(foreground, background);
+				const darker = Math.min(foreground, background);
+				return (lighter + 0.05) / (darker + 0.05);
+			});
+			const nodeRatios = [
+				...svg.querySelectorAll<HTMLElement>(".node"),
+			].flatMap((node) => {
+				const shape = node.querySelector<SVGElement>(
+					".label-container path, .label-container rect",
+				);
+				const labels = [...node.querySelectorAll<HTMLElement>(".nodeLabel")];
+				if (!shape) return [];
+				return labels.map((label) => {
+					const foreground = luminance(getComputedStyle(label).color);
+					const background = luminance(getComputedStyle(shape).fill);
+					if (foreground === null || background === null) return 0;
+					const lighter = Math.max(foreground, background);
+					const darker = Math.min(foreground, background);
+					return (lighter + 0.05) / (darker + 0.05);
+				});
+			});
+			return [...edgeRatios, ...nodeRatios];
+		});
+
+		expect(ratios.length).toBeGreaterThan(0);
+		for (const ratio of ratios) expect(ratio).toBeGreaterThanOrEqual(4.5);
+	});
+
+	test("recovers contrast when a palette makes surface text too dark", async ({
+		page,
+	}) => {
+		await page.goto(DEMO_PATH, { waitUntil: "domcontentloaded" });
+		const diagram = page.locator(".markdown-mermaid").first();
+		await expect(diagram).toHaveAttribute("data-mermaid-state", "ready", {
+			timeout: 15_000,
+		});
+
+		await page.evaluate(() => {
+			const root = document.documentElement;
+			root.classList.remove("dark");
+			root.style.setProperty("--mc-surface-container-lowest", "#000000");
+			root.style.setProperty("--mc-on-surface", "#202000");
+			root.style.setProperty("--mc-on-surface-variant", "#303000");
+			root.style.setProperty("--mc-inverse-on-surface", "#ffffff");
+			root.style.setProperty("--mc-primary-container", "#050500");
+			root.style.setProperty("--mc-on-primary-container", "#303000");
+		});
+
+		await expect
+			.poll(() => diagram.getAttribute("data-mermaid-theme"), {
+				timeout: 15_000,
+			})
+			.toContain("|#000000|");
+		const edgeLabel = diagram.locator(".edgeLabel span");
+		const edgeLabelCount = await edgeLabel.count();
+		expect(edgeLabelCount).toBeGreaterThan(0);
+		const firstEdgeLabel = edgeLabel.first();
+		await expect
+			.poll(() =>
+				firstEdgeLabel.evaluate((element) => {
+					const channels = getComputedStyle(element)
+						.color.match(/[\d.]+/g)
+						?.slice(0, 3)
+						.map(Number);
+					if (channels?.length !== 3) return 0;
+					const luminance = channels
+						.map((channel) => {
+							const normalized = channel / 255;
+							return normalized <= 0.03928
+								? normalized / 12.92
+								: ((normalized + 0.055) / 1.055) ** 2.4;
+						})
+						.reduce(
+							(sum, channel, index) =>
+								sum + channel * [0.2126, 0.7152, 0.0722][index],
+							0,
+						);
+					return (luminance + 0.05) / 0.05;
+				}),
+			)
+			.toBeGreaterThanOrEqual(4.5);
+
+		const nodeContrast = await diagram
+			.locator(".node")
+			.first()
+			.evaluate((node) => {
+				const luminance = (value: string): number | null => {
+					const channels = value
+						.match(/[\d.]+/g)
+						?.slice(0, 3)
+						.map(Number);
+					if (channels?.length !== 3) return null;
+					return channels
+						.map((channel) => {
+							const normalized = channel / 255;
+							return normalized <= 0.03928
+								? normalized / 12.92
+								: ((normalized + 0.055) / 1.055) ** 2.4;
+						})
+						.reduce(
+							(sum, channel, index) =>
+								sum + channel * [0.2126, 0.7152, 0.0722][index],
+							0,
+						);
+				};
+				const label = node.querySelector(".nodeLabel");
+				const shape = node.querySelector(".label-container");
+				if (!label || !shape) return 0;
+				const foreground = luminance(getComputedStyle(label).color);
+				const background = luminance(getComputedStyle(shape).fill);
+				if (foreground === null || background === null) return 0;
+				const lighter = Math.max(foreground, background);
+				const darker = Math.min(foreground, background);
+				return (lighter + 0.05) / (darker + 0.05);
+			});
+		expect(nodeContrast).toBeGreaterThanOrEqual(4.5);
+	});
 });
