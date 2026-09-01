@@ -16,8 +16,6 @@ export interface OverlayPluginOptions {
 	components?: Record<string, string>;
 	/** Compiled override registry (mutable; the integration rebuilds it in dev). */
 	registryRef: OverrideRegistryRef;
-	/** Emit a line per applied override. */
-	verbose?: boolean;
 }
 
 /** Theme path aliases, mapped to sub-directories of the package `src/`. */
@@ -50,10 +48,9 @@ function splitQuery(id: string): [string, string] {
  * and returns `null` for everything else, leaving Vite's resolution untouched.
  */
 export function shironesOverlay(options: OverlayPluginOptions): Plugin {
-	const { paths, components = {}, registryRef, verbose = false } = options;
+	const { paths, components = {}, registryRef } = options;
 	const targets = createOverlayTargets(paths);
 	const packageSrc = normalisePath(paths.packageSrc);
-	const logged = new Set<string>();
 
 	// Pre-resolve the explicit override map to absolute paths.
 	const explicit = new Map<string, string>();
@@ -107,17 +104,6 @@ export function shironesOverlay(options: OverlayPluginOptions): Plugin {
 		);
 	}
 
-	function report(from: string, to: string): void {
-		if (!verbose || logged.has(from)) return;
-		logged.add(from);
-		console.log(
-			`[shirones] override ${relative(paths.packageSrc, from)} → ${relative(
-				paths.projectRoot,
-				to,
-			)}`,
-		);
-	}
-
 	return {
 		name: "shirones:overlay",
 		enforce: "pre",
@@ -133,7 +119,6 @@ export function shironesOverlay(options: OverlayPluginOptions): Plugin {
 			if (isAbsolute(sourcePath)) {
 				const override = overrideFor(sourcePath);
 				if (override) {
-					report(sourcePath, override);
 					return `${override}${query}`;
 				}
 			}
@@ -143,7 +128,6 @@ export function shironesOverlay(options: OverlayPluginOptions): Plugin {
 			if (aliased) {
 				const override = overrideFor(aliased);
 				if (override) {
-					report(aliased, override);
 					return `${override}${query}`;
 				}
 				// Not overridden: let `resolve.alias` handle it as usual.
@@ -160,7 +144,6 @@ export function shironesOverlay(options: OverlayPluginOptions): Plugin {
 			const override = overrideFor(candidate);
 			if (!override) return null;
 
-			report(candidate, override);
 			return `${override}${query}`;
 		}
 

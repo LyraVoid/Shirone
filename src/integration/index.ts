@@ -273,7 +273,6 @@ export function shirones(options: ShironesOptions = {}): AstroIntegration {
 								paths,
 								components: options.components,
 								registryRef,
-								verbose: command === "dev",
 							}),
 							shironesFallbackResolver(paths),
 							shironesSsrNodeShims(),
