@@ -1,8 +1,8 @@
 ---
-import { render, type CollectionEntry } from "astro:content";
+import { type CollectionEntry, render } from "astro:content";
 import path from "node:path";
-import AccentBar from "@components/atoms/display/AccentBar.svelte";
 import IconButton from "@components/atoms/action/IconButton.svelte";
+import AccentBar from "@components/atoms/display/AccentBar.svelte";
 import Card from "@components/atoms/display/Card.svelte";
 import Markdown from "@components/content/Markdown.astro";
 import ImageWrapper from "@components/molecules/ImageWrapper.astro";
@@ -19,19 +19,30 @@ import { i18n } from "@i18n/translation";
 import MainGridLayout from "@layouts/MainGridLayout.astro";
 import { discoverArticles } from "@utils/article-discovery";
 import { resolveAsset } from "@utils/asset-utils";
+import { resolveRuntimeMode } from "@utils/backend-client.mjs";
 import { getPublishedInstant, getUpdatedInstant } from "@utils/content-date";
+import { createPostContentProvider } from "@utils/content-provider";
 import { getSortedPosts, type PostForList } from "@utils/content-utils";
 import { formatDateToYYYYMMDD } from "@utils/date-utils";
+import { renderDynamicMarkdown } from "@utils/dynamic-markdown.mjs";
 import { getMarkdownStylesheetAssets } from "@utils/markdown-assets";
 import { getSourceMarkdownSyntaxSnapshot } from "@utils/markdown-source-syntaxes.mjs";
 import {
 	hasMarkdownSyntax,
 	mergeMarkdownSyntaxSnapshots,
 } from "@utils/markdown-syntaxes.mjs";
+import { initPostIdMap } from "@utils/permalink-utils";
 import {
-	initPostIdMap,
-} from "@utils/permalink-utils";
-import { getDir, getPostUrl, getPostUrlBySlug, removeFileExtension } from "@utils/url-utils";
+	type PostViewModel,
+	postViewModelFromStatic,
+} from "@utils/post-view-model";
+import {
+	getDir,
+	getPostUrl,
+	getPostUrlBySlug,
+	removeFileExtension,
+} from "@utils/url-utils";
+import type { MarkdownHeading } from "astro";
 import { Icon } from "astro-icon/components";
 import katexStylesheet from "katex/dist/katex.css?url";
 import overlayScrollbarsStylesheet from "overlayscrollbars/overlayscrollbars.css?url";
@@ -49,7 +60,10 @@ import {
 	umamiConfig,
 } from "@/config";
 
+export const prerender = resolveRuntimeMode(process.env).mode === "static";
+
 export async function getStaticPaths() {
+	if (resolveRuntimeMode(process.env).mode === "dynamic") return [];
 	const blogEntries = await getSortedPosts();
 	initPostIdMap(blogEntries);
 
@@ -59,7 +73,6 @@ export async function getStaticPaths() {
 	}));
 	const discoveryOptions = resolveArticleDiscoveryOptions(articleConfig);
 
-	
 	const paths: {
 		params: { slug: string };
 		props: {
@@ -103,23 +116,66 @@ export async function getStaticPaths() {
 	}
 
 	return paths;
-	
 }
 
-const { entry, discovery } = Astro.props;
-const isEncrypted = Boolean(
-	entry.data.password && entry.data.password.trim().length > 0,
-);
-const scope = `post:${entry.id}`;
+type Discovery = { related: PostForList[]; random: PostForList[] };
+type RenderFrontmatter = {
+	words?: number;
+	minutes?: number;
+	markdownSyntaxes?: Parameters<typeof hasMarkdownSyntax>[0];
+};
 
-const { Content, headings, remarkPluginFrontmatter } = await render(entry);
-const renderedMarkdownSyntaxes = remarkPluginFrontmatter.markdownSyntaxes;
+let entry: CollectionEntry<"posts"> | undefined;
+let post: PostViewModel;
+let discovery: Discovery = { related: [], random: [] };
+let Content: Awaited<ReturnType<typeof render>>["Content"] | undefined;
+let headings: MarkdownHeading[] = [];
+let renderFrontmatter: RenderFrontmatter = {};
+let dynamicHtml = "";
+const dynamicRuntime = resolveRuntimeMode(process.env).mode === "dynamic";
+
+if (dynamicRuntime) {
+	const slug = Astro.params.slug;
+	if (!slug) return new Response(null, { status: 404 });
+	const cookie = Astro.request.headers.get("cookie");
+	const provider = createPostContentProvider({
+		environment: process.env,
+		defaultHeaders: cookie ? { Cookie: cookie } : undefined,
+	});
+	const dynamicPost = await provider.getPost(slug);
+	if (!dynamicPost) return new Response(null, { status: 404 });
+	post = dynamicPost;
+	const rendered = await renderDynamicMarkdown(post.body, {
+		...post.metadata,
+		title: post.title,
+	});
+	dynamicHtml = rendered.html;
+	headings = rendered.headings;
+	renderFrontmatter = rendered.frontmatter;
+} else {
+	const props = Astro.props as {
+		entry: CollectionEntry<"posts">;
+		discovery: Discovery;
+	};
+	entry = props.entry;
+	discovery = props.discovery;
+	post = postViewModelFromStatic(entry);
+	const rendered = await render(entry);
+	Content = rendered.Content;
+	headings = rendered.headings;
+	renderFrontmatter = rendered.remarkPluginFrontmatter;
+}
+
+const isEncrypted = Boolean(post.password && post.password.trim().length > 0);
+const scope = `post:${post.id}`;
+
+const renderedMarkdownSyntaxes = renderFrontmatter.markdownSyntaxes;
 const sourceMarkdownSyntaxes = hasMarkdownSyntax(
 	renderedMarkdownSyntaxes,
 	"expressive-code",
 )
 	? undefined
-	: getSourceMarkdownSyntaxSnapshot(entry.body);
+	: getSourceMarkdownSyntaxSnapshot(post.body);
 const markdownSyntaxes = mergeMarkdownSyntaxSnapshots(
 	renderedMarkdownSyntaxes,
 	sourceMarkdownSyntaxes,
@@ -128,14 +184,20 @@ const hasMath = hasMarkdownSyntax(markdownSyntaxes, "math");
 const markdownStylesheetAssets =
 	await getMarkdownStylesheetAssets(markdownSyntaxes);
 const effectiveHeadings = isEncrypted ? [] : headings;
-const imageBasePath = entry.filePath
+const imageBasePath = entry?.filePath
 	? path.relative(path.resolve("src"), path.dirname(entry.filePath))
-	: path.join("content/posts/", getDir(entry.id));
-const effectiveUpdatedDate = entry.data.updated ?? entry.data.published;
-const publishedInstant = getPublishedInstant(entry.data);
-const updatedInstant = getUpdatedInstant(entry.data);
+	: entry
+		? path.join("content/posts/", getDir(entry.id))
+		: "";
+const effectiveUpdatedDate = post.updated ?? post.published;
+const publishedInstant = entry
+	? getPublishedInstant(entry.data)
+	: post.published;
+const updatedInstant = entry
+	? getUpdatedInstant(entry.data)
+	: effectiveUpdatedDate;
 const postCommentEnabled =
-	entry.data.comment !== false && Boolean(resolveCommentOptions(commentConfig));
+	post.comment && Boolean(resolveCommentOptions(commentConfig));
 const lastUpdatedNotice = resolveLastUpdatedNoticeOptions(articleConfig);
 const shareOptions = resolveArticleShareOptions(articleConfig);
 const umamiEnabled = resolveUmamiOptions(umamiConfig) !== null;
@@ -144,36 +206,44 @@ const authorAvatarUrl = shareOptions
 	: "";
 
 const effectiveDescription =
-	isEncrypted && entry.data.hideHomeContent
+	isEncrypted && post.hideHomeContent
 		? i18n(I18nKey.postEncryptedSummary)
-		: entry.data.description || entry.data.title;
+		: post.description || post.title;
 
-const canonicalPostUrl = getPostUrl(entry);
+const canonicalPostUrl = entry
+	? getPostUrl(entry)
+	: getPostUrlBySlug(post.slug);
+const wordCount = Number(renderFrontmatter.words ?? 0);
+const readingMinutes = Number(renderFrontmatter.minutes ?? 1);
 
 const jsonLd = {
 	"@context": "https://schema.org",
 	"@type": "BlogPosting",
-	headline: entry.data.title,
+	headline: post.title,
 	description: effectiveDescription,
-	keywords: entry.data.tags,
+	keywords: post.tags,
 	author: {
 		"@type": "Person",
 		name: profileConfig.name,
 		url: Astro.site,
 	},
-	datePublished: entry.data.publishedAt
+	datePublished: entry?.data.publishedAt
 		? publishedInstant.toISOString()
-		: formatDateToYYYYMMDD(entry.data.published),
-	dateModified: entry.data.updatedAt
+		: entry
+			? formatDateToYYYYMMDD(post.published)
+			: publishedInstant.toISOString(),
+	dateModified: entry?.data.updatedAt
 		? updatedInstant.toISOString()
-		: formatDateToYYYYMMDD(effectiveUpdatedDate),
-	inLanguage: entry.data.lang
-		? entry.data.lang.replace("_", "-")
+		: entry
+			? formatDateToYYYYMMDD(effectiveUpdatedDate)
+			: updatedInstant.toISOString(),
+	inLanguage: post.lang
+		? post.lang.replace("_", "-")
 		: siteConfig.lang.replace("_", "-"),
 };
 ---
 
-<MainGridLayout banner={entry.data.image} title={entry.data.title} description={effectiveDescription} bannerDate={formatDateToYYYYMMDD(entry.data.published)} lang={entry.data.lang} setOGTypeArticle={true} headings={effectiveHeadings} postCategory={entry.data.category || undefined} page="post" hasComments={postCommentEnabled}>
+<MainGridLayout banner={post.image} title={post.title} description={effectiveDescription} bannerDate={formatDateToYYYYMMDD(post.published)} lang={post.lang} setOGTypeArticle={true} headings={effectiveHeadings} postCategory={post.category || undefined} page="post" hasComments={postCommentEnabled}>
     {hasMath && <link slot="head" rel="stylesheet" data-swup-optional="math" href={katexStylesheet} />}
     {hasMath && <link slot="head" rel="stylesheet" data-swup-optional="math" href={overlayScrollbarsStylesheet} />}
     {markdownStylesheetAssets.map(({ pack, css }) => <style is:inline slot="head" data-swup-optional={pack} set:html={css}></style>)}
@@ -186,13 +256,13 @@ const jsonLd = {
 					<div class="transition h-6 w-6 rounded-md bg-[var(--surface-container-high)] text-[var(--on-surface-variant)] flex items-center justify-center mr-2">
 						<Icon name="material-symbols:notes-rounded"></Icon>
 					</div>
-					<div class="text-sm">{remarkPluginFrontmatter.words} {" " + i18n(remarkPluginFrontmatter.words === 1 ? I18nKey.wordCount : I18nKey.wordsCount)}</div>
+					<div class="text-sm">{wordCount} {" " + i18n(wordCount === 1 ? I18nKey.wordCount : I18nKey.wordsCount)}</div>
 				</div>
 				<div class="flex flex-row items-center">
 					<div class="transition h-6 w-6 rounded-md bg-[var(--surface-container-high)] text-[var(--on-surface-variant)] flex items-center justify-center mr-2">
 						<Icon name="material-symbols:schedule-outline-rounded"></Icon>
 					</div>
-					<div class="text-sm">{remarkPluginFrontmatter.minutes} {" " + i18n(remarkPluginFrontmatter.minutes === 1 ? I18nKey.minuteCount : I18nKey.minutesCount)}</div>
+					<div class="text-sm">{readingMinutes} {" " + i18n(readingMinutes === 1 ? I18nKey.minuteCount : I18nKey.minutesCount)}</div>
 				</div>
 				{umamiEnabled && (
 					<div class="flex flex-row items-center">
@@ -212,7 +282,7 @@ const jsonLd = {
 				>
 					<AccentBar size="large" />
 					<div class="inline-block">
-						{entry.data.title}
+						{post.title}
 					</div>
 					<IconButton
 						id="copy-post-link"
@@ -226,7 +296,7 @@ const jsonLd = {
 
 			<!-- metadata -->
 			<div class="onload-animation">
-				{isEncrypted && entry.data.hideHomeContent ? (
+				{isEncrypted && post.hideHomeContent ? (
 					<div class="flex flex-wrap items-center gap-2 mb-5">
 						<div class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-[var(--surface-container-highest)] text-xs font-semibold text-[var(--primary)]">
 							<Icon name="material-symbols:lock-rounded" class="text-sm" />
@@ -236,21 +306,21 @@ const jsonLd = {
 				) : (
 					<PostMetadata
 						class="mb-5"
-						published={entry.data.published}
-						updated={entry.data.updated}
-						tags={entry.data.tags}
-						category={entry.data.category}
+						published={post.published}
+						updated={post.updated}
+						tags={post.tags}
+						category={post.category}
 					></PostMetadata>
 				)}
-				{!entry.data.image && <div class="border-[var(--line-divider)] border-dashed border-b-[1px] mb-5"></div>}
+				{!post.image && <div class="border-[var(--line-divider)] border-dashed border-b-[1px] mb-5"></div>}
 			</div>
 
             <!-- always show cover as long as it has one -->
 
-			{entry.data.image &&
+			{post.image &&
 				<ImageWrapper
 					id="post-cover"
-					src={entry.data.image}
+					src={post.image}
 					basePath={imageBasePath}
 					class="mb-8 rounded-xl banner-container onload-animation"
 					loading="eager"
@@ -264,31 +334,31 @@ const jsonLd = {
 
             {isEncrypted ? (
                 <EncryptedContent
-                    password={entry.data.password!}
+                    password={post.password!}
                     scope={scope}
-                    hint={entry.data.passwordHint}
+                    hint={post.passwordHint}
                 >
-                    <Content />
+					{dynamicRuntime ? <Fragment set:html={dynamicHtml} /> : Content && <Content />}
                 </EncryptedContent>
             ) : (
                 <Markdown class="mb-6 onload-animation">
-                    <Content />
+					{dynamicRuntime ? <Fragment set:html={dynamicHtml} /> : Content && <Content />}
                 </Markdown>
             )}
 
-			{licenseConfig.enable && <License title={entry.data.title} slug={entry.id} pubDate={entry.data.published} class="mb-6 rounded-xl license-container onload-animation"></License>}
+			{licenseConfig.enable && <License title={post.title} slug={post.slug} pubDate={post.published} class="mb-6 rounded-xl license-container onload-animation"></License>}
 
 			{shareOptions && (
 				<ArticleShare
 					client:visible
 					options={shareOptions}
-					title={entry.data.title}
+					title={post.title}
 					description={effectiveDescription}
 					author={profileConfig.name}
-					published={formatDateToYYYYMMDD(entry.data.published)}
+					published={formatDateToYYYYMMDD(post.published)}
 					siteTitle={siteConfig.title}
 					postPath={canonicalPostUrl}
-					coverSelector={entry.data.image ? "#post-cover img" : undefined}
+					coverSelector={post.image ? "#post-cover img" : undefined}
 					avatarUrl={authorAvatarUrl}
 					class="mb-6 rounded-xl onload-animation"
 				/>
@@ -305,12 +375,12 @@ const jsonLd = {
 
     <CommentSection
         context={{
-            key: `post:${entry.id}`,
+            key: `post:${post.id}`,
             path: canonicalPostUrl,
-            title: entry.data.title,
-            language: entry.data.lang || siteConfig.lang,
+            title: post.title,
+            language: post.lang || siteConfig.lang,
         }}
-        postCommentEnabled={entry.data.comment}
+        postCommentEnabled={post.comment}
         class="onload-animation"
     />
 
@@ -323,31 +393,31 @@ const jsonLd = {
     )}
 
     <div class="flex flex-col md:flex-row justify-between mb-4 gap-4 overflow-hidden w-full">
-        {entry.data.nextSlug ? (
+        {post.nextSlug ? (
             <Card
-                href={entry.data.nextUrl || getPostUrlBySlug(entry.data.nextSlug)}
+                href={post.nextUrl || getPostUrlBySlug(post.nextSlug)}
                 color="var(--card-bg)"
                 radius="l"
                 class="post-nav post-nav--prev w-full font-bold active:scale-95 h-[3.75rem] max-w-full px-4 !flex items-center !justify-start gap-4"
             >
                 <Icon name="material-symbols:chevron-left-rounded" class="post-nav__arrow text-[2rem] text-[var(--primary)]" />
                 <div class="post-nav__title overflow-hidden transition overflow-ellipsis whitespace-nowrap max-w-[calc(100%_-_3rem)] text-75">
-                    {entry.data.nextTitle}
+                    {post.nextTitle}
                 </div>
             </Card>
         ) : (
             <div class="w-full"></div>
         )}
 
-        {entry.data.prevSlug ? (
+        {post.prevSlug ? (
             <Card
-                href={entry.data.prevUrl || getPostUrlBySlug(entry.data.prevSlug)}
+                href={post.prevUrl || getPostUrlBySlug(post.prevSlug)}
                 color="var(--card-bg)"
                 radius="l"
                 class="post-nav post-nav--next w-full font-bold active:scale-95 h-[3.75rem] max-w-full px-4 !flex items-center !justify-end gap-4"
             >
                 <div class="post-nav__title overflow-hidden transition overflow-ellipsis whitespace-nowrap max-w-[calc(100%_-_3rem)] text-75">
-                    {entry.data.prevTitle}
+                    {post.prevTitle}
                 </div>
                 <Icon name="material-symbols:chevron-right-rounded" class="post-nav__arrow text-[2rem] text-[var(--primary)]" />
             </Card>
