@@ -2,6 +2,7 @@ package httpapi
 
 import (
 	"bytes"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -82,6 +83,46 @@ func TestMemberCannotCreateContent(t *testing.T) {
 	router.ServeHTTP(response, create)
 	if response.Code != http.StatusForbidden {
 		t.Fatalf("member create status = %d, body = %s", response.Code, response.Body.String())
+	}
+}
+
+func TestPublishedContentListSupportsKindPagination(t *testing.T) {
+	router := testRouter(t)
+	cookie := registerAccount(t, router, "admin@example.com", "admin")
+	for _, body := range []string{
+		`{"kind":"post","slug":"first-post","title":"First","body":"First body","status":"published"}`,
+		`{"kind":"page","slug":"about-page","title":"About","body":"About body","status":"published"}`,
+		`{"kind":"post","slug":"second-post","title":"Second","body":"Second body","status":"published"}`,
+	} {
+		request := httptest.NewRequest(http.MethodPost, "/api/v1/admin/content/", bytes.NewBufferString(body))
+		request.AddCookie(cookie)
+		response := httptest.NewRecorder()
+		router.ServeHTTP(response, request)
+		if response.Code != http.StatusCreated {
+			t.Fatalf("create status = %d, body = %s", response.Code, response.Body.String())
+		}
+	}
+
+	request := httptest.NewRequest(http.MethodGet, "/api/v1/content/?kind=post&limit=1&offset=1", nil)
+	response := httptest.NewRecorder()
+	router.ServeHTTP(response, request)
+	if response.Code != http.StatusOK {
+		t.Fatalf("list status = %d, body = %s", response.Code, response.Body.String())
+	}
+	var payload struct {
+		Items  []map[string]any `json:"items"`
+		Limit  int              `json:"limit"`
+		Offset int              `json:"offset"`
+		Total  int              `json:"total"`
+	}
+	if err := json.Unmarshal(response.Body.Bytes(), &payload); err != nil {
+		t.Fatalf("decode list response: %v", err)
+	}
+	if len(payload.Items) != 1 || payload.Items[0]["kind"] != "post" {
+		t.Fatalf("items = %#v", payload.Items)
+	}
+	if payload.Limit != 1 || payload.Offset != 1 || payload.Total != 2 {
+		t.Fatalf("pagination = limit %d, offset %d, total %d", payload.Limit, payload.Offset, payload.Total)
 	}
 }
 

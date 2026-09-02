@@ -91,7 +91,23 @@ func (h *contentHandler) revisions(w http.ResponseWriter, r *http.Request) {
 
 func (h *contentHandler) list(w http.ResponseWriter, r *http.Request) {
 	limit := queryLimit(r, 20)
-	documents, err := h.client.Document.Query().Where(document.StatusEQ(document.StatusPublished)).WithTerms().Order(ent.Desc(document.FieldPublishedAt)).Limit(limit).All(r.Context())
+	offset := queryOffset(r)
+	kind := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("kind")))
+	if kind != "" && !slugPattern.MatchString(kind) {
+		writeError(w, http.StatusBadRequest, "invalid_content_kind", "kind must be a lowercase slug")
+		return
+	}
+
+	query := h.client.Document.Query().Where(document.StatusEQ(document.StatusPublished))
+	if kind != "" {
+		query = query.Where(document.KindEQ(kind))
+	}
+	total, err := query.Clone().Count(r.Context())
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "content_query_failed", "content could not be loaded")
+		return
+	}
+	documents, err := query.WithTerms().Order(ent.Desc(document.FieldPublishedAt)).Offset(offset).Limit(limit).All(r.Context())
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "content_query_failed", "content could not be loaded")
 		return
@@ -100,7 +116,12 @@ func (h *contentHandler) list(w http.ResponseWriter, r *http.Request) {
 	for _, doc := range documents {
 		items = append(items, documentResponse(doc))
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"items": items})
+	writeJSON(w, http.StatusOK, map[string]any{
+		"items":  items,
+		"limit":  limit,
+		"offset": offset,
+		"total":  total,
+	})
 }
 
 func (h *contentHandler) get(w http.ResponseWriter, r *http.Request) {
@@ -349,4 +370,12 @@ func queryLimit(r *http.Request, fallback int) int {
 		return 100
 	}
 	return limit
+}
+
+func queryOffset(r *http.Request) int {
+	offset, err := strconv.Atoi(r.URL.Query().Get("offset"))
+	if err != nil || offset < 0 {
+		return 0
+	}
+	return offset
 }
