@@ -18,7 +18,7 @@ $env:DATABASE_URL = "postgres://shirone:shirone@localhost:5432/shirone?sslmode=d
 go run ./cmd/server
 ```
 
-This first slice only exposes health/readiness endpoints. Domain schemas, migrations, authentication, and CMS endpoints will be added in subsequent phases.
+The server creates the development schema on startup. The initial schema covers users, sessions, documents, and comments; versioned production migrations, authentication, and CMS endpoints will be added in subsequent phases.
 
 ## PostgreSQL with Compose
 

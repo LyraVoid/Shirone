@@ -15,6 +15,7 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib"
 	_ "modernc.org/sqlite"
 
+	"github.com/shirone-platform/backend/ent"
 	"github.com/shirone-platform/backend/internal/config"
 )
 
@@ -45,6 +46,16 @@ func main() {
 
 	if err := db.PingContext(context.Background()); err != nil {
 		logger.Error("connect database", "error", err)
+		os.Exit(1)
+	}
+	entClient, err := ent.Open(driver, cfg.Database.URL)
+	if err != nil {
+		logger.Error("open ent client", "error", err)
+		os.Exit(1)
+	}
+	defer entClient.Close()
+	if err := entClient.Schema.Create(context.Background()); err != nil {
+		logger.Error("apply schema", "error", err)
 		os.Exit(1)
 	}
 
