@@ -1,0 +1,45 @@
+---
+import AccentBar from "@components/atoms/display/AccentBar.svelte";
+import I18nKey from "@i18n/i18nKey";
+import { i18n } from "@i18n/translation";
+import {
+	createBackendClient,
+	resolveRuntimeMode,
+} from "@utils/backend-client.mjs";
+import type { CommentContext } from "@/types/commentConfig";
+
+interface Props {
+	context: CommentContext;
+}
+const { context } = Astro.props;
+const runtime = resolveRuntimeMode(process.env);
+if (runtime.mode !== "dynamic" || !runtime.apiBaseUrl) return null;
+type Comment = {
+	id: number;
+	body: string;
+	createdAt: string;
+	author?: { displayName?: string; username?: string };
+};
+let comments: Comment[] = [];
+try {
+	const cookie = Astro.request.headers.get("cookie");
+	const client = createBackendClient({
+		baseUrl: runtime.apiBaseUrl,
+		defaultHeaders: cookie ? { Cookie: cookie } : undefined,
+	});
+	const payload = (await client.listComments(
+		context.key.replace(/^post:/, ""),
+	)) as { items?: unknown };
+	if (Array.isArray(payload.items)) comments = payload.items as Comment[];
+} catch {
+	comments = [];
+}
+---
+<div class="space-y-4" data-backend-comments>
+	{comments.length === 0 ? <p class="text-sm text-[var(--on-surface-variant)]">{i18n(I18nKey.commentsLoading)}</p> : comments.map((comment) => (
+		<article class="border-b border-[var(--line-divider)] pb-4 last:border-b-0" data-comment-id={comment.id}>
+			<div class="flex items-center gap-2 mb-2"><AccentBar size="small" /><strong>{comment.author?.displayName || comment.author?.username || ""}</strong><time class="text-xs text-[var(--on-surface-variant)]" datetime={comment.createdAt}>{new Date(comment.createdAt).toLocaleDateString()}</time></div>
+			<p class="m-0 whitespace-pre-wrap">{comment.body}</p>
+		</article>
+	))}
+</div>
