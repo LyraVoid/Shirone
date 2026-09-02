@@ -12,12 +12,14 @@ import I18nKey from "@i18n/i18nKey";
 import { i18n } from "@i18n/translation";
 import { formatDateToYYYYMMDD } from "@utils/date-utils";
 import { isEncryptedPost } from "@utils/post-encryption";
-import { getCategoryUrl, getDir, getTagUrl } from "@utils/url-utils";
+import type { PostViewModel } from "@utils/post-view-model";
 import { getProjectImageLoader } from "@utils/project-images";
+import { getCategoryUrl, getDir, getTagUrl } from "@utils/url-utils";
 
 interface Props {
 	class?: string;
-	entry: CollectionEntry<"posts">;
+	entry?: CollectionEntry<"posts">;
+	post?: PostViewModel;
 	title: string;
 	url: string;
 	published: Date;
@@ -45,11 +47,22 @@ const {
 } = Astro.props;
 const className = Astro.props.class;
 
-const imageBasePath = entry.filePath
-	? path.relative(path.resolve("src"), path.dirname(entry.filePath))
-	: path.join("content/posts/", getDir(entry.id));
+if (!entry && !Astro.props.post) {
+	throw new TypeError("PostCard requires entry or post");
+}
 
-const { remarkPluginFrontmatter } = await render(entry);
+const post = Astro.props.post;
+
+const imageBasePath = entry?.filePath
+	? path.relative(path.resolve("src"), path.dirname(entry.filePath))
+	: path.join("content/posts/", getDir(post?.slug ?? entry?.id ?? ""));
+
+const remarkPluginFrontmatter: { words?: number; excerpt?: string } = entry
+	? (await render(entry)).remarkPluginFrontmatter
+	: {
+			words: Number(post?.metadata.words ?? 0),
+			excerpt: post?.description ?? "",
+		};
 
 // 解析封面：本地相对路径 → 构建产物 URL（与 ImageWrapper 同法）
 let coverUrl = image;
@@ -120,14 +133,18 @@ const categoryLink = category
 	: null;
 const tagLinks = tags.map((t) => ({ name: t.trim(), href: getTagUrl(t) }));
 
-const isEncrypted = isEncryptedPost(entry.data);
+const isEncrypted = post
+	? Boolean(post.password)
+	: entry
+		? isEncryptedPost(entry.data)
+		: false;
 const words = remarkPluginFrontmatter.words ?? 0;
 const wordCount =
-	isEncrypted && entry.data.hideHomeContent
+	isEncrypted && (post?.hideHomeContent ?? entry?.data.hideHomeContent)
 		? undefined
 		: `${words} ${i18n(words === 1 ? I18nKey.wordCount : I18nKey.wordsCount)}`;
 const excerpt =
-	isEncrypted && entry.data.hideHomeContent
+	isEncrypted && (post?.hideHomeContent ?? entry?.data.hideHomeContent)
 		? i18n(I18nKey.postEncryptedSummary)
 		: description || remarkPluginFrontmatter.excerpt;
 ---

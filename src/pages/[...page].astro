@@ -1,23 +1,50 @@
 ---
 import Pagination from "@components/molecules/Pagination.astro";
 import PostPage from "@components/organisms/PostPage.astro";
+import { resolveRuntimeMode } from "@utils/backend-client.mjs";
+import { createPostContentProvider } from "@utils/content-provider";
+import {
+	type PostViewModel,
+	postViewModelFromStatic,
+} from "@utils/post-view-model";
 import type { GetStaticPaths } from "astro";
 import { postListConfig } from "@/config/postListConfig";
 import MainGridLayout from "../layouts/MainGridLayout.astro";
 import { getSortedPosts } from "../utils/content-utils";
 
 export const getStaticPaths = (async ({ paginate }) => {
+	if (resolveRuntimeMode(process.env).mode === "dynamic") return [];
 	const allBlogPosts = await getSortedPosts();
 	return paginate(allBlogPosts, { pageSize: postListConfig.pageSize });
 }) satisfies GetStaticPaths;
 // https://github.com/withastro/astro/issues/6507#issuecomment-1489916992
 
-const { page } = Astro.props;
+const dynamicRuntime = resolveRuntimeMode(process.env).mode === "dynamic";
+let page: { data: PostViewModel[]; currentPage: number; lastPage: number };
+if (dynamicRuntime) {
+	const currentPage = Number(Astro.params.page ?? 1);
+	const limit = postListConfig.pageSize;
+	const provider = createPostContentProvider({ environment: process.env });
+	const posts = await provider.listPosts({ limit: currentPage * limit });
+	const data = posts.slice((currentPage - 1) * limit, currentPage * limit);
+	page = {
+		data,
+		currentPage,
+		lastPage: data.length === limit ? currentPage + 1 : currentPage,
+	};
+} else {
+	const staticPage = Astro.props.page;
+	page = {
+		data: staticPage.data.map((entry) => postViewModelFromStatic(entry)),
+		currentPage: staticPage.currentPage,
+		lastPage: staticPage.lastPage,
+	};
+}
 
 const len = page.data.length;
 ---
 
 <MainGridLayout page="home">
-    <PostPage page={page}></PostPage>
-    <Pagination class="mx-auto onload-animation" page={page} style={`animation-delay: calc(var(--content-delay) + ${(len)*50}ms)`}></Pagination>
+    {dynamicRuntime ? <PostPage posts={page.data}></PostPage> : <PostPage page={Astro.props.page}></PostPage>}
+    <Pagination class="mx-auto onload-animation" page={page as any} style={`animation-delay: calc(var(--content-delay) + ${(len)*50}ms)`}></Pagination>
 </MainGridLayout>

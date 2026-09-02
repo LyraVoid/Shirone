@@ -1,10 +1,20 @@
 ---
-import type { CollectionEntry } from "astro:content";
+import {
+	type PostViewModel,
+	postViewModelFromStatic,
+} from "@utils/post-view-model";
 import { getPostUrl } from "@utils/url-utils";
 import { POST_CARD_MIN_WIDTH, postListConfig } from "@/config/postListConfig";
 import PostCard from "./PostCard.astro";
 
-const { page } = Astro.props;
+const { page, posts: providedPosts } = Astro.props as {
+	page?: { data: Parameters<typeof postViewModelFromStatic>[0][] };
+	posts?: PostViewModel[];
+};
+
+const posts: PostViewModel[] =
+	providedPosts ?? page?.data.map(postViewModelFromStatic) ?? [];
+const entries = page?.data ?? [];
 
 let delay = 0;
 const interval = 50;
@@ -26,19 +36,20 @@ const { mode, cover, cardWidth } = postListConfig.layout;
         data-layout-mode={mode}
         style={`--post-card-min: ${POST_CARD_MIN_WIDTH[cardWidth]};`}
     >
-        {page.data.map((entry: CollectionEntry<"posts">) => (
+        {posts.map((post, index) => (
             <PostCard
-                entry={entry}
-                title={entry.data.title}
-                tags={entry.data.tags}
-                category={entry.data.category}
-                published={entry.data.published}
-                updated={entry.data.updated}
-                pinned={entry.data.pinned}
-                url={getPostUrl(entry)}
-                image={entry.data.image}
-                description={entry.data.description}
-                draft={entry.data.draft}
+                entry={entries[index]}
+                post={post}
+                title={post.title}
+                tags={post.tags}
+                category={post.category}
+                published={post.published}
+                updated={post.updated}
+                pinned={post.pinned}
+				url={entries[index] ? getPostUrl(entries[index]) : getPostUrl(post)}
+                image={post.image}
+                description={post.description}
+                draft={post.draft}
                 class:list="onload-animation"
                 style={`animation-delay: calc(var(--content-delay) + ${delay++ * interval}ms);`}
             ></PostCard>
