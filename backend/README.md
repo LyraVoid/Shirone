@@ -22,6 +22,8 @@ The server creates the development schema on startup. The initial schema covers 
 
 Session tokens are sent only through an HttpOnly, SameSite=Lax cookie and are stored as SHA-256 hashes. Passwords are stored with Argon2id. Set `AUTH_COOKIE_SECURE=true` behind production HTTPS.
 
+The first registered account is assigned the `admin` role so a fresh self-hosted instance can be initialized. Later registrations receive the `member` role. Published content is publicly readable under `/api/v1/content`; mutations under `/api/v1/admin/content` require an `editor` or `admin` session.
+
 ## PostgreSQL with Compose
 
 ```powershell

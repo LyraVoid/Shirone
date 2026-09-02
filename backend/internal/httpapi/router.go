@@ -31,11 +31,25 @@ func NewRouter(db *sql.DB, client *ent.Client, options Options) http.Handler {
 	})
 
 	authHandler := newAuthHandler(auth.NewService(client, options.SessionTTL), options)
+	contentHandler := &contentHandler{client: client}
 	r.Route("/api/v1/auth", func(r chi.Router) {
 		r.Post("/register", authHandler.register)
 		r.Post("/login", authHandler.login)
 		r.Post("/logout", authHandler.logout)
 		r.Get("/me", authHandler.me)
+	})
+	r.Route("/api/v1/content", func(r chi.Router) {
+		r.Get("/", contentHandler.list)
+		r.Get("/{slug}", contentHandler.get)
+	})
+	r.Route("/api/v1/admin/content", func(r chi.Router) {
+		r.Use(authHandler.requireUser)
+		r.Use(requireEditor)
+		r.Get("/", contentHandler.adminList)
+		r.Get("/{id}", contentHandler.adminGet)
+		r.Post("/", contentHandler.create)
+		r.Put("/{id}", contentHandler.update)
+		r.Delete("/{id}", contentHandler.delete)
 	})
 	return r
 }

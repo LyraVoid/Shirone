@@ -113,6 +113,7 @@ var (
 		{Name: "username", Type: field.TypeString, Unique: true},
 		{Name: "password_hash", Type: field.TypeString},
 		{Name: "display_name", Type: field.TypeString},
+		{Name: "role", Type: field.TypeEnum, Enums: []string{"member", "editor", "admin"}, Default: "member"},
 		{Name: "status", Type: field.TypeEnum, Enums: []string{"active", "disabled", "pending"}, Default: "active"},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
@@ -126,7 +127,7 @@ var (
 			{
 				Name:    "user_status",
 				Unique:  false,
-				Columns: []*schema.Column{UsersColumns[5]},
+				Columns: []*schema.Column{UsersColumns[6]},
 			},
 		},
 	}

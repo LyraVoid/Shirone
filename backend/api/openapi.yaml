@@ -4,6 +4,75 @@ info:
   version: 0.1.0
   description: Provider-neutral API for Shirone dynamic edition.
 paths:
+  /api/v1/content/:
+    get:
+      operationId: listPublishedContent
+      responses:
+        '200':
+          description: Published content list.
+  /api/v1/content/{slug}:
+    get:
+      operationId: getPublishedContent
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Published content item.
+        '404':
+          description: Content was not found.
+  /api/v1/admin/content/:
+    get:
+      operationId: listManagedContent
+      responses:
+        '200':
+          description: Content list including drafts and archived items.
+    post:
+      operationId: createContent
+      responses:
+        '201':
+          description: Content created by an editor or administrator.
+        '401':
+          description: Authentication is required.
+        '403':
+          description: Editor access is required.
+  /api/v1/admin/content/{id}:
+    get:
+      operationId: getManagedContent
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Managed content item.
+    put:
+      operationId: updateContent
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Content updated by an editor or administrator.
+    delete:
+      operationId: deleteContent
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Content deleted.
   /api/v1/auth/register:
     post:
       operationId: register

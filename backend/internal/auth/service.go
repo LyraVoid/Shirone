@@ -43,14 +43,21 @@ func (s *Service) Register(ctx context.Context, email, username, displayName, pa
 		return nil, "", err
 	}
 	createdAt := s.now().UTC()
-	u, err := s.client.User.Create().
+	count, err := s.client.User.Query().Count(ctx)
+	if err != nil {
+		return nil, "", err
+	}
+	create := s.client.User.Create().
 		SetEmail(email).
 		SetUsername(username).
 		SetDisplayName(displayName).
 		SetPasswordHash(hash).
 		SetCreatedAt(createdAt).
-		SetUpdatedAt(createdAt).
-		Save(ctx)
+		SetUpdatedAt(createdAt)
+	if count == 0 {
+		create.SetRole(user.RoleAdmin)
+	}
+	u, err := create.Save(ctx)
 	if err != nil {
 		if ent.IsConstraintError(err) {
 			return nil, "", ErrIdentityExists

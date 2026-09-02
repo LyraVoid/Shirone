@@ -15,6 +15,7 @@ func (User) Fields() []ent.Field {
 		field.String("username").Unique(),
 		field.String("password_hash").Sensitive(),
 		field.String("display_name"),
+		field.Enum("role").Values("member", "editor", "admin").Default("member"),
 		field.Enum("status").Values("active", "disabled", "pending").Default("active"),
 		field.Time("created_at"),
 		field.Time("updated_at"),

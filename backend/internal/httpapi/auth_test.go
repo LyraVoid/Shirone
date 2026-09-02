@@ -21,6 +21,9 @@ func TestAuthLifecycle(t *testing.T) {
 	if registered.Code != http.StatusCreated {
 		t.Fatalf("register status = %d, body = %s", registered.Code, registered.Body.String())
 	}
+	if !bytes.Contains(registered.Body.Bytes(), []byte(`"role":"admin"`)) {
+		t.Fatalf("first account should be admin, body = %s", registered.Body.String())
+	}
 	cookies := registered.Result().Cookies()
 	if len(cookies) != 1 || !cookies[0].HttpOnly || cookies[0].SameSite != http.SameSiteLaxMode {
 		t.Fatalf("unexpected session cookie: %#v", cookies)

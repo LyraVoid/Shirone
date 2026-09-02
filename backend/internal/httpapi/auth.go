@@ -1,11 +1,13 @@
 package httpapi
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"time"
 
 	"github.com/shirone-platform/backend/ent"
+	userent "github.com/shirone-platform/backend/ent/user"
 	"github.com/shirone-platform/backend/internal/auth"
 )
 
@@ -80,6 +82,35 @@ func (h *authHandler) me(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, userResponse(u))
 }
 
+type currentUserKey struct{}
+
+func (h *authHandler) requireUser(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		cookie, err := r.Cookie(h.options.CookieName)
+		if err != nil {
+			writeError(w, http.StatusUnauthorized, "unauthenticated", "authentication is required")
+			return
+		}
+		u, err := h.service.Authenticate(r.Context(), cookie.Value)
+		if err != nil {
+			writeError(w, http.StatusUnauthorized, "unauthenticated", "authentication is required")
+			return
+		}
+		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), currentUserKey{}, u)))
+	})
+}
+
+func requireEditor(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		u, ok := r.Context().Value(currentUserKey{}).(*ent.User)
+		if !ok || (u.Role != userent.RoleAdmin && u.Role != userent.RoleEditor) {
+			writeError(w, http.StatusForbidden, "forbidden", "editor access is required")
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
 func (h *authHandler) setCookie(w http.ResponseWriter, token string) {
 	http.SetCookie(w, &http.Cookie{Name: h.options.CookieName, Value: token, Path: "/", HttpOnly: true, Secure: h.options.CookieSecure, SameSite: http.SameSiteLaxMode, MaxAge: int(h.options.SessionTTL.Seconds())})
 }
@@ -89,5 +120,5 @@ func (h *authHandler) clearCookie(w http.ResponseWriter) {
 }
 
 func userResponse(u *ent.User) map[string]any {
-	return map[string]any{"id": u.ID, "email": u.Email, "username": u.Username, "displayName": u.DisplayName, "status": u.Status}
+	return map[string]any{"id": u.ID, "email": u.Email, "username": u.Username, "displayName": u.DisplayName, "role": u.Role, "status": u.Status}
 }

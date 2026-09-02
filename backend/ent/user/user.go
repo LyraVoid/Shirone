@@ -22,6 +22,8 @@ const (
 	FieldPasswordHash = "password_hash"
 	// FieldDisplayName holds the string denoting the display_name field in the database.
 	FieldDisplayName = "display_name"
+	// FieldRole holds the string denoting the role field in the database.
+	FieldRole = "role"
 	// FieldStatus holds the string denoting the status field in the database.
 	FieldStatus = "status"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
@@ -66,6 +68,7 @@ var Columns = []string{
 	FieldUsername,
 	FieldPasswordHash,
 	FieldDisplayName,
+	FieldRole,
 	FieldStatus,
 	FieldCreatedAt,
 	FieldUpdatedAt,
@@ -79,6 +82,33 @@ func ValidColumn(column string) bool {
 		}
 	}
 	return false
+}
+
+// Role defines the type for the "role" enum field.
+type Role string
+
+// RoleMember is the default value of the Role enum.
+const DefaultRole = RoleMember
+
+// Role values.
+const (
+	RoleMember Role = "member"
+	RoleEditor Role = "editor"
+	RoleAdmin  Role = "admin"
+)
+
+func (r Role) String() string {
+	return string(r)
+}
+
+// RoleValidator is a validator for the "role" field enum values. It is called by the builders before save.
+func RoleValidator(r Role) error {
+	switch r {
+	case RoleMember, RoleEditor, RoleAdmin:
+		return nil
+	default:
+		return fmt.Errorf("user: invalid enum value for role field: %q", r)
+	}
 }
 
 // Status defines the type for the "status" enum field.
@@ -134,6 +164,11 @@ func ByPasswordHash(opts ...sql.OrderTermOption) OrderOption {
 // ByDisplayName orders the results by the display_name field.
 func ByDisplayName(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldDisplayName, opts...).ToFunc()
+}
+
+// ByRole orders the results by the role field.
+func ByRole(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldRole, opts...).ToFunc()
 }
 
 // ByStatus orders the results by the status field.
