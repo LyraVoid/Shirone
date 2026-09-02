@@ -24,6 +24,8 @@ const (
 	FieldBody = "body"
 	// FieldExcerpt holds the string denoting the excerpt field in the database.
 	FieldExcerpt = "excerpt"
+	// FieldTermIds holds the string denoting the term_ids field in the database.
+	FieldTermIds = "term_ids"
 	// FieldStatus holds the string denoting the status field in the database.
 	FieldStatus = "status"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
@@ -58,6 +60,7 @@ var Columns = []string{
 	FieldTitle,
 	FieldBody,
 	FieldExcerpt,
+	FieldTermIds,
 	FieldStatus,
 	FieldCreatedAt,
 }
@@ -87,6 +90,8 @@ func ValidColumn(column string) bool {
 var (
 	// VersionValidator is a validator for the "version" field. It is called by the builders before save.
 	VersionValidator func(int) error
+	// DefaultTermIds holds the default value on creation for the "term_ids" field.
+	DefaultTermIds []int
 )
 
 // Status defines the type for the "status" enum field.

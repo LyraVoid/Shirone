@@ -60,6 +60,12 @@ func (_c *DocumentRevisionCreate) SetNillableExcerpt(v *string) *DocumentRevisio
 	return _c
 }
 
+// SetTermIds sets the "term_ids" field.
+func (_c *DocumentRevisionCreate) SetTermIds(v []int) *DocumentRevisionCreate {
+	_c.mutation.SetTermIds(v)
+	return _c
+}
+
 // SetStatus sets the "status" field.
 func (_c *DocumentRevisionCreate) SetStatus(v documentrevision.Status) *DocumentRevisionCreate {
 	_c.mutation.SetStatus(v)
@@ -101,6 +107,7 @@ func (_c *DocumentRevisionCreate) Mutation() *DocumentRevisionMutation {
 
 // Save creates the DocumentRevision in the database.
 func (_c *DocumentRevisionCreate) Save(ctx context.Context) (*DocumentRevision, error) {
+	_c.defaults()
 	return withHooks(ctx, _c.sqlSave, _c.mutation, _c.hooks)
 }
 
@@ -126,6 +133,14 @@ func (_c *DocumentRevisionCreate) ExecX(ctx context.Context) {
 	}
 }
 
+// defaults sets the default values of the builder before save.
+func (_c *DocumentRevisionCreate) defaults() {
+	if _, ok := _c.mutation.TermIds(); !ok {
+		v := documentrevision.DefaultTermIds
+		_c.mutation.SetTermIds(v)
+	}
+}
+
 // check runs all checks and user-defined validators on the builder.
 func (_c *DocumentRevisionCreate) check() error {
 	if _, ok := _c.mutation.Version(); !ok {
@@ -144,6 +159,9 @@ func (_c *DocumentRevisionCreate) check() error {
 	}
 	if _, ok := _c.mutation.Body(); !ok {
 		return &ValidationError{Name: "body", err: errors.New(`ent: missing required field "DocumentRevision.body"`)}
+	}
+	if _, ok := _c.mutation.TermIds(); !ok {
+		return &ValidationError{Name: "term_ids", err: errors.New(`ent: missing required field "DocumentRevision.term_ids"`)}
 	}
 	if _, ok := _c.mutation.Status(); !ok {
 		return &ValidationError{Name: "status", err: errors.New(`ent: missing required field "DocumentRevision.status"`)}
@@ -208,6 +226,10 @@ func (_c *DocumentRevisionCreate) createSpec() (*DocumentRevision, *sqlgraph.Cre
 		_spec.SetField(documentrevision.FieldExcerpt, field.TypeString, value)
 		_node.Excerpt = value
 	}
+	if value, ok := _c.mutation.TermIds(); ok {
+		_spec.SetField(documentrevision.FieldTermIds, field.TypeJSON, value)
+		_node.TermIds = value
+	}
 	if value, ok := _c.mutation.Status(); ok {
 		_spec.SetField(documentrevision.FieldStatus, field.TypeEnum, value)
 		_node.Status = value
@@ -271,6 +293,7 @@ func (_c *DocumentRevisionCreateBulk) Save(ctx context.Context) ([]*DocumentRevi
 	for i := range _c.builders {
 		func(i int, root context.Context) {
 			builder := _c.builders[i]
+			builder.defaults()
 			var mut Mutator = MutateFunc(func(ctx context.Context, m Mutation) (Value, error) {
 				mutation, ok := m.(*DocumentRevisionMutation)
 				if !ok {

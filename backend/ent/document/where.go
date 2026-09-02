@@ -579,6 +579,29 @@ func HasRevisionsWith(preds ...predicate.DocumentRevision) predicate.Document {
 	})
 }
 
+// HasTerms applies the HasEdge predicate on the "terms" edge.
+func HasTerms() predicate.Document {
+	return predicate.Document(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, TermsTable, TermsPrimaryKey...),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasTermsWith applies the HasEdge predicate on the "terms" edge with a given conditions (other predicates).
+func HasTermsWith(preds ...predicate.Term) predicate.Document {
+	return predicate.Document(func(s *sql.Selector) {
+		step := newTermsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.Document) predicate.Document {
 	return predicate.Document(sql.AndPredicates(predicates...))

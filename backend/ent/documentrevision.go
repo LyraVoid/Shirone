@@ -3,6 +3,7 @@
 package ent
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -29,6 +30,8 @@ type DocumentRevision struct {
 	Body string `json:"body,omitempty"`
 	// Excerpt holds the value of the "excerpt" field.
 	Excerpt string `json:"excerpt,omitempty"`
+	// TermIds holds the value of the "term_ids" field.
+	TermIds []int `json:"term_ids,omitempty"`
 	// Status holds the value of the "status" field.
 	Status documentrevision.Status `json:"status,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
@@ -79,6 +82,8 @@ func (*DocumentRevision) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case documentrevision.FieldTermIds:
+			values[i] = new([]byte)
 		case documentrevision.FieldID, documentrevision.FieldVersion:
 			values[i] = new(sql.NullInt64)
 		case documentrevision.FieldSlug, documentrevision.FieldTitle, documentrevision.FieldBody, documentrevision.FieldExcerpt, documentrevision.FieldStatus:
@@ -139,6 +144,14 @@ func (_m *DocumentRevision) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field excerpt", values[i])
 			} else if value.Valid {
 				_m.Excerpt = value.String
+			}
+		case documentrevision.FieldTermIds:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field term_ids", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &_m.TermIds); err != nil {
+					return fmt.Errorf("unmarshal field term_ids: %w", err)
+				}
 			}
 		case documentrevision.FieldStatus:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -226,6 +239,9 @@ func (_m *DocumentRevision) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("excerpt=")
 	builder.WriteString(_m.Excerpt)
+	builder.WriteString(", ")
+	builder.WriteString("term_ids=")
+	builder.WriteString(fmt.Sprintf("%v", _m.TermIds))
 	builder.WriteString(", ")
 	builder.WriteString("status=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Status))

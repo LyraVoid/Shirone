@@ -13,6 +13,7 @@ import (
 	"github.com/shirone-platform/backend/ent/comment"
 	"github.com/shirone-platform/backend/ent/document"
 	"github.com/shirone-platform/backend/ent/documentrevision"
+	"github.com/shirone-platform/backend/ent/term"
 	"github.com/shirone-platform/backend/ent/user"
 )
 
@@ -134,6 +135,21 @@ func (_c *DocumentCreate) AddRevisions(v ...*DocumentRevision) *DocumentCreate {
 		ids[i] = v[i].ID
 	}
 	return _c.AddRevisionIDs(ids...)
+}
+
+// AddTermIDs adds the "terms" edge to the Term entity by IDs.
+func (_c *DocumentCreate) AddTermIDs(ids ...int) *DocumentCreate {
+	_c.mutation.AddTermIDs(ids...)
+	return _c
+}
+
+// AddTerms adds the "terms" edges to the Term entity.
+func (_c *DocumentCreate) AddTerms(v ...*Term) *DocumentCreate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddTermIDs(ids...)
 }
 
 // Mutation returns the DocumentMutation object of the builder.
@@ -305,6 +321,22 @@ func (_c *DocumentCreate) createSpec() (*Document, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(documentrevision.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.TermsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   document.TermsTable,
+			Columns: document.TermsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(term.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

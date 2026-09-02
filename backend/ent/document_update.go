@@ -15,6 +15,7 @@ import (
 	"github.com/shirone-platform/backend/ent/document"
 	"github.com/shirone-platform/backend/ent/documentrevision"
 	"github.com/shirone-platform/backend/ent/predicate"
+	"github.com/shirone-platform/backend/ent/term"
 	"github.com/shirone-platform/backend/ent/user"
 )
 
@@ -196,6 +197,21 @@ func (_u *DocumentUpdate) AddRevisions(v ...*DocumentRevision) *DocumentUpdate {
 	return _u.AddRevisionIDs(ids...)
 }
 
+// AddTermIDs adds the "terms" edge to the Term entity by IDs.
+func (_u *DocumentUpdate) AddTermIDs(ids ...int) *DocumentUpdate {
+	_u.mutation.AddTermIDs(ids...)
+	return _u
+}
+
+// AddTerms adds the "terms" edges to the Term entity.
+func (_u *DocumentUpdate) AddTerms(v ...*Term) *DocumentUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddTermIDs(ids...)
+}
+
 // Mutation returns the DocumentMutation object of the builder.
 func (_u *DocumentUpdate) Mutation() *DocumentMutation {
 	return _u.mutation
@@ -247,6 +263,27 @@ func (_u *DocumentUpdate) RemoveRevisions(v ...*DocumentRevision) *DocumentUpdat
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveRevisionIDs(ids...)
+}
+
+// ClearTerms clears all "terms" edges to the Term entity.
+func (_u *DocumentUpdate) ClearTerms() *DocumentUpdate {
+	_u.mutation.ClearTerms()
+	return _u
+}
+
+// RemoveTermIDs removes the "terms" edge to Term entities by IDs.
+func (_u *DocumentUpdate) RemoveTermIDs(ids ...int) *DocumentUpdate {
+	_u.mutation.RemoveTermIDs(ids...)
+	return _u
+}
+
+// RemoveTerms removes "terms" edges to Term entities.
+func (_u *DocumentUpdate) RemoveTerms(v ...*Term) *DocumentUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveTermIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -450,6 +487,51 @@ func (_u *DocumentUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if _u.mutation.TermsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   document.TermsTable,
+			Columns: document.TermsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(term.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedTermsIDs(); len(nodes) > 0 && !_u.mutation.TermsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   document.TermsTable,
+			Columns: document.TermsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(term.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.TermsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   document.TermsTable,
+			Columns: document.TermsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(term.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{document.Label}
@@ -635,6 +717,21 @@ func (_u *DocumentUpdateOne) AddRevisions(v ...*DocumentRevision) *DocumentUpdat
 	return _u.AddRevisionIDs(ids...)
 }
 
+// AddTermIDs adds the "terms" edge to the Term entity by IDs.
+func (_u *DocumentUpdateOne) AddTermIDs(ids ...int) *DocumentUpdateOne {
+	_u.mutation.AddTermIDs(ids...)
+	return _u
+}
+
+// AddTerms adds the "terms" edges to the Term entity.
+func (_u *DocumentUpdateOne) AddTerms(v ...*Term) *DocumentUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddTermIDs(ids...)
+}
+
 // Mutation returns the DocumentMutation object of the builder.
 func (_u *DocumentUpdateOne) Mutation() *DocumentMutation {
 	return _u.mutation
@@ -686,6 +783,27 @@ func (_u *DocumentUpdateOne) RemoveRevisions(v ...*DocumentRevision) *DocumentUp
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveRevisionIDs(ids...)
+}
+
+// ClearTerms clears all "terms" edges to the Term entity.
+func (_u *DocumentUpdateOne) ClearTerms() *DocumentUpdateOne {
+	_u.mutation.ClearTerms()
+	return _u
+}
+
+// RemoveTermIDs removes the "terms" edge to Term entities by IDs.
+func (_u *DocumentUpdateOne) RemoveTermIDs(ids ...int) *DocumentUpdateOne {
+	_u.mutation.RemoveTermIDs(ids...)
+	return _u
+}
+
+// RemoveTerms removes "terms" edges to Term entities.
+func (_u *DocumentUpdateOne) RemoveTerms(v ...*Term) *DocumentUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveTermIDs(ids...)
 }
 
 // Where appends a list predicates to the DocumentUpdate builder.
@@ -912,6 +1030,51 @@ func (_u *DocumentUpdateOne) sqlSave(ctx context.Context) (_node *Document, err 
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(documentrevision.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.TermsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   document.TermsTable,
+			Columns: document.TermsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(term.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedTermsIDs(); len(nodes) > 0 && !_u.mutation.TermsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   document.TermsTable,
+			Columns: document.TermsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(term.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.TermsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   document.TermsTable,
+			Columns: document.TermsPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(term.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

@@ -12,6 +12,7 @@ import (
 	"github.com/shirone-platform/backend/ent"
 	"github.com/shirone-platform/backend/ent/document"
 	"github.com/shirone-platform/backend/ent/documentrevision"
+	"github.com/shirone-platform/backend/ent/term"
 )
 
 var slugPattern = regexp.MustCompile(`^[a-z0-9]+(?:-[a-z0-9]+)*$`)
@@ -24,10 +25,11 @@ type contentInput struct {
 	Body    string `json:"body"`
 	Excerpt string `json:"excerpt"`
 	Status  string `json:"status"`
+	TermIds []int  `json:"TermIds"`
 }
 
 func (h *contentHandler) adminList(w http.ResponseWriter, r *http.Request) {
-	documents, err := h.client.Document.Query().Order(ent.Desc(document.FieldUpdatedAt)).Limit(queryLimit(r, 50)).All(r.Context())
+	documents, err := h.client.Document.Query().WithTerms().Order(ent.Desc(document.FieldUpdatedAt)).Limit(queryLimit(r, 50)).All(r.Context())
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "content_query_failed", "content could not be loaded")
 		return
@@ -44,7 +46,7 @@ func (h *contentHandler) adminGet(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	doc, err := h.client.Document.Get(r.Context(), id)
+	doc, err := h.client.Document.Query().Where(document.IDEQ(id)).WithTerms().Only(r.Context())
 	if err != nil {
 		if ent.IsNotFound(err) {
 			writeError(w, http.StatusNotFound, "content_not_found", "content was not found")
@@ -76,7 +78,7 @@ func (h *contentHandler) revisions(w http.ResponseWriter, r *http.Request) {
 	}
 	items := make([]any, 0, len(revisions))
 	for _, revision := range revisions {
-		item := map[string]any{"id": revision.ID, "version": revision.Version, "slug": revision.Slug, "title": revision.Title, "body": revision.Body, "excerpt": revision.Excerpt, "status": revision.Status, "createdAt": revision.CreatedAt}
+		item := map[string]any{"id": revision.ID, "version": revision.Version, "slug": revision.Slug, "title": revision.Title, "body": revision.Body, "excerpt": revision.Excerpt, "TermIds": revision.TermIds, "status": revision.Status, "createdAt": revision.CreatedAt}
 		if revision.Edges.Editor != nil {
 			item["editor"] = map[string]any{"id": revision.Edges.Editor.ID, "username": revision.Edges.Editor.Username, "displayName": revision.Edges.Editor.DisplayName}
 		}
@@ -87,7 +89,7 @@ func (h *contentHandler) revisions(w http.ResponseWriter, r *http.Request) {
 
 func (h *contentHandler) list(w http.ResponseWriter, r *http.Request) {
 	limit := queryLimit(r, 20)
-	documents, err := h.client.Document.Query().Where(document.StatusEQ(document.StatusPublished)).Order(ent.Desc(document.FieldPublishedAt)).Limit(limit).All(r.Context())
+	documents, err := h.client.Document.Query().Where(document.StatusEQ(document.StatusPublished)).WithTerms().Order(ent.Desc(document.FieldPublishedAt)).Limit(limit).All(r.Context())
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "content_query_failed", "content could not be loaded")
 		return
@@ -100,7 +102,7 @@ func (h *contentHandler) list(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *contentHandler) get(w http.ResponseWriter, r *http.Request) {
-	doc, err := h.client.Document.Query().Where(document.SlugEQ(chi.URLParam(r, "slug")), document.StatusEQ(document.StatusPublished)).Only(r.Context())
+	doc, err := h.client.Document.Query().Where(document.SlugEQ(chi.URLParam(r, "slug")), document.StatusEQ(document.StatusPublished)).WithTerms().Only(r.Context())
 	if err != nil {
 		if ent.IsNotFound(err) {
 			writeError(w, http.StatusNotFound, "content_not_found", "content was not found")
@@ -118,6 +120,9 @@ func (h *contentHandler) create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	status := document.Status(input.Status)
+	if !h.validateTermIds(w, r, input.TermIds) {
+		return
+	}
 	now := time.Now().UTC()
 	u := r.Context().Value(currentUserKey{}).(*ent.User)
 	tx, err := h.client.Tx(r.Context())
@@ -125,7 +130,7 @@ func (h *contentHandler) create(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "transaction_failed", "content could not be created")
 		return
 	}
-	create := tx.Document.Create().SetSlug(input.Slug).SetTitle(strings.TrimSpace(input.Title)).SetBody(input.Body).SetExcerpt(strings.TrimSpace(input.Excerpt)).SetStatus(status).SetAuthorID(u.ID).SetCreatedAt(now).SetUpdatedAt(now)
+	create := tx.Document.Create().SetSlug(input.Slug).SetTitle(strings.TrimSpace(input.Title)).SetBody(input.Body).SetExcerpt(strings.TrimSpace(input.Excerpt)).SetStatus(status).SetAuthorID(u.ID).AddTermIDs(input.TermIds...).SetCreatedAt(now).SetUpdatedAt(now)
 	if status == document.StatusPublished {
 		create.SetPublishedAt(now)
 	}
@@ -139,7 +144,7 @@ func (h *contentHandler) create(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "content_create_failed", "content could not be created")
 		return
 	}
-	_, err = tx.DocumentRevision.Create().SetVersion(1).SetSlug(doc.Slug).SetTitle(doc.Title).SetBody(doc.Body).SetExcerpt(doc.Excerpt).SetStatus(documentrevision.Status(doc.Status)).SetCreatedAt(now).SetDocumentID(doc.ID).SetEditorID(u.ID).Save(r.Context())
+	_, err = tx.DocumentRevision.Create().SetVersion(1).SetSlug(doc.Slug).SetTitle(doc.Title).SetBody(doc.Body).SetExcerpt(doc.Excerpt).SetTermIds(input.TermIds).SetStatus(documentrevision.Status(doc.Status)).SetCreatedAt(now).SetDocumentID(doc.ID).SetEditorID(u.ID).Save(r.Context())
 	if err != nil {
 		_ = tx.Rollback()
 		writeError(w, http.StatusInternalServerError, "revision_create_failed", "content revision could not be created")
@@ -149,6 +154,7 @@ func (h *contentHandler) create(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "transaction_failed", "content could not be created")
 		return
 	}
+	doc, _ = h.client.Document.Query().Where(document.IDEQ(doc.ID)).WithTerms().Only(r.Context())
 	writeJSON(w, http.StatusCreated, documentResponse(doc))
 }
 
@@ -177,7 +183,11 @@ func (h *contentHandler) update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	status := document.Status(input.Status)
-	update := current.Update().SetSlug(input.Slug).SetTitle(strings.TrimSpace(input.Title)).SetBody(input.Body).SetExcerpt(strings.TrimSpace(input.Excerpt)).SetStatus(status).SetUpdatedAt(time.Now().UTC())
+	if !h.validateTermIds(w, r, input.TermIds) {
+		_ = tx.Rollback()
+		return
+	}
+	update := current.Update().SetSlug(input.Slug).SetTitle(strings.TrimSpace(input.Title)).SetBody(input.Body).SetExcerpt(strings.TrimSpace(input.Excerpt)).SetStatus(status).ClearTerms().AddTermIDs(input.TermIds...).SetUpdatedAt(time.Now().UTC())
 	if status == document.StatusPublished && current.PublishedAt == nil {
 		update.SetPublishedAt(time.Now().UTC())
 	}
@@ -197,7 +207,7 @@ func (h *contentHandler) update(w http.ResponseWriter, r *http.Request) {
 	version, err := tx.DocumentRevision.Query().Where(documentrevision.HasDocumentWith(document.IDEQ(id))).Count(r.Context())
 	if err == nil {
 		u := r.Context().Value(currentUserKey{}).(*ent.User)
-		_, err = tx.DocumentRevision.Create().SetVersion(version + 1).SetSlug(doc.Slug).SetTitle(doc.Title).SetBody(doc.Body).SetExcerpt(doc.Excerpt).SetStatus(documentrevision.Status(doc.Status)).SetCreatedAt(time.Now().UTC()).SetDocumentID(doc.ID).SetEditorID(u.ID).Save(r.Context())
+		_, err = tx.DocumentRevision.Create().SetVersion(version + 1).SetSlug(doc.Slug).SetTitle(doc.Title).SetBody(doc.Body).SetExcerpt(doc.Excerpt).SetTermIds(input.TermIds).SetStatus(documentrevision.Status(doc.Status)).SetCreatedAt(time.Now().UTC()).SetDocumentID(doc.ID).SetEditorID(u.ID).Save(r.Context())
 	}
 	if err != nil {
 		_ = tx.Rollback()
@@ -208,6 +218,7 @@ func (h *contentHandler) update(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "transaction_failed", "content could not be updated")
 		return
 	}
+	doc, _ = h.client.Document.Query().Where(document.IDEQ(doc.ID)).WithTerms().Only(r.Context())
 	writeJSON(w, http.StatusOK, documentResponse(doc))
 }
 
@@ -241,7 +252,12 @@ func (h *contentHandler) delete(w http.ResponseWriter, r *http.Request) {
 	version, err := tx.DocumentRevision.Query().Where(documentrevision.HasDocumentWith(document.IDEQ(id))).Count(r.Context())
 	if err == nil {
 		u := r.Context().Value(currentUserKey{}).(*ent.User)
-		_, err = tx.DocumentRevision.Create().SetVersion(version + 1).SetSlug(archived.Slug).SetTitle(archived.Title).SetBody(archived.Body).SetExcerpt(archived.Excerpt).SetStatus(documentrevision.StatusArchived).SetCreatedAt(now).SetDocumentID(archived.ID).SetEditorID(u.ID).Save(r.Context())
+		TermIds, termErr := current.QueryTerms().IDs(r.Context())
+		if termErr != nil {
+			err = termErr
+		} else {
+			_, err = tx.DocumentRevision.Create().SetVersion(version + 1).SetSlug(archived.Slug).SetTitle(archived.Title).SetBody(archived.Body).SetExcerpt(archived.Excerpt).SetTermIds(TermIds).SetStatus(documentrevision.StatusArchived).SetCreatedAt(now).SetDocumentID(archived.ID).SetEditorID(u.ID).Save(r.Context())
+		}
 	}
 	if err != nil {
 		_ = tx.Rollback()
@@ -277,7 +293,27 @@ func validateContentInput(w http.ResponseWriter, input contentInput) bool {
 }
 
 func documentResponse(doc *ent.Document) map[string]any {
-	return map[string]any{"id": doc.ID, "slug": doc.Slug, "title": doc.Title, "body": doc.Body, "excerpt": doc.Excerpt, "status": doc.Status, "publishedAt": doc.PublishedAt, "createdAt": doc.CreatedAt, "updatedAt": doc.UpdatedAt}
+	result := map[string]any{"id": doc.ID, "slug": doc.Slug, "title": doc.Title, "body": doc.Body, "excerpt": doc.Excerpt, "status": doc.Status, "publishedAt": doc.PublishedAt, "createdAt": doc.CreatedAt, "updatedAt": doc.UpdatedAt}
+	if doc.Edges.Terms != nil {
+		terms := make([]any, 0, len(doc.Edges.Terms))
+		for _, item := range doc.Edges.Terms {
+			terms = append(terms, termResponse(item))
+		}
+		result["terms"] = terms
+	}
+	return result
+}
+
+func (h *contentHandler) validateTermIds(w http.ResponseWriter, r *http.Request, ids []int) bool {
+	if len(ids) == 0 {
+		return true
+	}
+	count, err := h.client.Term.Query().Where(term.IDIn(ids...)).Count(r.Context())
+	if err != nil || count != len(ids) {
+		writeError(w, http.StatusBadRequest, "invalid_terms", "one or more terms do not exist")
+		return false
+	}
+	return true
 }
 
 func queryLimit(r *http.Request, fallback int) int {

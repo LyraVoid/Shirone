@@ -32,6 +32,8 @@ Administrators can list accounts and change roles or account status under `/api/
 
 Content creation, updates, and archival record immutable revision snapshots in the same database transaction. The admin revision endpoint exposes the complete edit history; deletion currently means archival so published data is not accidentally lost.
 
+Taxonomies are user-defined instead of hard-coding categories or tags. Editors can create taxonomy namespaces and terms, then attach term IDs to content. Term assignments are included in revision snapshots.
+
 ## PostgreSQL with Compose
 
 ```powershell

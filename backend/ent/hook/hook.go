@@ -57,6 +57,30 @@ func (f SessionFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, err
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.SessionMutation", m)
 }
 
+// The TaxonomyFunc type is an adapter to allow the use of ordinary
+// function as Taxonomy mutator.
+type TaxonomyFunc func(context.Context, *ent.TaxonomyMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f TaxonomyFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.TaxonomyMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.TaxonomyMutation", m)
+}
+
+// The TermFunc type is an adapter to allow the use of ordinary
+// function as Term mutator.
+type TermFunc func(context.Context, *ent.TermMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f TermFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.TermMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.TermMutation", m)
+}
+
 // The UserFunc type is an adapter to allow the use of ordinary
 // function as User mutator.
 type UserFunc func(context.Context, *ent.UserMutation) (ent.Value, error)

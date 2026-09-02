@@ -20,6 +20,10 @@ type Tx struct {
 	DocumentRevision *DocumentRevisionClient
 	// Session is the client for interacting with the Session builders.
 	Session *SessionClient
+	// Taxonomy is the client for interacting with the Taxonomy builders.
+	Taxonomy *TaxonomyClient
+	// Term is the client for interacting with the Term builders.
+	Term *TermClient
 	// User is the client for interacting with the User builders.
 	User *UserClient
 
@@ -157,6 +161,8 @@ func (tx *Tx) init() {
 	tx.Document = NewDocumentClient(tx.config)
 	tx.DocumentRevision = NewDocumentRevisionClient(tx.config)
 	tx.Session = NewSessionClient(tx.config)
+	tx.Taxonomy = NewTaxonomyClient(tx.config)
+	tx.Term = NewTermClient(tx.config)
 	tx.User = NewUserClient(tx.config)
 }
 

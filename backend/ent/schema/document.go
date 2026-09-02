@@ -27,6 +27,7 @@ func (Document) Edges() []ent.Edge {
 		edge.From("author", User.Type).Ref("documents").Unique().Required(),
 		edge.To("comments", Comment.Type),
 		edge.To("revisions", DocumentRevision.Type),
+		edge.To("terms", Term.Type),
 	}
 }
 

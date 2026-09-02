@@ -16,6 +16,8 @@ import (
 	"github.com/shirone-platform/backend/ent/documentrevision"
 	"github.com/shirone-platform/backend/ent/predicate"
 	"github.com/shirone-platform/backend/ent/session"
+	"github.com/shirone-platform/backend/ent/taxonomy"
+	"github.com/shirone-platform/backend/ent/term"
 	"github.com/shirone-platform/backend/ent/user"
 )
 
@@ -32,6 +34,8 @@ const (
 	TypeDocument         = "Document"
 	TypeDocumentRevision = "DocumentRevision"
 	TypeSession          = "Session"
+	TypeTaxonomy         = "Taxonomy"
+	TypeTerm             = "Term"
 	TypeUser             = "User"
 )
 
@@ -816,6 +820,9 @@ type DocumentMutation struct {
 	revisions        map[int]struct{}
 	removedrevisions map[int]struct{}
 	clearedrevisions bool
+	terms            map[int]struct{}
+	removedterms     map[int]struct{}
+	clearedterms     bool
 	done             bool
 	oldValue         func(context.Context) (*Document, error)
 	predicates       []predicate.Document
@@ -1380,6 +1387,60 @@ func (m *DocumentMutation) ResetRevisions() {
 	m.removedrevisions = nil
 }
 
+// AddTermIDs adds the "terms" edge to the Term entity by ids.
+func (m *DocumentMutation) AddTermIDs(ids ...int) {
+	if m.terms == nil {
+		m.terms = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.terms[ids[i]] = struct{}{}
+	}
+}
+
+// ClearTerms clears the "terms" edge to the Term entity.
+func (m *DocumentMutation) ClearTerms() {
+	m.clearedterms = true
+}
+
+// TermsCleared reports if the "terms" edge to the Term entity was cleared.
+func (m *DocumentMutation) TermsCleared() bool {
+	return m.clearedterms
+}
+
+// RemoveTermIDs removes the "terms" edge to the Term entity by IDs.
+func (m *DocumentMutation) RemoveTermIDs(ids ...int) {
+	if m.removedterms == nil {
+		m.removedterms = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.terms, ids[i])
+		m.removedterms[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedTerms returns the removed IDs of the "terms" edge to the Term entity.
+func (m *DocumentMutation) RemovedTermsIDs() (ids []int) {
+	for id := range m.removedterms {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// TermsIDs returns the "terms" edge IDs in the mutation.
+func (m *DocumentMutation) TermsIDs() (ids []int) {
+	for id := range m.terms {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetTerms resets all changes to the "terms" edge.
+func (m *DocumentMutation) ResetTerms() {
+	m.terms = nil
+	m.clearedterms = false
+	m.removedterms = nil
+}
+
 // Where appends a list predicates to the DocumentMutation builder.
 func (m *DocumentMutation) Where(ps ...predicate.Document) {
 	m.predicates = append(m.predicates, ps...)
@@ -1647,7 +1708,7 @@ func (m *DocumentMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *DocumentMutation) AddedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 4)
 	if m.author != nil {
 		edges = append(edges, document.EdgeAuthor)
 	}
@@ -1656,6 +1717,9 @@ func (m *DocumentMutation) AddedEdges() []string {
 	}
 	if m.revisions != nil {
 		edges = append(edges, document.EdgeRevisions)
+	}
+	if m.terms != nil {
+		edges = append(edges, document.EdgeTerms)
 	}
 	return edges
 }
@@ -1680,18 +1744,27 @@ func (m *DocumentMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case document.EdgeTerms:
+		ids := make([]ent.Value, 0, len(m.terms))
+		for id := range m.terms {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *DocumentMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 4)
 	if m.removedcomments != nil {
 		edges = append(edges, document.EdgeComments)
 	}
 	if m.removedrevisions != nil {
 		edges = append(edges, document.EdgeRevisions)
+	}
+	if m.removedterms != nil {
+		edges = append(edges, document.EdgeTerms)
 	}
 	return edges
 }
@@ -1712,13 +1785,19 @@ func (m *DocumentMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case document.EdgeTerms:
+		ids := make([]ent.Value, 0, len(m.removedterms))
+		for id := range m.removedterms {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *DocumentMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 4)
 	if m.clearedauthor {
 		edges = append(edges, document.EdgeAuthor)
 	}
@@ -1727,6 +1806,9 @@ func (m *DocumentMutation) ClearedEdges() []string {
 	}
 	if m.clearedrevisions {
 		edges = append(edges, document.EdgeRevisions)
+	}
+	if m.clearedterms {
+		edges = append(edges, document.EdgeTerms)
 	}
 	return edges
 }
@@ -1741,6 +1823,8 @@ func (m *DocumentMutation) EdgeCleared(name string) bool {
 		return m.clearedcomments
 	case document.EdgeRevisions:
 		return m.clearedrevisions
+	case document.EdgeTerms:
+		return m.clearedterms
 	}
 	return false
 }
@@ -1769,6 +1853,9 @@ func (m *DocumentMutation) ResetEdge(name string) error {
 	case document.EdgeRevisions:
 		m.ResetRevisions()
 		return nil
+	case document.EdgeTerms:
+		m.ResetTerms()
+		return nil
 	}
 	return fmt.Errorf("unknown Document edge %s", name)
 }
@@ -1785,6 +1872,8 @@ type DocumentRevisionMutation struct {
 	title           *string
 	body            *string
 	excerpt         *string
+	term_ids        *[]int
+	appendterm_ids  []int
 	status          *documentrevision.Status
 	created_at      *time.Time
 	clearedFields   map[string]struct{}
@@ -2108,6 +2197,57 @@ func (m *DocumentRevisionMutation) ResetExcerpt() {
 	delete(m.clearedFields, documentrevision.FieldExcerpt)
 }
 
+// SetTermIds sets the "term_ids" field.
+func (m *DocumentRevisionMutation) SetTermIds(i []int) {
+	m.term_ids = &i
+	m.appendterm_ids = nil
+}
+
+// TermIds returns the value of the "term_ids" field in the mutation.
+func (m *DocumentRevisionMutation) TermIds() (r []int, exists bool) {
+	v := m.term_ids
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTermIds returns the old "term_ids" field's value of the DocumentRevision entity.
+// If the DocumentRevision object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DocumentRevisionMutation) OldTermIds(ctx context.Context) (v []int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTermIds is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTermIds requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTermIds: %w", err)
+	}
+	return oldValue.TermIds, nil
+}
+
+// AppendTermIds adds i to the "term_ids" field.
+func (m *DocumentRevisionMutation) AppendTermIds(i []int) {
+	m.appendterm_ids = append(m.appendterm_ids, i...)
+}
+
+// AppendedTermIds returns the list of values that were appended to the "term_ids" field in this mutation.
+func (m *DocumentRevisionMutation) AppendedTermIds() ([]int, bool) {
+	if len(m.appendterm_ids) == 0 {
+		return nil, false
+	}
+	return m.appendterm_ids, true
+}
+
+// ResetTermIds resets all changes to the "term_ids" field.
+func (m *DocumentRevisionMutation) ResetTermIds() {
+	m.term_ids = nil
+	m.appendterm_ids = nil
+}
+
 // SetStatus sets the "status" field.
 func (m *DocumentRevisionMutation) SetStatus(d documentrevision.Status) {
 	m.status = &d
@@ -2292,7 +2432,7 @@ func (m *DocumentRevisionMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *DocumentRevisionMutation) Fields() []string {
-	fields := make([]string, 0, 7)
+	fields := make([]string, 0, 8)
 	if m.version != nil {
 		fields = append(fields, documentrevision.FieldVersion)
 	}
@@ -2307,6 +2447,9 @@ func (m *DocumentRevisionMutation) Fields() []string {
 	}
 	if m.excerpt != nil {
 		fields = append(fields, documentrevision.FieldExcerpt)
+	}
+	if m.term_ids != nil {
+		fields = append(fields, documentrevision.FieldTermIds)
 	}
 	if m.status != nil {
 		fields = append(fields, documentrevision.FieldStatus)
@@ -2332,6 +2475,8 @@ func (m *DocumentRevisionMutation) Field(name string) (ent.Value, bool) {
 		return m.Body()
 	case documentrevision.FieldExcerpt:
 		return m.Excerpt()
+	case documentrevision.FieldTermIds:
+		return m.TermIds()
 	case documentrevision.FieldStatus:
 		return m.Status()
 	case documentrevision.FieldCreatedAt:
@@ -2355,6 +2500,8 @@ func (m *DocumentRevisionMutation) OldField(ctx context.Context, name string) (e
 		return m.OldBody(ctx)
 	case documentrevision.FieldExcerpt:
 		return m.OldExcerpt(ctx)
+	case documentrevision.FieldTermIds:
+		return m.OldTermIds(ctx)
 	case documentrevision.FieldStatus:
 		return m.OldStatus(ctx)
 	case documentrevision.FieldCreatedAt:
@@ -2402,6 +2549,13 @@ func (m *DocumentRevisionMutation) SetField(name string, value ent.Value) error 
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetExcerpt(v)
+		return nil
+	case documentrevision.FieldTermIds:
+		v, ok := value.([]int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTermIds(v)
 		return nil
 	case documentrevision.FieldStatus:
 		v, ok := value.(documentrevision.Status)
@@ -2504,6 +2658,9 @@ func (m *DocumentRevisionMutation) ResetField(name string) error {
 		return nil
 	case documentrevision.FieldExcerpt:
 		m.ResetExcerpt()
+		return nil
+	case documentrevision.FieldTermIds:
+		m.ResetTermIds()
 		return nil
 	case documentrevision.FieldStatus:
 		m.ResetStatus()
@@ -3106,6 +3263,1379 @@ func (m *SessionMutation) ResetEdge(name string) error {
 		return nil
 	}
 	return fmt.Errorf("unknown Session edge %s", name)
+}
+
+// TaxonomyMutation represents an operation that mutates the Taxonomy nodes in the graph.
+type TaxonomyMutation struct {
+	config
+	op            Op
+	typ           string
+	id            *int
+	key           *string
+	name          *string
+	description   *string
+	created_at    *time.Time
+	updated_at    *time.Time
+	clearedFields map[string]struct{}
+	terms         map[int]struct{}
+	removedterms  map[int]struct{}
+	clearedterms  bool
+	done          bool
+	oldValue      func(context.Context) (*Taxonomy, error)
+	predicates    []predicate.Taxonomy
+}
+
+var _ ent.Mutation = (*TaxonomyMutation)(nil)
+
+// taxonomyOption allows management of the mutation configuration using functional options.
+type taxonomyOption func(*TaxonomyMutation)
+
+// newTaxonomyMutation creates new mutation for the Taxonomy entity.
+func newTaxonomyMutation(c config, op Op, opts ...taxonomyOption) *TaxonomyMutation {
+	m := &TaxonomyMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeTaxonomy,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withTaxonomyID sets the ID field of the mutation.
+func withTaxonomyID(id int) taxonomyOption {
+	return func(m *TaxonomyMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *Taxonomy
+		)
+		m.oldValue = func(ctx context.Context) (*Taxonomy, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().Taxonomy.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withTaxonomy sets the old Taxonomy of the mutation.
+func withTaxonomy(node *Taxonomy) taxonomyOption {
+	return func(m *TaxonomyMutation) {
+		m.oldValue = func(context.Context) (*Taxonomy, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m TaxonomyMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m TaxonomyMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *TaxonomyMutation) ID() (id int, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *TaxonomyMutation) IDs(ctx context.Context) ([]int, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().Taxonomy.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetKey sets the "key" field.
+func (m *TaxonomyMutation) SetKey(s string) {
+	m.key = &s
+}
+
+// Key returns the value of the "key" field in the mutation.
+func (m *TaxonomyMutation) Key() (r string, exists bool) {
+	v := m.key
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldKey returns the old "key" field's value of the Taxonomy entity.
+// If the Taxonomy object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TaxonomyMutation) OldKey(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldKey is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldKey requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldKey: %w", err)
+	}
+	return oldValue.Key, nil
+}
+
+// ResetKey resets all changes to the "key" field.
+func (m *TaxonomyMutation) ResetKey() {
+	m.key = nil
+}
+
+// SetName sets the "name" field.
+func (m *TaxonomyMutation) SetName(s string) {
+	m.name = &s
+}
+
+// Name returns the value of the "name" field in the mutation.
+func (m *TaxonomyMutation) Name() (r string, exists bool) {
+	v := m.name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldName returns the old "name" field's value of the Taxonomy entity.
+// If the Taxonomy object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TaxonomyMutation) OldName(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldName: %w", err)
+	}
+	return oldValue.Name, nil
+}
+
+// ResetName resets all changes to the "name" field.
+func (m *TaxonomyMutation) ResetName() {
+	m.name = nil
+}
+
+// SetDescription sets the "description" field.
+func (m *TaxonomyMutation) SetDescription(s string) {
+	m.description = &s
+}
+
+// Description returns the value of the "description" field in the mutation.
+func (m *TaxonomyMutation) Description() (r string, exists bool) {
+	v := m.description
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDescription returns the old "description" field's value of the Taxonomy entity.
+// If the Taxonomy object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TaxonomyMutation) OldDescription(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDescription is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDescription requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDescription: %w", err)
+	}
+	return oldValue.Description, nil
+}
+
+// ClearDescription clears the value of the "description" field.
+func (m *TaxonomyMutation) ClearDescription() {
+	m.description = nil
+	m.clearedFields[taxonomy.FieldDescription] = struct{}{}
+}
+
+// DescriptionCleared returns if the "description" field was cleared in this mutation.
+func (m *TaxonomyMutation) DescriptionCleared() bool {
+	_, ok := m.clearedFields[taxonomy.FieldDescription]
+	return ok
+}
+
+// ResetDescription resets all changes to the "description" field.
+func (m *TaxonomyMutation) ResetDescription() {
+	m.description = nil
+	delete(m.clearedFields, taxonomy.FieldDescription)
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *TaxonomyMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *TaxonomyMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the Taxonomy entity.
+// If the Taxonomy object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TaxonomyMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *TaxonomyMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *TaxonomyMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *TaxonomyMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the Taxonomy entity.
+// If the Taxonomy object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TaxonomyMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *TaxonomyMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// AddTermIDs adds the "terms" edge to the Term entity by ids.
+func (m *TaxonomyMutation) AddTermIDs(ids ...int) {
+	if m.terms == nil {
+		m.terms = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.terms[ids[i]] = struct{}{}
+	}
+}
+
+// ClearTerms clears the "terms" edge to the Term entity.
+func (m *TaxonomyMutation) ClearTerms() {
+	m.clearedterms = true
+}
+
+// TermsCleared reports if the "terms" edge to the Term entity was cleared.
+func (m *TaxonomyMutation) TermsCleared() bool {
+	return m.clearedterms
+}
+
+// RemoveTermIDs removes the "terms" edge to the Term entity by IDs.
+func (m *TaxonomyMutation) RemoveTermIDs(ids ...int) {
+	if m.removedterms == nil {
+		m.removedterms = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.terms, ids[i])
+		m.removedterms[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedTerms returns the removed IDs of the "terms" edge to the Term entity.
+func (m *TaxonomyMutation) RemovedTermsIDs() (ids []int) {
+	for id := range m.removedterms {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// TermsIDs returns the "terms" edge IDs in the mutation.
+func (m *TaxonomyMutation) TermsIDs() (ids []int) {
+	for id := range m.terms {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetTerms resets all changes to the "terms" edge.
+func (m *TaxonomyMutation) ResetTerms() {
+	m.terms = nil
+	m.clearedterms = false
+	m.removedterms = nil
+}
+
+// Where appends a list predicates to the TaxonomyMutation builder.
+func (m *TaxonomyMutation) Where(ps ...predicate.Taxonomy) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the TaxonomyMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *TaxonomyMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.Taxonomy, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *TaxonomyMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *TaxonomyMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (Taxonomy).
+func (m *TaxonomyMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *TaxonomyMutation) Fields() []string {
+	fields := make([]string, 0, 5)
+	if m.key != nil {
+		fields = append(fields, taxonomy.FieldKey)
+	}
+	if m.name != nil {
+		fields = append(fields, taxonomy.FieldName)
+	}
+	if m.description != nil {
+		fields = append(fields, taxonomy.FieldDescription)
+	}
+	if m.created_at != nil {
+		fields = append(fields, taxonomy.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, taxonomy.FieldUpdatedAt)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *TaxonomyMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case taxonomy.FieldKey:
+		return m.Key()
+	case taxonomy.FieldName:
+		return m.Name()
+	case taxonomy.FieldDescription:
+		return m.Description()
+	case taxonomy.FieldCreatedAt:
+		return m.CreatedAt()
+	case taxonomy.FieldUpdatedAt:
+		return m.UpdatedAt()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *TaxonomyMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case taxonomy.FieldKey:
+		return m.OldKey(ctx)
+	case taxonomy.FieldName:
+		return m.OldName(ctx)
+	case taxonomy.FieldDescription:
+		return m.OldDescription(ctx)
+	case taxonomy.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case taxonomy.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	}
+	return nil, fmt.Errorf("unknown Taxonomy field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *TaxonomyMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case taxonomy.FieldKey:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetKey(v)
+		return nil
+	case taxonomy.FieldName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetName(v)
+		return nil
+	case taxonomy.FieldDescription:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDescription(v)
+		return nil
+	case taxonomy.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case taxonomy.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	}
+	return fmt.Errorf("unknown Taxonomy field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *TaxonomyMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *TaxonomyMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *TaxonomyMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown Taxonomy numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *TaxonomyMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(taxonomy.FieldDescription) {
+		fields = append(fields, taxonomy.FieldDescription)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *TaxonomyMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *TaxonomyMutation) ClearField(name string) error {
+	switch name {
+	case taxonomy.FieldDescription:
+		m.ClearDescription()
+		return nil
+	}
+	return fmt.Errorf("unknown Taxonomy nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *TaxonomyMutation) ResetField(name string) error {
+	switch name {
+	case taxonomy.FieldKey:
+		m.ResetKey()
+		return nil
+	case taxonomy.FieldName:
+		m.ResetName()
+		return nil
+	case taxonomy.FieldDescription:
+		m.ResetDescription()
+		return nil
+	case taxonomy.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case taxonomy.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	}
+	return fmt.Errorf("unknown Taxonomy field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *TaxonomyMutation) AddedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.terms != nil {
+		edges = append(edges, taxonomy.EdgeTerms)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *TaxonomyMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case taxonomy.EdgeTerms:
+		ids := make([]ent.Value, 0, len(m.terms))
+		for id := range m.terms {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *TaxonomyMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.removedterms != nil {
+		edges = append(edges, taxonomy.EdgeTerms)
+	}
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *TaxonomyMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case taxonomy.EdgeTerms:
+		ids := make([]ent.Value, 0, len(m.removedterms))
+		for id := range m.removedterms {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *TaxonomyMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.clearedterms {
+		edges = append(edges, taxonomy.EdgeTerms)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *TaxonomyMutation) EdgeCleared(name string) bool {
+	switch name {
+	case taxonomy.EdgeTerms:
+		return m.clearedterms
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *TaxonomyMutation) ClearEdge(name string) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown Taxonomy unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *TaxonomyMutation) ResetEdge(name string) error {
+	switch name {
+	case taxonomy.EdgeTerms:
+		m.ResetTerms()
+		return nil
+	}
+	return fmt.Errorf("unknown Taxonomy edge %s", name)
+}
+
+// TermMutation represents an operation that mutates the Term nodes in the graph.
+type TermMutation struct {
+	config
+	op               Op
+	typ              string
+	id               *int
+	slug             *string
+	name             *string
+	description      *string
+	created_at       *time.Time
+	updated_at       *time.Time
+	clearedFields    map[string]struct{}
+	taxonomy         *int
+	clearedtaxonomy  bool
+	documents        map[int]struct{}
+	removeddocuments map[int]struct{}
+	cleareddocuments bool
+	done             bool
+	oldValue         func(context.Context) (*Term, error)
+	predicates       []predicate.Term
+}
+
+var _ ent.Mutation = (*TermMutation)(nil)
+
+// termOption allows management of the mutation configuration using functional options.
+type termOption func(*TermMutation)
+
+// newTermMutation creates new mutation for the Term entity.
+func newTermMutation(c config, op Op, opts ...termOption) *TermMutation {
+	m := &TermMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeTerm,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withTermID sets the ID field of the mutation.
+func withTermID(id int) termOption {
+	return func(m *TermMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *Term
+		)
+		m.oldValue = func(ctx context.Context) (*Term, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().Term.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withTerm sets the old Term of the mutation.
+func withTerm(node *Term) termOption {
+	return func(m *TermMutation) {
+		m.oldValue = func(context.Context) (*Term, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m TermMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m TermMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *TermMutation) ID() (id int, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *TermMutation) IDs(ctx context.Context) ([]int, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().Term.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetSlug sets the "slug" field.
+func (m *TermMutation) SetSlug(s string) {
+	m.slug = &s
+}
+
+// Slug returns the value of the "slug" field in the mutation.
+func (m *TermMutation) Slug() (r string, exists bool) {
+	v := m.slug
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSlug returns the old "slug" field's value of the Term entity.
+// If the Term object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TermMutation) OldSlug(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSlug is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSlug requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSlug: %w", err)
+	}
+	return oldValue.Slug, nil
+}
+
+// ResetSlug resets all changes to the "slug" field.
+func (m *TermMutation) ResetSlug() {
+	m.slug = nil
+}
+
+// SetName sets the "name" field.
+func (m *TermMutation) SetName(s string) {
+	m.name = &s
+}
+
+// Name returns the value of the "name" field in the mutation.
+func (m *TermMutation) Name() (r string, exists bool) {
+	v := m.name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldName returns the old "name" field's value of the Term entity.
+// If the Term object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TermMutation) OldName(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldName: %w", err)
+	}
+	return oldValue.Name, nil
+}
+
+// ResetName resets all changes to the "name" field.
+func (m *TermMutation) ResetName() {
+	m.name = nil
+}
+
+// SetDescription sets the "description" field.
+func (m *TermMutation) SetDescription(s string) {
+	m.description = &s
+}
+
+// Description returns the value of the "description" field in the mutation.
+func (m *TermMutation) Description() (r string, exists bool) {
+	v := m.description
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDescription returns the old "description" field's value of the Term entity.
+// If the Term object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TermMutation) OldDescription(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDescription is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDescription requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDescription: %w", err)
+	}
+	return oldValue.Description, nil
+}
+
+// ClearDescription clears the value of the "description" field.
+func (m *TermMutation) ClearDescription() {
+	m.description = nil
+	m.clearedFields[term.FieldDescription] = struct{}{}
+}
+
+// DescriptionCleared returns if the "description" field was cleared in this mutation.
+func (m *TermMutation) DescriptionCleared() bool {
+	_, ok := m.clearedFields[term.FieldDescription]
+	return ok
+}
+
+// ResetDescription resets all changes to the "description" field.
+func (m *TermMutation) ResetDescription() {
+	m.description = nil
+	delete(m.clearedFields, term.FieldDescription)
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *TermMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *TermMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the Term entity.
+// If the Term object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TermMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *TermMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *TermMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *TermMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the Term entity.
+// If the Term object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TermMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *TermMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// SetTaxonomyID sets the "taxonomy" edge to the Taxonomy entity by id.
+func (m *TermMutation) SetTaxonomyID(id int) {
+	m.taxonomy = &id
+}
+
+// ClearTaxonomy clears the "taxonomy" edge to the Taxonomy entity.
+func (m *TermMutation) ClearTaxonomy() {
+	m.clearedtaxonomy = true
+}
+
+// TaxonomyCleared reports if the "taxonomy" edge to the Taxonomy entity was cleared.
+func (m *TermMutation) TaxonomyCleared() bool {
+	return m.clearedtaxonomy
+}
+
+// TaxonomyID returns the "taxonomy" edge ID in the mutation.
+func (m *TermMutation) TaxonomyID() (id int, exists bool) {
+	if m.taxonomy != nil {
+		return *m.taxonomy, true
+	}
+	return
+}
+
+// TaxonomyIDs returns the "taxonomy" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// TaxonomyID instead. It exists only for internal usage by the builders.
+func (m *TermMutation) TaxonomyIDs() (ids []int) {
+	if id := m.taxonomy; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetTaxonomy resets all changes to the "taxonomy" edge.
+func (m *TermMutation) ResetTaxonomy() {
+	m.taxonomy = nil
+	m.clearedtaxonomy = false
+}
+
+// AddDocumentIDs adds the "documents" edge to the Document entity by ids.
+func (m *TermMutation) AddDocumentIDs(ids ...int) {
+	if m.documents == nil {
+		m.documents = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.documents[ids[i]] = struct{}{}
+	}
+}
+
+// ClearDocuments clears the "documents" edge to the Document entity.
+func (m *TermMutation) ClearDocuments() {
+	m.cleareddocuments = true
+}
+
+// DocumentsCleared reports if the "documents" edge to the Document entity was cleared.
+func (m *TermMutation) DocumentsCleared() bool {
+	return m.cleareddocuments
+}
+
+// RemoveDocumentIDs removes the "documents" edge to the Document entity by IDs.
+func (m *TermMutation) RemoveDocumentIDs(ids ...int) {
+	if m.removeddocuments == nil {
+		m.removeddocuments = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.documents, ids[i])
+		m.removeddocuments[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedDocuments returns the removed IDs of the "documents" edge to the Document entity.
+func (m *TermMutation) RemovedDocumentsIDs() (ids []int) {
+	for id := range m.removeddocuments {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// DocumentsIDs returns the "documents" edge IDs in the mutation.
+func (m *TermMutation) DocumentsIDs() (ids []int) {
+	for id := range m.documents {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetDocuments resets all changes to the "documents" edge.
+func (m *TermMutation) ResetDocuments() {
+	m.documents = nil
+	m.cleareddocuments = false
+	m.removeddocuments = nil
+}
+
+// Where appends a list predicates to the TermMutation builder.
+func (m *TermMutation) Where(ps ...predicate.Term) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the TermMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *TermMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.Term, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *TermMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *TermMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (Term).
+func (m *TermMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *TermMutation) Fields() []string {
+	fields := make([]string, 0, 5)
+	if m.slug != nil {
+		fields = append(fields, term.FieldSlug)
+	}
+	if m.name != nil {
+		fields = append(fields, term.FieldName)
+	}
+	if m.description != nil {
+		fields = append(fields, term.FieldDescription)
+	}
+	if m.created_at != nil {
+		fields = append(fields, term.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, term.FieldUpdatedAt)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *TermMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case term.FieldSlug:
+		return m.Slug()
+	case term.FieldName:
+		return m.Name()
+	case term.FieldDescription:
+		return m.Description()
+	case term.FieldCreatedAt:
+		return m.CreatedAt()
+	case term.FieldUpdatedAt:
+		return m.UpdatedAt()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *TermMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case term.FieldSlug:
+		return m.OldSlug(ctx)
+	case term.FieldName:
+		return m.OldName(ctx)
+	case term.FieldDescription:
+		return m.OldDescription(ctx)
+	case term.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case term.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	}
+	return nil, fmt.Errorf("unknown Term field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *TermMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case term.FieldSlug:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSlug(v)
+		return nil
+	case term.FieldName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetName(v)
+		return nil
+	case term.FieldDescription:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDescription(v)
+		return nil
+	case term.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case term.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	}
+	return fmt.Errorf("unknown Term field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *TermMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *TermMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *TermMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown Term numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *TermMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(term.FieldDescription) {
+		fields = append(fields, term.FieldDescription)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *TermMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *TermMutation) ClearField(name string) error {
+	switch name {
+	case term.FieldDescription:
+		m.ClearDescription()
+		return nil
+	}
+	return fmt.Errorf("unknown Term nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *TermMutation) ResetField(name string) error {
+	switch name {
+	case term.FieldSlug:
+		m.ResetSlug()
+		return nil
+	case term.FieldName:
+		m.ResetName()
+		return nil
+	case term.FieldDescription:
+		m.ResetDescription()
+		return nil
+	case term.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case term.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	}
+	return fmt.Errorf("unknown Term field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *TermMutation) AddedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.taxonomy != nil {
+		edges = append(edges, term.EdgeTaxonomy)
+	}
+	if m.documents != nil {
+		edges = append(edges, term.EdgeDocuments)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *TermMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case term.EdgeTaxonomy:
+		if id := m.taxonomy; id != nil {
+			return []ent.Value{*id}
+		}
+	case term.EdgeDocuments:
+		ids := make([]ent.Value, 0, len(m.documents))
+		for id := range m.documents {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *TermMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.removeddocuments != nil {
+		edges = append(edges, term.EdgeDocuments)
+	}
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *TermMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case term.EdgeDocuments:
+		ids := make([]ent.Value, 0, len(m.removeddocuments))
+		for id := range m.removeddocuments {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *TermMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.clearedtaxonomy {
+		edges = append(edges, term.EdgeTaxonomy)
+	}
+	if m.cleareddocuments {
+		edges = append(edges, term.EdgeDocuments)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *TermMutation) EdgeCleared(name string) bool {
+	switch name {
+	case term.EdgeTaxonomy:
+		return m.clearedtaxonomy
+	case term.EdgeDocuments:
+		return m.cleareddocuments
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *TermMutation) ClearEdge(name string) error {
+	switch name {
+	case term.EdgeTaxonomy:
+		m.ClearTaxonomy()
+		return nil
+	}
+	return fmt.Errorf("unknown Term unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *TermMutation) ResetEdge(name string) error {
+	switch name {
+	case term.EdgeTaxonomy:
+		m.ResetTaxonomy()
+		return nil
+	case term.EdgeDocuments:
+		m.ResetDocuments()
+		return nil
+	}
+	return fmt.Errorf("unknown Term edge %s", name)
 }
 
 // UserMutation represents an operation that mutates the User nodes in the graph.

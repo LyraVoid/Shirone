@@ -36,6 +36,8 @@ const (
 	EdgeComments = "comments"
 	// EdgeRevisions holds the string denoting the revisions edge name in mutations.
 	EdgeRevisions = "revisions"
+	// EdgeTerms holds the string denoting the terms edge name in mutations.
+	EdgeTerms = "terms"
 	// Table holds the table name of the document in the database.
 	Table = "documents"
 	// AuthorTable is the table that holds the author relation/edge.
@@ -59,6 +61,11 @@ const (
 	RevisionsInverseTable = "document_revisions"
 	// RevisionsColumn is the table column denoting the revisions relation/edge.
 	RevisionsColumn = "document_revisions"
+	// TermsTable is the table that holds the terms relation/edge. The primary key declared below.
+	TermsTable = "document_terms"
+	// TermsInverseTable is the table name for the Term entity.
+	// It exists in this package in order to avoid circular dependency with the "term" package.
+	TermsInverseTable = "terms"
 )
 
 // Columns holds all SQL columns for document fields.
@@ -79,6 +86,12 @@ var Columns = []string{
 var ForeignKeys = []string{
 	"user_documents",
 }
+
+var (
+	// TermsPrimaryKey and TermsColumn2 are the table columns denoting the
+	// primary key for the terms relation (M2M).
+	TermsPrimaryKey = []string{"document_id", "term_id"}
+)
 
 // ValidColumn reports if the column name is valid (part of the table columns).
 func ValidColumn(column string) bool {
@@ -204,6 +217,20 @@ func ByRevisions(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newRevisionsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// ByTermsCount orders the results by terms count.
+func ByTermsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newTermsStep(), opts...)
+	}
+}
+
+// ByTerms orders the results by terms terms.
+func ByTerms(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newTermsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newAuthorStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -223,5 +250,12 @@ func newRevisionsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(RevisionsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, RevisionsTable, RevisionsColumn),
+	)
+}
+func newTermsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(TermsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2M, false, TermsTable, TermsPrimaryKey...),
 	)
 }

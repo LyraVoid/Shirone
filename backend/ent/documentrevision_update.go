@@ -10,6 +10,7 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
+	"entgo.io/ent/dialect/sql/sqljson"
 	"entgo.io/ent/schema/field"
 	"github.com/shirone-platform/backend/ent/document"
 	"github.com/shirone-platform/backend/ent/documentrevision"
@@ -110,6 +111,18 @@ func (_u *DocumentRevisionUpdate) SetNillableExcerpt(v *string) *DocumentRevisio
 // ClearExcerpt clears the value of the "excerpt" field.
 func (_u *DocumentRevisionUpdate) ClearExcerpt() *DocumentRevisionUpdate {
 	_u.mutation.ClearExcerpt()
+	return _u
+}
+
+// SetTermIds sets the "term_ids" field.
+func (_u *DocumentRevisionUpdate) SetTermIds(v []int) *DocumentRevisionUpdate {
+	_u.mutation.SetTermIds(v)
+	return _u
+}
+
+// AppendTermIds appends value to the "term_ids" field.
+func (_u *DocumentRevisionUpdate) AppendTermIds(v []int) *DocumentRevisionUpdate {
+	_u.mutation.AppendTermIds(v)
 	return _u
 }
 
@@ -260,6 +273,14 @@ func (_u *DocumentRevisionUpdate) sqlSave(ctx context.Context) (_node int, err e
 	}
 	if _u.mutation.ExcerptCleared() {
 		_spec.ClearField(documentrevision.FieldExcerpt, field.TypeString)
+	}
+	if value, ok := _u.mutation.TermIds(); ok {
+		_spec.SetField(documentrevision.FieldTermIds, field.TypeJSON, value)
+	}
+	if value, ok := _u.mutation.AppendedTermIds(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, documentrevision.FieldTermIds, value)
+		})
 	}
 	if value, ok := _u.mutation.Status(); ok {
 		_spec.SetField(documentrevision.FieldStatus, field.TypeEnum, value)
@@ -425,6 +446,18 @@ func (_u *DocumentRevisionUpdateOne) SetNillableExcerpt(v *string) *DocumentRevi
 // ClearExcerpt clears the value of the "excerpt" field.
 func (_u *DocumentRevisionUpdateOne) ClearExcerpt() *DocumentRevisionUpdateOne {
 	_u.mutation.ClearExcerpt()
+	return _u
+}
+
+// SetTermIds sets the "term_ids" field.
+func (_u *DocumentRevisionUpdateOne) SetTermIds(v []int) *DocumentRevisionUpdateOne {
+	_u.mutation.SetTermIds(v)
+	return _u
+}
+
+// AppendTermIds appends value to the "term_ids" field.
+func (_u *DocumentRevisionUpdateOne) AppendTermIds(v []int) *DocumentRevisionUpdateOne {
+	_u.mutation.AppendTermIds(v)
 	return _u
 }
 
@@ -605,6 +638,14 @@ func (_u *DocumentRevisionUpdateOne) sqlSave(ctx context.Context) (_node *Docume
 	}
 	if _u.mutation.ExcerptCleared() {
 		_spec.ClearField(documentrevision.FieldExcerpt, field.TypeString)
+	}
+	if value, ok := _u.mutation.TermIds(); ok {
+		_spec.SetField(documentrevision.FieldTermIds, field.TypeJSON, value)
+	}
+	if value, ok := _u.mutation.AppendedTermIds(); ok {
+		_spec.AddModifier(func(u *sql.UpdateBuilder) {
+			sqljson.Append(u, documentrevision.FieldTermIds, value)
+		})
 	}
 	if value, ok := _u.mutation.Status(); ok {
 		_spec.SetField(documentrevision.FieldStatus, field.TypeEnum, value)

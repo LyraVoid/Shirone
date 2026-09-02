@@ -21,6 +21,10 @@ func init() {
 	documentrevisionDescVersion := documentrevisionFields[0].Descriptor()
 	// documentrevision.VersionValidator is a validator for the "version" field. It is called by the builders before save.
 	documentrevision.VersionValidator = documentrevisionDescVersion.Validators[0].(func(int) error)
+	// documentrevisionDescTermIds is the schema descriptor for term_ids field.
+	documentrevisionDescTermIds := documentrevisionFields[5].Descriptor()
+	// documentrevision.DefaultTermIds holds the default value on creation for the term_ids field.
+	documentrevision.DefaultTermIds = documentrevisionDescTermIds.Default.([]int)
 	userFields := schema.User{}.Fields()
 	_ = userFields
 }

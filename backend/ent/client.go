@@ -19,6 +19,8 @@ import (
 	"github.com/shirone-platform/backend/ent/document"
 	"github.com/shirone-platform/backend/ent/documentrevision"
 	"github.com/shirone-platform/backend/ent/session"
+	"github.com/shirone-platform/backend/ent/taxonomy"
+	"github.com/shirone-platform/backend/ent/term"
 	"github.com/shirone-platform/backend/ent/user"
 )
 
@@ -35,6 +37,10 @@ type Client struct {
 	DocumentRevision *DocumentRevisionClient
 	// Session is the client for interacting with the Session builders.
 	Session *SessionClient
+	// Taxonomy is the client for interacting with the Taxonomy builders.
+	Taxonomy *TaxonomyClient
+	// Term is the client for interacting with the Term builders.
+	Term *TermClient
 	// User is the client for interacting with the User builders.
 	User *UserClient
 }
@@ -52,6 +58,8 @@ func (c *Client) init() {
 	c.Document = NewDocumentClient(c.config)
 	c.DocumentRevision = NewDocumentRevisionClient(c.config)
 	c.Session = NewSessionClient(c.config)
+	c.Taxonomy = NewTaxonomyClient(c.config)
+	c.Term = NewTermClient(c.config)
 	c.User = NewUserClient(c.config)
 }
 
@@ -149,6 +157,8 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		Document:         NewDocumentClient(cfg),
 		DocumentRevision: NewDocumentRevisionClient(cfg),
 		Session:          NewSessionClient(cfg),
+		Taxonomy:         NewTaxonomyClient(cfg),
+		Term:             NewTermClient(cfg),
 		User:             NewUserClient(cfg),
 	}, nil
 }
@@ -173,6 +183,8 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		Document:         NewDocumentClient(cfg),
 		DocumentRevision: NewDocumentRevisionClient(cfg),
 		Session:          NewSessionClient(cfg),
+		Taxonomy:         NewTaxonomyClient(cfg),
+		Term:             NewTermClient(cfg),
 		User:             NewUserClient(cfg),
 	}, nil
 }
@@ -202,21 +214,23 @@ func (c *Client) Close() error {
 // Use adds the mutation hooks to all the entity clients.
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
-	c.Comment.Use(hooks...)
-	c.Document.Use(hooks...)
-	c.DocumentRevision.Use(hooks...)
-	c.Session.Use(hooks...)
-	c.User.Use(hooks...)
+	for _, n := range []interface{ Use(...Hook) }{
+		c.Comment, c.Document, c.DocumentRevision, c.Session, c.Taxonomy, c.Term,
+		c.User,
+	} {
+		n.Use(hooks...)
+	}
 }
 
 // Intercept adds the query interceptors to all the entity clients.
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
-	c.Comment.Intercept(interceptors...)
-	c.Document.Intercept(interceptors...)
-	c.DocumentRevision.Intercept(interceptors...)
-	c.Session.Intercept(interceptors...)
-	c.User.Intercept(interceptors...)
+	for _, n := range []interface{ Intercept(...Interceptor) }{
+		c.Comment, c.Document, c.DocumentRevision, c.Session, c.Taxonomy, c.Term,
+		c.User,
+	} {
+		n.Intercept(interceptors...)
+	}
 }
 
 // Mutate implements the ent.Mutator interface.
@@ -230,6 +244,10 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.DocumentRevision.mutate(ctx, m)
 	case *SessionMutation:
 		return c.Session.mutate(ctx, m)
+	case *TaxonomyMutation:
+		return c.Taxonomy.mutate(ctx, m)
+	case *TermMutation:
+		return c.Term.mutate(ctx, m)
 	case *UserMutation:
 		return c.User.mutate(ctx, m)
 	default:
@@ -590,6 +608,22 @@ func (c *DocumentClient) QueryRevisions(_m *Document) *DocumentRevisionQuery {
 	return query
 }
 
+// QueryTerms queries the terms edge of a Document.
+func (c *DocumentClient) QueryTerms(_m *Document) *TermQuery {
+	query := (&TermClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(document.Table, document.FieldID, id),
+			sqlgraph.To(term.Table, term.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, document.TermsTable, document.TermsPrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *DocumentClient) Hooks() []Hook {
 	return c.hooks.Document
@@ -929,6 +963,320 @@ func (c *SessionClient) mutate(ctx context.Context, m *SessionMutation) (Value, 
 	}
 }
 
+// TaxonomyClient is a client for the Taxonomy schema.
+type TaxonomyClient struct {
+	config
+}
+
+// NewTaxonomyClient returns a client for the Taxonomy from the given config.
+func NewTaxonomyClient(c config) *TaxonomyClient {
+	return &TaxonomyClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `taxonomy.Hooks(f(g(h())))`.
+func (c *TaxonomyClient) Use(hooks ...Hook) {
+	c.hooks.Taxonomy = append(c.hooks.Taxonomy, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `taxonomy.Intercept(f(g(h())))`.
+func (c *TaxonomyClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Taxonomy = append(c.inters.Taxonomy, interceptors...)
+}
+
+// Create returns a builder for creating a Taxonomy entity.
+func (c *TaxonomyClient) Create() *TaxonomyCreate {
+	mutation := newTaxonomyMutation(c.config, OpCreate)
+	return &TaxonomyCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Taxonomy entities.
+func (c *TaxonomyClient) CreateBulk(builders ...*TaxonomyCreate) *TaxonomyCreateBulk {
+	return &TaxonomyCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *TaxonomyClient) MapCreateBulk(slice any, setFunc func(*TaxonomyCreate, int)) *TaxonomyCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &TaxonomyCreateBulk{err: fmt.Errorf("calling to TaxonomyClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*TaxonomyCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &TaxonomyCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Taxonomy.
+func (c *TaxonomyClient) Update() *TaxonomyUpdate {
+	mutation := newTaxonomyMutation(c.config, OpUpdate)
+	return &TaxonomyUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *TaxonomyClient) UpdateOne(_m *Taxonomy) *TaxonomyUpdateOne {
+	mutation := newTaxonomyMutation(c.config, OpUpdateOne, withTaxonomy(_m))
+	return &TaxonomyUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *TaxonomyClient) UpdateOneID(id int) *TaxonomyUpdateOne {
+	mutation := newTaxonomyMutation(c.config, OpUpdateOne, withTaxonomyID(id))
+	return &TaxonomyUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Taxonomy.
+func (c *TaxonomyClient) Delete() *TaxonomyDelete {
+	mutation := newTaxonomyMutation(c.config, OpDelete)
+	return &TaxonomyDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *TaxonomyClient) DeleteOne(_m *Taxonomy) *TaxonomyDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *TaxonomyClient) DeleteOneID(id int) *TaxonomyDeleteOne {
+	builder := c.Delete().Where(taxonomy.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &TaxonomyDeleteOne{builder}
+}
+
+// Query returns a query builder for Taxonomy.
+func (c *TaxonomyClient) Query() *TaxonomyQuery {
+	return &TaxonomyQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeTaxonomy},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a Taxonomy entity by its id.
+func (c *TaxonomyClient) Get(ctx context.Context, id int) (*Taxonomy, error) {
+	return c.Query().Where(taxonomy.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *TaxonomyClient) GetX(ctx context.Context, id int) *Taxonomy {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryTerms queries the terms edge of a Taxonomy.
+func (c *TaxonomyClient) QueryTerms(_m *Taxonomy) *TermQuery {
+	query := (&TermClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(taxonomy.Table, taxonomy.FieldID, id),
+			sqlgraph.To(term.Table, term.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, taxonomy.TermsTable, taxonomy.TermsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *TaxonomyClient) Hooks() []Hook {
+	return c.hooks.Taxonomy
+}
+
+// Interceptors returns the client interceptors.
+func (c *TaxonomyClient) Interceptors() []Interceptor {
+	return c.inters.Taxonomy
+}
+
+func (c *TaxonomyClient) mutate(ctx context.Context, m *TaxonomyMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&TaxonomyCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&TaxonomyUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&TaxonomyUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&TaxonomyDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown Taxonomy mutation op: %q", m.Op())
+	}
+}
+
+// TermClient is a client for the Term schema.
+type TermClient struct {
+	config
+}
+
+// NewTermClient returns a client for the Term from the given config.
+func NewTermClient(c config) *TermClient {
+	return &TermClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `term.Hooks(f(g(h())))`.
+func (c *TermClient) Use(hooks ...Hook) {
+	c.hooks.Term = append(c.hooks.Term, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `term.Intercept(f(g(h())))`.
+func (c *TermClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Term = append(c.inters.Term, interceptors...)
+}
+
+// Create returns a builder for creating a Term entity.
+func (c *TermClient) Create() *TermCreate {
+	mutation := newTermMutation(c.config, OpCreate)
+	return &TermCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Term entities.
+func (c *TermClient) CreateBulk(builders ...*TermCreate) *TermCreateBulk {
+	return &TermCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *TermClient) MapCreateBulk(slice any, setFunc func(*TermCreate, int)) *TermCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &TermCreateBulk{err: fmt.Errorf("calling to TermClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*TermCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &TermCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Term.
+func (c *TermClient) Update() *TermUpdate {
+	mutation := newTermMutation(c.config, OpUpdate)
+	return &TermUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *TermClient) UpdateOne(_m *Term) *TermUpdateOne {
+	mutation := newTermMutation(c.config, OpUpdateOne, withTerm(_m))
+	return &TermUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *TermClient) UpdateOneID(id int) *TermUpdateOne {
+	mutation := newTermMutation(c.config, OpUpdateOne, withTermID(id))
+	return &TermUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Term.
+func (c *TermClient) Delete() *TermDelete {
+	mutation := newTermMutation(c.config, OpDelete)
+	return &TermDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *TermClient) DeleteOne(_m *Term) *TermDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *TermClient) DeleteOneID(id int) *TermDeleteOne {
+	builder := c.Delete().Where(term.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &TermDeleteOne{builder}
+}
+
+// Query returns a query builder for Term.
+func (c *TermClient) Query() *TermQuery {
+	return &TermQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeTerm},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a Term entity by its id.
+func (c *TermClient) Get(ctx context.Context, id int) (*Term, error) {
+	return c.Query().Where(term.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *TermClient) GetX(ctx context.Context, id int) *Term {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryTaxonomy queries the taxonomy edge of a Term.
+func (c *TermClient) QueryTaxonomy(_m *Term) *TaxonomyQuery {
+	query := (&TaxonomyClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(term.Table, term.FieldID, id),
+			sqlgraph.To(taxonomy.Table, taxonomy.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, term.TaxonomyTable, term.TaxonomyColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryDocuments queries the documents edge of a Term.
+func (c *TermClient) QueryDocuments(_m *Term) *DocumentQuery {
+	query := (&DocumentClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(term.Table, term.FieldID, id),
+			sqlgraph.To(document.Table, document.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, term.DocumentsTable, term.DocumentsPrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *TermClient) Hooks() []Hook {
+	return c.hooks.Term
+}
+
+// Interceptors returns the client interceptors.
+func (c *TermClient) Interceptors() []Interceptor {
+	return c.inters.Term
+}
+
+func (c *TermClient) mutate(ctx context.Context, m *TermMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&TermCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&TermUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&TermUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&TermDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown Term mutation op: %q", m.Op())
+	}
+}
+
 // UserClient is a client for the User schema.
 type UserClient struct {
 	config
@@ -1129,9 +1477,10 @@ func (c *UserClient) mutate(ctx context.Context, m *UserMutation) (Value, error)
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		Comment, Document, DocumentRevision, Session, User []ent.Hook
+		Comment, Document, DocumentRevision, Session, Taxonomy, Term, User []ent.Hook
 	}
 	inters struct {
-		Comment, Document, DocumentRevision, Session, User []ent.Interceptor
+		Comment, Document, DocumentRevision, Session, Taxonomy, Term,
+		User []ent.Interceptor
 	}
 )

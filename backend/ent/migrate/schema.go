@@ -92,6 +92,7 @@ var (
 		{Name: "title", Type: field.TypeString},
 		{Name: "body", Type: field.TypeString, Size: 2147483647},
 		{Name: "excerpt", Type: field.TypeString, Nullable: true},
+		{Name: "term_ids", Type: field.TypeJSON},
 		{Name: "status", Type: field.TypeEnum, Enums: []string{"draft", "published", "archived"}},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "document_revisions", Type: field.TypeInt},
@@ -105,13 +106,13 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "document_revisions_documents_revisions",
-				Columns:    []*schema.Column{DocumentRevisionsColumns[8]},
+				Columns:    []*schema.Column{DocumentRevisionsColumns[9]},
 				RefColumns: []*schema.Column{DocumentsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "document_revisions_users_revisions",
-				Columns:    []*schema.Column{DocumentRevisionsColumns[9]},
+				Columns:    []*schema.Column{DocumentRevisionsColumns[10]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -120,7 +121,7 @@ var (
 			{
 				Name:    "documentrevision_version_document_revisions",
 				Unique:  true,
-				Columns: []*schema.Column{DocumentRevisionsColumns[1], DocumentRevisionsColumns[8]},
+				Columns: []*schema.Column{DocumentRevisionsColumns[1], DocumentRevisionsColumns[9]},
 			},
 		},
 	}
@@ -143,6 +144,52 @@ var (
 				Columns:    []*schema.Column{SessionsColumns[4]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.NoAction,
+			},
+		},
+	}
+	// TaxonomiesColumns holds the columns for the "taxonomies" table.
+	TaxonomiesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "key", Type: field.TypeString, Unique: true},
+		{Name: "name", Type: field.TypeString},
+		{Name: "description", Type: field.TypeString, Nullable: true},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+	}
+	// TaxonomiesTable holds the schema information for the "taxonomies" table.
+	TaxonomiesTable = &schema.Table{
+		Name:       "taxonomies",
+		Columns:    TaxonomiesColumns,
+		PrimaryKey: []*schema.Column{TaxonomiesColumns[0]},
+	}
+	// TermsColumns holds the columns for the "terms" table.
+	TermsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "slug", Type: field.TypeString},
+		{Name: "name", Type: field.TypeString},
+		{Name: "description", Type: field.TypeString, Nullable: true},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "updated_at", Type: field.TypeTime},
+		{Name: "taxonomy_terms", Type: field.TypeInt},
+	}
+	// TermsTable holds the schema information for the "terms" table.
+	TermsTable = &schema.Table{
+		Name:       "terms",
+		Columns:    TermsColumns,
+		PrimaryKey: []*schema.Column{TermsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "terms_taxonomies_terms",
+				Columns:    []*schema.Column{TermsColumns[6]},
+				RefColumns: []*schema.Column{TaxonomiesColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "term_slug_taxonomy_terms",
+				Unique:  true,
+				Columns: []*schema.Column{TermsColumns[1], TermsColumns[6]},
 			},
 		},
 	}
@@ -171,13 +218,41 @@ var (
 			},
 		},
 	}
+	// DocumentTermsColumns holds the columns for the "document_terms" table.
+	DocumentTermsColumns = []*schema.Column{
+		{Name: "document_id", Type: field.TypeInt},
+		{Name: "term_id", Type: field.TypeInt},
+	}
+	// DocumentTermsTable holds the schema information for the "document_terms" table.
+	DocumentTermsTable = &schema.Table{
+		Name:       "document_terms",
+		Columns:    DocumentTermsColumns,
+		PrimaryKey: []*schema.Column{DocumentTermsColumns[0], DocumentTermsColumns[1]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "document_terms_document_id",
+				Columns:    []*schema.Column{DocumentTermsColumns[0]},
+				RefColumns: []*schema.Column{DocumentsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "document_terms_term_id",
+				Columns:    []*schema.Column{DocumentTermsColumns[1]},
+				RefColumns: []*schema.Column{TermsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+	}
 	// Tables holds all the tables in the schema.
 	Tables = []*schema.Table{
 		CommentsTable,
 		DocumentsTable,
 		DocumentRevisionsTable,
 		SessionsTable,
+		TaxonomiesTable,
+		TermsTable,
 		UsersTable,
+		DocumentTermsTable,
 	}
 )
 
@@ -189,4 +264,7 @@ func init() {
 	DocumentRevisionsTable.ForeignKeys[0].RefTable = DocumentsTable
 	DocumentRevisionsTable.ForeignKeys[1].RefTable = UsersTable
 	SessionsTable.ForeignKeys[0].RefTable = UsersTable
+	TermsTable.ForeignKeys[0].RefTable = TaxonomiesTable
+	DocumentTermsTable.ForeignKeys[0].RefTable = DocumentsTable
+	DocumentTermsTable.ForeignKeys[1].RefTable = TermsTable
 }

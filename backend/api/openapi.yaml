@@ -4,6 +4,30 @@ info:
   version: 0.1.0
   description: Provider-neutral API for Shirone dynamic edition.
 paths:
+  /api/v1/taxonomies:
+    get:
+      operationId: listTaxonomies
+      responses:
+        '200':
+          description: Taxonomies and their terms.
+  /api/v1/admin/taxonomies/:
+    post:
+      operationId: createTaxonomy
+      responses:
+        '201':
+          description: Taxonomy created by an editor or administrator.
+  /api/v1/admin/taxonomies/{id}/terms:
+    post:
+      operationId: createTaxonomyTerm
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '201':
+          description: Term created in the taxonomy.
   /api/v1/admin/users/:
     get:
       operationId: listUsers

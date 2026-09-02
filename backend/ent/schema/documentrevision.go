@@ -16,6 +16,7 @@ func (DocumentRevision) Fields() []ent.Field {
 		field.String("title"),
 		field.Text("body"),
 		field.String("excerpt").Optional(),
+		field.JSON("term_ids", []int{}).Default([]int{}),
 		field.Enum("status").Values("draft", "published", "archived"),
 		field.Time("created_at"),
 	}

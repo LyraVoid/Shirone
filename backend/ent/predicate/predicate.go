@@ -18,5 +18,11 @@ type DocumentRevision func(*sql.Selector)
 // Session is the predicate function for session builders.
 type Session func(*sql.Selector)
 
+// Taxonomy is the predicate function for taxonomy builders.
+type Taxonomy func(*sql.Selector)
+
+// Term is the predicate function for term builders.
+type Term func(*sql.Selector)
+
 // User is the predicate function for user builders.
 type User func(*sql.Selector)
