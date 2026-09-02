@@ -18,7 +18,9 @@ $env:DATABASE_URL = "postgres://shirone:shirone@localhost:5432/shirone?sslmode=d
 go run ./cmd/server
 ```
 
-The server creates the development schema on startup. The initial schema covers users, sessions, documents, and comments; versioned production migrations, authentication, and CMS endpoints will be added in subsequent phases.
+The server creates the development schema on startup. The initial schema covers users, sessions, documents, and comments. Authentication endpoints are available under `/api/v1/auth`; versioned production migrations and CMS endpoints will be added in subsequent phases.
+
+Session tokens are sent only through an HttpOnly, SameSite=Lax cookie and are stored as SHA-256 hashes. Passwords are stored with Argon2id. Set `AUTH_COOKIE_SECURE=true` behind production HTTPS.
 
 ## PostgreSQL with Compose
 

@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -11,12 +10,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/go-chi/chi/v5"
-	_ "github.com/jackc/pgx/v5/stdlib"
-	_ "modernc.org/sqlite"
-
-	"github.com/shirone-platform/backend/ent"
 	"github.com/shirone-platform/backend/internal/config"
+	"github.com/shirone-platform/backend/internal/database"
+	"github.com/shirone-platform/backend/internal/httpapi"
 )
 
 func main() {
@@ -33,11 +29,7 @@ func main() {
 		}
 	}
 
-	driver := cfg.Database.Driver
-	if driver == "postgres" {
-		driver = "pgx"
-	}
-	db, err := sql.Open(driver, cfg.Database.URL)
+	db, entClient, err := database.Open(cfg.Database.Driver, cfg.Database.URL)
 	if err != nil {
 		logger.Error("open database", "error", err)
 		os.Exit(1)
@@ -48,30 +40,13 @@ func main() {
 		logger.Error("connect database", "error", err)
 		os.Exit(1)
 	}
-	entClient, err := ent.Open(driver, cfg.Database.URL)
-	if err != nil {
-		logger.Error("open ent client", "error", err)
-		os.Exit(1)
-	}
 	defer entClient.Close()
 	if err := entClient.Schema.Create(context.Background()); err != nil {
 		logger.Error("apply schema", "error", err)
 		os.Exit(1)
 	}
 
-	r := chi.NewRouter()
-	r.Get("/api/v1/health", func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"status":"ok"}`))
-	})
-	r.Get("/api/v1/ready", func(w http.ResponseWriter, r *http.Request) {
-		if err := db.PingContext(r.Context()); err != nil {
-			http.Error(w, `{"status":"not_ready"}`, http.StatusServiceUnavailable)
-			return
-		}
-		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"status":"ready"}`))
-	})
+	r := httpapi.NewRouter(db, entClient, httpapi.Options{CookieName: cfg.Auth.CookieName, CookieSecure: cfg.Auth.CookieSecure, SessionTTL: cfg.Auth.SessionTTL})
 
 	server := &http.Server{Addr: cfg.HTTP.Address, Handler: r, ReadHeaderTimeout: 5 * time.Second}
 	go func() {

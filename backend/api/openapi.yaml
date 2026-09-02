@@ -4,6 +4,36 @@ info:
   version: 0.1.0
   description: Provider-neutral API for Shirone dynamic edition.
 paths:
+  /api/v1/auth/register:
+    post:
+      operationId: register
+      responses:
+        '201':
+          description: Account and session created.
+        '409':
+          description: Email or username already exists.
+  /api/v1/auth/login:
+    post:
+      operationId: login
+      responses:
+        '200':
+          description: Session created.
+        '401':
+          description: Invalid credentials.
+  /api/v1/auth/logout:
+    post:
+      operationId: logout
+      responses:
+        '204':
+          description: Session removed.
+  /api/v1/auth/me:
+    get:
+      operationId: currentUser
+      responses:
+        '200':
+          description: Current account.
+        '401':
+          description: Authentication is required.
   /api/v1/health:
     get:
       operationId: health
