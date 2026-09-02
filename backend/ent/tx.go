@@ -18,6 +18,8 @@ type Tx struct {
 	Document *DocumentClient
 	// DocumentRevision is the client for interacting with the DocumentRevision builders.
 	DocumentRevision *DocumentRevisionClient
+	// MediaAsset is the client for interacting with the MediaAsset builders.
+	MediaAsset *MediaAssetClient
 	// Session is the client for interacting with the Session builders.
 	Session *SessionClient
 	// Taxonomy is the client for interacting with the Taxonomy builders.
@@ -160,6 +162,7 @@ func (tx *Tx) init() {
 	tx.Comment = NewCommentClient(tx.config)
 	tx.Document = NewDocumentClient(tx.config)
 	tx.DocumentRevision = NewDocumentRevisionClient(tx.config)
+	tx.MediaAsset = NewMediaAssetClient(tx.config)
 	tx.Session = NewSessionClient(tx.config)
 	tx.Taxonomy = NewTaxonomyClient(tx.config)
 	tx.Term = NewTermClient(tx.config)

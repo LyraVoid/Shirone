@@ -15,6 +15,9 @@ type Document func(*sql.Selector)
 // DocumentRevision is the predicate function for documentrevision builders.
 type DocumentRevision func(*sql.Selector)
 
+// MediaAsset is the predicate function for mediaasset builders.
+type MediaAsset func(*sql.Selector)
+
 // Session is the predicate function for session builders.
 type Session func(*sql.Selector)
 

@@ -15,6 +15,7 @@ import (
 	"github.com/shirone-platform/backend/ent/comment"
 	"github.com/shirone-platform/backend/ent/document"
 	"github.com/shirone-platform/backend/ent/documentrevision"
+	"github.com/shirone-platform/backend/ent/mediaasset"
 	"github.com/shirone-platform/backend/ent/session"
 	"github.com/shirone-platform/backend/ent/taxonomy"
 	"github.com/shirone-platform/backend/ent/term"
@@ -82,6 +83,7 @@ func checkColumn(t, c string) error {
 			comment.Table:          comment.ValidColumn,
 			document.Table:         document.ValidColumn,
 			documentrevision.Table: documentrevision.ValidColumn,
+			mediaasset.Table:       mediaasset.ValidColumn,
 			session.Table:          session.ValidColumn,
 			taxonomy.Table:         taxonomy.ValidColumn,
 			term.Table:             term.ValidColumn,

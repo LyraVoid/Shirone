@@ -38,6 +38,8 @@ const (
 	EdgeComments = "comments"
 	// EdgeRevisions holds the string denoting the revisions edge name in mutations.
 	EdgeRevisions = "revisions"
+	// EdgeMediaAssets holds the string denoting the media_assets edge name in mutations.
+	EdgeMediaAssets = "media_assets"
 	// Table holds the table name of the user in the database.
 	Table = "users"
 	// SessionsTable is the table that holds the sessions relation/edge.
@@ -68,6 +70,13 @@ const (
 	RevisionsInverseTable = "document_revisions"
 	// RevisionsColumn is the table column denoting the revisions relation/edge.
 	RevisionsColumn = "user_revisions"
+	// MediaAssetsTable is the table that holds the media_assets relation/edge.
+	MediaAssetsTable = "media_assets"
+	// MediaAssetsInverseTable is the table name for the MediaAsset entity.
+	// It exists in this package in order to avoid circular dependency with the "mediaasset" package.
+	MediaAssetsInverseTable = "media_assets"
+	// MediaAssetsColumn is the table column denoting the media_assets relation/edge.
+	MediaAssetsColumn = "user_media_assets"
 )
 
 // Columns holds all SQL columns for user fields.
@@ -250,6 +259,20 @@ func ByRevisions(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newRevisionsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// ByMediaAssetsCount orders the results by media_assets count.
+func ByMediaAssetsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newMediaAssetsStep(), opts...)
+	}
+}
+
+// ByMediaAssets orders the results by media_assets terms.
+func ByMediaAssets(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newMediaAssetsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newSessionsStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -276,5 +299,12 @@ func newRevisionsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(RevisionsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, RevisionsTable, RevisionsColumn),
+	)
+}
+func newMediaAssetsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(MediaAssetsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, MediaAssetsTable, MediaAssetsColumn),
 	)
 }

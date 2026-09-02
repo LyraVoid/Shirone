@@ -13,6 +13,7 @@ import (
 	"github.com/shirone-platform/backend/internal/config"
 	"github.com/shirone-platform/backend/internal/database"
 	"github.com/shirone-platform/backend/internal/httpapi"
+	"github.com/shirone-platform/backend/internal/storage"
 )
 
 func main() {
@@ -45,8 +46,13 @@ func main() {
 		logger.Error("apply schema", "error", err)
 		os.Exit(1)
 	}
+	mediaStore, err := storage.NewLocal(cfg.Storage.LocalDirectory)
+	if err != nil {
+		logger.Error("initialize media storage", "error", err)
+		os.Exit(1)
+	}
 
-	r := httpapi.NewRouter(db, entClient, httpapi.Options{CookieName: cfg.Auth.CookieName, CookieSecure: cfg.Auth.CookieSecure, SessionTTL: cfg.Auth.SessionTTL, AllowedOrigins: cfg.HTTP.AllowedOrigins})
+	r := httpapi.NewRouter(db, entClient, httpapi.Options{CookieName: cfg.Auth.CookieName, CookieSecure: cfg.Auth.CookieSecure, SessionTTL: cfg.Auth.SessionTTL, AllowedOrigins: cfg.HTTP.AllowedOrigins, MediaStore: mediaStore, MaxUploadBytes: cfg.Storage.MaxUploadBytes})
 
 	server := &http.Server{Addr: cfg.HTTP.Address, Handler: r, ReadHeaderTimeout: 5 * time.Second}
 	go func() {

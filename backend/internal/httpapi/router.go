@@ -10,6 +10,7 @@ import (
 
 	"github.com/shirone-platform/backend/ent"
 	"github.com/shirone-platform/backend/internal/auth"
+	"github.com/shirone-platform/backend/internal/storage"
 )
 
 type Options struct {
@@ -17,6 +18,8 @@ type Options struct {
 	CookieSecure   bool
 	SessionTTL     time.Duration
 	AllowedOrigins []string
+	MediaStore     storage.Store
+	MaxUploadBytes int64
 }
 
 func NewRouter(db *sql.DB, client *ent.Client, options Options) http.Handler {
@@ -42,6 +45,7 @@ func NewRouter(db *sql.DB, client *ent.Client, options Options) http.Handler {
 	commentHandler := &commentHandler{client: client}
 	userHandler := &userHandler{client: client}
 	taxonomyHandler := &taxonomyHandler{client: client}
+	mediaHandler := &mediaHandler{client: client, store: options.MediaStore, maxUploadBytes: options.MaxUploadBytes}
 	r.Route("/api/v1/auth", func(r chi.Router) {
 		r.Post("/register", authHandler.register)
 		r.Post("/login", authHandler.login)
@@ -83,5 +87,14 @@ func NewRouter(db *sql.DB, client *ent.Client, options Options) http.Handler {
 		r.Put("/{id}", contentHandler.update)
 		r.Delete("/{id}", contentHandler.delete)
 	})
+	if options.MediaStore != nil {
+		r.Get("/api/v1/media/{key}", mediaHandler.serve)
+		r.Route("/api/v1/admin/media", func(r chi.Router) {
+			r.Use(authHandler.requireUser)
+			r.Use(requireEditor)
+			r.Get("/", mediaHandler.list)
+			r.Post("/", mediaHandler.upload)
+		})
+	}
 	return r
 }

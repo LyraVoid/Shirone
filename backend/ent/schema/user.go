@@ -32,5 +32,6 @@ func (User) Edges() []ent.Edge {
 		edge.To("documents", Document.Type),
 		edge.To("comments", Comment.Type),
 		edge.To("revisions", DocumentRevision.Type),
+		edge.To("media_assets", MediaAsset.Type),
 	}
 }

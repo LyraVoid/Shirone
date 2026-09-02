@@ -4,6 +4,48 @@ info:
   version: 0.1.0
   description: Provider-neutral API for Shirone dynamic edition.
 paths:
+  /api/v1/media/{key}:
+    get:
+      operationId: getMedia
+      parameters:
+        - in: path
+          name: key
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Immutable media object.
+        '404':
+          description: Media was not found.
+  /api/v1/admin/media/:
+    get:
+      operationId: listMedia
+      responses:
+        '200':
+          description: Media metadata list.
+    post:
+      operationId: uploadMedia
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                altText:
+                  type: string
+      responses:
+        '201':
+          description: Media object stored and metadata created.
+        '413':
+          description: Upload exceeds the configured size limit.
+        '415':
+          description: Media type is not supported.
   /api/v1/taxonomies:
     get:
       operationId: listTaxonomies

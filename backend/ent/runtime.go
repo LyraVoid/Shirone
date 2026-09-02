@@ -4,6 +4,7 @@ package ent
 
 import (
 	"github.com/shirone-platform/backend/ent/documentrevision"
+	"github.com/shirone-platform/backend/ent/mediaasset"
 	"github.com/shirone-platform/backend/ent/schema"
 )
 
@@ -25,6 +26,12 @@ func init() {
 	documentrevisionDescTermIds := documentrevisionFields[5].Descriptor()
 	// documentrevision.DefaultTermIds holds the default value on creation for the term_ids field.
 	documentrevision.DefaultTermIds = documentrevisionDescTermIds.Default.([]int)
+	mediaassetFields := schema.MediaAsset{}.Fields()
+	_ = mediaassetFields
+	// mediaassetDescSize is the schema descriptor for size field.
+	mediaassetDescSize := mediaassetFields[3].Descriptor()
+	// mediaasset.SizeValidator is a validator for the "size" field. It is called by the builders before save.
+	mediaasset.SizeValidator = mediaassetDescSize.Validators[0].(func(int64) error)
 	userFields := schema.User{}.Fields()
 	_ = userFields
 }

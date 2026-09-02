@@ -125,6 +125,32 @@ var (
 			},
 		},
 	}
+	// MediaAssetsColumns holds the columns for the "media_assets" table.
+	MediaAssetsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "key", Type: field.TypeString, Unique: true},
+		{Name: "original_name", Type: field.TypeString},
+		{Name: "mime_type", Type: field.TypeString},
+		{Name: "size", Type: field.TypeInt64},
+		{Name: "checksum", Type: field.TypeString},
+		{Name: "alt_text", Type: field.TypeString, Nullable: true},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "user_media_assets", Type: field.TypeInt},
+	}
+	// MediaAssetsTable holds the schema information for the "media_assets" table.
+	MediaAssetsTable = &schema.Table{
+		Name:       "media_assets",
+		Columns:    MediaAssetsColumns,
+		PrimaryKey: []*schema.Column{MediaAssetsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "media_assets_users_media_assets",
+				Columns:    []*schema.Column{MediaAssetsColumns[8]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+	}
 	// SessionsColumns holds the columns for the "sessions" table.
 	SessionsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
@@ -248,6 +274,7 @@ var (
 		CommentsTable,
 		DocumentsTable,
 		DocumentRevisionsTable,
+		MediaAssetsTable,
 		SessionsTable,
 		TaxonomiesTable,
 		TermsTable,
@@ -263,6 +290,7 @@ func init() {
 	DocumentsTable.ForeignKeys[0].RefTable = UsersTable
 	DocumentRevisionsTable.ForeignKeys[0].RefTable = DocumentsTable
 	DocumentRevisionsTable.ForeignKeys[1].RefTable = UsersTable
+	MediaAssetsTable.ForeignKeys[0].RefTable = UsersTable
 	SessionsTable.ForeignKeys[0].RefTable = UsersTable
 	TermsTable.ForeignKeys[0].RefTable = TaxonomiesTable
 	DocumentTermsTable.ForeignKeys[0].RefTable = DocumentsTable

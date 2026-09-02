@@ -49,9 +49,11 @@ type UserEdges struct {
 	Comments []*Comment `json:"comments,omitempty"`
 	// Revisions holds the value of the revisions edge.
 	Revisions []*DocumentRevision `json:"revisions,omitempty"`
+	// MediaAssets holds the value of the media_assets edge.
+	MediaAssets []*MediaAsset `json:"media_assets,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [4]bool
+	loadedTypes [5]bool
 }
 
 // SessionsOrErr returns the Sessions value or an error if the edge
@@ -88,6 +90,15 @@ func (e UserEdges) RevisionsOrErr() ([]*DocumentRevision, error) {
 		return e.Revisions, nil
 	}
 	return nil, &NotLoadedError{edge: "revisions"}
+}
+
+// MediaAssetsOrErr returns the MediaAssets value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) MediaAssetsOrErr() ([]*MediaAsset, error) {
+	if e.loadedTypes[4] {
+		return e.MediaAssets, nil
+	}
+	return nil, &NotLoadedError{edge: "media_assets"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -201,6 +212,11 @@ func (_m *User) QueryComments() *CommentQuery {
 // QueryRevisions queries the "revisions" edge of the User entity.
 func (_m *User) QueryRevisions() *DocumentRevisionQuery {
 	return NewUserClient(_m.config).QueryRevisions(_m)
+}
+
+// QueryMediaAssets queries the "media_assets" edge of the User entity.
+func (_m *User) QueryMediaAssets() *MediaAssetQuery {
+	return NewUserClient(_m.config).QueryMediaAssets(_m)
 }
 
 // Update returns a builder for updating this User.

@@ -13,6 +13,7 @@ import (
 	"github.com/shirone-platform/backend/ent/comment"
 	"github.com/shirone-platform/backend/ent/document"
 	"github.com/shirone-platform/backend/ent/documentrevision"
+	"github.com/shirone-platform/backend/ent/mediaasset"
 	"github.com/shirone-platform/backend/ent/session"
 	"github.com/shirone-platform/backend/ent/user"
 )
@@ -146,6 +147,21 @@ func (_c *UserCreate) AddRevisions(v ...*DocumentRevision) *UserCreate {
 		ids[i] = v[i].ID
 	}
 	return _c.AddRevisionIDs(ids...)
+}
+
+// AddMediaAssetIDs adds the "media_assets" edge to the MediaAsset entity by IDs.
+func (_c *UserCreate) AddMediaAssetIDs(ids ...int) *UserCreate {
+	_c.mutation.AddMediaAssetIDs(ids...)
+	return _c
+}
+
+// AddMediaAssets adds the "media_assets" edges to the MediaAsset entity.
+func (_c *UserCreate) AddMediaAssets(v ...*MediaAsset) *UserCreate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddMediaAssetIDs(ids...)
 }
 
 // Mutation returns the UserMutation object of the builder.
@@ -344,6 +360,22 @@ func (_c *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(documentrevision.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.MediaAssetsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.MediaAssetsTable,
+			Columns: []string{user.MediaAssetsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(mediaasset.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

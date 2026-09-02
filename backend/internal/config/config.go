@@ -13,6 +13,7 @@ type Config struct {
 	HTTP     HTTPConfig
 	Database DatabaseConfig
 	Auth     AuthConfig
+	Storage  StorageConfig
 }
 
 type HTTPConfig struct {
@@ -31,6 +32,11 @@ type AuthConfig struct {
 	SessionTTL   time.Duration
 }
 
+type StorageConfig struct {
+	LocalDirectory string
+	MaxUploadBytes int64
+}
+
 func Load() (Config, error) {
 	cfg := Config{
 		HTTP: HTTPConfig{Address: env("HTTP_ADDRESS", ":8080"), AllowedOrigins: envList("HTTP_ALLOWED_ORIGINS")},
@@ -42,6 +48,10 @@ func Load() (Config, error) {
 			CookieName:   env("AUTH_COOKIE_NAME", "shirone_session"),
 			CookieSecure: envBool("AUTH_COOKIE_SECURE", false),
 			SessionTTL:   30 * 24 * time.Hour,
+		},
+		Storage: StorageConfig{
+			LocalDirectory: env("STORAGE_LOCAL_DIR", "./data/media"),
+			MaxUploadBytes: 20 << 20,
 		},
 	}
 	if cfg.Database.Driver != "sqlite" && cfg.Database.Driver != "postgres" {

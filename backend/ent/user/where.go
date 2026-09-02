@@ -557,6 +557,29 @@ func HasRevisionsWith(preds ...predicate.DocumentRevision) predicate.User {
 	})
 }
 
+// HasMediaAssets applies the HasEdge predicate on the "media_assets" edge.
+func HasMediaAssets() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, MediaAssetsTable, MediaAssetsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasMediaAssetsWith applies the HasEdge predicate on the "media_assets" edge with a given conditions (other predicates).
+func HasMediaAssetsWith(preds ...predicate.MediaAsset) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := newMediaAssetsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.User) predicate.User {
 	return predicate.User(sql.AndPredicates(predicates...))

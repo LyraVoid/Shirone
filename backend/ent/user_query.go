@@ -15,6 +15,7 @@ import (
 	"github.com/shirone-platform/backend/ent/comment"
 	"github.com/shirone-platform/backend/ent/document"
 	"github.com/shirone-platform/backend/ent/documentrevision"
+	"github.com/shirone-platform/backend/ent/mediaasset"
 	"github.com/shirone-platform/backend/ent/predicate"
 	"github.com/shirone-platform/backend/ent/session"
 	"github.com/shirone-platform/backend/ent/user"
@@ -23,14 +24,15 @@ import (
 // UserQuery is the builder for querying User entities.
 type UserQuery struct {
 	config
-	ctx           *QueryContext
-	order         []user.OrderOption
-	inters        []Interceptor
-	predicates    []predicate.User
-	withSessions  *SessionQuery
-	withDocuments *DocumentQuery
-	withComments  *CommentQuery
-	withRevisions *DocumentRevisionQuery
+	ctx             *QueryContext
+	order           []user.OrderOption
+	inters          []Interceptor
+	predicates      []predicate.User
+	withSessions    *SessionQuery
+	withDocuments   *DocumentQuery
+	withComments    *CommentQuery
+	withRevisions   *DocumentRevisionQuery
+	withMediaAssets *MediaAssetQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -148,6 +150,28 @@ func (_q *UserQuery) QueryRevisions() *DocumentRevisionQuery {
 			sqlgraph.From(user.Table, user.FieldID, selector),
 			sqlgraph.To(documentrevision.Table, documentrevision.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, user.RevisionsTable, user.RevisionsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryMediaAssets chains the current query on the "media_assets" edge.
+func (_q *UserQuery) QueryMediaAssets() *MediaAssetQuery {
+	query := (&MediaAssetClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(mediaasset.Table, mediaasset.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.MediaAssetsTable, user.MediaAssetsColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -342,15 +366,16 @@ func (_q *UserQuery) Clone() *UserQuery {
 		return nil
 	}
 	return &UserQuery{
-		config:        _q.config,
-		ctx:           _q.ctx.Clone(),
-		order:         append([]user.OrderOption{}, _q.order...),
-		inters:        append([]Interceptor{}, _q.inters...),
-		predicates:    append([]predicate.User{}, _q.predicates...),
-		withSessions:  _q.withSessions.Clone(),
-		withDocuments: _q.withDocuments.Clone(),
-		withComments:  _q.withComments.Clone(),
-		withRevisions: _q.withRevisions.Clone(),
+		config:          _q.config,
+		ctx:             _q.ctx.Clone(),
+		order:           append([]user.OrderOption{}, _q.order...),
+		inters:          append([]Interceptor{}, _q.inters...),
+		predicates:      append([]predicate.User{}, _q.predicates...),
+		withSessions:    _q.withSessions.Clone(),
+		withDocuments:   _q.withDocuments.Clone(),
+		withComments:    _q.withComments.Clone(),
+		withRevisions:   _q.withRevisions.Clone(),
+		withMediaAssets: _q.withMediaAssets.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
@@ -398,6 +423,17 @@ func (_q *UserQuery) WithRevisions(opts ...func(*DocumentRevisionQuery)) *UserQu
 		opt(query)
 	}
 	_q.withRevisions = query
+	return _q
+}
+
+// WithMediaAssets tells the query-builder to eager-load the nodes that are connected to
+// the "media_assets" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithMediaAssets(opts ...func(*MediaAssetQuery)) *UserQuery {
+	query := (&MediaAssetClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withMediaAssets = query
 	return _q
 }
 
@@ -479,11 +515,12 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 	var (
 		nodes       = []*User{}
 		_spec       = _q.querySpec()
-		loadedTypes = [4]bool{
+		loadedTypes = [5]bool{
 			_q.withSessions != nil,
 			_q.withDocuments != nil,
 			_q.withComments != nil,
 			_q.withRevisions != nil,
+			_q.withMediaAssets != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -529,6 +566,13 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 		if err := _q.loadRevisions(ctx, query, nodes,
 			func(n *User) { n.Edges.Revisions = []*DocumentRevision{} },
 			func(n *User, e *DocumentRevision) { n.Edges.Revisions = append(n.Edges.Revisions, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withMediaAssets; query != nil {
+		if err := _q.loadMediaAssets(ctx, query, nodes,
+			func(n *User) { n.Edges.MediaAssets = []*MediaAsset{} },
+			func(n *User, e *MediaAsset) { n.Edges.MediaAssets = append(n.Edges.MediaAssets, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -654,6 +698,37 @@ func (_q *UserQuery) loadRevisions(ctx context.Context, query *DocumentRevisionQ
 		node, ok := nodeids[*fk]
 		if !ok {
 			return fmt.Errorf(`unexpected referenced foreign-key "user_revisions" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *UserQuery) loadMediaAssets(ctx context.Context, query *MediaAssetQuery, nodes []*User, init func(*User), assign func(*User, *MediaAsset)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.MediaAsset(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.MediaAssetsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.user_media_assets
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "user_media_assets" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_media_assets" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/shirone-platform/backend/internal/database"
+	"github.com/shirone-platform/backend/internal/storage"
 )
 
 func TestAuthLifecycle(t *testing.T) {
@@ -81,5 +82,9 @@ func testRouter(t *testing.T) http.Handler {
 		_ = client.Close()
 		_ = db.Close()
 	})
-	return NewRouter(db, client, Options{CookieName: "shirone_session", SessionTTL: time.Hour})
+	mediaStore, err := storage.NewLocal(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
+	return NewRouter(db, client, Options{CookieName: "shirone_session", SessionTTL: time.Hour, MediaStore: mediaStore, MaxUploadBytes: 1 << 20})
 }
