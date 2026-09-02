@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/shirone-platform/backend/ent/comment"
 	"github.com/shirone-platform/backend/ent/document"
+	"github.com/shirone-platform/backend/ent/documentrevision"
 	"github.com/shirone-platform/backend/ent/user"
 )
 
@@ -118,6 +119,21 @@ func (_c *DocumentCreate) AddComments(v ...*Comment) *DocumentCreate {
 		ids[i] = v[i].ID
 	}
 	return _c.AddCommentIDs(ids...)
+}
+
+// AddRevisionIDs adds the "revisions" edge to the DocumentRevision entity by IDs.
+func (_c *DocumentCreate) AddRevisionIDs(ids ...int) *DocumentCreate {
+	_c.mutation.AddRevisionIDs(ids...)
+	return _c
+}
+
+// AddRevisions adds the "revisions" edges to the DocumentRevision entity.
+func (_c *DocumentCreate) AddRevisions(v ...*DocumentRevision) *DocumentCreate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddRevisionIDs(ids...)
 }
 
 // Mutation returns the DocumentMutation object of the builder.
@@ -273,6 +289,22 @@ func (_c *DocumentCreate) createSpec() (*Document, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(comment.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.RevisionsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   document.RevisionsTable,
+			Columns: []string{document.RevisionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(documentrevision.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

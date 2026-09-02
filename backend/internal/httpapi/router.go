@@ -70,6 +70,7 @@ func NewRouter(db *sql.DB, client *ent.Client, options Options) http.Handler {
 		r.Use(requireEditor)
 		r.Get("/", contentHandler.adminList)
 		r.Get("/{id}", contentHandler.adminGet)
+		r.Get("/{id}/revisions", contentHandler.revisions)
 		r.Post("/", contentHandler.create)
 		r.Put("/{id}", contentHandler.update)
 		r.Delete("/{id}", contentHandler.delete)

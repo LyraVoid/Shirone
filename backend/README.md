@@ -30,6 +30,8 @@ Approved comments are publicly readable below each published content item. Authe
 
 Administrators can list accounts and change roles or account status under `/api/v1/admin/users`. The API prevents changing the last active administrator.
 
+Content creation, updates, and archival record immutable revision snapshots in the same database transaction. The admin revision endpoint exposes the complete edit history; deletion currently means archival so published data is not accidentally lost.
+
 ## PostgreSQL with Compose
 
 ```powershell

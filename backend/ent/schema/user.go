@@ -31,5 +31,6 @@ func (User) Edges() []ent.Edge {
 		edge.To("sessions", Session.Type),
 		edge.To("documents", Document.Type),
 		edge.To("comments", Comment.Type),
+		edge.To("revisions", DocumentRevision.Type),
 	}
 }

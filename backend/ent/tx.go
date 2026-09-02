@@ -16,6 +16,8 @@ type Tx struct {
 	Comment *CommentClient
 	// Document is the client for interacting with the Document builders.
 	Document *DocumentClient
+	// DocumentRevision is the client for interacting with the DocumentRevision builders.
+	DocumentRevision *DocumentRevisionClient
 	// Session is the client for interacting with the Session builders.
 	Session *SessionClient
 	// User is the client for interacting with the User builders.
@@ -153,6 +155,7 @@ func (tx *Tx) Client() *Client {
 func (tx *Tx) init() {
 	tx.Comment = NewCommentClient(tx.config)
 	tx.Document = NewDocumentClient(tx.config)
+	tx.DocumentRevision = NewDocumentRevisionClient(tx.config)
 	tx.Session = NewSessionClient(tx.config)
 	tx.User = NewUserClient(tx.config)
 }

@@ -3,6 +3,7 @@
 package ent
 
 import (
+	"github.com/shirone-platform/backend/ent/documentrevision"
 	"github.com/shirone-platform/backend/ent/schema"
 )
 
@@ -14,6 +15,12 @@ func init() {
 	_ = commentFields
 	documentFields := schema.Document{}.Fields()
 	_ = documentFields
+	documentrevisionFields := schema.DocumentRevision{}.Fields()
+	_ = documentrevisionFields
+	// documentrevisionDescVersion is the schema descriptor for version field.
+	documentrevisionDescVersion := documentrevisionFields[0].Descriptor()
+	// documentrevision.VersionValidator is a validator for the "version" field. It is called by the builders before save.
+	documentrevision.VersionValidator = documentrevisionDescVersion.Validators[0].(func(int) error)
 	userFields := schema.User{}.Fields()
 	_ = userFields
 }

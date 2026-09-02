@@ -13,6 +13,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/shirone-platform/backend/ent/comment"
 	"github.com/shirone-platform/backend/ent/document"
+	"github.com/shirone-platform/backend/ent/documentrevision"
 	"github.com/shirone-platform/backend/ent/predicate"
 	"github.com/shirone-platform/backend/ent/user"
 )
@@ -180,6 +181,21 @@ func (_u *DocumentUpdate) AddComments(v ...*Comment) *DocumentUpdate {
 	return _u.AddCommentIDs(ids...)
 }
 
+// AddRevisionIDs adds the "revisions" edge to the DocumentRevision entity by IDs.
+func (_u *DocumentUpdate) AddRevisionIDs(ids ...int) *DocumentUpdate {
+	_u.mutation.AddRevisionIDs(ids...)
+	return _u
+}
+
+// AddRevisions adds the "revisions" edges to the DocumentRevision entity.
+func (_u *DocumentUpdate) AddRevisions(v ...*DocumentRevision) *DocumentUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddRevisionIDs(ids...)
+}
+
 // Mutation returns the DocumentMutation object of the builder.
 func (_u *DocumentUpdate) Mutation() *DocumentMutation {
 	return _u.mutation
@@ -210,6 +226,27 @@ func (_u *DocumentUpdate) RemoveComments(v ...*Comment) *DocumentUpdate {
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveCommentIDs(ids...)
+}
+
+// ClearRevisions clears all "revisions" edges to the DocumentRevision entity.
+func (_u *DocumentUpdate) ClearRevisions() *DocumentUpdate {
+	_u.mutation.ClearRevisions()
+	return _u
+}
+
+// RemoveRevisionIDs removes the "revisions" edge to DocumentRevision entities by IDs.
+func (_u *DocumentUpdate) RemoveRevisionIDs(ids ...int) *DocumentUpdate {
+	_u.mutation.RemoveRevisionIDs(ids...)
+	return _u
+}
+
+// RemoveRevisions removes "revisions" edges to DocumentRevision entities.
+func (_u *DocumentUpdate) RemoveRevisions(v ...*DocumentRevision) *DocumentUpdate {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveRevisionIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -361,6 +398,51 @@ func (_u *DocumentUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(comment.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.RevisionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   document.RevisionsTable,
+			Columns: []string{document.RevisionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(documentrevision.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedRevisionsIDs(); len(nodes) > 0 && !_u.mutation.RevisionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   document.RevisionsTable,
+			Columns: []string{document.RevisionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(documentrevision.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RevisionsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   document.RevisionsTable,
+			Columns: []string{document.RevisionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(documentrevision.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {
@@ -538,6 +620,21 @@ func (_u *DocumentUpdateOne) AddComments(v ...*Comment) *DocumentUpdateOne {
 	return _u.AddCommentIDs(ids...)
 }
 
+// AddRevisionIDs adds the "revisions" edge to the DocumentRevision entity by IDs.
+func (_u *DocumentUpdateOne) AddRevisionIDs(ids ...int) *DocumentUpdateOne {
+	_u.mutation.AddRevisionIDs(ids...)
+	return _u
+}
+
+// AddRevisions adds the "revisions" edges to the DocumentRevision entity.
+func (_u *DocumentUpdateOne) AddRevisions(v ...*DocumentRevision) *DocumentUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddRevisionIDs(ids...)
+}
+
 // Mutation returns the DocumentMutation object of the builder.
 func (_u *DocumentUpdateOne) Mutation() *DocumentMutation {
 	return _u.mutation
@@ -568,6 +665,27 @@ func (_u *DocumentUpdateOne) RemoveComments(v ...*Comment) *DocumentUpdateOne {
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveCommentIDs(ids...)
+}
+
+// ClearRevisions clears all "revisions" edges to the DocumentRevision entity.
+func (_u *DocumentUpdateOne) ClearRevisions() *DocumentUpdateOne {
+	_u.mutation.ClearRevisions()
+	return _u
+}
+
+// RemoveRevisionIDs removes the "revisions" edge to DocumentRevision entities by IDs.
+func (_u *DocumentUpdateOne) RemoveRevisionIDs(ids ...int) *DocumentUpdateOne {
+	_u.mutation.RemoveRevisionIDs(ids...)
+	return _u
+}
+
+// RemoveRevisions removes "revisions" edges to DocumentRevision entities.
+func (_u *DocumentUpdateOne) RemoveRevisions(v ...*DocumentRevision) *DocumentUpdateOne {
+	ids := make([]int, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveRevisionIDs(ids...)
 }
 
 // Where appends a list predicates to the DocumentUpdate builder.
@@ -749,6 +867,51 @@ func (_u *DocumentUpdateOne) sqlSave(ctx context.Context) (_node *Document, err 
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(comment.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.RevisionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   document.RevisionsTable,
+			Columns: []string{document.RevisionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(documentrevision.FieldID, field.TypeInt),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedRevisionsIDs(); len(nodes) > 0 && !_u.mutation.RevisionsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   document.RevisionsTable,
+			Columns: []string{document.RevisionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(documentrevision.FieldID, field.TypeInt),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RevisionsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   document.RevisionsTable,
+			Columns: []string{document.RevisionsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(documentrevision.FieldID, field.TypeInt),
 			},
 		}
 		for _, k := range nodes {

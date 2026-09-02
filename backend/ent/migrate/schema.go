@@ -84,6 +84,46 @@ var (
 			},
 		},
 	}
+	// DocumentRevisionsColumns holds the columns for the "document_revisions" table.
+	DocumentRevisionsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt, Increment: true},
+		{Name: "version", Type: field.TypeInt},
+		{Name: "slug", Type: field.TypeString},
+		{Name: "title", Type: field.TypeString},
+		{Name: "body", Type: field.TypeString, Size: 2147483647},
+		{Name: "excerpt", Type: field.TypeString, Nullable: true},
+		{Name: "status", Type: field.TypeEnum, Enums: []string{"draft", "published", "archived"}},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "document_revisions", Type: field.TypeInt},
+		{Name: "user_revisions", Type: field.TypeInt},
+	}
+	// DocumentRevisionsTable holds the schema information for the "document_revisions" table.
+	DocumentRevisionsTable = &schema.Table{
+		Name:       "document_revisions",
+		Columns:    DocumentRevisionsColumns,
+		PrimaryKey: []*schema.Column{DocumentRevisionsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "document_revisions_documents_revisions",
+				Columns:    []*schema.Column{DocumentRevisionsColumns[8]},
+				RefColumns: []*schema.Column{DocumentsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "document_revisions_users_revisions",
+				Columns:    []*schema.Column{DocumentRevisionsColumns[9]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "documentrevision_version_document_revisions",
+				Unique:  true,
+				Columns: []*schema.Column{DocumentRevisionsColumns[1], DocumentRevisionsColumns[8]},
+			},
+		},
+	}
 	// SessionsColumns holds the columns for the "sessions" table.
 	SessionsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt, Increment: true},
@@ -135,6 +175,7 @@ var (
 	Tables = []*schema.Table{
 		CommentsTable,
 		DocumentsTable,
+		DocumentRevisionsTable,
 		SessionsTable,
 		UsersTable,
 	}
@@ -145,5 +186,7 @@ func init() {
 	CommentsTable.ForeignKeys[1].RefTable = DocumentsTable
 	CommentsTable.ForeignKeys[2].RefTable = UsersTable
 	DocumentsTable.ForeignKeys[0].RefTable = UsersTable
+	DocumentRevisionsTable.ForeignKeys[0].RefTable = DocumentsTable
+	DocumentRevisionsTable.ForeignKeys[1].RefTable = UsersTable
 	SessionsTable.ForeignKeys[0].RefTable = UsersTable
 }

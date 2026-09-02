@@ -17,6 +17,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/shirone-platform/backend/ent/comment"
 	"github.com/shirone-platform/backend/ent/document"
+	"github.com/shirone-platform/backend/ent/documentrevision"
 	"github.com/shirone-platform/backend/ent/session"
 	"github.com/shirone-platform/backend/ent/user"
 )
@@ -30,6 +31,8 @@ type Client struct {
 	Comment *CommentClient
 	// Document is the client for interacting with the Document builders.
 	Document *DocumentClient
+	// DocumentRevision is the client for interacting with the DocumentRevision builders.
+	DocumentRevision *DocumentRevisionClient
 	// Session is the client for interacting with the Session builders.
 	Session *SessionClient
 	// User is the client for interacting with the User builders.
@@ -47,6 +50,7 @@ func (c *Client) init() {
 	c.Schema = migrate.NewSchema(c.driver)
 	c.Comment = NewCommentClient(c.config)
 	c.Document = NewDocumentClient(c.config)
+	c.DocumentRevision = NewDocumentRevisionClient(c.config)
 	c.Session = NewSessionClient(c.config)
 	c.User = NewUserClient(c.config)
 }
@@ -139,12 +143,13 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	cfg := c.config
 	cfg.driver = tx
 	return &Tx{
-		ctx:      ctx,
-		config:   cfg,
-		Comment:  NewCommentClient(cfg),
-		Document: NewDocumentClient(cfg),
-		Session:  NewSessionClient(cfg),
-		User:     NewUserClient(cfg),
+		ctx:              ctx,
+		config:           cfg,
+		Comment:          NewCommentClient(cfg),
+		Document:         NewDocumentClient(cfg),
+		DocumentRevision: NewDocumentRevisionClient(cfg),
+		Session:          NewSessionClient(cfg),
+		User:             NewUserClient(cfg),
 	}, nil
 }
 
@@ -162,12 +167,13 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	cfg := c.config
 	cfg.driver = &txDriver{tx: tx, drv: c.driver}
 	return &Tx{
-		ctx:      ctx,
-		config:   cfg,
-		Comment:  NewCommentClient(cfg),
-		Document: NewDocumentClient(cfg),
-		Session:  NewSessionClient(cfg),
-		User:     NewUserClient(cfg),
+		ctx:              ctx,
+		config:           cfg,
+		Comment:          NewCommentClient(cfg),
+		Document:         NewDocumentClient(cfg),
+		DocumentRevision: NewDocumentRevisionClient(cfg),
+		Session:          NewSessionClient(cfg),
+		User:             NewUserClient(cfg),
 	}, nil
 }
 
@@ -198,6 +204,7 @@ func (c *Client) Close() error {
 func (c *Client) Use(hooks ...Hook) {
 	c.Comment.Use(hooks...)
 	c.Document.Use(hooks...)
+	c.DocumentRevision.Use(hooks...)
 	c.Session.Use(hooks...)
 	c.User.Use(hooks...)
 }
@@ -207,6 +214,7 @@ func (c *Client) Use(hooks ...Hook) {
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	c.Comment.Intercept(interceptors...)
 	c.Document.Intercept(interceptors...)
+	c.DocumentRevision.Intercept(interceptors...)
 	c.Session.Intercept(interceptors...)
 	c.User.Intercept(interceptors...)
 }
@@ -218,6 +226,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.Comment.mutate(ctx, m)
 	case *DocumentMutation:
 		return c.Document.mutate(ctx, m)
+	case *DocumentRevisionMutation:
+		return c.DocumentRevision.mutate(ctx, m)
 	case *SessionMutation:
 		return c.Session.mutate(ctx, m)
 	case *UserMutation:
@@ -564,6 +574,22 @@ func (c *DocumentClient) QueryComments(_m *Document) *CommentQuery {
 	return query
 }
 
+// QueryRevisions queries the revisions edge of a Document.
+func (c *DocumentClient) QueryRevisions(_m *Document) *DocumentRevisionQuery {
+	query := (&DocumentRevisionClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(document.Table, document.FieldID, id),
+			sqlgraph.To(documentrevision.Table, documentrevision.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, document.RevisionsTable, document.RevisionsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *DocumentClient) Hooks() []Hook {
 	return c.hooks.Document
@@ -586,6 +612,171 @@ func (c *DocumentClient) mutate(ctx context.Context, m *DocumentMutation) (Value
 		return (&DocumentDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown Document mutation op: %q", m.Op())
+	}
+}
+
+// DocumentRevisionClient is a client for the DocumentRevision schema.
+type DocumentRevisionClient struct {
+	config
+}
+
+// NewDocumentRevisionClient returns a client for the DocumentRevision from the given config.
+func NewDocumentRevisionClient(c config) *DocumentRevisionClient {
+	return &DocumentRevisionClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `documentrevision.Hooks(f(g(h())))`.
+func (c *DocumentRevisionClient) Use(hooks ...Hook) {
+	c.hooks.DocumentRevision = append(c.hooks.DocumentRevision, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `documentrevision.Intercept(f(g(h())))`.
+func (c *DocumentRevisionClient) Intercept(interceptors ...Interceptor) {
+	c.inters.DocumentRevision = append(c.inters.DocumentRevision, interceptors...)
+}
+
+// Create returns a builder for creating a DocumentRevision entity.
+func (c *DocumentRevisionClient) Create() *DocumentRevisionCreate {
+	mutation := newDocumentRevisionMutation(c.config, OpCreate)
+	return &DocumentRevisionCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of DocumentRevision entities.
+func (c *DocumentRevisionClient) CreateBulk(builders ...*DocumentRevisionCreate) *DocumentRevisionCreateBulk {
+	return &DocumentRevisionCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *DocumentRevisionClient) MapCreateBulk(slice any, setFunc func(*DocumentRevisionCreate, int)) *DocumentRevisionCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &DocumentRevisionCreateBulk{err: fmt.Errorf("calling to DocumentRevisionClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*DocumentRevisionCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &DocumentRevisionCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for DocumentRevision.
+func (c *DocumentRevisionClient) Update() *DocumentRevisionUpdate {
+	mutation := newDocumentRevisionMutation(c.config, OpUpdate)
+	return &DocumentRevisionUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *DocumentRevisionClient) UpdateOne(_m *DocumentRevision) *DocumentRevisionUpdateOne {
+	mutation := newDocumentRevisionMutation(c.config, OpUpdateOne, withDocumentRevision(_m))
+	return &DocumentRevisionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *DocumentRevisionClient) UpdateOneID(id int) *DocumentRevisionUpdateOne {
+	mutation := newDocumentRevisionMutation(c.config, OpUpdateOne, withDocumentRevisionID(id))
+	return &DocumentRevisionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for DocumentRevision.
+func (c *DocumentRevisionClient) Delete() *DocumentRevisionDelete {
+	mutation := newDocumentRevisionMutation(c.config, OpDelete)
+	return &DocumentRevisionDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *DocumentRevisionClient) DeleteOne(_m *DocumentRevision) *DocumentRevisionDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *DocumentRevisionClient) DeleteOneID(id int) *DocumentRevisionDeleteOne {
+	builder := c.Delete().Where(documentrevision.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &DocumentRevisionDeleteOne{builder}
+}
+
+// Query returns a query builder for DocumentRevision.
+func (c *DocumentRevisionClient) Query() *DocumentRevisionQuery {
+	return &DocumentRevisionQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeDocumentRevision},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a DocumentRevision entity by its id.
+func (c *DocumentRevisionClient) Get(ctx context.Context, id int) (*DocumentRevision, error) {
+	return c.Query().Where(documentrevision.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *DocumentRevisionClient) GetX(ctx context.Context, id int) *DocumentRevision {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryDocument queries the document edge of a DocumentRevision.
+func (c *DocumentRevisionClient) QueryDocument(_m *DocumentRevision) *DocumentQuery {
+	query := (&DocumentClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(documentrevision.Table, documentrevision.FieldID, id),
+			sqlgraph.To(document.Table, document.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, documentrevision.DocumentTable, documentrevision.DocumentColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryEditor queries the editor edge of a DocumentRevision.
+func (c *DocumentRevisionClient) QueryEditor(_m *DocumentRevision) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(documentrevision.Table, documentrevision.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, documentrevision.EditorTable, documentrevision.EditorColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *DocumentRevisionClient) Hooks() []Hook {
+	return c.hooks.DocumentRevision
+}
+
+// Interceptors returns the client interceptors.
+func (c *DocumentRevisionClient) Interceptors() []Interceptor {
+	return c.inters.DocumentRevision
+}
+
+func (c *DocumentRevisionClient) mutate(ctx context.Context, m *DocumentRevisionMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&DocumentRevisionCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&DocumentRevisionUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&DocumentRevisionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&DocumentRevisionDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown DocumentRevision mutation op: %q", m.Op())
 	}
 }
 
@@ -894,6 +1085,22 @@ func (c *UserClient) QueryComments(_m *User) *CommentQuery {
 	return query
 }
 
+// QueryRevisions queries the revisions edge of a User.
+func (c *UserClient) QueryRevisions(_m *User) *DocumentRevisionQuery {
+	query := (&DocumentRevisionClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(documentrevision.Table, documentrevision.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.RevisionsTable, user.RevisionsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *UserClient) Hooks() []Hook {
 	return c.hooks.User
@@ -922,9 +1129,9 @@ func (c *UserClient) mutate(ctx context.Context, m *UserMutation) (Value, error)
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		Comment, Document, Session, User []ent.Hook
+		Comment, Document, DocumentRevision, Session, User []ent.Hook
 	}
 	inters struct {
-		Comment, Document, Session, User []ent.Interceptor
+		Comment, Document, DocumentRevision, Session, User []ent.Interceptor
 	}
 )

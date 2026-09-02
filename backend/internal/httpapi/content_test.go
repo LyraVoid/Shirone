@@ -55,6 +55,14 @@ func TestPublishedContentLifecycle(t *testing.T) {
 		t.Fatalf("admin list status = %d, body = %s", adminListed.Code, adminListed.Body.String())
 	}
 
+	revisions := httptest.NewRequest(http.MethodGet, "/api/v1/admin/content/1/revisions", nil)
+	revisions.AddCookie(cookie)
+	revisionList := httptest.NewRecorder()
+	router.ServeHTTP(revisionList, revisions)
+	if revisionList.Code != http.StatusOK || !bytes.Contains(revisionList.Body.Bytes(), []byte(`"version":2`)) || !bytes.Contains(revisionList.Body.Bytes(), []byte(`"version":1`)) {
+		t.Fatalf("revisions status = %d, body = %s", revisionList.Code, revisionList.Body.String())
+	}
+
 	deleteRequest := httptest.NewRequest(http.MethodDelete, "/api/v1/admin/content/1", nil)
 	deleteRequest.AddCookie(cookie)
 	deleted := httptest.NewRecorder()

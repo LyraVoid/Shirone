@@ -126,7 +126,7 @@ paths:
         '200':
           description: Content updated by an editor or administrator.
     delete:
-      operationId: deleteContent
+      operationId: archiveContent
       parameters:
         - in: path
           name: id
@@ -135,7 +135,19 @@ paths:
             type: integer
       responses:
         '204':
-          description: Content deleted.
+          description: Content archived and revision recorded.
+  /api/v1/admin/content/{id}/revisions:
+    get:
+      operationId: listContentRevisions
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Immutable content revision snapshots.
   /api/v1/auth/register:
     post:
       operationId: register

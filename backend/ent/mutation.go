@@ -13,6 +13,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"github.com/shirone-platform/backend/ent/comment"
 	"github.com/shirone-platform/backend/ent/document"
+	"github.com/shirone-platform/backend/ent/documentrevision"
 	"github.com/shirone-platform/backend/ent/predicate"
 	"github.com/shirone-platform/backend/ent/session"
 	"github.com/shirone-platform/backend/ent/user"
@@ -27,10 +28,11 @@ const (
 	OpUpdateOne = ent.OpUpdateOne
 
 	// Node types.
-	TypeComment  = "Comment"
-	TypeDocument = "Document"
-	TypeSession  = "Session"
-	TypeUser     = "User"
+	TypeComment          = "Comment"
+	TypeDocument         = "Document"
+	TypeDocumentRevision = "DocumentRevision"
+	TypeSession          = "Session"
+	TypeUser             = "User"
 )
 
 // CommentMutation represents an operation that mutates the Comment nodes in the graph.
@@ -794,26 +796,29 @@ func (m *CommentMutation) ResetEdge(name string) error {
 // DocumentMutation represents an operation that mutates the Document nodes in the graph.
 type DocumentMutation struct {
 	config
-	op              Op
-	typ             string
-	id              *int
-	slug            *string
-	title           *string
-	body            *string
-	status          *document.Status
-	excerpt         *string
-	published_at    *time.Time
-	created_at      *time.Time
-	updated_at      *time.Time
-	clearedFields   map[string]struct{}
-	author          *int
-	clearedauthor   bool
-	comments        map[int]struct{}
-	removedcomments map[int]struct{}
-	clearedcomments bool
-	done            bool
-	oldValue        func(context.Context) (*Document, error)
-	predicates      []predicate.Document
+	op               Op
+	typ              string
+	id               *int
+	slug             *string
+	title            *string
+	body             *string
+	status           *document.Status
+	excerpt          *string
+	published_at     *time.Time
+	created_at       *time.Time
+	updated_at       *time.Time
+	clearedFields    map[string]struct{}
+	author           *int
+	clearedauthor    bool
+	comments         map[int]struct{}
+	removedcomments  map[int]struct{}
+	clearedcomments  bool
+	revisions        map[int]struct{}
+	removedrevisions map[int]struct{}
+	clearedrevisions bool
+	done             bool
+	oldValue         func(context.Context) (*Document, error)
+	predicates       []predicate.Document
 }
 
 var _ ent.Mutation = (*DocumentMutation)(nil)
@@ -1321,6 +1326,60 @@ func (m *DocumentMutation) ResetComments() {
 	m.removedcomments = nil
 }
 
+// AddRevisionIDs adds the "revisions" edge to the DocumentRevision entity by ids.
+func (m *DocumentMutation) AddRevisionIDs(ids ...int) {
+	if m.revisions == nil {
+		m.revisions = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.revisions[ids[i]] = struct{}{}
+	}
+}
+
+// ClearRevisions clears the "revisions" edge to the DocumentRevision entity.
+func (m *DocumentMutation) ClearRevisions() {
+	m.clearedrevisions = true
+}
+
+// RevisionsCleared reports if the "revisions" edge to the DocumentRevision entity was cleared.
+func (m *DocumentMutation) RevisionsCleared() bool {
+	return m.clearedrevisions
+}
+
+// RemoveRevisionIDs removes the "revisions" edge to the DocumentRevision entity by IDs.
+func (m *DocumentMutation) RemoveRevisionIDs(ids ...int) {
+	if m.removedrevisions == nil {
+		m.removedrevisions = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.revisions, ids[i])
+		m.removedrevisions[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedRevisions returns the removed IDs of the "revisions" edge to the DocumentRevision entity.
+func (m *DocumentMutation) RemovedRevisionsIDs() (ids []int) {
+	for id := range m.removedrevisions {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// RevisionsIDs returns the "revisions" edge IDs in the mutation.
+func (m *DocumentMutation) RevisionsIDs() (ids []int) {
+	for id := range m.revisions {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetRevisions resets all changes to the "revisions" edge.
+func (m *DocumentMutation) ResetRevisions() {
+	m.revisions = nil
+	m.clearedrevisions = false
+	m.removedrevisions = nil
+}
+
 // Where appends a list predicates to the DocumentMutation builder.
 func (m *DocumentMutation) Where(ps ...predicate.Document) {
 	m.predicates = append(m.predicates, ps...)
@@ -1588,12 +1647,15 @@ func (m *DocumentMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *DocumentMutation) AddedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.author != nil {
 		edges = append(edges, document.EdgeAuthor)
 	}
 	if m.comments != nil {
 		edges = append(edges, document.EdgeComments)
+	}
+	if m.revisions != nil {
+		edges = append(edges, document.EdgeRevisions)
 	}
 	return edges
 }
@@ -1612,15 +1674,24 @@ func (m *DocumentMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case document.EdgeRevisions:
+		ids := make([]ent.Value, 0, len(m.revisions))
+		for id := range m.revisions {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *DocumentMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.removedcomments != nil {
 		edges = append(edges, document.EdgeComments)
+	}
+	if m.removedrevisions != nil {
+		edges = append(edges, document.EdgeRevisions)
 	}
 	return edges
 }
@@ -1635,18 +1706,27 @@ func (m *DocumentMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case document.EdgeRevisions:
+		ids := make([]ent.Value, 0, len(m.removedrevisions))
+		for id := range m.removedrevisions {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *DocumentMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.clearedauthor {
 		edges = append(edges, document.EdgeAuthor)
 	}
 	if m.clearedcomments {
 		edges = append(edges, document.EdgeComments)
+	}
+	if m.clearedrevisions {
+		edges = append(edges, document.EdgeRevisions)
 	}
 	return edges
 }
@@ -1659,6 +1739,8 @@ func (m *DocumentMutation) EdgeCleared(name string) bool {
 		return m.clearedauthor
 	case document.EdgeComments:
 		return m.clearedcomments
+	case document.EdgeRevisions:
+		return m.clearedrevisions
 	}
 	return false
 }
@@ -1684,8 +1766,845 @@ func (m *DocumentMutation) ResetEdge(name string) error {
 	case document.EdgeComments:
 		m.ResetComments()
 		return nil
+	case document.EdgeRevisions:
+		m.ResetRevisions()
+		return nil
 	}
 	return fmt.Errorf("unknown Document edge %s", name)
+}
+
+// DocumentRevisionMutation represents an operation that mutates the DocumentRevision nodes in the graph.
+type DocumentRevisionMutation struct {
+	config
+	op              Op
+	typ             string
+	id              *int
+	version         *int
+	addversion      *int
+	slug            *string
+	title           *string
+	body            *string
+	excerpt         *string
+	status          *documentrevision.Status
+	created_at      *time.Time
+	clearedFields   map[string]struct{}
+	document        *int
+	cleareddocument bool
+	editor          *int
+	clearededitor   bool
+	done            bool
+	oldValue        func(context.Context) (*DocumentRevision, error)
+	predicates      []predicate.DocumentRevision
+}
+
+var _ ent.Mutation = (*DocumentRevisionMutation)(nil)
+
+// documentrevisionOption allows management of the mutation configuration using functional options.
+type documentrevisionOption func(*DocumentRevisionMutation)
+
+// newDocumentRevisionMutation creates new mutation for the DocumentRevision entity.
+func newDocumentRevisionMutation(c config, op Op, opts ...documentrevisionOption) *DocumentRevisionMutation {
+	m := &DocumentRevisionMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeDocumentRevision,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withDocumentRevisionID sets the ID field of the mutation.
+func withDocumentRevisionID(id int) documentrevisionOption {
+	return func(m *DocumentRevisionMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *DocumentRevision
+		)
+		m.oldValue = func(ctx context.Context) (*DocumentRevision, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().DocumentRevision.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withDocumentRevision sets the old DocumentRevision of the mutation.
+func withDocumentRevision(node *DocumentRevision) documentrevisionOption {
+	return func(m *DocumentRevisionMutation) {
+		m.oldValue = func(context.Context) (*DocumentRevision, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m DocumentRevisionMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m DocumentRevisionMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *DocumentRevisionMutation) ID() (id int, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *DocumentRevisionMutation) IDs(ctx context.Context) ([]int, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().DocumentRevision.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetVersion sets the "version" field.
+func (m *DocumentRevisionMutation) SetVersion(i int) {
+	m.version = &i
+	m.addversion = nil
+}
+
+// Version returns the value of the "version" field in the mutation.
+func (m *DocumentRevisionMutation) Version() (r int, exists bool) {
+	v := m.version
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldVersion returns the old "version" field's value of the DocumentRevision entity.
+// If the DocumentRevision object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DocumentRevisionMutation) OldVersion(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldVersion is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldVersion requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldVersion: %w", err)
+	}
+	return oldValue.Version, nil
+}
+
+// AddVersion adds i to the "version" field.
+func (m *DocumentRevisionMutation) AddVersion(i int) {
+	if m.addversion != nil {
+		*m.addversion += i
+	} else {
+		m.addversion = &i
+	}
+}
+
+// AddedVersion returns the value that was added to the "version" field in this mutation.
+func (m *DocumentRevisionMutation) AddedVersion() (r int, exists bool) {
+	v := m.addversion
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetVersion resets all changes to the "version" field.
+func (m *DocumentRevisionMutation) ResetVersion() {
+	m.version = nil
+	m.addversion = nil
+}
+
+// SetSlug sets the "slug" field.
+func (m *DocumentRevisionMutation) SetSlug(s string) {
+	m.slug = &s
+}
+
+// Slug returns the value of the "slug" field in the mutation.
+func (m *DocumentRevisionMutation) Slug() (r string, exists bool) {
+	v := m.slug
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSlug returns the old "slug" field's value of the DocumentRevision entity.
+// If the DocumentRevision object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DocumentRevisionMutation) OldSlug(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSlug is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSlug requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSlug: %w", err)
+	}
+	return oldValue.Slug, nil
+}
+
+// ResetSlug resets all changes to the "slug" field.
+func (m *DocumentRevisionMutation) ResetSlug() {
+	m.slug = nil
+}
+
+// SetTitle sets the "title" field.
+func (m *DocumentRevisionMutation) SetTitle(s string) {
+	m.title = &s
+}
+
+// Title returns the value of the "title" field in the mutation.
+func (m *DocumentRevisionMutation) Title() (r string, exists bool) {
+	v := m.title
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTitle returns the old "title" field's value of the DocumentRevision entity.
+// If the DocumentRevision object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DocumentRevisionMutation) OldTitle(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTitle is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTitle requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTitle: %w", err)
+	}
+	return oldValue.Title, nil
+}
+
+// ResetTitle resets all changes to the "title" field.
+func (m *DocumentRevisionMutation) ResetTitle() {
+	m.title = nil
+}
+
+// SetBody sets the "body" field.
+func (m *DocumentRevisionMutation) SetBody(s string) {
+	m.body = &s
+}
+
+// Body returns the value of the "body" field in the mutation.
+func (m *DocumentRevisionMutation) Body() (r string, exists bool) {
+	v := m.body
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldBody returns the old "body" field's value of the DocumentRevision entity.
+// If the DocumentRevision object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DocumentRevisionMutation) OldBody(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldBody is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldBody requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldBody: %w", err)
+	}
+	return oldValue.Body, nil
+}
+
+// ResetBody resets all changes to the "body" field.
+func (m *DocumentRevisionMutation) ResetBody() {
+	m.body = nil
+}
+
+// SetExcerpt sets the "excerpt" field.
+func (m *DocumentRevisionMutation) SetExcerpt(s string) {
+	m.excerpt = &s
+}
+
+// Excerpt returns the value of the "excerpt" field in the mutation.
+func (m *DocumentRevisionMutation) Excerpt() (r string, exists bool) {
+	v := m.excerpt
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldExcerpt returns the old "excerpt" field's value of the DocumentRevision entity.
+// If the DocumentRevision object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DocumentRevisionMutation) OldExcerpt(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldExcerpt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldExcerpt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldExcerpt: %w", err)
+	}
+	return oldValue.Excerpt, nil
+}
+
+// ClearExcerpt clears the value of the "excerpt" field.
+func (m *DocumentRevisionMutation) ClearExcerpt() {
+	m.excerpt = nil
+	m.clearedFields[documentrevision.FieldExcerpt] = struct{}{}
+}
+
+// ExcerptCleared returns if the "excerpt" field was cleared in this mutation.
+func (m *DocumentRevisionMutation) ExcerptCleared() bool {
+	_, ok := m.clearedFields[documentrevision.FieldExcerpt]
+	return ok
+}
+
+// ResetExcerpt resets all changes to the "excerpt" field.
+func (m *DocumentRevisionMutation) ResetExcerpt() {
+	m.excerpt = nil
+	delete(m.clearedFields, documentrevision.FieldExcerpt)
+}
+
+// SetStatus sets the "status" field.
+func (m *DocumentRevisionMutation) SetStatus(d documentrevision.Status) {
+	m.status = &d
+}
+
+// Status returns the value of the "status" field in the mutation.
+func (m *DocumentRevisionMutation) Status() (r documentrevision.Status, exists bool) {
+	v := m.status
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStatus returns the old "status" field's value of the DocumentRevision entity.
+// If the DocumentRevision object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DocumentRevisionMutation) OldStatus(ctx context.Context) (v documentrevision.Status, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStatus is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStatus requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStatus: %w", err)
+	}
+	return oldValue.Status, nil
+}
+
+// ResetStatus resets all changes to the "status" field.
+func (m *DocumentRevisionMutation) ResetStatus() {
+	m.status = nil
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *DocumentRevisionMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *DocumentRevisionMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the DocumentRevision entity.
+// If the DocumentRevision object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DocumentRevisionMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *DocumentRevisionMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetDocumentID sets the "document" edge to the Document entity by id.
+func (m *DocumentRevisionMutation) SetDocumentID(id int) {
+	m.document = &id
+}
+
+// ClearDocument clears the "document" edge to the Document entity.
+func (m *DocumentRevisionMutation) ClearDocument() {
+	m.cleareddocument = true
+}
+
+// DocumentCleared reports if the "document" edge to the Document entity was cleared.
+func (m *DocumentRevisionMutation) DocumentCleared() bool {
+	return m.cleareddocument
+}
+
+// DocumentID returns the "document" edge ID in the mutation.
+func (m *DocumentRevisionMutation) DocumentID() (id int, exists bool) {
+	if m.document != nil {
+		return *m.document, true
+	}
+	return
+}
+
+// DocumentIDs returns the "document" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// DocumentID instead. It exists only for internal usage by the builders.
+func (m *DocumentRevisionMutation) DocumentIDs() (ids []int) {
+	if id := m.document; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetDocument resets all changes to the "document" edge.
+func (m *DocumentRevisionMutation) ResetDocument() {
+	m.document = nil
+	m.cleareddocument = false
+}
+
+// SetEditorID sets the "editor" edge to the User entity by id.
+func (m *DocumentRevisionMutation) SetEditorID(id int) {
+	m.editor = &id
+}
+
+// ClearEditor clears the "editor" edge to the User entity.
+func (m *DocumentRevisionMutation) ClearEditor() {
+	m.clearededitor = true
+}
+
+// EditorCleared reports if the "editor" edge to the User entity was cleared.
+func (m *DocumentRevisionMutation) EditorCleared() bool {
+	return m.clearededitor
+}
+
+// EditorID returns the "editor" edge ID in the mutation.
+func (m *DocumentRevisionMutation) EditorID() (id int, exists bool) {
+	if m.editor != nil {
+		return *m.editor, true
+	}
+	return
+}
+
+// EditorIDs returns the "editor" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// EditorID instead. It exists only for internal usage by the builders.
+func (m *DocumentRevisionMutation) EditorIDs() (ids []int) {
+	if id := m.editor; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetEditor resets all changes to the "editor" edge.
+func (m *DocumentRevisionMutation) ResetEditor() {
+	m.editor = nil
+	m.clearededitor = false
+}
+
+// Where appends a list predicates to the DocumentRevisionMutation builder.
+func (m *DocumentRevisionMutation) Where(ps ...predicate.DocumentRevision) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the DocumentRevisionMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *DocumentRevisionMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.DocumentRevision, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *DocumentRevisionMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *DocumentRevisionMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (DocumentRevision).
+func (m *DocumentRevisionMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *DocumentRevisionMutation) Fields() []string {
+	fields := make([]string, 0, 7)
+	if m.version != nil {
+		fields = append(fields, documentrevision.FieldVersion)
+	}
+	if m.slug != nil {
+		fields = append(fields, documentrevision.FieldSlug)
+	}
+	if m.title != nil {
+		fields = append(fields, documentrevision.FieldTitle)
+	}
+	if m.body != nil {
+		fields = append(fields, documentrevision.FieldBody)
+	}
+	if m.excerpt != nil {
+		fields = append(fields, documentrevision.FieldExcerpt)
+	}
+	if m.status != nil {
+		fields = append(fields, documentrevision.FieldStatus)
+	}
+	if m.created_at != nil {
+		fields = append(fields, documentrevision.FieldCreatedAt)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *DocumentRevisionMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case documentrevision.FieldVersion:
+		return m.Version()
+	case documentrevision.FieldSlug:
+		return m.Slug()
+	case documentrevision.FieldTitle:
+		return m.Title()
+	case documentrevision.FieldBody:
+		return m.Body()
+	case documentrevision.FieldExcerpt:
+		return m.Excerpt()
+	case documentrevision.FieldStatus:
+		return m.Status()
+	case documentrevision.FieldCreatedAt:
+		return m.CreatedAt()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *DocumentRevisionMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case documentrevision.FieldVersion:
+		return m.OldVersion(ctx)
+	case documentrevision.FieldSlug:
+		return m.OldSlug(ctx)
+	case documentrevision.FieldTitle:
+		return m.OldTitle(ctx)
+	case documentrevision.FieldBody:
+		return m.OldBody(ctx)
+	case documentrevision.FieldExcerpt:
+		return m.OldExcerpt(ctx)
+	case documentrevision.FieldStatus:
+		return m.OldStatus(ctx)
+	case documentrevision.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	}
+	return nil, fmt.Errorf("unknown DocumentRevision field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *DocumentRevisionMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case documentrevision.FieldVersion:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetVersion(v)
+		return nil
+	case documentrevision.FieldSlug:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSlug(v)
+		return nil
+	case documentrevision.FieldTitle:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTitle(v)
+		return nil
+	case documentrevision.FieldBody:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetBody(v)
+		return nil
+	case documentrevision.FieldExcerpt:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetExcerpt(v)
+		return nil
+	case documentrevision.FieldStatus:
+		v, ok := value.(documentrevision.Status)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStatus(v)
+		return nil
+	case documentrevision.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	}
+	return fmt.Errorf("unknown DocumentRevision field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *DocumentRevisionMutation) AddedFields() []string {
+	var fields []string
+	if m.addversion != nil {
+		fields = append(fields, documentrevision.FieldVersion)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *DocumentRevisionMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case documentrevision.FieldVersion:
+		return m.AddedVersion()
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *DocumentRevisionMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case documentrevision.FieldVersion:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddVersion(v)
+		return nil
+	}
+	return fmt.Errorf("unknown DocumentRevision numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *DocumentRevisionMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(documentrevision.FieldExcerpt) {
+		fields = append(fields, documentrevision.FieldExcerpt)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *DocumentRevisionMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *DocumentRevisionMutation) ClearField(name string) error {
+	switch name {
+	case documentrevision.FieldExcerpt:
+		m.ClearExcerpt()
+		return nil
+	}
+	return fmt.Errorf("unknown DocumentRevision nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *DocumentRevisionMutation) ResetField(name string) error {
+	switch name {
+	case documentrevision.FieldVersion:
+		m.ResetVersion()
+		return nil
+	case documentrevision.FieldSlug:
+		m.ResetSlug()
+		return nil
+	case documentrevision.FieldTitle:
+		m.ResetTitle()
+		return nil
+	case documentrevision.FieldBody:
+		m.ResetBody()
+		return nil
+	case documentrevision.FieldExcerpt:
+		m.ResetExcerpt()
+		return nil
+	case documentrevision.FieldStatus:
+		m.ResetStatus()
+		return nil
+	case documentrevision.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	}
+	return fmt.Errorf("unknown DocumentRevision field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *DocumentRevisionMutation) AddedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.document != nil {
+		edges = append(edges, documentrevision.EdgeDocument)
+	}
+	if m.editor != nil {
+		edges = append(edges, documentrevision.EdgeEditor)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *DocumentRevisionMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case documentrevision.EdgeDocument:
+		if id := m.document; id != nil {
+			return []ent.Value{*id}
+		}
+	case documentrevision.EdgeEditor:
+		if id := m.editor; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *DocumentRevisionMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 2)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *DocumentRevisionMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *DocumentRevisionMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.cleareddocument {
+		edges = append(edges, documentrevision.EdgeDocument)
+	}
+	if m.clearededitor {
+		edges = append(edges, documentrevision.EdgeEditor)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *DocumentRevisionMutation) EdgeCleared(name string) bool {
+	switch name {
+	case documentrevision.EdgeDocument:
+		return m.cleareddocument
+	case documentrevision.EdgeEditor:
+		return m.clearededitor
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *DocumentRevisionMutation) ClearEdge(name string) error {
+	switch name {
+	case documentrevision.EdgeDocument:
+		m.ClearDocument()
+		return nil
+	case documentrevision.EdgeEditor:
+		m.ClearEditor()
+		return nil
+	}
+	return fmt.Errorf("unknown DocumentRevision unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *DocumentRevisionMutation) ResetEdge(name string) error {
+	switch name {
+	case documentrevision.EdgeDocument:
+		m.ResetDocument()
+		return nil
+	case documentrevision.EdgeEditor:
+		m.ResetEditor()
+		return nil
+	}
+	return fmt.Errorf("unknown DocumentRevision edge %s", name)
 }
 
 // SessionMutation represents an operation that mutates the Session nodes in the graph.
@@ -2213,6 +3132,9 @@ type UserMutation struct {
 	comments         map[int]struct{}
 	removedcomments  map[int]struct{}
 	clearedcomments  bool
+	revisions        map[int]struct{}
+	removedrevisions map[int]struct{}
+	clearedrevisions bool
 	done             bool
 	oldValue         func(context.Context) (*User, error)
 	predicates       []predicate.User
@@ -2766,6 +3688,60 @@ func (m *UserMutation) ResetComments() {
 	m.removedcomments = nil
 }
 
+// AddRevisionIDs adds the "revisions" edge to the DocumentRevision entity by ids.
+func (m *UserMutation) AddRevisionIDs(ids ...int) {
+	if m.revisions == nil {
+		m.revisions = make(map[int]struct{})
+	}
+	for i := range ids {
+		m.revisions[ids[i]] = struct{}{}
+	}
+}
+
+// ClearRevisions clears the "revisions" edge to the DocumentRevision entity.
+func (m *UserMutation) ClearRevisions() {
+	m.clearedrevisions = true
+}
+
+// RevisionsCleared reports if the "revisions" edge to the DocumentRevision entity was cleared.
+func (m *UserMutation) RevisionsCleared() bool {
+	return m.clearedrevisions
+}
+
+// RemoveRevisionIDs removes the "revisions" edge to the DocumentRevision entity by IDs.
+func (m *UserMutation) RemoveRevisionIDs(ids ...int) {
+	if m.removedrevisions == nil {
+		m.removedrevisions = make(map[int]struct{})
+	}
+	for i := range ids {
+		delete(m.revisions, ids[i])
+		m.removedrevisions[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedRevisions returns the removed IDs of the "revisions" edge to the DocumentRevision entity.
+func (m *UserMutation) RemovedRevisionsIDs() (ids []int) {
+	for id := range m.removedrevisions {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// RevisionsIDs returns the "revisions" edge IDs in the mutation.
+func (m *UserMutation) RevisionsIDs() (ids []int) {
+	for id := range m.revisions {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetRevisions resets all changes to the "revisions" edge.
+func (m *UserMutation) ResetRevisions() {
+	m.revisions = nil
+	m.clearedrevisions = false
+	m.removedrevisions = nil
+}
+
 // Where appends a list predicates to the UserMutation builder.
 func (m *UserMutation) Where(ps ...predicate.User) {
 	m.predicates = append(m.predicates, ps...)
@@ -3018,7 +3994,7 @@ func (m *UserMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *UserMutation) AddedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 4)
 	if m.sessions != nil {
 		edges = append(edges, user.EdgeSessions)
 	}
@@ -3027,6 +4003,9 @@ func (m *UserMutation) AddedEdges() []string {
 	}
 	if m.comments != nil {
 		edges = append(edges, user.EdgeComments)
+	}
+	if m.revisions != nil {
+		edges = append(edges, user.EdgeRevisions)
 	}
 	return edges
 }
@@ -3053,13 +4032,19 @@ func (m *UserMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case user.EdgeRevisions:
+		ids := make([]ent.Value, 0, len(m.revisions))
+		for id := range m.revisions {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *UserMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 4)
 	if m.removedsessions != nil {
 		edges = append(edges, user.EdgeSessions)
 	}
@@ -3068,6 +4053,9 @@ func (m *UserMutation) RemovedEdges() []string {
 	}
 	if m.removedcomments != nil {
 		edges = append(edges, user.EdgeComments)
+	}
+	if m.removedrevisions != nil {
+		edges = append(edges, user.EdgeRevisions)
 	}
 	return edges
 }
@@ -3094,13 +4082,19 @@ func (m *UserMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case user.EdgeRevisions:
+		ids := make([]ent.Value, 0, len(m.removedrevisions))
+		for id := range m.removedrevisions {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *UserMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 4)
 	if m.clearedsessions {
 		edges = append(edges, user.EdgeSessions)
 	}
@@ -3109,6 +4103,9 @@ func (m *UserMutation) ClearedEdges() []string {
 	}
 	if m.clearedcomments {
 		edges = append(edges, user.EdgeComments)
+	}
+	if m.clearedrevisions {
+		edges = append(edges, user.EdgeRevisions)
 	}
 	return edges
 }
@@ -3123,6 +4120,8 @@ func (m *UserMutation) EdgeCleared(name string) bool {
 		return m.cleareddocuments
 	case user.EdgeComments:
 		return m.clearedcomments
+	case user.EdgeRevisions:
+		return m.clearedrevisions
 	}
 	return false
 }
@@ -3147,6 +4146,9 @@ func (m *UserMutation) ResetEdge(name string) error {
 		return nil
 	case user.EdgeComments:
 		m.ResetComments()
+		return nil
+	case user.EdgeRevisions:
+		m.ResetRevisions()
 		return nil
 	}
 	return fmt.Errorf("unknown User edge %s", name)

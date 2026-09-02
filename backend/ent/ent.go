@@ -14,6 +14,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"github.com/shirone-platform/backend/ent/comment"
 	"github.com/shirone-platform/backend/ent/document"
+	"github.com/shirone-platform/backend/ent/documentrevision"
 	"github.com/shirone-platform/backend/ent/session"
 	"github.com/shirone-platform/backend/ent/user"
 )
@@ -76,10 +77,11 @@ var (
 func checkColumn(t, c string) error {
 	initCheck.Do(func() {
 		columnCheck = sql.NewColumnCheck(map[string]func(string) bool{
-			comment.Table:  comment.ValidColumn,
-			document.Table: document.ValidColumn,
-			session.Table:  session.ValidColumn,
-			user.Table:     user.ValidColumn,
+			comment.Table:          comment.ValidColumn,
+			document.Table:         document.ValidColumn,
+			documentrevision.Table: documentrevision.ValidColumn,
+			session.Table:          session.ValidColumn,
+			user.Table:             user.ValidColumn,
 		})
 	})
 	return columnCheck(t, c)

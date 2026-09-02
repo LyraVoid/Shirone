@@ -14,6 +14,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/shirone-platform/backend/ent/comment"
 	"github.com/shirone-platform/backend/ent/document"
+	"github.com/shirone-platform/backend/ent/documentrevision"
 	"github.com/shirone-platform/backend/ent/predicate"
 	"github.com/shirone-platform/backend/ent/session"
 	"github.com/shirone-platform/backend/ent/user"
@@ -29,6 +30,7 @@ type UserQuery struct {
 	withSessions  *SessionQuery
 	withDocuments *DocumentQuery
 	withComments  *CommentQuery
+	withRevisions *DocumentRevisionQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -124,6 +126,28 @@ func (_q *UserQuery) QueryComments() *CommentQuery {
 			sqlgraph.From(user.Table, user.FieldID, selector),
 			sqlgraph.To(comment.Table, comment.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, user.CommentsTable, user.CommentsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryRevisions chains the current query on the "revisions" edge.
+func (_q *UserQuery) QueryRevisions() *DocumentRevisionQuery {
+	query := (&DocumentRevisionClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(documentrevision.Table, documentrevision.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.RevisionsTable, user.RevisionsColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -326,6 +350,7 @@ func (_q *UserQuery) Clone() *UserQuery {
 		withSessions:  _q.withSessions.Clone(),
 		withDocuments: _q.withDocuments.Clone(),
 		withComments:  _q.withComments.Clone(),
+		withRevisions: _q.withRevisions.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
@@ -362,6 +387,17 @@ func (_q *UserQuery) WithComments(opts ...func(*CommentQuery)) *UserQuery {
 		opt(query)
 	}
 	_q.withComments = query
+	return _q
+}
+
+// WithRevisions tells the query-builder to eager-load the nodes that are connected to
+// the "revisions" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithRevisions(opts ...func(*DocumentRevisionQuery)) *UserQuery {
+	query := (&DocumentRevisionClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withRevisions = query
 	return _q
 }
 
@@ -443,10 +479,11 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 	var (
 		nodes       = []*User{}
 		_spec       = _q.querySpec()
-		loadedTypes = [3]bool{
+		loadedTypes = [4]bool{
 			_q.withSessions != nil,
 			_q.withDocuments != nil,
 			_q.withComments != nil,
+			_q.withRevisions != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -485,6 +522,13 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 		if err := _q.loadComments(ctx, query, nodes,
 			func(n *User) { n.Edges.Comments = []*Comment{} },
 			func(n *User, e *Comment) { n.Edges.Comments = append(n.Edges.Comments, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withRevisions; query != nil {
+		if err := _q.loadRevisions(ctx, query, nodes,
+			func(n *User) { n.Edges.Revisions = []*DocumentRevision{} },
+			func(n *User, e *DocumentRevision) { n.Edges.Revisions = append(n.Edges.Revisions, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -579,6 +623,37 @@ func (_q *UserQuery) loadComments(ctx context.Context, query *CommentQuery, node
 		node, ok := nodeids[*fk]
 		if !ok {
 			return fmt.Errorf(`unexpected referenced foreign-key "user_comments" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *UserQuery) loadRevisions(ctx context.Context, query *DocumentRevisionQuery, nodes []*User, init func(*User), assign func(*User, *DocumentRevision)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.DocumentRevision(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.RevisionsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.user_revisions
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "user_revisions" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_revisions" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}

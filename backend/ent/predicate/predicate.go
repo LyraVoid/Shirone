@@ -12,6 +12,9 @@ type Comment func(*sql.Selector)
 // Document is the predicate function for document builders.
 type Document func(*sql.Selector)
 
+// DocumentRevision is the predicate function for documentrevision builders.
+type DocumentRevision func(*sql.Selector)
+
 // Session is the predicate function for session builders.
 type Session func(*sql.Selector)
 

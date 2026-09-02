@@ -14,6 +14,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/shirone-platform/backend/ent/comment"
 	"github.com/shirone-platform/backend/ent/document"
+	"github.com/shirone-platform/backend/ent/documentrevision"
 	"github.com/shirone-platform/backend/ent/predicate"
 	"github.com/shirone-platform/backend/ent/user"
 )
@@ -21,13 +22,14 @@ import (
 // DocumentQuery is the builder for querying Document entities.
 type DocumentQuery struct {
 	config
-	ctx          *QueryContext
-	order        []document.OrderOption
-	inters       []Interceptor
-	predicates   []predicate.Document
-	withAuthor   *UserQuery
-	withComments *CommentQuery
-	withFKs      bool
+	ctx           *QueryContext
+	order         []document.OrderOption
+	inters        []Interceptor
+	predicates    []predicate.Document
+	withAuthor    *UserQuery
+	withComments  *CommentQuery
+	withRevisions *DocumentRevisionQuery
+	withFKs       bool
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -101,6 +103,28 @@ func (_q *DocumentQuery) QueryComments() *CommentQuery {
 			sqlgraph.From(document.Table, document.FieldID, selector),
 			sqlgraph.To(comment.Table, comment.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, document.CommentsTable, document.CommentsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryRevisions chains the current query on the "revisions" edge.
+func (_q *DocumentQuery) QueryRevisions() *DocumentRevisionQuery {
+	query := (&DocumentRevisionClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(document.Table, document.FieldID, selector),
+			sqlgraph.To(documentrevision.Table, documentrevision.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, document.RevisionsTable, document.RevisionsColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -295,13 +319,14 @@ func (_q *DocumentQuery) Clone() *DocumentQuery {
 		return nil
 	}
 	return &DocumentQuery{
-		config:       _q.config,
-		ctx:          _q.ctx.Clone(),
-		order:        append([]document.OrderOption{}, _q.order...),
-		inters:       append([]Interceptor{}, _q.inters...),
-		predicates:   append([]predicate.Document{}, _q.predicates...),
-		withAuthor:   _q.withAuthor.Clone(),
-		withComments: _q.withComments.Clone(),
+		config:        _q.config,
+		ctx:           _q.ctx.Clone(),
+		order:         append([]document.OrderOption{}, _q.order...),
+		inters:        append([]Interceptor{}, _q.inters...),
+		predicates:    append([]predicate.Document{}, _q.predicates...),
+		withAuthor:    _q.withAuthor.Clone(),
+		withComments:  _q.withComments.Clone(),
+		withRevisions: _q.withRevisions.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
@@ -327,6 +352,17 @@ func (_q *DocumentQuery) WithComments(opts ...func(*CommentQuery)) *DocumentQuer
 		opt(query)
 	}
 	_q.withComments = query
+	return _q
+}
+
+// WithRevisions tells the query-builder to eager-load the nodes that are connected to
+// the "revisions" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *DocumentQuery) WithRevisions(opts ...func(*DocumentRevisionQuery)) *DocumentQuery {
+	query := (&DocumentRevisionClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withRevisions = query
 	return _q
 }
 
@@ -409,9 +445,10 @@ func (_q *DocumentQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Doc
 		nodes       = []*Document{}
 		withFKs     = _q.withFKs
 		_spec       = _q.querySpec()
-		loadedTypes = [2]bool{
+		loadedTypes = [3]bool{
 			_q.withAuthor != nil,
 			_q.withComments != nil,
+			_q.withRevisions != nil,
 		}
 	)
 	if _q.withAuthor != nil {
@@ -448,6 +485,13 @@ func (_q *DocumentQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*Doc
 		if err := _q.loadComments(ctx, query, nodes,
 			func(n *Document) { n.Edges.Comments = []*Comment{} },
 			func(n *Document, e *Comment) { n.Edges.Comments = append(n.Edges.Comments, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withRevisions; query != nil {
+		if err := _q.loadRevisions(ctx, query, nodes,
+			func(n *Document) { n.Edges.Revisions = []*DocumentRevision{} },
+			func(n *Document, e *DocumentRevision) { n.Edges.Revisions = append(n.Edges.Revisions, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -512,6 +556,37 @@ func (_q *DocumentQuery) loadComments(ctx context.Context, query *CommentQuery, 
 		node, ok := nodeids[*fk]
 		if !ok {
 			return fmt.Errorf(`unexpected referenced foreign-key "document_comments" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *DocumentQuery) loadRevisions(ctx context.Context, query *DocumentRevisionQuery, nodes []*Document, init func(*Document), assign func(*Document, *DocumentRevision)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int]*Document)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	query.withFKs = true
+	query.Where(predicate.DocumentRevision(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(document.RevisionsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.document_revisions
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "document_revisions" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "document_revisions" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}

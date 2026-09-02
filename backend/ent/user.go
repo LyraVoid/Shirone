@@ -47,9 +47,11 @@ type UserEdges struct {
 	Documents []*Document `json:"documents,omitempty"`
 	// Comments holds the value of the comments edge.
 	Comments []*Comment `json:"comments,omitempty"`
+	// Revisions holds the value of the revisions edge.
+	Revisions []*DocumentRevision `json:"revisions,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [3]bool
+	loadedTypes [4]bool
 }
 
 // SessionsOrErr returns the Sessions value or an error if the edge
@@ -77,6 +79,15 @@ func (e UserEdges) CommentsOrErr() ([]*Comment, error) {
 		return e.Comments, nil
 	}
 	return nil, &NotLoadedError{edge: "comments"}
+}
+
+// RevisionsOrErr returns the Revisions value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) RevisionsOrErr() ([]*DocumentRevision, error) {
+	if e.loadedTypes[3] {
+		return e.Revisions, nil
+	}
+	return nil, &NotLoadedError{edge: "revisions"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -185,6 +196,11 @@ func (_m *User) QueryDocuments() *DocumentQuery {
 // QueryComments queries the "comments" edge of the User entity.
 func (_m *User) QueryComments() *CommentQuery {
 	return NewUserClient(_m.config).QueryComments(_m)
+}
+
+// QueryRevisions queries the "revisions" edge of the User entity.
+func (_m *User) QueryRevisions() *DocumentRevisionQuery {
+	return NewUserClient(_m.config).QueryRevisions(_m)
 }
 
 // Update returns a builder for updating this User.

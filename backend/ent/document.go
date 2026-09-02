@@ -47,9 +47,11 @@ type DocumentEdges struct {
 	Author *User `json:"author,omitempty"`
 	// Comments holds the value of the comments edge.
 	Comments []*Comment `json:"comments,omitempty"`
+	// Revisions holds the value of the revisions edge.
+	Revisions []*DocumentRevision `json:"revisions,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [2]bool
+	loadedTypes [3]bool
 }
 
 // AuthorOrErr returns the Author value or an error if the edge
@@ -70,6 +72,15 @@ func (e DocumentEdges) CommentsOrErr() ([]*Comment, error) {
 		return e.Comments, nil
 	}
 	return nil, &NotLoadedError{edge: "comments"}
+}
+
+// RevisionsOrErr returns the Revisions value or an error if the edge
+// was not loaded in eager-loading.
+func (e DocumentEdges) RevisionsOrErr() ([]*DocumentRevision, error) {
+	if e.loadedTypes[2] {
+		return e.Revisions, nil
+	}
+	return nil, &NotLoadedError{edge: "revisions"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -183,6 +194,11 @@ func (_m *Document) QueryAuthor() *UserQuery {
 // QueryComments queries the "comments" edge of the Document entity.
 func (_m *Document) QueryComments() *CommentQuery {
 	return NewDocumentClient(_m.config).QueryComments(_m)
+}
+
+// QueryRevisions queries the "revisions" edge of the Document entity.
+func (_m *Document) QueryRevisions() *DocumentRevisionQuery {
+	return NewDocumentClient(_m.config).QueryRevisions(_m)
 }
 
 // Update returns a builder for updating this Document.
