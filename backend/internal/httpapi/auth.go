@@ -111,6 +111,17 @@ func requireEditor(next http.Handler) http.Handler {
 	})
 }
 
+func requireAdmin(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		u, ok := r.Context().Value(currentUserKey{}).(*ent.User)
+		if !ok || u.Role != userent.RoleAdmin {
+			writeError(w, http.StatusForbidden, "forbidden", "administrator access is required")
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
 func (h *authHandler) setCookie(w http.ResponseWriter, token string) {
 	http.SetCookie(w, &http.Cookie{Name: h.options.CookieName, Value: token, Path: "/", HttpOnly: true, Secure: h.options.CookieSecure, SameSite: http.SameSiteLaxMode, MaxAge: int(h.options.SessionTTL.Seconds())})
 }

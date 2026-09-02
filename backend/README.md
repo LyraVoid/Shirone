@@ -26,6 +26,8 @@ The first registered account is assigned the `admin` role so a fresh self-hosted
 
 Approved comments are publicly readable below each published content item. Authenticated users can submit comments and replies; new comments start as `pending`. Editors and administrators can review and change moderation status under `/api/v1/admin/comments`.
 
+Administrators can list accounts and change roles or account status under `/api/v1/admin/users`. The API prevents changing the last active administrator.
+
 ## PostgreSQL with Compose
 
 ```powershell

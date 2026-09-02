@@ -33,6 +33,7 @@ func NewRouter(db *sql.DB, client *ent.Client, options Options) http.Handler {
 	authHandler := newAuthHandler(auth.NewService(client, options.SessionTTL), options)
 	contentHandler := &contentHandler{client: client}
 	commentHandler := &commentHandler{client: client}
+	userHandler := &userHandler{client: client}
 	r.Route("/api/v1/auth", func(r chi.Router) {
 		r.Post("/register", authHandler.register)
 		r.Post("/login", authHandler.login)
@@ -50,6 +51,12 @@ func NewRouter(db *sql.DB, client *ent.Client, options Options) http.Handler {
 		r.Use(requireEditor)
 		r.Get("/", commentHandler.adminList)
 		r.Put("/{id}", commentHandler.moderate)
+	})
+	r.Route("/api/v1/admin/users", func(r chi.Router) {
+		r.Use(authHandler.requireUser)
+		r.Use(requireAdmin)
+		r.Get("/", userHandler.list)
+		r.Put("/{id}", userHandler.update)
 	})
 	r.Route("/api/v1/admin/content", func(r chi.Router) {
 		r.Use(authHandler.requireUser)

@@ -4,6 +4,28 @@ info:
   version: 0.1.0
   description: Provider-neutral API for Shirone dynamic edition.
 paths:
+  /api/v1/admin/users/:
+    get:
+      operationId: listUsers
+      responses:
+        '200':
+          description: User list visible to administrators.
+        '403':
+          description: Administrator access is required.
+  /api/v1/admin/users/{id}:
+    put:
+      operationId: updateUser
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: User role and status updated.
+        '409':
+          description: The last active administrator cannot be changed.
   /api/v1/content/{slug}/comments:
     get:
       operationId: listPublishedComments
