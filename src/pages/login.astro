@@ -1,0 +1,54 @@
+---
+import AccentBar from "@components/atoms/display/AccentBar.svelte";
+import Card from "@components/atoms/display/Card.svelte";
+import MainGridLayout from "@layouts/MainGridLayout.astro";
+import { resolveRuntimeMode } from "@utils/backend-client.mjs";
+
+const runtime = resolveRuntimeMode(process.env);
+if (runtime.mode !== "dynamic" || !runtime.apiBaseUrl)
+	return new Response(null, { status: 404 });
+const redirect = Astro.url.searchParams.get("redirect") || "/";
+---
+
+<MainGridLayout page="about" title="Login" description="">
+	<Card color="var(--card-bg)" radius="l" class="mx-auto w-full max-w-md p-6 md:p-8" >
+		<div class="flex items-center gap-3 mb-6">
+			<AccentBar size="small" />
+			<h1 class="m-0 text-2xl font-bold">Login</h1>
+		</div>
+		<form id="login-form" class="flex flex-col gap-4" data-api-url={runtime.apiBaseUrl} data-redirect={redirect}>
+			<label class="flex flex-col gap-2 text-sm font-medium" for="identity">Email or username
+				<input id="identity" name="identity" autocomplete="username" required class="rounded-lg border border-[var(--outline)] bg-[var(--surface)] px-4 py-3" />
+			</label>
+			<label class="flex flex-col gap-2 text-sm font-medium" for="password">Password
+				<input id="password" name="password" type="password" autocomplete="current-password" required class="rounded-lg border border-[var(--outline)] bg-[var(--surface)] px-4 py-3" />
+			</label>
+			<button type="submit" class="rounded-lg bg-[var(--primary)] px-4 py-3 font-semibold text-[var(--on-primary)]">Login</button>
+			<p id="login-status" class="m-0 text-sm text-[var(--on-surface-variant)]" role="status" aria-live="polite"></p>
+		</form>
+	</Card>
+</MainGridLayout>
+
+<script>
+	const form = document.querySelector<HTMLFormElement>("#login-form");
+	const status = document.querySelector<HTMLElement>("#login-status");
+	if (form && status) {
+		form.addEventListener("submit", async (event) => {
+			event.preventDefault();
+			status.textContent = "Signing in...";
+			const data = new FormData(form);
+			try {
+				const response = await fetch(`${form.dataset.apiUrl}/api/v1/auth/login`, {
+					method: "POST",
+					credentials: "include",
+					headers: { "Content-Type": "application/json", Accept: "application/json" },
+					body: JSON.stringify({ identity: data.get("identity"), password: data.get("password") }),
+				});
+				if (!response.ok) throw new Error("Login failed");
+				window.location.assign(form.dataset.redirect || "/");
+			} catch {
+				status.textContent = "Identity or password is incorrect.";
+			}
+		});
+	}
+</script>
