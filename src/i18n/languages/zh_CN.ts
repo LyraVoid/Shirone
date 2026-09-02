@@ -305,4 +305,9 @@ export const zh_CN: Translation = {
 	[Key.commentPlaceholder]: "写下你的评论",
 	[Key.commentSignedInAs]: "已登录为 {name}",
 	[Key.commentPublishFailed]: "无法发布评论。",
+	[Key.loginTitle]: "登录",
+	[Key.loginIdentity]: "邮箱或用户名",
+	[Key.loginPassword]: "密码",
+	[Key.loginSubmitting]: "正在登录...",
+	[Key.loginInvalidCredentials]: "用户名或密码错误。",
 };

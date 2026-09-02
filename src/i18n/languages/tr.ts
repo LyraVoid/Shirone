@@ -318,4 +318,9 @@ export const tr: Translation = {
 	[Key.commentPlaceholder]: "Yorum yaz",
 	[Key.commentSignedInAs]: "{name} olarak giriş yapıldı",
 	[Key.commentPublishFailed]: "Yorum yayınlanamadı.",
+	[Key.loginTitle]: "Giriş yap",
+	[Key.loginIdentity]: "E-posta veya kullanıcı adı",
+	[Key.loginPassword]: "Parola",
+	[Key.loginSubmitting]: "Giriş yapılıyor...",
+	[Key.loginInvalidCredentials]: "Kullanıcı adı veya parola yanlış.",
 };

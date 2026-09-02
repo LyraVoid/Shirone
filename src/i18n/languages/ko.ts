@@ -314,4 +314,10 @@ export const ko: Translation = {
 	[Key.commentPlaceholder]: "댓글 작성",
 	[Key.commentSignedInAs]: "{name}님으로 로그인됨",
 	[Key.commentPublishFailed]: "댓글을 게시할 수 없습니다.",
+	[Key.loginTitle]: "로그인",
+	[Key.loginIdentity]: "이메일 또는 사용자 이름",
+	[Key.loginPassword]: "비밀번호",
+	[Key.loginSubmitting]: "로그인 중...",
+	[Key.loginInvalidCredentials]:
+		"사용자 이름 또는 비밀번호가 올바르지 않습니다.",
 };

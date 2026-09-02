@@ -304,4 +304,9 @@ export const th: Translation = {
 	[Key.commentPlaceholder]: "เขียนความคิดเห็น",
 	[Key.commentSignedInAs]: "เข้าสู่ระบบเป็น {name}",
 	[Key.commentPublishFailed]: "ไม่สามารถเผยแพร่ความคิดเห็นได้",
+	[Key.loginTitle]: "เข้าสู่ระบบ",
+	[Key.loginIdentity]: "อีเมลหรือชื่อผู้ใช้",
+	[Key.loginPassword]: "รหัสผ่าน",
+	[Key.loginSubmitting]: "กำลังเข้าสู่ระบบ...",
+	[Key.loginInvalidCredentials]: "อีเมล ชื่อผู้ใช้ หรือรหัสผ่านไม่ถูกต้อง",
 };

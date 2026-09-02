@@ -3,27 +3,34 @@ import AccentBar from "@components/atoms/display/AccentBar.svelte";
 import Card from "@components/atoms/display/Card.svelte";
 import MainGridLayout from "@layouts/MainGridLayout.astro";
 import { resolveRuntimeMode } from "@utils/backend-client.mjs";
+import I18nKey from "../i18n/i18nKey";
+import { i18n } from "../i18n/translation";
 
 const runtime = resolveRuntimeMode(process.env);
 if (runtime.mode !== "dynamic" || !runtime.apiBaseUrl)
 	return new Response(null, { status: 404 });
-const redirect = Astro.url.searchParams.get("redirect") || "/";
+const requestedRedirect = Astro.url.searchParams.get("redirect");
+const redirect =
+	requestedRedirect?.startsWith("/") && !requestedRedirect.startsWith("//")
+		? requestedRedirect
+		: "/";
 ---
 
-<MainGridLayout page="about" title="Login" description="">
+
+<MainGridLayout page="about" title={i18n(I18nKey.loginTitle)} description="">
 	<Card color="var(--card-bg)" radius="l" class="mx-auto w-full max-w-md p-6 md:p-8" >
 		<div class="flex items-center gap-3 mb-6">
 			<AccentBar size="small" />
-			<h1 class="m-0 text-2xl font-bold">Login</h1>
+			<h1 class="m-0 text-2xl font-bold">{i18n(I18nKey.loginTitle)}</h1>
 		</div>
-		<form id="login-form" class="flex flex-col gap-4" data-api-url={runtime.apiBaseUrl} data-redirect={redirect}>
-			<label class="flex flex-col gap-2 text-sm font-medium" for="identity">Email or username
+		<form id="login-form" class="flex flex-col gap-4" data-api-url={runtime.apiBaseUrl} data-redirect={redirect} data-submitting-message={i18n(I18nKey.loginSubmitting)} data-invalid-credentials-message={i18n(I18nKey.loginInvalidCredentials)}>
+			<label class="flex flex-col gap-2 text-sm font-medium" for="identity">{i18n(I18nKey.loginIdentity)}
 				<input id="identity" name="identity" autocomplete="username" required class="rounded-lg border border-[var(--outline)] bg-[var(--surface)] px-4 py-3" />
 			</label>
-			<label class="flex flex-col gap-2 text-sm font-medium" for="password">Password
+			<label class="flex flex-col gap-2 text-sm font-medium" for="password">{i18n(I18nKey.loginPassword)}
 				<input id="password" name="password" type="password" autocomplete="current-password" required class="rounded-lg border border-[var(--outline)] bg-[var(--surface)] px-4 py-3" />
 			</label>
-			<button type="submit" class="rounded-lg bg-[var(--primary)] px-4 py-3 font-semibold text-[var(--on-primary)]">Login</button>
+			<button type="submit" class="rounded-lg bg-[var(--primary)] px-4 py-3 font-semibold text-[var(--on-primary)]">{i18n(I18nKey.loginTitle)}</button>
 			<p id="login-status" class="m-0 text-sm text-[var(--on-surface-variant)]" role="status" aria-live="polite"></p>
 		</form>
 	</Card>
@@ -35,7 +42,7 @@ const redirect = Astro.url.searchParams.get("redirect") || "/";
 	if (form && status) {
 		form.addEventListener("submit", async (event) => {
 			event.preventDefault();
-			status.textContent = "Signing in...";
+			status.textContent = form.dataset.submittingMessage || "";
 			const data = new FormData(form);
 			try {
 				const response = await fetch(`${form.dataset.apiUrl}/api/v1/auth/login`, {
@@ -47,7 +54,7 @@ const redirect = Astro.url.searchParams.get("redirect") || "/";
 				if (!response.ok) throw new Error("Login failed");
 				window.location.assign(form.dataset.redirect || "/");
 			} catch {
-				status.textContent = "Identity or password is incorrect.";
+				status.textContent = form.dataset.invalidCredentialsMessage || "";
 			}
 		});
 	}

@@ -319,4 +319,9 @@ export const id: Translation = {
 	[Key.commentPlaceholder]: "Tulis komentar",
 	[Key.commentSignedInAs]: "Masuk sebagai {name}",
 	[Key.commentPublishFailed]: "Komentar tidak dapat dipublikasikan.",
+	[Key.loginTitle]: "Masuk",
+	[Key.loginIdentity]: "Email atau nama pengguna",
+	[Key.loginPassword]: "Kata sandi",
+	[Key.loginSubmitting]: "Sedang masuk...",
+	[Key.loginInvalidCredentials]: "Identitas atau kata sandi salah.",
 };

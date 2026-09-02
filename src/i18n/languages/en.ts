@@ -315,4 +315,9 @@ export const en: Translation = {
 	[Key.commentPlaceholder]: "Write a comment",
 	[Key.commentSignedInAs]: "Signed in as {name}",
 	[Key.commentPublishFailed]: "Could not publish the comment.",
+	[Key.loginTitle]: "Login",
+	[Key.loginIdentity]: "Email or username",
+	[Key.loginPassword]: "Password",
+	[Key.loginSubmitting]: "Signing in...",
+	[Key.loginInvalidCredentials]: "Identity or password is incorrect.",
 };

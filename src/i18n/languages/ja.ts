@@ -315,4 +315,10 @@ export const ja: Translation = {
 	[Key.commentPlaceholder]: "コメントを書く",
 	[Key.commentSignedInAs]: "{name}としてログイン中",
 	[Key.commentPublishFailed]: "コメントを投稿できませんでした。",
+	[Key.loginTitle]: "ログイン",
+	[Key.loginIdentity]: "メールアドレスまたはユーザー名",
+	[Key.loginPassword]: "パスワード",
+	[Key.loginSubmitting]: "ログイン中...",
+	[Key.loginInvalidCredentials]:
+		"ユーザー名またはパスワードが正しくありません。",
 };

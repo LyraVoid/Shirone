@@ -317,4 +317,9 @@ export const es: Translation = {
 	[Key.commentPlaceholder]: "Escribe un comentario",
 	[Key.commentSignedInAs]: "Sesión iniciada como {name}",
 	[Key.commentPublishFailed]: "No se pudo publicar el comentario.",
+	[Key.loginTitle]: "Iniciar sesión",
+	[Key.loginIdentity]: "Correo electrónico o nombre de usuario",
+	[Key.loginPassword]: "Contraseña",
+	[Key.loginSubmitting]: "Iniciando sesión...",
+	[Key.loginInvalidCredentials]: "El usuario o la contraseña son incorrectos.",
 };

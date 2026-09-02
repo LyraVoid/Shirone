@@ -148,6 +148,11 @@ enum I18nKey {
 	commentPlaceholder = "commentPlaceholder",
 	commentSignedInAs = "commentSignedInAs",
 	commentPublishFailed = "commentPublishFailed",
+	loginTitle = "loginTitle",
+	loginIdentity = "loginIdentity",
+	loginPassword = "loginPassword",
+	loginSubmitting = "loginSubmitting",
+	loginInvalidCredentials = "loginInvalidCredentials",
 
 	untitled = "untitled",
 	uncategorized = "uncategorized",

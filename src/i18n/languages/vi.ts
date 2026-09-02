@@ -317,4 +317,9 @@ export const vi: Translation = {
 	[Key.commentPlaceholder]: "Viết bình luận",
 	[Key.commentSignedInAs]: "Đã đăng nhập với tên {name}",
 	[Key.commentPublishFailed]: "Không thể đăng bình luận.",
+	[Key.loginTitle]: "Đăng nhập",
+	[Key.loginIdentity]: "Email hoặc tên người dùng",
+	[Key.loginPassword]: "Mật khẩu",
+	[Key.loginSubmitting]: "Đang đăng nhập...",
+	[Key.loginInvalidCredentials]: "Tên người dùng hoặc mật khẩu không đúng.",
 };
