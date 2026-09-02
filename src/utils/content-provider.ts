@@ -22,6 +22,10 @@ export interface ContentProviderOptions {
 export interface PostContentProvider {
 	readonly mode: "static" | "dynamic";
 	listPosts(options?: { limit?: number }): Promise<PostViewModel[]>;
+	listPostsPage(options?: {
+		limit?: number;
+		offset?: number;
+	}): Promise<{ items: PostViewModel[]; total: number }>;
 	getPost(slug: string): Promise<PostViewModel | undefined>;
 }
 
@@ -55,6 +59,18 @@ export function createPostContentProvider({
 					limit === undefined ? entries : entries.slice(0, limit);
 				return selected.map(postViewModelFromStatic);
 			},
+			async listPostsPage({
+				limit,
+				offset = 0,
+			}: {
+				limit?: number;
+				offset?: number;
+			} = {}) {
+				const entries = await this.listPosts();
+				const start = Math.max(0, offset);
+				const end = limit === undefined ? undefined : start + limit;
+				return { items: entries.slice(start, end), total: entries.length };
+			},
 			async getPost(slug: string) {
 				if (!staticSource?.getPost) {
 					throw new Error(
@@ -78,10 +94,35 @@ export function createPostContentProvider({
 	return Object.freeze({
 		mode: "dynamic" as const,
 		async listPosts({ limit = 20 }: { limit?: number } = {}) {
-			const documents = documentList(await client.listContent({ limit }));
+			const documents = documentList(
+				await client.listContent({ limit, kind: "post" }),
+			);
 			return documents
 				.filter((document) => document.kind === "post")
 				.map(postViewModelFromBackend);
+		},
+		async listPostsPage({
+			limit = 20,
+			offset = 0,
+		}: {
+			limit?: number;
+			offset?: number;
+		} = {}) {
+			const payload = (await client.listContent({
+				limit,
+				offset,
+				kind: "post",
+			})) as {
+				items?: unknown;
+				total?: unknown;
+			};
+			return {
+				items: documentList(payload).map(postViewModelFromBackend),
+				total:
+					typeof payload.total === "number"
+						? payload.total
+						: documentList(payload).length,
+			};
 		},
 		async getPost(slug: string) {
 			try {

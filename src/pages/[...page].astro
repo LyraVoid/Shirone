@@ -25,12 +25,15 @@ if (dynamicRuntime) {
 	const currentPage = Number(Astro.params.page ?? 1);
 	const limit = postListConfig.pageSize;
 	const provider = createPostContentProvider({ environment: process.env });
-	const posts = await provider.listPosts({ limit: currentPage * limit });
-	const data = posts.slice((currentPage - 1) * limit, currentPage * limit);
+	const result = await provider.listPostsPage({
+		limit,
+		offset: (currentPage - 1) * limit,
+	});
+	const data = result.items;
 	page = {
 		data,
 		currentPage,
-		lastPage: data.length === limit ? currentPage + 1 : currentPage,
+		lastPage: Math.max(1, Math.ceil(result.total / limit)),
 	};
 } else {
 	const staticPage = Astro.props.page;

@@ -58,8 +58,14 @@ export function createBackendClient({
 			body: JSON.stringify(body),
 		});
 	return Object.freeze({
-		listContent: ({ limit = 20 } = {}) =>
-			request(`/api/v1/content/?limit=${encodeURIComponent(limit)}`),
+		listContent: ({ limit = 20, offset = 0, kind } = {}) => {
+			const params = new URLSearchParams({
+				limit: String(limit),
+				offset: String(offset),
+			});
+			if (kind) params.set("kind", kind);
+			return request(`/api/v1/content/?${params.toString()}`);
+		},
 		getContent: (slug) =>
 			request(`/api/v1/content/${encodeURIComponent(slug)}`),
 		listComments: (slug) =>

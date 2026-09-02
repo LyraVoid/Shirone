@@ -10,7 +10,11 @@ export interface BackendClientOptions {
 }
 
 export interface BackendClient {
-	listContent(options?: { limit?: number }): Promise<unknown>;
+	listContent(options?: {
+		limit?: number;
+		offset?: number;
+		kind?: string;
+	}): Promise<unknown>;
 	getContent(slug: string): Promise<unknown>;
 	listComments(slug: string): Promise<unknown>;
 	register(account: unknown): Promise<unknown>;

@@ -79,7 +79,10 @@ test("dynamic provider maps API documents and forwards the request limit", async
 	const posts = await provider.listPosts({ limit: 8 });
 	assert.equal(posts.length, 1);
 	assert.equal(posts[0].slug, "from-api");
-	assert.equal(calls[0].url, "https://api.example.com/api/v1/content/?limit=8");
+	assert.equal(
+		calls[0].url,
+		"https://api.example.com/api/v1/content/?limit=8&offset=0&kind=post",
+	);
 });
 
 test("dynamic provider converts content 404 responses to an empty result", async () => {
