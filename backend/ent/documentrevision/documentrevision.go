@@ -16,6 +16,8 @@ const (
 	FieldID = "id"
 	// FieldVersion holds the string denoting the version field in the database.
 	FieldVersion = "version"
+	// FieldKind holds the string denoting the kind field in the database.
+	FieldKind = "kind"
 	// FieldSlug holds the string denoting the slug field in the database.
 	FieldSlug = "slug"
 	// FieldTitle holds the string denoting the title field in the database.
@@ -26,6 +28,8 @@ const (
 	FieldExcerpt = "excerpt"
 	// FieldTermIds holds the string denoting the term_ids field in the database.
 	FieldTermIds = "term_ids"
+	// FieldMetadata holds the string denoting the metadata field in the database.
+	FieldMetadata = "metadata"
 	// FieldStatus holds the string denoting the status field in the database.
 	FieldStatus = "status"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
@@ -56,11 +60,13 @@ const (
 var Columns = []string{
 	FieldID,
 	FieldVersion,
+	FieldKind,
 	FieldSlug,
 	FieldTitle,
 	FieldBody,
 	FieldExcerpt,
 	FieldTermIds,
+	FieldMetadata,
 	FieldStatus,
 	FieldCreatedAt,
 }
@@ -92,6 +98,8 @@ var (
 	VersionValidator func(int) error
 	// DefaultTermIds holds the default value on creation for the "term_ids" field.
 	DefaultTermIds []int
+	// DefaultMetadata holds the default value on creation for the "metadata" field.
+	DefaultMetadata map[string]interface{}
 )
 
 // Status defines the type for the "status" enum field.
@@ -129,6 +137,11 @@ func ByID(opts ...sql.OrderTermOption) OrderOption {
 // ByVersion orders the results by the version field.
 func ByVersion(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldVersion, opts...).ToFunc()
+}
+
+// ByKind orders the results by the kind field.
+func ByKind(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldKind, opts...).ToFunc()
 }
 
 // BySlug orders the results by the slug field.

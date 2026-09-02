@@ -24,6 +24,20 @@ type DocumentCreate struct {
 	hooks    []Hook
 }
 
+// SetKind sets the "kind" field.
+func (_c *DocumentCreate) SetKind(v string) *DocumentCreate {
+	_c.mutation.SetKind(v)
+	return _c
+}
+
+// SetNillableKind sets the "kind" field if the given value is not nil.
+func (_c *DocumentCreate) SetNillableKind(v *string) *DocumentCreate {
+	if v != nil {
+		_c.SetKind(*v)
+	}
+	return _c
+}
+
 // SetSlug sets the "slug" field.
 func (_c *DocumentCreate) SetSlug(v string) *DocumentCreate {
 	_c.mutation.SetSlug(v)
@@ -67,6 +81,12 @@ func (_c *DocumentCreate) SetNillableExcerpt(v *string) *DocumentCreate {
 	if v != nil {
 		_c.SetExcerpt(*v)
 	}
+	return _c
+}
+
+// SetMetadata sets the "metadata" field.
+func (_c *DocumentCreate) SetMetadata(v map[string]interface{}) *DocumentCreate {
+	_c.mutation.SetMetadata(v)
 	return _c
 }
 
@@ -187,14 +207,25 @@ func (_c *DocumentCreate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (_c *DocumentCreate) defaults() {
+	if _, ok := _c.mutation.Kind(); !ok {
+		v := document.DefaultKind
+		_c.mutation.SetKind(v)
+	}
 	if _, ok := _c.mutation.Status(); !ok {
 		v := document.DefaultStatus
 		_c.mutation.SetStatus(v)
+	}
+	if _, ok := _c.mutation.Metadata(); !ok {
+		v := document.DefaultMetadata
+		_c.mutation.SetMetadata(v)
 	}
 }
 
 // check runs all checks and user-defined validators on the builder.
 func (_c *DocumentCreate) check() error {
+	if _, ok := _c.mutation.Kind(); !ok {
+		return &ValidationError{Name: "kind", err: errors.New(`ent: missing required field "Document.kind"`)}
+	}
 	if _, ok := _c.mutation.Slug(); !ok {
 		return &ValidationError{Name: "slug", err: errors.New(`ent: missing required field "Document.slug"`)}
 	}
@@ -211,6 +242,9 @@ func (_c *DocumentCreate) check() error {
 		if err := document.StatusValidator(v); err != nil {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "Document.status": %w`, err)}
 		}
+	}
+	if _, ok := _c.mutation.Metadata(); !ok {
+		return &ValidationError{Name: "metadata", err: errors.New(`ent: missing required field "Document.metadata"`)}
 	}
 	if _, ok := _c.mutation.CreatedAt(); !ok {
 		return &ValidationError{Name: "created_at", err: errors.New(`ent: missing required field "Document.created_at"`)}
@@ -247,6 +281,10 @@ func (_c *DocumentCreate) createSpec() (*Document, *sqlgraph.CreateSpec) {
 		_node = &Document{config: _c.config}
 		_spec = sqlgraph.NewCreateSpec(document.Table, sqlgraph.NewFieldSpec(document.FieldID, field.TypeInt))
 	)
+	if value, ok := _c.mutation.Kind(); ok {
+		_spec.SetField(document.FieldKind, field.TypeString, value)
+		_node.Kind = value
+	}
 	if value, ok := _c.mutation.Slug(); ok {
 		_spec.SetField(document.FieldSlug, field.TypeString, value)
 		_node.Slug = value
@@ -266,6 +304,10 @@ func (_c *DocumentCreate) createSpec() (*Document, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.Excerpt(); ok {
 		_spec.SetField(document.FieldExcerpt, field.TypeString, value)
 		_node.Excerpt = value
+	}
+	if value, ok := _c.mutation.Metadata(); ok {
+		_spec.SetField(document.FieldMetadata, field.TypeJSON, value)
+		_node.Metadata = value
 	}
 	if value, ok := _c.mutation.PublishedAt(); ok {
 		_spec.SetField(document.FieldPublishedAt, field.TypeTime, value)

@@ -52,6 +52,20 @@ func (_u *DocumentRevisionUpdate) AddVersion(v int) *DocumentRevisionUpdate {
 	return _u
 }
 
+// SetKind sets the "kind" field.
+func (_u *DocumentRevisionUpdate) SetKind(v string) *DocumentRevisionUpdate {
+	_u.mutation.SetKind(v)
+	return _u
+}
+
+// SetNillableKind sets the "kind" field if the given value is not nil.
+func (_u *DocumentRevisionUpdate) SetNillableKind(v *string) *DocumentRevisionUpdate {
+	if v != nil {
+		_u.SetKind(*v)
+	}
+	return _u
+}
+
 // SetSlug sets the "slug" field.
 func (_u *DocumentRevisionUpdate) SetSlug(v string) *DocumentRevisionUpdate {
 	_u.mutation.SetSlug(v)
@@ -123,6 +137,12 @@ func (_u *DocumentRevisionUpdate) SetTermIds(v []int) *DocumentRevisionUpdate {
 // AppendTermIds appends value to the "term_ids" field.
 func (_u *DocumentRevisionUpdate) AppendTermIds(v []int) *DocumentRevisionUpdate {
 	_u.mutation.AppendTermIds(v)
+	return _u
+}
+
+// SetMetadata sets the "metadata" field.
+func (_u *DocumentRevisionUpdate) SetMetadata(v map[string]interface{}) *DocumentRevisionUpdate {
+	_u.mutation.SetMetadata(v)
 	return _u
 }
 
@@ -259,6 +279,9 @@ func (_u *DocumentRevisionUpdate) sqlSave(ctx context.Context) (_node int, err e
 	if value, ok := _u.mutation.AddedVersion(); ok {
 		_spec.AddField(documentrevision.FieldVersion, field.TypeInt, value)
 	}
+	if value, ok := _u.mutation.Kind(); ok {
+		_spec.SetField(documentrevision.FieldKind, field.TypeString, value)
+	}
 	if value, ok := _u.mutation.Slug(); ok {
 		_spec.SetField(documentrevision.FieldSlug, field.TypeString, value)
 	}
@@ -281,6 +304,9 @@ func (_u *DocumentRevisionUpdate) sqlSave(ctx context.Context) (_node int, err e
 		_spec.AddModifier(func(u *sql.UpdateBuilder) {
 			sqljson.Append(u, documentrevision.FieldTermIds, value)
 		})
+	}
+	if value, ok := _u.mutation.Metadata(); ok {
+		_spec.SetField(documentrevision.FieldMetadata, field.TypeJSON, value)
 	}
 	if value, ok := _u.mutation.Status(); ok {
 		_spec.SetField(documentrevision.FieldStatus, field.TypeEnum, value)
@@ -387,6 +413,20 @@ func (_u *DocumentRevisionUpdateOne) AddVersion(v int) *DocumentRevisionUpdateOn
 	return _u
 }
 
+// SetKind sets the "kind" field.
+func (_u *DocumentRevisionUpdateOne) SetKind(v string) *DocumentRevisionUpdateOne {
+	_u.mutation.SetKind(v)
+	return _u
+}
+
+// SetNillableKind sets the "kind" field if the given value is not nil.
+func (_u *DocumentRevisionUpdateOne) SetNillableKind(v *string) *DocumentRevisionUpdateOne {
+	if v != nil {
+		_u.SetKind(*v)
+	}
+	return _u
+}
+
 // SetSlug sets the "slug" field.
 func (_u *DocumentRevisionUpdateOne) SetSlug(v string) *DocumentRevisionUpdateOne {
 	_u.mutation.SetSlug(v)
@@ -458,6 +498,12 @@ func (_u *DocumentRevisionUpdateOne) SetTermIds(v []int) *DocumentRevisionUpdate
 // AppendTermIds appends value to the "term_ids" field.
 func (_u *DocumentRevisionUpdateOne) AppendTermIds(v []int) *DocumentRevisionUpdateOne {
 	_u.mutation.AppendTermIds(v)
+	return _u
+}
+
+// SetMetadata sets the "metadata" field.
+func (_u *DocumentRevisionUpdateOne) SetMetadata(v map[string]interface{}) *DocumentRevisionUpdateOne {
+	_u.mutation.SetMetadata(v)
 	return _u
 }
 
@@ -624,6 +670,9 @@ func (_u *DocumentRevisionUpdateOne) sqlSave(ctx context.Context) (_node *Docume
 	if value, ok := _u.mutation.AddedVersion(); ok {
 		_spec.AddField(documentrevision.FieldVersion, field.TypeInt, value)
 	}
+	if value, ok := _u.mutation.Kind(); ok {
+		_spec.SetField(documentrevision.FieldKind, field.TypeString, value)
+	}
 	if value, ok := _u.mutation.Slug(); ok {
 		_spec.SetField(documentrevision.FieldSlug, field.TypeString, value)
 	}
@@ -646,6 +695,9 @@ func (_u *DocumentRevisionUpdateOne) sqlSave(ctx context.Context) (_node *Docume
 		_spec.AddModifier(func(u *sql.UpdateBuilder) {
 			sqljson.Append(u, documentrevision.FieldTermIds, value)
 		})
+	}
+	if value, ok := _u.mutation.Metadata(); ok {
+		_spec.SetField(documentrevision.FieldMetadata, field.TypeJSON, value)
 	}
 	if value, ok := _u.mutation.Status(); ok {
 		_spec.SetField(documentrevision.FieldStatus, field.TypeEnum, value)

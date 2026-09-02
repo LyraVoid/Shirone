@@ -3,6 +3,7 @@
 package ent
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -18,6 +19,8 @@ type Document struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID int `json:"id,omitempty"`
+	// Kind holds the value of the "kind" field.
+	Kind string `json:"kind,omitempty"`
 	// Slug holds the value of the "slug" field.
 	Slug string `json:"slug,omitempty"`
 	// Title holds the value of the "title" field.
@@ -28,6 +31,8 @@ type Document struct {
 	Status document.Status `json:"status,omitempty"`
 	// Excerpt holds the value of the "excerpt" field.
 	Excerpt string `json:"excerpt,omitempty"`
+	// Metadata holds the value of the "metadata" field.
+	Metadata map[string]interface{} `json:"metadata,omitempty"`
 	// PublishedAt holds the value of the "published_at" field.
 	PublishedAt *time.Time `json:"published_at,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
@@ -99,9 +104,11 @@ func (*Document) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case document.FieldMetadata:
+			values[i] = new([]byte)
 		case document.FieldID:
 			values[i] = new(sql.NullInt64)
-		case document.FieldSlug, document.FieldTitle, document.FieldBody, document.FieldStatus, document.FieldExcerpt:
+		case document.FieldKind, document.FieldSlug, document.FieldTitle, document.FieldBody, document.FieldStatus, document.FieldExcerpt:
 			values[i] = new(sql.NullString)
 		case document.FieldPublishedAt, document.FieldCreatedAt, document.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
@@ -128,6 +135,12 @@ func (_m *Document) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field id", value)
 			}
 			_m.ID = int(value.Int64)
+		case document.FieldKind:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field kind", values[i])
+			} else if value.Valid {
+				_m.Kind = value.String
+			}
 		case document.FieldSlug:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field slug", values[i])
@@ -157,6 +170,14 @@ func (_m *Document) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field excerpt", values[i])
 			} else if value.Valid {
 				_m.Excerpt = value.String
+			}
+		case document.FieldMetadata:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field metadata", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &_m.Metadata); err != nil {
+					return fmt.Errorf("unmarshal field metadata: %w", err)
+				}
 			}
 		case document.FieldPublishedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -240,6 +261,9 @@ func (_m *Document) String() string {
 	var builder strings.Builder
 	builder.WriteString("Document(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", _m.ID))
+	builder.WriteString("kind=")
+	builder.WriteString(_m.Kind)
+	builder.WriteString(", ")
 	builder.WriteString("slug=")
 	builder.WriteString(_m.Slug)
 	builder.WriteString(", ")
@@ -254,6 +278,9 @@ func (_m *Document) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("excerpt=")
 	builder.WriteString(_m.Excerpt)
+	builder.WriteString(", ")
+	builder.WriteString("metadata=")
+	builder.WriteString(fmt.Sprintf("%v", _m.Metadata))
 	builder.WriteString(", ")
 	if v := _m.PublishedAt; v != nil {
 		builder.WriteString("published_at=")

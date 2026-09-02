@@ -32,6 +32,20 @@ func (_u *DocumentUpdate) Where(ps ...predicate.Document) *DocumentUpdate {
 	return _u
 }
 
+// SetKind sets the "kind" field.
+func (_u *DocumentUpdate) SetKind(v string) *DocumentUpdate {
+	_u.mutation.SetKind(v)
+	return _u
+}
+
+// SetNillableKind sets the "kind" field if the given value is not nil.
+func (_u *DocumentUpdate) SetNillableKind(v *string) *DocumentUpdate {
+	if v != nil {
+		_u.SetKind(*v)
+	}
+	return _u
+}
+
 // SetSlug sets the "slug" field.
 func (_u *DocumentUpdate) SetSlug(v string) *DocumentUpdate {
 	_u.mutation.SetSlug(v)
@@ -105,6 +119,12 @@ func (_u *DocumentUpdate) SetNillableExcerpt(v *string) *DocumentUpdate {
 // ClearExcerpt clears the value of the "excerpt" field.
 func (_u *DocumentUpdate) ClearExcerpt() *DocumentUpdate {
 	_u.mutation.ClearExcerpt()
+	return _u
+}
+
+// SetMetadata sets the "metadata" field.
+func (_u *DocumentUpdate) SetMetadata(v map[string]interface{}) *DocumentUpdate {
+	_u.mutation.SetMetadata(v)
 	return _u
 }
 
@@ -338,6 +358,9 @@ func (_u *DocumentUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 			}
 		}
 	}
+	if value, ok := _u.mutation.Kind(); ok {
+		_spec.SetField(document.FieldKind, field.TypeString, value)
+	}
 	if value, ok := _u.mutation.Slug(); ok {
 		_spec.SetField(document.FieldSlug, field.TypeString, value)
 	}
@@ -355,6 +378,9 @@ func (_u *DocumentUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if _u.mutation.ExcerptCleared() {
 		_spec.ClearField(document.FieldExcerpt, field.TypeString)
+	}
+	if value, ok := _u.mutation.Metadata(); ok {
+		_spec.SetField(document.FieldMetadata, field.TypeJSON, value)
 	}
 	if value, ok := _u.mutation.PublishedAt(); ok {
 		_spec.SetField(document.FieldPublishedAt, field.TypeTime, value)
@@ -552,6 +578,20 @@ type DocumentUpdateOne struct {
 	mutation *DocumentMutation
 }
 
+// SetKind sets the "kind" field.
+func (_u *DocumentUpdateOne) SetKind(v string) *DocumentUpdateOne {
+	_u.mutation.SetKind(v)
+	return _u
+}
+
+// SetNillableKind sets the "kind" field if the given value is not nil.
+func (_u *DocumentUpdateOne) SetNillableKind(v *string) *DocumentUpdateOne {
+	if v != nil {
+		_u.SetKind(*v)
+	}
+	return _u
+}
+
 // SetSlug sets the "slug" field.
 func (_u *DocumentUpdateOne) SetSlug(v string) *DocumentUpdateOne {
 	_u.mutation.SetSlug(v)
@@ -625,6 +665,12 @@ func (_u *DocumentUpdateOne) SetNillableExcerpt(v *string) *DocumentUpdateOne {
 // ClearExcerpt clears the value of the "excerpt" field.
 func (_u *DocumentUpdateOne) ClearExcerpt() *DocumentUpdateOne {
 	_u.mutation.ClearExcerpt()
+	return _u
+}
+
+// SetMetadata sets the "metadata" field.
+func (_u *DocumentUpdateOne) SetMetadata(v map[string]interface{}) *DocumentUpdateOne {
+	_u.mutation.SetMetadata(v)
 	return _u
 }
 
@@ -888,6 +934,9 @@ func (_u *DocumentUpdateOne) sqlSave(ctx context.Context) (_node *Document, err 
 			}
 		}
 	}
+	if value, ok := _u.mutation.Kind(); ok {
+		_spec.SetField(document.FieldKind, field.TypeString, value)
+	}
 	if value, ok := _u.mutation.Slug(); ok {
 		_spec.SetField(document.FieldSlug, field.TypeString, value)
 	}
@@ -905,6 +954,9 @@ func (_u *DocumentUpdateOne) sqlSave(ctx context.Context) (_node *Document, err 
 	}
 	if _u.mutation.ExcerptCleared() {
 		_spec.ClearField(document.FieldExcerpt, field.TypeString)
+	}
+	if value, ok := _u.mutation.Metadata(); ok {
+		_spec.SetField(document.FieldMetadata, field.TypeJSON, value)
 	}
 	if value, ok := _u.mutation.PublishedAt(); ok {
 		_spec.SetField(document.FieldPublishedAt, field.TypeTime, value)

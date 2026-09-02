@@ -20,12 +20,14 @@ var slugPattern = regexp.MustCompile(`^[a-z0-9]+(?:-[a-z0-9]+)*$`)
 type contentHandler struct{ client *ent.Client }
 
 type contentInput struct {
-	Slug    string `json:"slug"`
-	Title   string `json:"title"`
-	Body    string `json:"body"`
-	Excerpt string `json:"excerpt"`
-	Status  string `json:"status"`
-	TermIds []int  `json:"TermIds"`
+	Kind     string         `json:"kind"`
+	Slug     string         `json:"slug"`
+	Title    string         `json:"title"`
+	Body     string         `json:"body"`
+	Excerpt  string         `json:"excerpt"`
+	Status   string         `json:"status"`
+	TermIDs  []int          `json:"termIds"`
+	Metadata map[string]any `json:"metadata"`
 }
 
 func (h *contentHandler) adminList(w http.ResponseWriter, r *http.Request) {
@@ -78,7 +80,7 @@ func (h *contentHandler) revisions(w http.ResponseWriter, r *http.Request) {
 	}
 	items := make([]any, 0, len(revisions))
 	for _, revision := range revisions {
-		item := map[string]any{"id": revision.ID, "version": revision.Version, "slug": revision.Slug, "title": revision.Title, "body": revision.Body, "excerpt": revision.Excerpt, "TermIds": revision.TermIds, "status": revision.Status, "createdAt": revision.CreatedAt}
+		item := map[string]any{"id": revision.ID, "version": revision.Version, "kind": revision.Kind, "slug": revision.Slug, "title": revision.Title, "body": revision.Body, "excerpt": revision.Excerpt, "termIds": revision.TermIds, "metadata": revision.Metadata, "status": revision.Status, "createdAt": revision.CreatedAt}
 		if revision.Edges.Editor != nil {
 			item["editor"] = map[string]any{"id": revision.Edges.Editor.ID, "username": revision.Edges.Editor.Username, "displayName": revision.Edges.Editor.DisplayName}
 		}
@@ -116,11 +118,15 @@ func (h *contentHandler) get(w http.ResponseWriter, r *http.Request) {
 
 func (h *contentHandler) create(w http.ResponseWriter, r *http.Request) {
 	var input contentInput
-	if !decodeJSON(w, r, &input) || !validateContentInput(w, input) {
+	if !decodeJSON(w, r, &input) {
+		return
+	}
+	normalizeContentInput(&input)
+	if !validateContentInput(w, input) {
 		return
 	}
 	status := document.Status(input.Status)
-	if !h.validateTermIds(w, r, input.TermIds) {
+	if !h.validateTermIDs(w, r, input.TermIDs) {
 		return
 	}
 	now := time.Now().UTC()
@@ -130,7 +136,7 @@ func (h *contentHandler) create(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "transaction_failed", "content could not be created")
 		return
 	}
-	create := tx.Document.Create().SetSlug(input.Slug).SetTitle(strings.TrimSpace(input.Title)).SetBody(input.Body).SetExcerpt(strings.TrimSpace(input.Excerpt)).SetStatus(status).SetAuthorID(u.ID).AddTermIDs(input.TermIds...).SetCreatedAt(now).SetUpdatedAt(now)
+	create := tx.Document.Create().SetKind(input.Kind).SetSlug(input.Slug).SetTitle(input.Title).SetBody(input.Body).SetExcerpt(input.Excerpt).SetMetadata(input.Metadata).SetStatus(status).SetAuthorID(u.ID).AddTermIDs(input.TermIDs...).SetCreatedAt(now).SetUpdatedAt(now)
 	if status == document.StatusPublished {
 		create.SetPublishedAt(now)
 	}
@@ -144,7 +150,7 @@ func (h *contentHandler) create(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "content_create_failed", "content could not be created")
 		return
 	}
-	_, err = tx.DocumentRevision.Create().SetVersion(1).SetSlug(doc.Slug).SetTitle(doc.Title).SetBody(doc.Body).SetExcerpt(doc.Excerpt).SetTermIds(input.TermIds).SetStatus(documentrevision.Status(doc.Status)).SetCreatedAt(now).SetDocumentID(doc.ID).SetEditorID(u.ID).Save(r.Context())
+	_, err = tx.DocumentRevision.Create().SetVersion(1).SetKind(doc.Kind).SetSlug(doc.Slug).SetTitle(doc.Title).SetBody(doc.Body).SetExcerpt(doc.Excerpt).SetTermIds(input.TermIDs).SetMetadata(doc.Metadata).SetStatus(documentrevision.Status(doc.Status)).SetCreatedAt(now).SetDocumentID(doc.ID).SetEditorID(u.ID).Save(r.Context())
 	if err != nil {
 		_ = tx.Rollback()
 		writeError(w, http.StatusInternalServerError, "revision_create_failed", "content revision could not be created")
@@ -164,7 +170,11 @@ func (h *contentHandler) update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var input contentInput
-	if !decodeJSON(w, r, &input) || !validateContentInput(w, input) {
+	if !decodeJSON(w, r, &input) {
+		return
+	}
+	normalizeContentInput(&input)
+	if !validateContentInput(w, input) {
 		return
 	}
 	tx, err := h.client.Tx(r.Context())
@@ -183,11 +193,11 @@ func (h *contentHandler) update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	status := document.Status(input.Status)
-	if !h.validateTermIds(w, r, input.TermIds) {
+	if !h.validateTermIDs(w, r, input.TermIDs) {
 		_ = tx.Rollback()
 		return
 	}
-	update := current.Update().SetSlug(input.Slug).SetTitle(strings.TrimSpace(input.Title)).SetBody(input.Body).SetExcerpt(strings.TrimSpace(input.Excerpt)).SetStatus(status).ClearTerms().AddTermIDs(input.TermIds...).SetUpdatedAt(time.Now().UTC())
+	update := current.Update().SetKind(input.Kind).SetSlug(input.Slug).SetTitle(input.Title).SetBody(input.Body).SetExcerpt(input.Excerpt).SetMetadata(input.Metadata).SetStatus(status).ClearTerms().AddTermIDs(input.TermIDs...).SetUpdatedAt(time.Now().UTC())
 	if status == document.StatusPublished && current.PublishedAt == nil {
 		update.SetPublishedAt(time.Now().UTC())
 	}
@@ -207,7 +217,7 @@ func (h *contentHandler) update(w http.ResponseWriter, r *http.Request) {
 	version, err := tx.DocumentRevision.Query().Where(documentrevision.HasDocumentWith(document.IDEQ(id))).Count(r.Context())
 	if err == nil {
 		u := r.Context().Value(currentUserKey{}).(*ent.User)
-		_, err = tx.DocumentRevision.Create().SetVersion(version + 1).SetSlug(doc.Slug).SetTitle(doc.Title).SetBody(doc.Body).SetExcerpt(doc.Excerpt).SetTermIds(input.TermIds).SetStatus(documentrevision.Status(doc.Status)).SetCreatedAt(time.Now().UTC()).SetDocumentID(doc.ID).SetEditorID(u.ID).Save(r.Context())
+		_, err = tx.DocumentRevision.Create().SetVersion(version + 1).SetKind(doc.Kind).SetSlug(doc.Slug).SetTitle(doc.Title).SetBody(doc.Body).SetExcerpt(doc.Excerpt).SetTermIds(input.TermIDs).SetMetadata(doc.Metadata).SetStatus(documentrevision.Status(doc.Status)).SetCreatedAt(time.Now().UTC()).SetDocumentID(doc.ID).SetEditorID(u.ID).Save(r.Context())
 	}
 	if err != nil {
 		_ = tx.Rollback()
@@ -252,11 +262,11 @@ func (h *contentHandler) delete(w http.ResponseWriter, r *http.Request) {
 	version, err := tx.DocumentRevision.Query().Where(documentrevision.HasDocumentWith(document.IDEQ(id))).Count(r.Context())
 	if err == nil {
 		u := r.Context().Value(currentUserKey{}).(*ent.User)
-		TermIds, termErr := current.QueryTerms().IDs(r.Context())
+		termIDs, termErr := current.QueryTerms().IDs(r.Context())
 		if termErr != nil {
 			err = termErr
 		} else {
-			_, err = tx.DocumentRevision.Create().SetVersion(version + 1).SetSlug(archived.Slug).SetTitle(archived.Title).SetBody(archived.Body).SetExcerpt(archived.Excerpt).SetTermIds(TermIds).SetStatus(documentrevision.StatusArchived).SetCreatedAt(now).SetDocumentID(archived.ID).SetEditorID(u.ID).Save(r.Context())
+			_, err = tx.DocumentRevision.Create().SetVersion(version + 1).SetKind(archived.Kind).SetSlug(archived.Slug).SetTitle(archived.Title).SetBody(archived.Body).SetExcerpt(archived.Excerpt).SetTermIds(termIDs).SetMetadata(archived.Metadata).SetStatus(documentrevision.StatusArchived).SetCreatedAt(now).SetDocumentID(archived.ID).SetEditorID(u.ID).Save(r.Context())
 		}
 	}
 	if err != nil {
@@ -281,8 +291,8 @@ func contentID(w http.ResponseWriter, r *http.Request) (int, bool) {
 }
 
 func validateContentInput(w http.ResponseWriter, input contentInput) bool {
-	if !slugPattern.MatchString(input.Slug) || strings.TrimSpace(input.Title) == "" || strings.TrimSpace(input.Body) == "" {
-		writeError(w, http.StatusBadRequest, "invalid_content", "slug, title, and body are required")
+	if !slugPattern.MatchString(input.Kind) || !slugPattern.MatchString(input.Slug) || input.Title == "" || input.Body == "" {
+		writeError(w, http.StatusBadRequest, "invalid_content", "kind, slug, title, and body are required")
 		return false
 	}
 	if err := document.StatusValidator(document.Status(input.Status)); err != nil {
@@ -293,7 +303,7 @@ func validateContentInput(w http.ResponseWriter, input contentInput) bool {
 }
 
 func documentResponse(doc *ent.Document) map[string]any {
-	result := map[string]any{"id": doc.ID, "slug": doc.Slug, "title": doc.Title, "body": doc.Body, "excerpt": doc.Excerpt, "status": doc.Status, "publishedAt": doc.PublishedAt, "createdAt": doc.CreatedAt, "updatedAt": doc.UpdatedAt}
+	result := map[string]any{"id": doc.ID, "kind": doc.Kind, "slug": doc.Slug, "title": doc.Title, "body": doc.Body, "excerpt": doc.Excerpt, "metadata": doc.Metadata, "status": doc.Status, "publishedAt": doc.PublishedAt, "createdAt": doc.CreatedAt, "updatedAt": doc.UpdatedAt}
 	if doc.Edges.Terms != nil {
 		terms := make([]any, 0, len(doc.Edges.Terms))
 		for _, item := range doc.Edges.Terms {
@@ -304,7 +314,21 @@ func documentResponse(doc *ent.Document) map[string]any {
 	return result
 }
 
-func (h *contentHandler) validateTermIds(w http.ResponseWriter, r *http.Request, ids []int) bool {
+func normalizeContentInput(input *contentInput) {
+	input.Kind = strings.ToLower(strings.TrimSpace(input.Kind))
+	if input.Kind == "" {
+		input.Kind = "post"
+	}
+	input.Slug = strings.ToLower(strings.TrimSpace(input.Slug))
+	input.Title = strings.TrimSpace(input.Title)
+	input.Body = strings.TrimSpace(input.Body)
+	input.Excerpt = strings.TrimSpace(input.Excerpt)
+	if input.Metadata == nil {
+		input.Metadata = map[string]any{}
+	}
+}
+
+func (h *contentHandler) validateTermIDs(w http.ResponseWriter, r *http.Request, ids []int) bool {
 	if len(ids) == 0 {
 		return true
 	}

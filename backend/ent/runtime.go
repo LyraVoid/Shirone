@@ -3,6 +3,7 @@
 package ent
 
 import (
+	"github.com/shirone-platform/backend/ent/document"
 	"github.com/shirone-platform/backend/ent/documentrevision"
 	"github.com/shirone-platform/backend/ent/mediaasset"
 	"github.com/shirone-platform/backend/ent/schema"
@@ -16,6 +17,14 @@ func init() {
 	_ = commentFields
 	documentFields := schema.Document{}.Fields()
 	_ = documentFields
+	// documentDescKind is the schema descriptor for kind field.
+	documentDescKind := documentFields[0].Descriptor()
+	// document.DefaultKind holds the default value on creation for the kind field.
+	document.DefaultKind = documentDescKind.Default.(string)
+	// documentDescMetadata is the schema descriptor for metadata field.
+	documentDescMetadata := documentFields[6].Descriptor()
+	// document.DefaultMetadata holds the default value on creation for the metadata field.
+	document.DefaultMetadata = documentDescMetadata.Default.(map[string]interface{})
 	documentrevisionFields := schema.DocumentRevision{}.Fields()
 	_ = documentrevisionFields
 	// documentrevisionDescVersion is the schema descriptor for version field.
@@ -23,9 +32,13 @@ func init() {
 	// documentrevision.VersionValidator is a validator for the "version" field. It is called by the builders before save.
 	documentrevision.VersionValidator = documentrevisionDescVersion.Validators[0].(func(int) error)
 	// documentrevisionDescTermIds is the schema descriptor for term_ids field.
-	documentrevisionDescTermIds := documentrevisionFields[5].Descriptor()
+	documentrevisionDescTermIds := documentrevisionFields[6].Descriptor()
 	// documentrevision.DefaultTermIds holds the default value on creation for the term_ids field.
 	documentrevision.DefaultTermIds = documentrevisionDescTermIds.Default.([]int)
+	// documentrevisionDescMetadata is the schema descriptor for metadata field.
+	documentrevisionDescMetadata := documentrevisionFields[7].Descriptor()
+	// documentrevision.DefaultMetadata holds the default value on creation for the metadata field.
+	documentrevision.DefaultMetadata = documentrevisionDescMetadata.Default.(map[string]interface{})
 	mediaassetFields := schema.MediaAsset{}.Fields()
 	_ = mediaassetFields
 	// mediaassetDescSize is the schema descriptor for size field.

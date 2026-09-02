@@ -11,7 +11,7 @@ func TestPublishedContentLifecycle(t *testing.T) {
 	router := testRouter(t)
 	cookie := registerAccount(t, router, "admin@example.com", "admin")
 
-	create := httptest.NewRequest(http.MethodPost, "/api/v1/admin/content/", bytes.NewBufferString(`{"slug":"hello-world","title":"Hello World","body":"First version","excerpt":"Intro","status":"published"}`))
+	create := httptest.NewRequest(http.MethodPost, "/api/v1/admin/content/", bytes.NewBufferString(`{"kind":"post","slug":"hello-world","title":"Hello World","body":"First version","excerpt":"Intro","status":"published","metadata":{"lang":"en","image":"/cover.webp"}}`))
 	create.AddCookie(cookie)
 	created := httptest.NewRecorder()
 	router.ServeHTTP(created, create)
@@ -22,7 +22,7 @@ func TestPublishedContentLifecycle(t *testing.T) {
 	get := httptest.NewRequest(http.MethodGet, "/api/v1/content/hello-world", nil)
 	got := httptest.NewRecorder()
 	router.ServeHTTP(got, get)
-	if got.Code != http.StatusOK || !bytes.Contains(got.Body.Bytes(), []byte(`"body":"First version"`)) {
+	if got.Code != http.StatusOK || !bytes.Contains(got.Body.Bytes(), []byte(`"body":"First version"`)) || !bytes.Contains(got.Body.Bytes(), []byte(`"lang":"en"`)) {
 		t.Fatalf("get status = %d, body = %s", got.Code, got.Body.String())
 	}
 

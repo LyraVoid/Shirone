@@ -55,6 +55,11 @@ func IDLTE(id int) predicate.Document {
 	return predicate.Document(sql.FieldLTE(FieldID, id))
 }
 
+// Kind applies equality check predicate on the "kind" field. It's identical to KindEQ.
+func Kind(v string) predicate.Document {
+	return predicate.Document(sql.FieldEQ(FieldKind, v))
+}
+
 // Slug applies equality check predicate on the "slug" field. It's identical to SlugEQ.
 func Slug(v string) predicate.Document {
 	return predicate.Document(sql.FieldEQ(FieldSlug, v))
@@ -88,6 +93,71 @@ func CreatedAt(v time.Time) predicate.Document {
 // UpdatedAt applies equality check predicate on the "updated_at" field. It's identical to UpdatedAtEQ.
 func UpdatedAt(v time.Time) predicate.Document {
 	return predicate.Document(sql.FieldEQ(FieldUpdatedAt, v))
+}
+
+// KindEQ applies the EQ predicate on the "kind" field.
+func KindEQ(v string) predicate.Document {
+	return predicate.Document(sql.FieldEQ(FieldKind, v))
+}
+
+// KindNEQ applies the NEQ predicate on the "kind" field.
+func KindNEQ(v string) predicate.Document {
+	return predicate.Document(sql.FieldNEQ(FieldKind, v))
+}
+
+// KindIn applies the In predicate on the "kind" field.
+func KindIn(vs ...string) predicate.Document {
+	return predicate.Document(sql.FieldIn(FieldKind, vs...))
+}
+
+// KindNotIn applies the NotIn predicate on the "kind" field.
+func KindNotIn(vs ...string) predicate.Document {
+	return predicate.Document(sql.FieldNotIn(FieldKind, vs...))
+}
+
+// KindGT applies the GT predicate on the "kind" field.
+func KindGT(v string) predicate.Document {
+	return predicate.Document(sql.FieldGT(FieldKind, v))
+}
+
+// KindGTE applies the GTE predicate on the "kind" field.
+func KindGTE(v string) predicate.Document {
+	return predicate.Document(sql.FieldGTE(FieldKind, v))
+}
+
+// KindLT applies the LT predicate on the "kind" field.
+func KindLT(v string) predicate.Document {
+	return predicate.Document(sql.FieldLT(FieldKind, v))
+}
+
+// KindLTE applies the LTE predicate on the "kind" field.
+func KindLTE(v string) predicate.Document {
+	return predicate.Document(sql.FieldLTE(FieldKind, v))
+}
+
+// KindContains applies the Contains predicate on the "kind" field.
+func KindContains(v string) predicate.Document {
+	return predicate.Document(sql.FieldContains(FieldKind, v))
+}
+
+// KindHasPrefix applies the HasPrefix predicate on the "kind" field.
+func KindHasPrefix(v string) predicate.Document {
+	return predicate.Document(sql.FieldHasPrefix(FieldKind, v))
+}
+
+// KindHasSuffix applies the HasSuffix predicate on the "kind" field.
+func KindHasSuffix(v string) predicate.Document {
+	return predicate.Document(sql.FieldHasSuffix(FieldKind, v))
+}
+
+// KindEqualFold applies the EqualFold predicate on the "kind" field.
+func KindEqualFold(v string) predicate.Document {
+	return predicate.Document(sql.FieldEqualFold(FieldKind, v))
+}
+
+// KindContainsFold applies the ContainsFold predicate on the "kind" field.
+func KindContainsFold(v string) predicate.Document {
+	return predicate.Document(sql.FieldContainsFold(FieldKind, v))
 }
 
 // SlugEQ applies the EQ predicate on the "slug" field.

@@ -34,6 +34,8 @@ Content creation, updates, and archival record immutable revision snapshots in t
 
 Taxonomies are user-defined instead of hard-coding categories or tags. Editors can create taxonomy namespaces and terms, then attach term IDs to content. Term assignments are included in revision snapshots.
 
+Documents include a stable `kind` discriminator and a free-form JSON `metadata` object. Core publication fields remain typed, while theme or extension-specific fields such as cover images, language, and SEO values can evolve without changing the core schema. Both fields are captured in every revision.
+
 Media uploads are stored under `STORAGE_LOCAL_DIR` (default `./data/media`) with random immutable keys and database metadata. The initial 20 MiB limit accepts common raster images, PDF, and plain text while rejecting active HTML/SVG content. Editors manage uploads under `/api/v1/admin/media`; stored objects are served from `/api/v1/media/{key}`.
 
 ## PostgreSQL with Compose

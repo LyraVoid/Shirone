@@ -3,6 +3,10 @@ info:
   title: Shirone Backend API
   version: 0.1.0
   description: Provider-neutral API for Shirone dynamic edition.
+x-content-contract:
+  document:
+    kind: Stable extension discriminator such as post or page.
+    metadata: Provider and theme-specific JSON values.
 paths:
   /api/v1/media/{key}:
     get:

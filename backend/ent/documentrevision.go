@@ -22,6 +22,8 @@ type DocumentRevision struct {
 	ID int `json:"id,omitempty"`
 	// Version holds the value of the "version" field.
 	Version int `json:"version,omitempty"`
+	// Kind holds the value of the "kind" field.
+	Kind string `json:"kind,omitempty"`
 	// Slug holds the value of the "slug" field.
 	Slug string `json:"slug,omitempty"`
 	// Title holds the value of the "title" field.
@@ -32,6 +34,8 @@ type DocumentRevision struct {
 	Excerpt string `json:"excerpt,omitempty"`
 	// TermIds holds the value of the "term_ids" field.
 	TermIds []int `json:"term_ids,omitempty"`
+	// Metadata holds the value of the "metadata" field.
+	Metadata map[string]interface{} `json:"metadata,omitempty"`
 	// Status holds the value of the "status" field.
 	Status documentrevision.Status `json:"status,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
@@ -82,11 +86,11 @@ func (*DocumentRevision) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case documentrevision.FieldTermIds:
+		case documentrevision.FieldTermIds, documentrevision.FieldMetadata:
 			values[i] = new([]byte)
 		case documentrevision.FieldID, documentrevision.FieldVersion:
 			values[i] = new(sql.NullInt64)
-		case documentrevision.FieldSlug, documentrevision.FieldTitle, documentrevision.FieldBody, documentrevision.FieldExcerpt, documentrevision.FieldStatus:
+		case documentrevision.FieldKind, documentrevision.FieldSlug, documentrevision.FieldTitle, documentrevision.FieldBody, documentrevision.FieldExcerpt, documentrevision.FieldStatus:
 			values[i] = new(sql.NullString)
 		case documentrevision.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
@@ -121,6 +125,12 @@ func (_m *DocumentRevision) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.Version = int(value.Int64)
 			}
+		case documentrevision.FieldKind:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field kind", values[i])
+			} else if value.Valid {
+				_m.Kind = value.String
+			}
 		case documentrevision.FieldSlug:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field slug", values[i])
@@ -151,6 +161,14 @@ func (_m *DocumentRevision) assignValues(columns []string, values []any) error {
 			} else if value != nil && len(*value) > 0 {
 				if err := json.Unmarshal(*value, &_m.TermIds); err != nil {
 					return fmt.Errorf("unmarshal field term_ids: %w", err)
+				}
+			}
+		case documentrevision.FieldMetadata:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field metadata", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &_m.Metadata); err != nil {
+					return fmt.Errorf("unmarshal field metadata: %w", err)
 				}
 			}
 		case documentrevision.FieldStatus:
@@ -228,6 +246,9 @@ func (_m *DocumentRevision) String() string {
 	builder.WriteString("version=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Version))
 	builder.WriteString(", ")
+	builder.WriteString("kind=")
+	builder.WriteString(_m.Kind)
+	builder.WriteString(", ")
 	builder.WriteString("slug=")
 	builder.WriteString(_m.Slug)
 	builder.WriteString(", ")
@@ -242,6 +263,9 @@ func (_m *DocumentRevision) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("term_ids=")
 	builder.WriteString(fmt.Sprintf("%v", _m.TermIds))
+	builder.WriteString(", ")
+	builder.WriteString("metadata=")
+	builder.WriteString(fmt.Sprintf("%v", _m.Metadata))
 	builder.WriteString(", ")
 	builder.WriteString("status=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Status))

@@ -408,12 +408,12 @@ func (_q *DocumentQuery) WithTerms(opts ...func(*TermQuery)) *DocumentQuery {
 // Example:
 //
 //	var v []struct {
-//		Slug string `json:"slug,omitempty"`
+//		Kind string `json:"kind,omitempty"`
 //		Count int `json:"count,omitempty"`
 //	}
 //
 //	client.Document.Query().
-//		GroupBy(document.FieldSlug).
+//		GroupBy(document.FieldKind).
 //		Aggregate(ent.Count()).
 //		Scan(ctx, &v)
 func (_q *DocumentQuery) GroupBy(field string, fields ...string) *DocumentGroupBy {
@@ -431,11 +431,11 @@ func (_q *DocumentQuery) GroupBy(field string, fields ...string) *DocumentGroupB
 // Example:
 //
 //	var v []struct {
-//		Slug string `json:"slug,omitempty"`
+//		Kind string `json:"kind,omitempty"`
 //	}
 //
 //	client.Document.Query().
-//		Select(document.FieldSlug).
+//		Select(document.FieldKind).
 //		Scan(ctx, &v)
 func (_q *DocumentQuery) Select(fields ...string) *DocumentSelect {
 	_q.ctx.Fields = append(_q.ctx.Fields, fields...)

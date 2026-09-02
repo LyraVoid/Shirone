@@ -805,11 +805,13 @@ type DocumentMutation struct {
 	op               Op
 	typ              string
 	id               *int
+	kind             *string
 	slug             *string
 	title            *string
 	body             *string
 	status           *document.Status
 	excerpt          *string
+	metadata         *map[string]interface{}
 	published_at     *time.Time
 	created_at       *time.Time
 	updated_at       *time.Time
@@ -926,6 +928,42 @@ func (m *DocumentMutation) IDs(ctx context.Context) ([]int, error) {
 	default:
 		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
 	}
+}
+
+// SetKind sets the "kind" field.
+func (m *DocumentMutation) SetKind(s string) {
+	m.kind = &s
+}
+
+// Kind returns the value of the "kind" field in the mutation.
+func (m *DocumentMutation) Kind() (r string, exists bool) {
+	v := m.kind
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldKind returns the old "kind" field's value of the Document entity.
+// If the Document object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DocumentMutation) OldKind(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldKind is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldKind requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldKind: %w", err)
+	}
+	return oldValue.Kind, nil
+}
+
+// ResetKind resets all changes to the "kind" field.
+func (m *DocumentMutation) ResetKind() {
+	m.kind = nil
 }
 
 // SetSlug sets the "slug" field.
@@ -1119,6 +1157,42 @@ func (m *DocumentMutation) ExcerptCleared() bool {
 func (m *DocumentMutation) ResetExcerpt() {
 	m.excerpt = nil
 	delete(m.clearedFields, document.FieldExcerpt)
+}
+
+// SetMetadata sets the "metadata" field.
+func (m *DocumentMutation) SetMetadata(value map[string]interface{}) {
+	m.metadata = &value
+}
+
+// Metadata returns the value of the "metadata" field in the mutation.
+func (m *DocumentMutation) Metadata() (r map[string]interface{}, exists bool) {
+	v := m.metadata
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldMetadata returns the old "metadata" field's value of the Document entity.
+// If the Document object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DocumentMutation) OldMetadata(ctx context.Context) (v map[string]interface{}, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldMetadata is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldMetadata requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldMetadata: %w", err)
+	}
+	return oldValue.Metadata, nil
+}
+
+// ResetMetadata resets all changes to the "metadata" field.
+func (m *DocumentMutation) ResetMetadata() {
+	m.metadata = nil
 }
 
 // SetPublishedAt sets the "published_at" field.
@@ -1477,7 +1551,10 @@ func (m *DocumentMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *DocumentMutation) Fields() []string {
-	fields := make([]string, 0, 8)
+	fields := make([]string, 0, 10)
+	if m.kind != nil {
+		fields = append(fields, document.FieldKind)
+	}
 	if m.slug != nil {
 		fields = append(fields, document.FieldSlug)
 	}
@@ -1492,6 +1569,9 @@ func (m *DocumentMutation) Fields() []string {
 	}
 	if m.excerpt != nil {
 		fields = append(fields, document.FieldExcerpt)
+	}
+	if m.metadata != nil {
+		fields = append(fields, document.FieldMetadata)
 	}
 	if m.published_at != nil {
 		fields = append(fields, document.FieldPublishedAt)
@@ -1510,6 +1590,8 @@ func (m *DocumentMutation) Fields() []string {
 // schema.
 func (m *DocumentMutation) Field(name string) (ent.Value, bool) {
 	switch name {
+	case document.FieldKind:
+		return m.Kind()
 	case document.FieldSlug:
 		return m.Slug()
 	case document.FieldTitle:
@@ -1520,6 +1602,8 @@ func (m *DocumentMutation) Field(name string) (ent.Value, bool) {
 		return m.Status()
 	case document.FieldExcerpt:
 		return m.Excerpt()
+	case document.FieldMetadata:
+		return m.Metadata()
 	case document.FieldPublishedAt:
 		return m.PublishedAt()
 	case document.FieldCreatedAt:
@@ -1535,6 +1619,8 @@ func (m *DocumentMutation) Field(name string) (ent.Value, bool) {
 // database failed.
 func (m *DocumentMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
 	switch name {
+	case document.FieldKind:
+		return m.OldKind(ctx)
 	case document.FieldSlug:
 		return m.OldSlug(ctx)
 	case document.FieldTitle:
@@ -1545,6 +1631,8 @@ func (m *DocumentMutation) OldField(ctx context.Context, name string) (ent.Value
 		return m.OldStatus(ctx)
 	case document.FieldExcerpt:
 		return m.OldExcerpt(ctx)
+	case document.FieldMetadata:
+		return m.OldMetadata(ctx)
 	case document.FieldPublishedAt:
 		return m.OldPublishedAt(ctx)
 	case document.FieldCreatedAt:
@@ -1560,6 +1648,13 @@ func (m *DocumentMutation) OldField(ctx context.Context, name string) (ent.Value
 // type.
 func (m *DocumentMutation) SetField(name string, value ent.Value) error {
 	switch name {
+	case document.FieldKind:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetKind(v)
+		return nil
 	case document.FieldSlug:
 		v, ok := value.(string)
 		if !ok {
@@ -1594,6 +1689,13 @@ func (m *DocumentMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetExcerpt(v)
+		return nil
+	case document.FieldMetadata:
+		v, ok := value.(map[string]interface{})
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetMetadata(v)
 		return nil
 	case document.FieldPublishedAt:
 		v, ok := value.(time.Time)
@@ -1680,6 +1782,9 @@ func (m *DocumentMutation) ClearField(name string) error {
 // It returns an error if the field is not defined in the schema.
 func (m *DocumentMutation) ResetField(name string) error {
 	switch name {
+	case document.FieldKind:
+		m.ResetKind()
+		return nil
 	case document.FieldSlug:
 		m.ResetSlug()
 		return nil
@@ -1694,6 +1799,9 @@ func (m *DocumentMutation) ResetField(name string) error {
 		return nil
 	case document.FieldExcerpt:
 		m.ResetExcerpt()
+		return nil
+	case document.FieldMetadata:
+		m.ResetMetadata()
 		return nil
 	case document.FieldPublishedAt:
 		m.ResetPublishedAt()
@@ -1870,12 +1978,14 @@ type DocumentRevisionMutation struct {
 	id              *int
 	version         *int
 	addversion      *int
+	kind            *string
 	slug            *string
 	title           *string
 	body            *string
 	excerpt         *string
 	term_ids        *[]int
 	appendterm_ids  []int
+	metadata        *map[string]interface{}
 	status          *documentrevision.Status
 	created_at      *time.Time
 	clearedFields   map[string]struct{}
@@ -2040,6 +2150,42 @@ func (m *DocumentRevisionMutation) AddedVersion() (r int, exists bool) {
 func (m *DocumentRevisionMutation) ResetVersion() {
 	m.version = nil
 	m.addversion = nil
+}
+
+// SetKind sets the "kind" field.
+func (m *DocumentRevisionMutation) SetKind(s string) {
+	m.kind = &s
+}
+
+// Kind returns the value of the "kind" field in the mutation.
+func (m *DocumentRevisionMutation) Kind() (r string, exists bool) {
+	v := m.kind
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldKind returns the old "kind" field's value of the DocumentRevision entity.
+// If the DocumentRevision object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DocumentRevisionMutation) OldKind(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldKind is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldKind requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldKind: %w", err)
+	}
+	return oldValue.Kind, nil
+}
+
+// ResetKind resets all changes to the "kind" field.
+func (m *DocumentRevisionMutation) ResetKind() {
+	m.kind = nil
 }
 
 // SetSlug sets the "slug" field.
@@ -2250,6 +2396,42 @@ func (m *DocumentRevisionMutation) ResetTermIds() {
 	m.appendterm_ids = nil
 }
 
+// SetMetadata sets the "metadata" field.
+func (m *DocumentRevisionMutation) SetMetadata(value map[string]interface{}) {
+	m.metadata = &value
+}
+
+// Metadata returns the value of the "metadata" field in the mutation.
+func (m *DocumentRevisionMutation) Metadata() (r map[string]interface{}, exists bool) {
+	v := m.metadata
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldMetadata returns the old "metadata" field's value of the DocumentRevision entity.
+// If the DocumentRevision object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DocumentRevisionMutation) OldMetadata(ctx context.Context) (v map[string]interface{}, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldMetadata is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldMetadata requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldMetadata: %w", err)
+	}
+	return oldValue.Metadata, nil
+}
+
+// ResetMetadata resets all changes to the "metadata" field.
+func (m *DocumentRevisionMutation) ResetMetadata() {
+	m.metadata = nil
+}
+
 // SetStatus sets the "status" field.
 func (m *DocumentRevisionMutation) SetStatus(d documentrevision.Status) {
 	m.status = &d
@@ -2434,9 +2616,12 @@ func (m *DocumentRevisionMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *DocumentRevisionMutation) Fields() []string {
-	fields := make([]string, 0, 8)
+	fields := make([]string, 0, 10)
 	if m.version != nil {
 		fields = append(fields, documentrevision.FieldVersion)
+	}
+	if m.kind != nil {
+		fields = append(fields, documentrevision.FieldKind)
 	}
 	if m.slug != nil {
 		fields = append(fields, documentrevision.FieldSlug)
@@ -2452,6 +2637,9 @@ func (m *DocumentRevisionMutation) Fields() []string {
 	}
 	if m.term_ids != nil {
 		fields = append(fields, documentrevision.FieldTermIds)
+	}
+	if m.metadata != nil {
+		fields = append(fields, documentrevision.FieldMetadata)
 	}
 	if m.status != nil {
 		fields = append(fields, documentrevision.FieldStatus)
@@ -2469,6 +2657,8 @@ func (m *DocumentRevisionMutation) Field(name string) (ent.Value, bool) {
 	switch name {
 	case documentrevision.FieldVersion:
 		return m.Version()
+	case documentrevision.FieldKind:
+		return m.Kind()
 	case documentrevision.FieldSlug:
 		return m.Slug()
 	case documentrevision.FieldTitle:
@@ -2479,6 +2669,8 @@ func (m *DocumentRevisionMutation) Field(name string) (ent.Value, bool) {
 		return m.Excerpt()
 	case documentrevision.FieldTermIds:
 		return m.TermIds()
+	case documentrevision.FieldMetadata:
+		return m.Metadata()
 	case documentrevision.FieldStatus:
 		return m.Status()
 	case documentrevision.FieldCreatedAt:
@@ -2494,6 +2686,8 @@ func (m *DocumentRevisionMutation) OldField(ctx context.Context, name string) (e
 	switch name {
 	case documentrevision.FieldVersion:
 		return m.OldVersion(ctx)
+	case documentrevision.FieldKind:
+		return m.OldKind(ctx)
 	case documentrevision.FieldSlug:
 		return m.OldSlug(ctx)
 	case documentrevision.FieldTitle:
@@ -2504,6 +2698,8 @@ func (m *DocumentRevisionMutation) OldField(ctx context.Context, name string) (e
 		return m.OldExcerpt(ctx)
 	case documentrevision.FieldTermIds:
 		return m.OldTermIds(ctx)
+	case documentrevision.FieldMetadata:
+		return m.OldMetadata(ctx)
 	case documentrevision.FieldStatus:
 		return m.OldStatus(ctx)
 	case documentrevision.FieldCreatedAt:
@@ -2523,6 +2719,13 @@ func (m *DocumentRevisionMutation) SetField(name string, value ent.Value) error 
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetVersion(v)
+		return nil
+	case documentrevision.FieldKind:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetKind(v)
 		return nil
 	case documentrevision.FieldSlug:
 		v, ok := value.(string)
@@ -2558,6 +2761,13 @@ func (m *DocumentRevisionMutation) SetField(name string, value ent.Value) error 
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetTermIds(v)
+		return nil
+	case documentrevision.FieldMetadata:
+		v, ok := value.(map[string]interface{})
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetMetadata(v)
 		return nil
 	case documentrevision.FieldStatus:
 		v, ok := value.(documentrevision.Status)
@@ -2649,6 +2859,9 @@ func (m *DocumentRevisionMutation) ResetField(name string) error {
 	case documentrevision.FieldVersion:
 		m.ResetVersion()
 		return nil
+	case documentrevision.FieldKind:
+		m.ResetKind()
+		return nil
 	case documentrevision.FieldSlug:
 		m.ResetSlug()
 		return nil
@@ -2663,6 +2876,9 @@ func (m *DocumentRevisionMutation) ResetField(name string) error {
 		return nil
 	case documentrevision.FieldTermIds:
 		m.ResetTermIds()
+		return nil
+	case documentrevision.FieldMetadata:
+		m.ResetMetadata()
 		return nil
 	case documentrevision.FieldStatus:
 		m.ResetStatus()

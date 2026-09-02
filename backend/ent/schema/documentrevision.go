@@ -12,11 +12,13 @@ type DocumentRevision struct{ ent.Schema }
 func (DocumentRevision) Fields() []ent.Field {
 	return []ent.Field{
 		field.Int("version").Positive(),
+		field.String("kind"),
 		field.String("slug"),
 		field.String("title"),
 		field.Text("body"),
 		field.String("excerpt").Optional(),
 		field.JSON("term_ids", []int{}).Default([]int{}),
+		field.JSON("metadata", map[string]any{}).Default(map[string]any{}),
 		field.Enum("status").Values("draft", "published", "archived"),
 		field.Time("created_at"),
 	}

@@ -28,6 +28,12 @@ func (_c *DocumentRevisionCreate) SetVersion(v int) *DocumentRevisionCreate {
 	return _c
 }
 
+// SetKind sets the "kind" field.
+func (_c *DocumentRevisionCreate) SetKind(v string) *DocumentRevisionCreate {
+	_c.mutation.SetKind(v)
+	return _c
+}
+
 // SetSlug sets the "slug" field.
 func (_c *DocumentRevisionCreate) SetSlug(v string) *DocumentRevisionCreate {
 	_c.mutation.SetSlug(v)
@@ -63,6 +69,12 @@ func (_c *DocumentRevisionCreate) SetNillableExcerpt(v *string) *DocumentRevisio
 // SetTermIds sets the "term_ids" field.
 func (_c *DocumentRevisionCreate) SetTermIds(v []int) *DocumentRevisionCreate {
 	_c.mutation.SetTermIds(v)
+	return _c
+}
+
+// SetMetadata sets the "metadata" field.
+func (_c *DocumentRevisionCreate) SetMetadata(v map[string]interface{}) *DocumentRevisionCreate {
+	_c.mutation.SetMetadata(v)
 	return _c
 }
 
@@ -139,6 +151,10 @@ func (_c *DocumentRevisionCreate) defaults() {
 		v := documentrevision.DefaultTermIds
 		_c.mutation.SetTermIds(v)
 	}
+	if _, ok := _c.mutation.Metadata(); !ok {
+		v := documentrevision.DefaultMetadata
+		_c.mutation.SetMetadata(v)
+	}
 }
 
 // check runs all checks and user-defined validators on the builder.
@@ -151,6 +167,9 @@ func (_c *DocumentRevisionCreate) check() error {
 			return &ValidationError{Name: "version", err: fmt.Errorf(`ent: validator failed for field "DocumentRevision.version": %w`, err)}
 		}
 	}
+	if _, ok := _c.mutation.Kind(); !ok {
+		return &ValidationError{Name: "kind", err: errors.New(`ent: missing required field "DocumentRevision.kind"`)}
+	}
 	if _, ok := _c.mutation.Slug(); !ok {
 		return &ValidationError{Name: "slug", err: errors.New(`ent: missing required field "DocumentRevision.slug"`)}
 	}
@@ -162,6 +181,9 @@ func (_c *DocumentRevisionCreate) check() error {
 	}
 	if _, ok := _c.mutation.TermIds(); !ok {
 		return &ValidationError{Name: "term_ids", err: errors.New(`ent: missing required field "DocumentRevision.term_ids"`)}
+	}
+	if _, ok := _c.mutation.Metadata(); !ok {
+		return &ValidationError{Name: "metadata", err: errors.New(`ent: missing required field "DocumentRevision.metadata"`)}
 	}
 	if _, ok := _c.mutation.Status(); !ok {
 		return &ValidationError{Name: "status", err: errors.New(`ent: missing required field "DocumentRevision.status"`)}
@@ -210,6 +232,10 @@ func (_c *DocumentRevisionCreate) createSpec() (*DocumentRevision, *sqlgraph.Cre
 		_spec.SetField(documentrevision.FieldVersion, field.TypeInt, value)
 		_node.Version = value
 	}
+	if value, ok := _c.mutation.Kind(); ok {
+		_spec.SetField(documentrevision.FieldKind, field.TypeString, value)
+		_node.Kind = value
+	}
 	if value, ok := _c.mutation.Slug(); ok {
 		_spec.SetField(documentrevision.FieldSlug, field.TypeString, value)
 		_node.Slug = value
@@ -229,6 +255,10 @@ func (_c *DocumentRevisionCreate) createSpec() (*DocumentRevision, *sqlgraph.Cre
 	if value, ok := _c.mutation.TermIds(); ok {
 		_spec.SetField(documentrevision.FieldTermIds, field.TypeJSON, value)
 		_node.TermIds = value
+	}
+	if value, ok := _c.mutation.Metadata(); ok {
+		_spec.SetField(documentrevision.FieldMetadata, field.TypeJSON, value)
+		_node.Metadata = value
 	}
 	if value, ok := _c.mutation.Status(); ok {
 		_spec.SetField(documentrevision.FieldStatus, field.TypeEnum, value)

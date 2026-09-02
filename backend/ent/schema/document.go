@@ -11,11 +11,13 @@ type Document struct{ ent.Schema }
 
 func (Document) Fields() []ent.Field {
 	return []ent.Field{
+		field.String("kind").Default("post"),
 		field.String("slug"),
 		field.String("title"),
 		field.Text("body"),
 		field.Enum("status").Values("draft", "published", "archived").Default("draft"),
 		field.String("excerpt").Optional(),
+		field.JSON("metadata", map[string]any{}).Default(map[string]any{}),
 		field.Time("published_at").Optional().Nillable(),
 		field.Time("created_at"),
 		field.Time("updated_at"),
