@@ -4,6 +4,47 @@ info:
   version: 0.1.0
   description: Provider-neutral API for Shirone dynamic edition.
 paths:
+  /api/v1/content/{slug}/comments:
+    get:
+      operationId: listPublishedComments
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Approved comments for published content.
+    post:
+      operationId: createComment
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema:
+            type: string
+      responses:
+        '201':
+          description: Pending comment created by an authenticated user.
+  /api/v1/admin/comments/:
+    get:
+      operationId: listManagedComments
+      responses:
+        '200':
+          description: Comments visible to editors and administrators.
+  /api/v1/admin/comments/{id}:
+    put:
+      operationId: moderateComment
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Comment moderation status updated.
   /api/v1/content/:
     get:
       operationId: listPublishedContent

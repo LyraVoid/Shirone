@@ -24,6 +24,8 @@ Session tokens are sent only through an HttpOnly, SameSite=Lax cookie and are st
 
 The first registered account is assigned the `admin` role so a fresh self-hosted instance can be initialized. Later registrations receive the `member` role. Published content is publicly readable under `/api/v1/content`; mutations under `/api/v1/admin/content` require an `editor` or `admin` session.
 
+Approved comments are publicly readable below each published content item. Authenticated users can submit comments and replies; new comments start as `pending`. Editors and administrators can review and change moderation status under `/api/v1/admin/comments`.
+
 ## PostgreSQL with Compose
 
 ```powershell
