@@ -64,6 +64,7 @@
     "@astrojs/check": "^0.9.10",
     "@astrojs/markdown-remark": "^7.2.4",
     "@astrojs/mdx": "^7.0.8",
+    "@astrojs/node": "11.1.5",
     "@astrojs/rss": "^4.0.19",
     "@astrojs/sitemap": "^3.7.3",
     "@astrojs/svelte": "9.0.1",

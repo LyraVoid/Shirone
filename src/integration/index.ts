@@ -3,6 +3,7 @@ import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 import { pathToFileURL } from "node:url";
 import type { AstroIntegration } from "astro";
+import { resolveRuntimeMode } from "../utils/backend-client.mjs";
 import { shironesFallbackResolver } from "./fallback-resolver.ts";
 import { buildFontDeclarations } from "./fonts.ts";
 import {
@@ -12,7 +13,11 @@ import {
 } from "./load-config.ts";
 import { shironesOverlay } from "./overlay.ts";
 import { normalisePath, resolvePaths } from "./paths.ts";
-import { buildOverrideRegistry, createOverlayTargets, type OverrideRegistryRef } from "./registry.ts";
+import {
+	buildOverrideRegistry,
+	createOverlayTargets,
+	type OverrideRegistryRef,
+} from "./registry.ts";
 import { collectRoutes, filterRoutes } from "./routes.ts";
 import { shironesSsrNodeShims } from "./ssr-node-shims.ts";
 import type { ResolvedShironesPaths, ShironesOptions } from "./types.ts";
@@ -136,6 +141,7 @@ function createMusicSidebarPlugin(
  */
 export function shirones(options: ShironesOptions = {}): AstroIntegration {
 	let paths: ResolvedShironesPaths;
+	let dynamicRuntime = false;
 	// Mutable holder shared by config:setup (which builds the registry) and
 	// server:setup (which rebuilds it when an override file changes in dev).
 	const registryRef: OverrideRegistryRef = { overrides: new Map() };
@@ -152,6 +158,11 @@ export function shirones(options: ShironesOptions = {}): AstroIntegration {
 				logger,
 			}) => {
 				paths = resolvePaths(options, config.root, import.meta.url);
+				const runtime = resolveRuntimeMode(process.env);
+				dynamicRuntime = runtime.mode === "dynamic";
+				const serverAdapter = dynamicRuntime
+					? (await import("@astrojs/node")).default({ mode: "standalone" })
+					: undefined;
 
 				logger.info(
 					`${paths.isPluginMode ? "plugin" : "source"} mode | content: ${paths.contentDir}`,
@@ -169,7 +180,9 @@ export function shirones(options: ShironesOptions = {}): AstroIntegration {
 					);
 					if (total > 0) {
 						logger.info(
-							`[overrides] ${total} registered (${Object.entries(registry.counts)
+							`[overrides] ${total} registered (${Object.entries(
+								registry.counts,
+							)
 								.map(([label, n]) => `${label}:${n}`)
 								.join(", ")})`,
 						);
@@ -184,25 +197,41 @@ export function shirones(options: ShironesOptions = {}): AstroIntegration {
 				}
 
 				// ── 1. Load user configuration (Node side) ──────────────────────
-				const siteModule = await loadConfigModule(paths, "siteConfig", registryRef);
+				const siteModule = await loadConfigModule(
+					paths,
+					"siteConfig",
+					registryRef,
+				);
 				const siteConfig = siteModule.siteConfig as {
 					site?: string;
 					base?: string;
 				};
 
-				const sidebarModule = await loadConfigModule(paths, "sidebarConfig", registryRef);
+				const sidebarModule = await loadConfigModule(
+					paths,
+					"sidebarConfig",
+					registryRef,
+				);
 				const sidebarConfig = sidebarModule.sidebarConfig as {
 					enable?: boolean;
 					components?: { type: string; enable: boolean }[];
 				};
 
-				const musicModule = await loadConfigModule(paths, "musicConfig", registryRef);
+				const musicModule = await loadConfigModule(
+					paths,
+					"musicConfig",
+					registryRef,
+				);
 				const musicConfig = musicModule.musicConfig;
 				const resolveMusicOptions = musicModule.resolveMusicOptions as (
 					c: unknown,
 				) => unknown;
 
-				const umamiModule = await loadConfigModule(paths, "umamiConfig", registryRef);
+				const umamiModule = await loadConfigModule(
+					paths,
+					"umamiConfig",
+					registryRef,
+				);
 				const umamiConfig = umamiModule.umamiConfig as { shareUrl: string };
 				const resolveUmamiOptions = umamiModule.resolveUmamiOptions as (
 					c: unknown,
@@ -260,6 +289,8 @@ export function shirones(options: ShironesOptions = {}): AstroIntegration {
 
 				// ── 6. Push everything into the Astro config ────────────────────
 				updateConfig({
+					output: dynamicRuntime ? "server" : "static",
+					...(serverAdapter ? { adapter: serverAdapter } : {}),
 					...(siteConfig?.site ? { site: siteConfig.site } : {}),
 					base: siteConfig?.base ?? "/",
 					trailingSlash: "always",
@@ -351,7 +382,7 @@ export function shirones(options: ShironesOptions = {}): AstroIntegration {
 			},
 
 			"astro:build:done": async ({ dir, logger }) => {
-				if (options.pagefind === false) return;
+				if (dynamicRuntime || options.pagefind === false) return;
 				const outDir = dir.pathname;
 				try {
 					const pagefind = await import("pagefind");
@@ -430,7 +461,11 @@ async function createBundledIntegrations(
 			})
 		: null;
 
-	const ecModule = await loadConfigModule(paths, "expressiveCodeConfig", registryRef);
+	const ecModule = await loadConfigModule(
+		paths,
+		"expressiveCodeConfig",
+		registryRef,
+	);
 	const expressiveCodeConfig = ecModule.expressiveCodeConfig as {
 		theme: string;
 		lightTheme?: string;

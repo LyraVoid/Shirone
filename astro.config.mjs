@@ -19,8 +19,15 @@ import { siteConfig } from "./src/config/siteConfig.ts";
 import { resolveUmamiOptions, umamiConfig } from "./src/config/umamiConfig.ts";
 import { pluginCustomCopyButton } from "./src/plugins/expressive-code/custom-copy-button.js";
 import { pluginLanguageBadge } from "./src/plugins/expressive-code/language-badge.ts";
+import { resolveRuntimeMode } from "./src/utils/backend-client.mjs";
 import { getLocalFontVariants } from "./src/utils/font-options.ts";
 import { siteMarkdownProcessor } from "./src/utils/markdown-processor.mjs";
+
+const runtime = resolveRuntimeMode(process.env);
+const serverAdapter =
+	runtime.mode === "dynamic"
+		? (await import("@astrojs/node")).default({ mode: "standalone" })
+		: undefined;
 
 const musicWidgetEnabled =
 	sidebarConfig.enable &&
@@ -33,10 +40,10 @@ const musicFeatureEnabled =
 const resolvedUmamiOptions = resolveUmamiOptions(umamiConfig);
 const umamiIntegration = resolvedUmamiOptions
 	? (await import("oddmisc/astro")).oddmisc({
-				umami: {
-					shareUrl: resolvedUmamiOptions.shareUrl,
-				},
-			})
+			umami: {
+				shareUrl: resolvedUmamiOptions.shareUrl,
+			},
+		})
 	: null;
 const musicSidebarModuleId = "virtual:shirone-music-sidebar";
 const resolvedMusicSidebarModuleId = `\0${musicSidebarModuleId}`;
@@ -73,10 +80,16 @@ const optionalMusicSidebarPlugin = {
 const isBuildCommand = process.argv.includes("build");
 const isDevCommand = process.argv.includes("dev");
 const iconifyOfflineIconPath = fileURLToPath(
-	new URL("./node_modules/@iconify/svelte/dist/OfflineIcon.svelte", import.meta.url),
+	new URL(
+		"./node_modules/@iconify/svelte/dist/OfflineIcon.svelte",
+		import.meta.url,
+	),
 );
 const iconifyOfflineFunctionsPath = fileURLToPath(
-	new URL("./node_modules/@iconify/svelte/dist/offline-functions.js", import.meta.url),
+	new URL(
+		"./node_modules/@iconify/svelte/dist/offline-functions.js",
+		import.meta.url,
+	),
 );
 
 function resolveVariantSrc(file) {
@@ -151,13 +164,15 @@ const configuredFonts =
 
 // https://astro.build/config
 export default defineConfig({
+	output: runtime.mode === "dynamic" ? "server" : "static",
+	...(serverAdapter ? { adapter: serverAdapter } : {}),
 	site: siteConfig.site,
 	base: siteConfig.base ?? "/",
 	trailingSlash: "always",
 	fonts: configuredFonts,
 	integrations: [
-			...(umamiIntegration ? [umamiIntegration] : []),
-			swup({
+		...(umamiIntegration ? [umamiIntegration] : []),
+		swup({
 			theme: false,
 			ignore: 'a[href="#"]',
 			animationClass: "transition-swup-",
