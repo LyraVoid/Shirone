@@ -6,19 +6,26 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 
 	"github.com/shirone-platform/backend/ent"
 	"github.com/shirone-platform/backend/internal/auth"
 )
 
 type Options struct {
-	CookieName   string
-	CookieSecure bool
-	SessionTTL   time.Duration
+	CookieName     string
+	CookieSecure   bool
+	SessionTTL     time.Duration
+	AllowedOrigins []string
 }
 
 func NewRouter(db *sql.DB, client *ent.Client, options Options) http.Handler {
 	r := chi.NewRouter()
+	r.Use(middleware.RequestID)
+	r.Use(middleware.RealIP)
+	r.Use(middleware.Recoverer)
+	r.Use(securityHeaders)
+	r.Use(originPolicy(options.AllowedOrigins))
 	r.Get("/api/v1/health", func(w http.ResponseWriter, _ *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]string{"status": "ok"})
 	})

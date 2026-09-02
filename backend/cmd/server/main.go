@@ -46,7 +46,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	r := httpapi.NewRouter(db, entClient, httpapi.Options{CookieName: cfg.Auth.CookieName, CookieSecure: cfg.Auth.CookieSecure, SessionTTL: cfg.Auth.SessionTTL})
+	r := httpapi.NewRouter(db, entClient, httpapi.Options{CookieName: cfg.Auth.CookieName, CookieSecure: cfg.Auth.CookieSecure, SessionTTL: cfg.Auth.SessionTTL, AllowedOrigins: cfg.HTTP.AllowedOrigins})
 
 	server := &http.Server{Addr: cfg.HTTP.Address, Handler: r, ReadHeaderTimeout: 5 * time.Second}
 	go func() {

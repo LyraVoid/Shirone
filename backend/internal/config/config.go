@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -14,7 +15,10 @@ type Config struct {
 	Auth     AuthConfig
 }
 
-type HTTPConfig struct{ Address string }
+type HTTPConfig struct {
+	Address        string
+	AllowedOrigins []string
+}
 
 type DatabaseConfig struct {
 	Driver string
@@ -29,7 +33,7 @@ type AuthConfig struct {
 
 func Load() (Config, error) {
 	cfg := Config{
-		HTTP: HTTPConfig{Address: env("HTTP_ADDRESS", ":8080")},
+		HTTP: HTTPConfig{Address: env("HTTP_ADDRESS", ":8080"), AllowedOrigins: envList("HTTP_ALLOWED_ORIGINS")},
 		Database: DatabaseConfig{
 			Driver: env("DB_DRIVER", "sqlite"),
 			URL:    env("DATABASE_URL", "file:./data/shirone.db?_pragma=foreign_keys(1)"),
@@ -47,6 +51,21 @@ func Load() (Config, error) {
 		return Config{}, errors.New("DATABASE_URL cannot be empty")
 	}
 	return cfg, nil
+}
+
+func envList(key string) []string {
+	raw := strings.TrimSpace(os.Getenv(key))
+	if raw == "" {
+		return nil
+	}
+	parts := strings.Split(raw, ",")
+	result := make([]string, 0, len(parts))
+	for _, part := range parts {
+		if value := strings.TrimSpace(part); value != "" {
+			result = append(result, value)
+		}
+	}
+	return result
 }
 
 func envBool(key string, fallback bool) bool {
