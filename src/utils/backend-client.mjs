@@ -23,14 +23,23 @@ export function resolveRuntimeMode(environment = process.env) {
 	});
 }
 
-export function createBackendClient({ baseUrl, fetchImpl = globalThis.fetch }) {
+export function createBackendClient({
+	baseUrl,
+	fetchImpl = globalThis.fetch,
+	defaultHeaders = {},
+}) {
 	if (!baseUrl || typeof fetchImpl !== "function") {
 		throw new TypeError("baseUrl and fetch implementation are required");
 	}
 	const request = async (path, options = {}) => {
 		const response = await fetchImpl(`${baseUrl}${path}`, {
+			credentials: "include",
 			...options,
-			headers: { Accept: "application/json", ...options.headers },
+			headers: {
+				Accept: "application/json",
+				...defaultHeaders,
+				...options.headers,
+			},
 		});
 		if (!response.ok) {
 			const error = new Error(
@@ -39,8 +48,15 @@ export function createBackendClient({ baseUrl, fetchImpl = globalThis.fetch }) {
 			error.status = response.status;
 			throw error;
 		}
+		if (response.status === 204) return null;
 		return response.json();
 	};
+	const jsonRequest = (path, method, body) =>
+		request(path, {
+			method,
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify(body),
+		});
 	return Object.freeze({
 		listContent: ({ limit = 20 } = {}) =>
 			request(`/api/v1/content/?limit=${encodeURIComponent(limit)}`),
@@ -48,5 +64,27 @@ export function createBackendClient({ baseUrl, fetchImpl = globalThis.fetch }) {
 			request(`/api/v1/content/${encodeURIComponent(slug)}`),
 		listComments: (slug) =>
 			request(`/api/v1/content/${encodeURIComponent(slug)}/comments`),
+		register: (account) =>
+			jsonRequest("/api/v1/auth/register", "POST", account),
+		login: (credentials) =>
+			jsonRequest("/api/v1/auth/login", "POST", credentials),
+		logout: () => request("/api/v1/auth/logout", { method: "POST" }),
+		currentUser: () => request("/api/v1/auth/me"),
+		createComment: (slug, comment) =>
+			jsonRequest(
+				`/api/v1/content/${encodeURIComponent(slug)}/comments`,
+				"POST",
+				comment,
+			),
+		listManagedContent: ({ limit = 50 } = {}) =>
+			request(`/api/v1/admin/content/?limit=${encodeURIComponent(limit)}`),
+		createContent: (content) =>
+			jsonRequest("/api/v1/admin/content/", "POST", content),
+		updateContent: (id, content) =>
+			jsonRequest(
+				`/api/v1/admin/content/${encodeURIComponent(id)}`,
+				"PUT",
+				content,
+			),
 	});
 }

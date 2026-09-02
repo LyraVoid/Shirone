@@ -52,3 +52,24 @@ test("backend client encodes paths and reports non-success responses", async () 
 		(error) => error.status === 404,
 	);
 });
+
+test("backend client sends credentials and SSR headers on mutations", async () => {
+	const calls = [];
+	const client = createBackendClient({
+		baseUrl: "https://api.example.com",
+		defaultHeaders: { Cookie: "shirone_session=token" },
+		fetchImpl: async (url, options) => {
+			calls.push({ url, options });
+			return { ok: true, json: async () => ({ id: 1 }) };
+		},
+	});
+	await client.createComment("hello world", { body: "Hello" });
+	assert.equal(
+		calls[0].url,
+		"https://api.example.com/api/v1/content/hello%20world/comments",
+	);
+	assert.equal(calls[0].options.credentials, "include");
+	assert.equal(calls[0].options.headers.Cookie, "shirone_session=token");
+	assert.equal(calls[0].options.headers["Content-Type"], "application/json");
+	assert.equal(calls[0].options.body, JSON.stringify({ body: "Hello" }));
+});
