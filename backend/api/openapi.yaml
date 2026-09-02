@@ -1,0 +1,20 @@
+openapi: 3.1.0
+info:
+  title: Shirone Backend API
+  version: 0.1.0
+  description: Provider-neutral API for Shirone dynamic edition.
+paths:
+  /api/v1/health:
+    get:
+      operationId: health
+      responses:
+        '200':
+          description: Process is alive.
+  /api/v1/ready:
+    get:
+      operationId: readiness
+      responses:
+        '200':
+          description: Database is reachable.
+        '503':
+          description: Database is unavailable.
