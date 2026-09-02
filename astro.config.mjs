@@ -22,6 +22,10 @@ import { pluginLanguageBadge } from "./src/plugins/expressive-code/language-badg
 import { resolveRuntimeMode } from "./src/utils/backend-client.mjs";
 import { getLocalFontVariants } from "./src/utils/font-options.ts";
 import { siteMarkdownProcessor } from "./src/utils/markdown-processor.mjs";
+import { loadEnv } from "vite";
+
+const env = loadEnv(process.env.NODE_ENV ?? "", process.cwd(), "");
+Object.assign(process.env, env);
 
 const runtime = resolveRuntimeMode(process.env);
 const serverAdapter =

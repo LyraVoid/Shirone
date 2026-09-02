@@ -54,6 +54,7 @@ public/assets/moments/thumbnails/*
 # local tooling artifacts
 .zcode/
 .codex-*.log
+rollout-*.jsonl
 research/
 
 # playwright
