@@ -143,6 +143,11 @@ enum I18nKey {
 	commentsLoading = "commentsLoading",
 	commentsLoadFailed = "commentsLoadFailed",
 	commentsRequiresJavaScript = "commentsRequiresJavaScript",
+	commentSignIn = "commentSignIn",
+	commentSubmit = "commentSubmit",
+	commentPlaceholder = "commentPlaceholder",
+	commentSignedInAs = "commentSignedInAs",
+	commentPublishFailed = "commentPublishFailed",
 
 	untitled = "untitled",
 	uncategorized = "uncategorized",

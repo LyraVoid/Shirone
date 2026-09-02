@@ -310,4 +310,9 @@ export const ja: Translation = {
 		"上記の購読 URL をお好みの RSS/Atom リーダー（NetNewsWire、Feedly、Inoreader、Follow など）に登録すると、最新記事が通知されます。",
 	[Key.feedOpenXml]: "XML を直接表示",
 	[Key.feedRecentPosts]: "最新の配信記事",
+	[Key.commentSignIn]: "コメントするにはログイン",
+	[Key.commentSubmit]: "コメントを投稿",
+	[Key.commentPlaceholder]: "コメントを書く",
+	[Key.commentSignedInAs]: "{name}としてログイン中",
+	[Key.commentPublishFailed]: "コメントを投稿できませんでした。",
 };

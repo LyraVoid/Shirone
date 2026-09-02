@@ -11,22 +11,24 @@ import type { CommentContext } from "@/types/commentConfig";
 interface Props {
 	context: CommentContext;
 }
-const { context } = Astro.props;
-const runtime = resolveRuntimeMode(process.env);
-if (runtime.mode !== "dynamic" || !runtime.apiBaseUrl) return null;
 type Comment = {
 	id: number;
 	body: string;
 	createdAt: string;
 	author?: { displayName?: string; username?: string };
 };
+type User = { displayName?: string; username?: string };
+const { context } = Astro.props;
+const runtime = resolveRuntimeMode(process.env);
+if (runtime.mode !== "dynamic" || !runtime.apiBaseUrl) return null;
+const cookie = Astro.request.headers.get("cookie");
+const client = createBackendClient({
+	baseUrl: runtime.apiBaseUrl,
+	defaultHeaders: cookie ? { Cookie: cookie } : undefined,
+});
 let comments: Comment[] = [];
+let currentUser: User | undefined;
 try {
-	const cookie = Astro.request.headers.get("cookie");
-	const client = createBackendClient({
-		baseUrl: runtime.apiBaseUrl,
-		defaultHeaders: cookie ? { Cookie: cookie } : undefined,
-	});
 	const payload = (await client.listComments(
 		context.key.replace(/^post:/, ""),
 	)) as { items?: unknown };
@@ -34,12 +36,44 @@ try {
 } catch {
 	comments = [];
 }
+try {
+	currentUser = (await client.currentUser()) as User;
+} catch {
+	currentUser = undefined;
+}
+const slug = context.key.replace(/^post:/, "");
+const loginUrl = `/login/?redirect=${encodeURIComponent(context.path)}`;
+const signedInLabel = i18n(I18nKey.commentSignedInAs).replace(
+	"{name}",
+	currentUser?.displayName || currentUser?.username || "",
+);
 ---
 <div class="space-y-4" data-backend-comments>
-	{comments.length === 0 ? <p class="text-sm text-[var(--on-surface-variant)]">{i18n(I18nKey.commentsLoading)}</p> : comments.map((comment) => (
+	{currentUser ? (
+		<form class="flex flex-col gap-3 rounded-lg bg-[var(--surface-container-low)] p-4" data-comment-form data-api-url={runtime.apiBaseUrl} data-slug={slug} data-error={i18n(I18nKey.commentPublishFailed)}>
+			<p class="m-0 text-sm text-[var(--on-surface-variant)]">{signedInLabel}</p>
+			<textarea name="body" required minlength="1" maxlength="5000" rows="4" placeholder={i18n(I18nKey.commentPlaceholder)} class="resize-y rounded-lg border border-[var(--outline)] bg-[var(--surface)] px-3 py-2"></textarea>
+			<button type="submit" class="self-end rounded-lg bg-[var(--primary)] px-4 py-2 font-semibold text-[var(--on-primary)]">{i18n(I18nKey.commentSubmit)}</button>
+			<p class="m-0 text-sm text-[var(--error)]" role="status" aria-live="polite" data-comment-status></p>
+		</form>
+	) : <a class="inline-flex rounded-lg bg-[var(--secondary-container)] px-4 py-2 text-sm font-semibold text-[var(--on-secondary-container)]" href={loginUrl}>{i18n(I18nKey.commentSignIn)}</a>}
+	{comments.length === 0 ? <p class="text-sm text-[var(--on-surface-variant)]">{i18n(I18nKey.noData)}</p> : comments.map((comment) => (
 		<article class="border-b border-[var(--line-divider)] pb-4 last:border-b-0" data-comment-id={comment.id}>
 			<div class="flex items-center gap-2 mb-2"><AccentBar size="small" /><strong>{comment.author?.displayName || comment.author?.username || ""}</strong><time class="text-xs text-[var(--on-surface-variant)]" datetime={comment.createdAt}>{new Date(comment.createdAt).toLocaleDateString()}</time></div>
 			<p class="m-0 whitespace-pre-wrap">{comment.body}</p>
 		</article>
 	))}
 </div>
+<script>
+	const form = document.querySelector<HTMLFormElement>("[data-comment-form]");
+	const status = document.querySelector<HTMLElement>("[data-comment-status]");
+	if (form && status) form.addEventListener("submit", async (event) => {
+		event.preventDefault();
+		const textarea = form.elements.namedItem("body") as HTMLTextAreaElement;
+		try {
+			const response = await fetch(`${form.dataset.apiUrl}/api/v1/content/${encodeURIComponent(form.dataset.slug || "")}/comments`, { method: "POST", credentials: "include", headers: { "Content-Type": "application/json", Accept: "application/json" }, body: JSON.stringify({ body: textarea.value }) });
+			if (!response.ok) throw new Error("comment failed");
+			window.location.reload();
+		} catch { status.textContent = form.dataset.error || ""; }
+	});
+</script>

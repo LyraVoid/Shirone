@@ -312,4 +312,9 @@ export const vi: Translation = {
 		"Thêm URL nguồn cấp ở trên vào trình đọc RSS/Atom yêu thích của bạn (như NetNewsWire, Feedly, Inoreader, Follow) để nhận thông báo bài viết mới.",
 	[Key.feedOpenXml]: "Xem XML gốc",
 	[Key.feedRecentPosts]: "Bài viết mới nhất trong nguồn cấp",
+	[Key.commentSignIn]: "Đăng nhập để bình luận",
+	[Key.commentSubmit]: "Đăng bình luận",
+	[Key.commentPlaceholder]: "Viết bình luận",
+	[Key.commentSignedInAs]: "Đã đăng nhập với tên {name}",
+	[Key.commentPublishFailed]: "Không thể đăng bình luận.",
 };

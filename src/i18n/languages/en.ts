@@ -310,4 +310,9 @@ export const en: Translation = {
 		"Add this feed URL to your favorite RSS/Atom reader (e.g. NetNewsWire, Feedly, Inoreader, Follow) to get instant updates.",
 	[Key.feedOpenXml]: "View Raw XML",
 	[Key.feedRecentPosts]: "Recent Posts in Feed",
+	[Key.commentSignIn]: "Sign in to comment",
+	[Key.commentSubmit]: "Publish comment",
+	[Key.commentPlaceholder]: "Write a comment",
+	[Key.commentSignedInAs]: "Signed in as {name}",
+	[Key.commentPublishFailed]: "Could not publish the comment.",
 };

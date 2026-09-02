@@ -300,4 +300,9 @@ export const zh_TW: Translation = {
 		"將上方訂閱網址新增至任意 RSS/Atom 閱讀器（如 NetNewsWire、Feedly、Inoreader、Follow 等），即可即時接收新文章推送。",
 	[Key.feedOpenXml]: "檢視原始 XML",
 	[Key.feedRecentPosts]: "最新推送文章",
+	[Key.commentSignIn]: "登入後發表評論",
+	[Key.commentSubmit]: "發佈評論",
+	[Key.commentPlaceholder]: "寫下你的評論",
+	[Key.commentSignedInAs]: "已登入為 {name}",
+	[Key.commentPublishFailed]: "無法發佈評論。",
 };

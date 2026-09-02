@@ -314,4 +314,9 @@ export const id: Translation = {
 		"Tambahkan URL umpan di atas ke pembaca RSS/Atom favorit Anda (seperti NetNewsWire, Feedly, Inoreader, Follow) untuk menerima pembaruan.",
 	[Key.feedOpenXml]: "Lihat XML Asli",
 	[Key.feedRecentPosts]: "Artikel Terbaru di Umpan",
+	[Key.commentSignIn]: "Masuk untuk berkomentar",
+	[Key.commentSubmit]: "Publikasikan komentar",
+	[Key.commentPlaceholder]: "Tulis komentar",
+	[Key.commentSignedInAs]: "Masuk sebagai {name}",
+	[Key.commentPublishFailed]: "Komentar tidak dapat dipublikasikan.",
 };

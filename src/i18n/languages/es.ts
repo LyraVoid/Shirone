@@ -312,4 +312,9 @@ export const es: Translation = {
 		"Añade esta URL a tu lector RSS/Atom favorito (como NetNewsWire, Feedly, Inoreader o Follow) para recibir actualizaciones.",
 	[Key.feedOpenXml]: "Ver XML original",
 	[Key.feedRecentPosts]: "Artículos recientes del canal",
+	[Key.commentSignIn]: "Inicia sesión para comentar",
+	[Key.commentSubmit]: "Publicar comentario",
+	[Key.commentPlaceholder]: "Escribe un comentario",
+	[Key.commentSignedInAs]: "Sesión iniciada como {name}",
+	[Key.commentPublishFailed]: "No se pudo publicar el comentario.",
 };
