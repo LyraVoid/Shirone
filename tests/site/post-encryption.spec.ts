@@ -187,10 +187,11 @@ test.describe("文章加密交互与解密流", () => {
 		expect(parsedSession.password).toBeUndefined();
 
 		// Swup 站内跳转后返回保持已解锁状态
-		await page.click('a[href="/archive/"]');
+		await page.click('nav a[href="/archive/"]');
 		await expect(page).toHaveURL(/.*\/archive\/?/);
+		await expect(page.locator(".m3-blog-archive")).toBeVisible();
 
-		await page.click('a[href*="encrypted-demo"]');
+		await page.click('.m3-blog-archive a[href*="encrypted-demo"]');
 		await expect(page).toHaveURL(/.*\/posts\/encrypted-demo\/?/);
 
 		// 验证直接展示解密内容，无需二次输入
@@ -254,4 +255,66 @@ test.describe("文章加密交互与解密流", () => {
 		await expect(panel).not.toHaveClass(/is-open/);
 		await expect(page).toHaveURL(/security-architecture-and-core-features/i);
 	});
+});
+
+test.describe("移动端密码门控响应式布局与防溢出", () => {
+	for (const width of [375, 360, 320]) {
+		test(`${width}px 视口下密码门控输入框与按钮自适应且无水平溢出`, async ({
+			page,
+		}) => {
+			await page.setViewportSize({ width, height: 667 });
+			await page.goto("/posts/encrypted-demo/", { waitUntil: "networkidle" });
+
+			const gate = page.locator(".password-gate");
+			await expect(gate).toBeVisible();
+
+			const metrics = await page.evaluate(() => {
+				const gateEl = document.querySelector(".password-gate");
+				const formEl = document.querySelector(".password-gate__form");
+				const fieldEl = document.querySelector(".password-gate__field");
+				const inputEl = document.querySelector(".password-gate__input");
+				const submitEl = document.querySelector(".password-gate__submit");
+				const doc = document.documentElement;
+
+				if (!gateEl || !formEl || !fieldEl || !inputEl || !submitEl) {
+					throw new Error("Missing password gate elements");
+				}
+
+				const gateRect = gateEl.getBoundingClientRect();
+				const formRect = formEl.getBoundingClientRect();
+				const fieldRect = fieldEl.getBoundingClientRect();
+				const inputRect = inputEl.getBoundingClientRect();
+				const submitRect = submitEl.getBoundingClientRect();
+
+				return {
+					docScrollWidth: doc.scrollWidth,
+					docClientWidth: doc.clientWidth,
+					gateWidth: Math.round(gateRect.width),
+					formWidth: Math.round(formRect.width),
+					fieldWidth: Math.round(fieldRect.width),
+					inputWidth: Math.round(inputRect.width),
+					submitWidth: Math.round(submitRect.width),
+					fieldRight: fieldRect.right,
+					inputRight: inputRect.right,
+					submitRight: submitRect.right,
+					formRight: formRect.right,
+					gateRight: gateRect.right,
+				};
+			});
+
+			// 页面整体绝不出现横向滚动
+			expect(metrics.docScrollWidth).toBeLessThanOrEqual(
+				metrics.docClientWidth + 1,
+			);
+
+			// 输入框和提交按钮的宽度必须自适应收缩至与表单容器完全一致
+			expect(metrics.inputWidth).toBe(metrics.formWidth);
+			expect(metrics.fieldWidth).toBe(metrics.formWidth);
+			expect(metrics.submitWidth).toBe(metrics.formWidth);
+
+			// 右侧边界绝不能超出表单和门控卡片
+			expect(metrics.inputRight).toBeLessThanOrEqual(metrics.formRight + 1);
+			expect(metrics.submitRight).toBeLessThanOrEqual(metrics.gateRight + 1);
+		});
+	}
 });

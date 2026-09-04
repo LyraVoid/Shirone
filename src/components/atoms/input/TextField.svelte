@@ -97,6 +97,8 @@ let focused = $state(false);
     display: flex
     align-items: center
     gap: 0.75rem
+    width: 100%
+    min-width: 0
     height: 3rem
     box-sizing: border-box
     color: var(--on-surface)
@@ -159,6 +161,7 @@ let focused = $state(false);
         height: 100%
 
     input
+        width: 100% /* 确保输入框填满弹性容器并覆盖浏览器默认内在尺寸 */
         flex: 1
         min-width: 0
         background: transparent

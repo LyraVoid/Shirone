@@ -314,10 +314,12 @@ async function unlock() {
 
 	&__form
 		display: grid
+		grid-template-columns: minmax(0, 1fr) /* 明确网格列可收缩，防止隐式轨道被子项内容撑大 */
 		gap: var(--m3e-space-4)
 		width: 100%
 
 	&__field
+		min-width: 0 /* 覆盖网格项默认的最小尺寸限制，防止移动端窄屏溢出 */
 		min-height: 4.5rem
 
 	:global(.password-gate__input)

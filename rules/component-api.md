@@ -123,3 +123,11 @@ let { checked = $bindable(false), open = $bindable(false) } = $props();
 - ❌ 自造 `:hover { background }` 叠色（应挂 `.m3-state-layer`）
 - ❌ `<a><button></button></a>`（非法嵌套）
 - ❌ 在原子里 import 其他组件 / 做数据获取（原子只消费 token）
+
+---
+
+## 10. 移动端尺寸与自适应约束
+
+- 输入型原子（如 TextField）根元素必须具备 `width: 100%` 与 `min-width: 0`，其内部原生 input 元素必须具备 `width: 100%` 与 `min-width: 0`，切断浏览器默认内在宽度对外部布局的干扰。
+- 采用网格布局的表单或有机体容器必须显式定义列模板（如 `grid-template-columns: minmax(0, 1fr)`），网格项必须显式声明 `min-width: 0`，严禁依赖隐式轨道和默认的自动最小尺寸。
+
