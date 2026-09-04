@@ -24,6 +24,7 @@ import Layout from "./Layout.astro";
 interface Props {
 	title?: string;
 	banner?: string;
+	ogImage?: string;
 	description?: string;
 	/** Banner 可选日期，使用 YYYY-MM-DD 等可直接写入 time[datetime] 的值。 */
 	bannerDate?: string;
@@ -42,6 +43,7 @@ interface Props {
 const {
 	title,
 	banner,
+	ogImage,
 	description,
 	bannerDate,
 	lang,
@@ -61,7 +63,7 @@ const secondarySidebarClasses =
 const mainContentClasses = generateMainContentClasses(sidebarResponsive);
 ---
 
-<Layout title={title} banner={banner} description={description} lang={lang} setOGTypeArticle={setOGTypeArticle} page={page}>
+<Layout title={title} banner={banner} ogImage={ogImage} description={description} lang={lang} setOGTypeArticle={setOGTypeArticle} page={page}>
 
 <!-- Navbar -->
 <slot slot="head" name="head"></slot>
