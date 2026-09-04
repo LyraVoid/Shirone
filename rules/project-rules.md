@@ -162,6 +162,6 @@ Shirone 同时以两种形态运行：**源码模式**（本仓库 checkout，`a
 5. **新增 Markdown 语法要登记 manifest**：`src/plugins/markdown/manifest.json` 的 `syntaxes` 与 `stylesheetPacks` 都要加；packs 引用的样式必须是 `src/styles/**/*.css`（`markdown-assets.ts` 只 glob `*.css`，`.styl` 会让构建抛错）。
 6. **示例文章里的仓库路径**：`@[code-tree](/src/config)`、`@include: src/content/...` 等源码态路径，在包模式要由 `Shirone-NPM` 仓库的 `prepare-templates.mjs` rewrite 成 `shirones/...`；新增此类示例时在 `Shirone-NPM` 仓库同步加 rewrite。
 7. **新增依赖**：主题运行时依赖必须进 `package.json` dependencies（发布会内联进 tarball），不能只装 devDependencies。
-8. **新增 `src/` 顶层目录要同步进打包清单**：`shirones` 仓库的 `scripts/config.mjs#PACKAGE_SRC_DIRS` 只复制白名单目录，新增目录（如 `src/user/`）必须加进去，否则包模式构建解析不到该目录的模块（先例：上游 `7ca4118` 引入 `src/user/user-config.ts`，被 `config-overlay.ts` 引用，漏加导致包模式 `astro:config:setup` 解析失败）。
+8. **新增 `src/` 顶层目录自动进包**：`shirones` 仓库的 `scripts/config.mjs#PACKAGE_SRC_EXCLUDES` 现在是排除集（排除 `content`、`integration`），其余顶层目录一律自动复制，新增目录无需改动（先例：上游 `7ca4118` 引入 `src/user/user-config.ts`，当年还是白名单 `PACKAGE_SRC_DIRS` 漏加，导致包模式 `astro:config:setup` 解析失败；改为排除集后该问题不再可能）。仅当新增目录属于 `content/`（用户内容，走模板）或 `integration/`（主题接线，shirones 会重建）时才需额外处理。
 
 > 参考先例：上游 `feb8803` 给 `astro.config.mjs` 加了 `@shirone/iconify-offline*` 两个 alias 并改写 `Icon.svelte` 的 import，导致包模式一度解析失败；修复是镜像 alias 到 `createAliases()`（`createRequire` 定位包内 dist）。
