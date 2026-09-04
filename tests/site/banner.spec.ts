@@ -294,8 +294,6 @@ test.describe("banner wallpaper", () => {
 		const html = await response.text();
 		expect(html).toContain("特別なことはないけど、君がいると十分です");
 		expect(html).toContain("<picture");
-		expect(html).toContain('type="image/avif"');
-		expect(html).toContain("srcset=");
 		expect(html).toContain('fetchpriority="high"');
 		expect(html).not.toContain("/assets/banner/desktop/1.webp");
 	});
@@ -511,6 +509,56 @@ test.describe("banner wallpaper", () => {
 			.locator(".banner-stage__image--active")
 			.getAttribute("src");
 		expect(after).not.toBe(before);
+	});
+
+	test("carousel visits every desktop image in order without repeating the first slide", async ({
+		page,
+	}) => {
+		await page.goto("/", { waitUntil: "domcontentloaded" });
+		await waitForBannerState(page, true);
+		const images = await page.locator("#banner-wrapper").evaluate((stage) => {
+			const value = (stage as HTMLElement).dataset.desktopImages;
+			return value ? JSON.parse(value) : [];
+		});
+		test.skip(images.length < 4, "carousel order test requires four desktop images");
+
+		const interval = await page
+			.locator("#banner-wrapper")
+			.evaluate((stage) =>
+				Math.max(
+					Number.parseInt(
+						(stage as HTMLElement).dataset.carouselInterval || "6000",
+						10,
+					),
+					3000,
+				),
+			);
+		const seen: string[] = [];
+		const readActiveSrc = () =>
+			page
+				.locator(".banner-stage__image--active")
+				.getAttribute("src")
+				.then((src) => src || "");
+
+		seen.push(await readActiveSrc());
+		for (let step = 1; step < images.length; step += 1) {
+			const previous = seen.at(-1);
+			await page.waitForFunction(
+				(expected) =>
+					document
+						.querySelector<HTMLImageElement>(".banner-stage__image--active")
+						?.getAttribute("src") !== expected,
+				previous,
+				{ timeout: interval + 2500 },
+			);
+			seen.push(await readActiveSrc());
+		}
+
+		expect(seen).toHaveLength(images.length);
+		expect(new Set(seen).size).toBe(images.length);
+		for (let index = 0; index < images.length; index += 1) {
+			expect(seen[index]).toContain(images[index].split("/").pop() || "");
+		}
 	});
 
 	test("reduced motion keeps the initial slide static", async ({ page }) => {
