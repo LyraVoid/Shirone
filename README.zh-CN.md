@@ -88,6 +88,19 @@ pnpm dev
 
 如果 Windows PowerShell 的脚本执行策略阻止运行命令，请改用 `pnpm.cmd` 和 `npx.cmd`。
 
+### 使用 npm 包
+
+不想克隆主题仓库？可以直接把 Shirone 安装为 `shirones` npm 包，在空文件夹中初始化博客——无需 Astro 起步模板，也无需手动安装依赖：
+
+```bash
+mkdir my-blog
+cd my-blog
+npx shirones init   # 写入 package.json，安装 astro、主题及其 peer 依赖
+pnpm dev
+```
+
+`init` 会生成 `astro.config.mjs`、`shirones/` 下的类型化配置、示例内容与静态资源；你依然可以通过 `src/components/` 和 `src/layouts/` 覆盖主题组件。随时重新运行 `npx shirones init` 可检查漂移（它不会覆盖你的文件），传入 `--force` 可还原模板文件。详见 [npm 包模式](./docs/npm-package-mode.md) 与 [shirones 仓库](https://github.com/yCENzh/shirones)。
+
 ### 定制站点
 
 1. 在 `src/config/siteConfig.ts` 中设置正式网址、标题、语言、主题、横幅和显示选项。
@@ -105,7 +118,7 @@ Shirone 将主题源码、个人站点内容和 npm 发布职责分离；以下�
 | 仓库 | 适用场景 | 包含内容 |
 | --- | --- | --- |
 | [Shirone-Content](https://github.com/LyraVoid/Shirone-Content) | 使用外部内容源的双仓博客 | 文章、说说、数据、媒体与 `config/*.yaml` 覆盖的内容模板。请 Fork 或克隆到自己的仓库（通常设为私有），再让本主题仓指向它。参阅[内容分离指南](./docs/content-separation/README.md)。 |
-| [Shirone-NPM](https://github.com/LyraVoid/Shirone-NPM) | 维护和发布 `shirones` npm 包 | 手动构建与发布流水线。它在构建时拉取本仓库，且刻意不保存主题源码；普通博客用户应安装 `shirones`，不需要直接使用此仓库。参阅 [npm 包模式](./docs/npm-package-mode.md)。 |
+| [shirones](https://github.com/yCENzh/shirones) | 维护和发布 `shirones` npm 包 | 手动构建与发布流水线。它在构建时拉取本仓库，且刻意不保存主题源码；普通博客用户应安装 `shirones`，不需要直接使用此仓库。参阅 [npm 包模式](./docs/npm-package-mode.md)。 |
 
 ## 核心配置
 

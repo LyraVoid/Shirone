@@ -112,7 +112,7 @@ CSS file, so it resolves to the theme's own `src/` in both modes.
 
 ## Before merging into the packaged branch
 
-Run a dry run of the pipeline: **Shirone-NPM → Actions → Build & Publish → Run
+Run a dry run of the pipeline: **shirones → Actions → Build & Publish → Run
 workflow**, set *Upstream branch/tag* to your branch and tick *Build and
 validate, but do not publish*. It performs a real install, `shirones init`, an
 `astro build` and a dev-server smoke test in a scratch project — which is what

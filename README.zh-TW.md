@@ -88,6 +88,19 @@ pnpm dev
 
 若 Windows PowerShell 的指令碼執行原則阻止命令執行，請改用 `pnpm.cmd` 與 `npx.cmd`。
 
+### 使用 npm 套件
+
+不想複製主題儲存庫？可以將 Shirone 安裝為 `shirones` npm 套件，在空資料夾中初始化部落格——無需 Astro 起始範本，也無需手動安裝依賴：
+
+```bash
+mkdir my-blog
+cd my-blog
+npx shirones init   # 寫入 package.json，安裝 astro、主題及其 peer 依賴
+pnpm dev
+```
+
+`init` 會建立 `astro.config.mjs`、`shirones/` 下的型別化設定、範例內容與靜態資源；你依然可以透過 `src/components/` 與 `src/layouts/` 覆寫主題元件。隨時重新執行 `npx shirones init` 可檢查漂移（不會覆寫你的檔案），傳入 `--force` 可還原範本檔案。詳見 [npm 套件模式](./docs/npm-package-mode.md) 與 [shirones 儲存庫](https://github.com/yCENzh/shirones)。
+
 ### 自訂網站
 
 1. 在 `src/config/siteConfig.ts` 設定正式網址、標題、語言、主題、橫幅與顯示選項。
@@ -105,7 +118,7 @@ Shirone 將主題原始碼、個人網站內容與 npm 發布職責分離；下�
 | 儲存庫 | 適用情境 | 包含內容 |
 | --- | --- | --- |
 | [Shirone-Content](https://github.com/LyraVoid/Shirone-Content) | 使用外部內容來源的雙儲存庫網誌 | 文章、動態、資料、媒體與 `config/*.yaml` 覆寫的內容範本。請 Fork 或複製到自己的儲存庫（通常設為私有），再讓本主題儲存庫指向它。參閱[內容分離指南](./docs/content-separation/README.md)。 |
-| [Shirone-NPM](https://github.com/LyraVoid/Shirone-NPM) | 維護與發布 `shirones` npm 套件 | 手動建置與發布流程。它在建置時拉取本儲存庫，並刻意不保存主題原始碼；一般網誌使用者應安裝 `shirones`，不需要直接使用此儲存庫。參閱 [npm 套件模式](./docs/npm-package-mode.md)。 |
+| [shirones](https://github.com/yCENzh/shirones) | 維護與發布 `shirones` npm 套件 | 手動建置與發布流程。它在建置時拉取本儲存庫，並刻意不保存主題原始碼；一般網誌使用者應安裝 `shirones`，不需要直接使用此儲存庫。參閱 [npm 套件模式](./docs/npm-package-mode.md)。 |
 
 ## 核心設定
 

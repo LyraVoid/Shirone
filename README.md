@@ -92,6 +92,25 @@ Open `http://localhost:4321` in your browser.
 
 On Windows PowerShell installations where script execution is restricted, use `pnpm.cmd` and `npx.cmd` instead.
 
+### Use the npm package
+
+Prefer not to clone the theme? Install it as the `shirones` npm package and
+scaffold a blog from an empty folder — no Astro starter and no manual installs:
+
+```bash
+mkdir my-blog
+cd my-blog
+npx shirones init   # writes package.json, installs astro + the theme + peers
+pnpm dev
+```
+
+`init` creates `astro.config.mjs`, the typed configuration under `shirones/`,
+example content and static assets; `src/components/` and `src/layouts/` still
+work for overriding theme components. Re-run `npx shirones init` anytime to
+check for drift (it never overwrites your files), or pass `--force` to restore
+template files. See [npm package mode](./docs/npm-package-mode.md) and the
+[shirones repository](https://github.com/yCENzh/shirones) for details.
+
 ### Customize your site
 
 1. Set the canonical URL, title, language, theme, banner, and display options in `src/config/siteConfig.ts`.
@@ -109,7 +128,7 @@ Shirone keeps theme source, personal site content, and npm publishing responsibi
 | Repository | Use it for | What it contains |
 | --- | --- | --- |
 | [Shirone-Content](https://github.com/LyraVoid/Shirone-Content) | Running a blog in the external-content, dual-repository mode | A content template for posts, moments, data, media, and `config/*.yaml` overlays. Fork or clone it into your own repository, normally private, then point this theme repository at it. See the [content-separation guide](./docs/content-separation/README.md). |
-| [Shirone-NPM](https://github.com/LyraVoid/Shirone-NPM) | Maintaining and publishing the `shirones` npm package | The manual build-and-publish pipeline. It pulls this repository at build time and deliberately contains no theme source; regular blog users install `shirones` rather than working in this repository. See [npm package mode](./docs/npm-package-mode.md). |
+| [shirones](https://github.com/yCENzh/shirones) | Maintaining and publishing the `shirones` npm package | The manual build-and-publish pipeline. It pulls this repository at build time and deliberately contains no theme source; regular blog users install `shirones` rather than working in this repository. See [npm package mode](./docs/npm-package-mode.md). |
 
 ## Main Configuration
 
