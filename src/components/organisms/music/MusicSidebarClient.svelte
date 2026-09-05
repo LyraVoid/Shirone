@@ -41,20 +41,22 @@ interface Props {
 
 let { options, labels }: Props = $props();
 let runtime = $state<MusicRuntime | null>(null);
+const hasInitialTracks = options.playlist.length > 0;
+const hasMeting =
+	(options.provider === "meting" || options.provider === "mixed") &&
+	Boolean(options.meting?.id);
+
 let snapshot = $state<MusicSnapshot>({
 	playlist: options.playlist,
-	currentIndex: options.playlist.length > 0 ? 0 : -1,
+	currentIndex: hasInitialTracks ? 0 : -1,
 	currentTrack: options.playlist[0] ?? null,
-	status: options.provider === "meting" ? "loading" : "idle",
+	status: !hasInitialTracks && hasMeting ? "loading" : "idle",
 	currentTime: 0,
 	duration: options.playlist[0]?.duration ?? 0,
 	volume: options.defaultVolume,
 	muted: false,
 	mode: options.defaultMode,
-	error:
-		options.playlist.length > 0 || options.provider === "meting"
-			? null
-			: "empty-playlist",
+	error: hasInitialTracks || hasMeting ? null : "empty-playlist",
 });
 let playlistOpen = $state(false);
 const playlistId = "sidebar-music-playlist";
@@ -122,6 +124,9 @@ onMount(() => {
 		unsubscribe = runtime.subscribe((next) => {
 			snapshot = next;
 		});
+		if (hasMeting) {
+			void runtime.initialize();
+		}
 	});
 	return () => {
 		active = false;
