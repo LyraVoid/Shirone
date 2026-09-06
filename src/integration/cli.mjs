@@ -4,7 +4,7 @@
  *
  *   npx shirones init            scaffold config, content and static assets
  *   npx shirones init --update   restore missing files on an existing project
- *   npx shirones init --force    re-scaffold, overwriting template files
+ *   npx shirones init --force    refresh template files, never user content
  *   npx shirones info            detailed status and drift report
  *
  * The command is intentionally dependency-free so it can run via `npx` in a
@@ -75,9 +75,16 @@ async function copyEntry(from, to, { force, quiet = false }) {
 		if (!quiet) log.skip(`${relative(CWD, to) || "."} already exists (use --force to overwrite)`);
 		return { copied: false, reason: "exists" };
 	}
+	let saved;
+	if (existsSync(to) && force) {
+		saved = await backup(relative(CWD, to));
+	}
 	await mkdir(dirname(to), { recursive: true });
 	await cp(from, to, { recursive: true, force: true });
-	if (!quiet) log.ok(relative(CWD, to) || ".");
+	if (!quiet) {
+		const label = relative(CWD, to) || ".";
+		log.ok(saved ? `${label} replaced (--force), kept a copy at ${saved}` : label);
+	}
 	return { copied: true };
 }
 
@@ -90,7 +97,9 @@ async function copyEntry(from, to, { force, quiet = false }) {
  * theme's static assets — favicons, banners, album demos — and the first hint
  * was a deployed site missing images.
  *
- * Existing files are kept unless --force, so re-running `init` is safe.
+ * Existing files are kept unless --force. Forced replacements are moved to
+ * `.shirones-backup/` first, so even an explicit refresh never destroys the
+ * previous copy.
  */
 async function mergeDirectory(from, to, { force }) {
 	if (!existsSync(from)) return { added: 0, kept: 0 };
@@ -107,9 +116,13 @@ async function mergeDirectory(from, to, { force }) {
 				await walk(nextSource, nextTarget);
 				continue;
 			}
+			let saved;
 			if (existsSync(nextTarget) && !force) {
 				kept += 1;
 				continue;
+			}
+			if (existsSync(nextTarget) && force) {
+				saved = await backup(relative(CWD, nextTarget));
 			}
 			await cp(nextSource, nextTarget, { force: true });
 			added += 1;
@@ -510,8 +523,9 @@ async function ensureTsConfig(packageName, { force }) {
 		}
 	}
 	if (changed) {
+		if (force) await backup("tsconfig.json");
 		await writeFile(tsconfigPath, `${JSON.stringify(tsconfig, null, 2)}\n`, "utf8");
-		log.ok("tsconfig.json (theme path aliases)");
+		log.ok(force ? "tsconfig.json (theme path aliases; previous copy backed up)" : "tsconfig.json (theme path aliases)");
 	} else {
 		log.skip("tsconfig.json already configured");
 	}
@@ -531,10 +545,15 @@ const BACKUP_DIR = ".shirones-backup";
 /** Move a file out of the way instead of deleting the user's work. */
 async function backup(relativePath) {
 	const from = join(CWD, relativePath);
-	const to = join(CWD, BACKUP_DIR, relativePath);
+	let to = join(CWD, BACKUP_DIR, relativePath);
+	let suffix = 1;
+	while (existsSync(to)) {
+		to = join(CWD, BACKUP_DIR, `${relativePath}.${suffix}`);
+		suffix += 1;
+	}
 	await mkdir(dirname(to), { recursive: true });
 	await rename(from, to);
-	return join(BACKUP_DIR, relativePath);
+	return relative(CWD, to);
 }
 
 /**
@@ -937,14 +956,18 @@ async function init(args) {
 	);
 
 	// 1. Content + configuration.
-	await copyEntry(join(TEMPLATE_DIR, CONTENT_ROOT), join(CWD, CONTENT_ROOT), { force });
+	//
+	// `shirones/` is user-owned after the first init. Even `--force` only adds
+	// files that are missing; it never replaces articles, config values or data
+	// modules. This is the ownership boundary that makes a refresh safe.
+	await mergeDirectory(join(TEMPLATE_DIR, CONTENT_ROOT), join(CWD, CONTENT_ROOT), { force: false });
 
-	// 2. Static assets (favicons, banners, demo images). Merged rather than
-	// copied wholesale: the starter project already owns a `public/`.
-	await mergeDirectory(join(TEMPLATE_DIR, "public"), join(CWD, "public"), { force });
+	// 2. Static assets (favicons, banners, demo images). Existing public files
+	// are user-owned too, so a force refresh only adds missing assets.
+	await mergeDirectory(join(TEMPLATE_DIR, "public"), join(CWD, "public"), { force: false });
 
 	// 2b. Project root files (.env.example, .gitignore, README, editor hints, …).
-	// Installed without clobbering anything the user already has.
+	// A forced replacement is backed up by copyEntry; ordinary init never clobbers.
 	await installRootFiles({ force });
 
 	// 3. Astro entry files.
@@ -1048,7 +1071,7 @@ ${colours.bold}Shirone CLI${colours.reset}
 
   ${colours.cyan}init${colours.reset}                 Scaffold the project — or report drift on an existing one
   ${colours.cyan}init${colours.reset} ${colours.dim}--update${colours.reset}        Restore missing files and refresh the scaffold (never overwrites your files)
-  ${colours.cyan}init${colours.reset} ${colours.dim}--force${colours.reset}         Re-scaffold, overwriting template files (never your content)
+  ${colours.cyan}init${colours.reset} ${colours.dim}--force${colours.reset}         Refresh template files (never your content; replaced files are backed up)
   ${colours.cyan}info${colours.reset}                 Detailed status and drift report
   ${colours.cyan}help${colours.reset}                 Show this message
 `);
