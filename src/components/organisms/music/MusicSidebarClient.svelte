@@ -41,20 +41,22 @@ interface Props {
 
 let { options, labels }: Props = $props();
 let runtime = $state<MusicRuntime | null>(null);
+const hasInitialTracks = options.playlist.length > 0;
+const hasMeting =
+	(options.provider === "meting" || options.provider === "mixed") &&
+	Boolean(options.meting?.id);
+
 let snapshot = $state<MusicSnapshot>({
 	playlist: options.playlist,
-	currentIndex: options.playlist.length > 0 ? 0 : -1,
+	currentIndex: hasInitialTracks ? 0 : -1,
 	currentTrack: options.playlist[0] ?? null,
-	status: options.provider === "meting" ? "loading" : "idle",
+	status: !hasInitialTracks && hasMeting ? "loading" : "idle",
 	currentTime: 0,
 	duration: options.playlist[0]?.duration ?? 0,
 	volume: options.defaultVolume,
 	muted: false,
 	mode: options.defaultMode,
-	error:
-		options.playlist.length > 0 || options.provider === "meting"
-			? null
-			: "empty-playlist",
+	error: hasInitialTracks || hasMeting ? null : "empty-playlist",
 });
 let playlistOpen = $state(false);
 const playlistId = "sidebar-music-playlist";
@@ -293,7 +295,7 @@ function setVolume(event: Event): void {
 					size="medium"
 					toggle
 					checked={playing}
-					disabled={!hasTracks && options.provider !== "meting"}
+					disabled={!hasTracks && !hasMeting}
 					onclick={() => void runtime?.toggle()}
 				/>
 			</Tooltip>
@@ -314,7 +316,7 @@ function setVolume(event: Event): void {
 					class="music-player__playlist-toggle"
 					ariaExpanded={playlistOpen}
 					ariaControls={playlistId}
-					disabled={!hasTracks && options.provider !== "meting"}
+					disabled={!hasTracks && !hasMeting}
 					onclick={togglePlaylist}
 				/>
 			</Tooltip>

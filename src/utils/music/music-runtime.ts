@@ -67,23 +67,20 @@ export function createMusicRuntime(
 	const customFetch =
 		dependencies.fetch ?? (typeof fetch !== "undefined" ? fetch : undefined);
 
+	const hasInitialTracks = currentPlaylist.length > 0;
+	const hasMeting =
+		(options.provider === "meting" || options.provider === "mixed") &&
+		Boolean(options.meting?.id);
+
 	let state: RuntimeState = {
-		currentIndex: currentPlaylist.length > 0 ? 0 : -1,
-		status:
-			options.provider === "meting" && currentPlaylist.length === 0
-				? "loading"
-				: "idle",
+		currentIndex: hasInitialTracks ? 0 : -1,
+		status: !hasInitialTracks && hasMeting ? "loading" : "idle",
 		currentTime: 0,
 		duration: currentPlaylist[0]?.duration ?? 0,
 		volume: clampMusicVolume(options.defaultVolume),
 		muted: false,
 		mode: options.defaultMode,
-		error:
-			currentPlaylist.length > 0 ||
-			options.provider === "meting" ||
-			options.provider === "mixed"
-				? null
-				: "empty-playlist",
+		error: hasInitialTracks || hasMeting ? null : "empty-playlist",
 	};
 	let audio: HTMLAudioElement | null = null;
 	let mediaListeners: MediaListeners | null = null;
@@ -94,6 +91,7 @@ export function createMusicRuntime(
 	let playbackRequested = false;
 	let loadedIndex = -1;
 	const failedTrackIds = new Set<string>();
+	const knownDurations = new Map<string, number>();
 
 	function snapshot(): MusicSnapshot {
 		return Object.freeze({
@@ -155,15 +153,31 @@ export function createMusicRuntime(
 		mediaListeners = {
 			loadedmetadata: () => {
 				if (!isCurrent() || !audio) return;
+				const duration = finiteMediaValue(audio.duration);
+				const track = currentPlaylist[state.currentIndex];
+				if (track && duration > 0) knownDurations.set(track.id, duration);
 				patch({
 					status: audio.paused ? "ready" : "playing",
-					duration: finiteMediaValue(audio.duration),
+					duration:
+						duration ||
+						track?.duration ||
+						knownDurations.get(track?.id ?? "") ||
+						0,
 					error: null,
 				});
 			},
 			durationchange: () => {
 				if (!isCurrent() || !audio) return;
-				patch({ duration: finiteMediaValue(audio.duration) });
+				const duration = finiteMediaValue(audio.duration);
+				const track = currentPlaylist[state.currentIndex];
+				if (track && duration > 0) knownDurations.set(track.id, duration);
+				patch({
+					duration:
+						duration ||
+						track?.duration ||
+						knownDurations.get(track?.id ?? "") ||
+						0,
+				});
 			},
 			timeupdate: () => {
 				if (!isCurrent() || !audio) return;
@@ -215,7 +229,10 @@ export function createMusicRuntime(
 				options.meting &&
 				customFetch
 			) {
-				if (options.provider === "meting" && currentPlaylist.length === 0) {
+				if (
+					options.provider === "meting" ||
+					(options.provider === "mixed" && currentPlaylist.length === 0)
+				) {
 					patch({ status: "loading", error: null });
 				}
 				try {
@@ -223,6 +240,7 @@ export function createMusicRuntime(
 					if (generation !== lifecycleGeneration) return;
 					if (fetched.length > 0) {
 						if (options.provider === "mixed") {
+							const hadTracks = currentPlaylist.length > 0;
 							const existingIds = new Set(currentPlaylist.map((t) => t.id));
 							const merged = [...currentPlaylist];
 							for (const item of fetched) {
@@ -232,12 +250,21 @@ export function createMusicRuntime(
 								}
 							}
 							currentPlaylist = Object.freeze(merged);
-							patch({
-								duration:
-									currentPlaylist[state.currentIndex]?.duration ??
-									state.duration,
-								error: null,
-							});
+							if (!hadTracks) {
+								patch({
+									currentIndex: 0,
+									duration: currentPlaylist[0]?.duration ?? 0,
+									status: "idle",
+									error: null,
+								});
+							} else {
+								patch({
+									duration:
+										currentPlaylist[state.currentIndex]?.duration ??
+										state.duration,
+									error: null,
+								});
+							}
 						} else {
 							currentPlaylist = Object.freeze(
 								fetched.map((track) => Object.freeze({ ...track })),
@@ -249,12 +276,18 @@ export function createMusicRuntime(
 								error: null,
 							});
 						}
-					} else if (options.provider === "meting") {
+					} else if (
+						options.provider === "meting" ||
+						(options.provider === "mixed" && currentPlaylist.length === 0)
+					) {
 						patch({ status: "error", error: "empty-playlist" });
 					}
 				} catch {
 					if (generation !== lifecycleGeneration) return;
-					if (options.provider === "meting") {
+					if (
+						options.provider === "meting" ||
+						(options.provider === "mixed" && currentPlaylist.length === 0)
+					) {
 						patch({ status: "error", error: "source-unavailable" });
 					}
 				}
@@ -293,13 +326,17 @@ export function createMusicRuntime(
 		audio.pause();
 		audio.removeAttribute("src");
 		loadedIndex = state.currentIndex;
-		audio.src = currentPlaylist[state.currentIndex].source;
+		const track = currentPlaylist[state.currentIndex];
+		audio.src = track.source;
 		bindMediaListeners(generation);
 		audio.load();
 		patch({
 			status: "loading",
 			currentTime: 0,
-			duration: currentPlaylist[state.currentIndex].duration ?? 0,
+			duration:
+				(track.duration && track.duration > 0
+					? track.duration
+					: knownDurations.get(track.id)) ?? 0,
 			error: null,
 		});
 		return generation;
@@ -356,17 +393,28 @@ export function createMusicRuntime(
 			patch({ status: "error", error: "invalid-track" });
 			return;
 		}
+		const track = currentPlaylist[index];
+		const isSameLoadedSource =
+			loadedIndex === index && Boolean(audio?.getAttribute("src"));
 		if (audio) audio.pause();
-		if (loadedIndex === index && audio?.getAttribute("src")) {
+		if (isSameLoadedSource && audio) {
 			audio.currentTime = 0;
 		} else {
 			loadedIndex = -1;
 		}
+		const fallbackDuration =
+			(track ? knownDurations.get(track.id) : undefined) ??
+			(isSameLoadedSource
+				? (audio ? finiteMediaValue(audio.duration) : 0) || state.duration
+				: 0);
 		patch({
 			currentIndex: index,
 			status: "idle",
 			currentTime: 0,
-			duration: currentPlaylist[index].duration ?? 0,
+			duration:
+				track?.duration && track.duration > 0
+					? track.duration
+					: fallbackDuration,
 			error: null,
 		});
 		if (autoplay) await playLoadedSource(false);
@@ -511,26 +559,25 @@ export function createMusicRuntime(
 			initializePromise = null;
 			loadedIndex = -1;
 			failedTrackIds.clear();
+			knownDurations.clear();
 			currentPlaylist = Object.freeze(
 				options.playlist.map((track) => Object.freeze({ ...track })),
 			);
+			const hasDestroyInitialTracks = currentPlaylist.length > 0;
+			const hasDestroyMeting =
+				(options.provider === "meting" || options.provider === "mixed") &&
+				Boolean(options.meting?.id);
 			state = {
-				currentIndex: currentPlaylist.length > 0 ? 0 : -1,
+				currentIndex: hasDestroyInitialTracks ? 0 : -1,
 				status:
-					options.provider === "meting" && currentPlaylist.length === 0
-						? "loading"
-						: "idle",
+					!hasDestroyInitialTracks && hasDestroyMeting ? "loading" : "idle",
 				currentTime: 0,
 				duration: currentPlaylist[0]?.duration ?? 0,
 				volume: state.volume,
 				muted: false,
 				mode: options.defaultMode,
 				error:
-					currentPlaylist.length > 0 ||
-					options.provider === "meting" ||
-					options.provider === "mixed"
-						? null
-						: "empty-playlist",
+					hasDestroyInitialTracks || hasDestroyMeting ? null : "empty-playlist",
 			};
 			emit();
 		},
