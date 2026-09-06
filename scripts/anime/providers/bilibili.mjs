@@ -1,8 +1,9 @@
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { fileURLToPath } from "node:url";
 
-const projectRoot = fileURLToPath(new URL("../../../", import.meta.url));
+// Package mode runs this provider from node_modules, so the user's project
+// root must come from the process rather than the module's own location.
+const projectRoot = process.cwd();
 const API_BASE = "https://api.bilibili.com/x/space/bangumi/follow/list";
 const USER_AGENT =
 	"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
