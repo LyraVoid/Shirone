@@ -76,7 +76,7 @@ async function printCliNotice() {
 ${colours.bold}Shirone${colours.reset} · package manager
 ${colours.dim}  shirones uses ${pmPin} — the version shipped with this release.
   \`init\` sets up pnpm projects only; if npm or yarn is your jam, please migrate manually. Your lockfile, your adventure.
-  If you like the project, give yCENzh/shirones a star. It helps keep the maintainer's terminal pleasantly quiet.${colours.reset}
+  If you like the project, give https://github.com/yCENzh/shirones a star. It helps keep the maintainer's terminal pleasantly quiet.${colours.reset}
 `);
 }
 
