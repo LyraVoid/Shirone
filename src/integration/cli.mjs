@@ -4,7 +4,7 @@
  *
  *   npx shirones init            scaffold config, content and static assets
  *   npx shirones init --update   restore missing files on an existing project
- *   npx shirones init --force    refresh template files, never user content
+ *   npx shirones init --force    replace template files after backing them up
  *   npx shirones info            detailed status and drift report
  *
  * The command is intentionally dependency-free so it can run via `npx` in a
@@ -69,6 +69,17 @@ async function readPackageManager() {
 	}
 }
 
+/** Print the package contract before every CLI command. */
+async function printCliNotice() {
+	const pmPin = (await readPackageManager()) ?? "pnpm";
+	console.log(`
+${colours.bold}Shirone${colours.reset} · package manager
+${colours.dim}  shirones uses ${pmPin} — the version shipped with this release.
+  \`init\` sets up pnpm projects only; if npm or yarn is your jam, please migrate manually. Your lockfile, your adventure.
+  If you like the project, give yCENzh/shirones a star. It helps keep the maintainer's terminal pleasantly quiet.${colours.reset}
+`);
+}
+
 async function copyEntry(from, to, { force, quiet = false }) {
 	if (!existsSync(from)) return { copied: false, reason: "missing" };
 	if (existsSync(to) && !force) {
@@ -85,7 +96,7 @@ async function copyEntry(from, to, { force, quiet = false }) {
 		const label = relative(CWD, to) || ".";
 		log.ok(saved ? `${label} replaced (--force), kept a copy at ${saved}` : label);
 	}
-	return { copied: true };
+	return { copied: true, saved };
 }
 
 /**
@@ -410,6 +421,7 @@ const ROOT_FILES = [
 async function installRootFiles({ force }) {
 	let added = 0;
 	let skipped = 0;
+	let backedUp = 0;
 	for (const entry of ROOT_FILES) {
 		const [srcName, dstName] = Array.isArray(entry) ? entry : [entry, entry];
 		const result = await copyEntry(
@@ -417,13 +429,16 @@ async function installRootFiles({ force }) {
 			join(CWD, dstName),
 			{ force, quiet: true },
 		);
-		if (result.copied) added += 1;
-		else if (result.reason === "exists") skipped += 1;
+		if (result.copied) {
+			added += 1;
+			if (result.saved) backedUp += 1;
+		} else if (result.reason === "exists") skipped += 1;
 	}
 	if (added === 0 && skipped > 0) {
 		log.skip(`root files already present (${skipped} kept)`);
 	} else if (added > 0) {
-		log.ok(`root files (${added} added${skipped ? `, ${skipped} kept` : ""})`);
+		const backupNote = backedUp ? `, ${backedUp} previous copies backed up` : "";
+		log.ok(`root files (${added} added${skipped ? `, ${skipped} kept` : ""}${backupNote})`);
 	}
 }
 
@@ -554,6 +569,18 @@ async function backup(relativePath) {
 	await mkdir(dirname(to), { recursive: true });
 	await rename(from, to);
 	return relative(CWD, to);
+}
+
+/** Replace a directory for --force, preserving the complete previous tree. */
+async function replaceDirectory(from, to) {
+	if (!existsSync(from)) return { copied: false, reason: "missing" };
+	let saved;
+	if (existsSync(to)) saved = await backup(relative(CWD, to));
+	await mkdir(dirname(to), { recursive: true });
+	await cp(from, to, { recursive: true, force: true });
+	const label = relative(CWD, to) || ".";
+	log.ok(saved ? `${label} replaced (--force), kept a copy at ${saved}` : label);
+	return { copied: true, saved };
 }
 
 /**
@@ -950,21 +977,32 @@ async function init(args) {
 	}
 
 	console.log(`\n${colours.bold}Shirone${colours.reset} · initialising project`);
-	const pmPin = (await readPackageManager()) ?? "pnpm";
-	console.log(
-		`${colours.dim}  uses ${pmPin} as the package manager — init only sets up a pnpm project; migrate manually for npm or yarn.${colours.reset}\n`,
-	);
 
 	// 1. Content + configuration.
 	//
-	// `shirones/` is user-owned after the first init. Even `--force` only adds
-	// files that are missing; it never replaces articles, config values or data
-	// modules. This is the ownership boundary that makes a refresh safe.
-	await mergeDirectory(join(TEMPLATE_DIR, CONTENT_ROOT), join(CWD, CONTENT_ROOT), { force: false });
+	// `--force` means exactly what it says: replace the template-owned tree.
+	// Move the complete old tree first so the user can recover any content or
+	// config they want from `.shirones-backup/`.
+	if (force) {
+		await replaceDirectory(
+			join(TEMPLATE_DIR, CONTENT_ROOT),
+			join(CWD, CONTENT_ROOT),
+		);
+	} else {
+		await mergeDirectory(
+			join(TEMPLATE_DIR, CONTENT_ROOT),
+			join(CWD, CONTENT_ROOT),
+			{ force: false },
+		);
+	}
 
-	// 2. Static assets (favicons, banners, demo images). Existing public files
-	// are user-owned too, so a force refresh only adds missing assets.
-	await mergeDirectory(join(TEMPLATE_DIR, "public"), join(CWD, "public"), { force: false });
+	// 2. Static assets (favicons, banners, demo images). A force refresh also
+	// replaces the complete template tree, after backing up the old public dir.
+	if (force) {
+		await replaceDirectory(join(TEMPLATE_DIR, "public"), join(CWD, "public"));
+	} else {
+		await mergeDirectory(join(TEMPLATE_DIR, "public"), join(CWD, "public"), { force: false });
+	}
 
 	// 2b. Project root files (.env.example, .gitignore, README, editor hints, …).
 	// A forced replacement is backed up by copyEntry; ordinary init never clobbers.
@@ -1018,49 +1056,118 @@ ${colours.bold}Next${colours.reset}
 `);
 }
 
+
+async function readJsonFile(path) {
+	try {
+		return JSON.parse(await readFile(path, "utf8"));
+	} catch {
+		return null;
+	}
+}
+
 async function info() {
+	const packageJsonPath = join(PACKAGE_ROOT, "package.json");
 	const packageName = await readPackageName();
-	const version = await readPackageVersion();
+	const packageMeta = await readJsonFile(packageJsonPath);
+	const templatePresent = existsSync(TEMPLATE_DIR);
+	const initialized = existsSync(join(CWD, CONTENT_ROOT));
+	const projectMeta = await readJsonFile(join(CWD, "package.json"));
+	const manifest = await readJsonFile(join(PACKAGE_ROOT, "manifest.json"));
+	const buildInfo = await readJsonFile(join(PACKAGE_ROOT, "build-info.json"));
 	const pagesDir = join(PACKAGE_ROOT, "src/pages");
 	const tplConfigDir = join(TEMPLATE_DIR, CONTENT_ROOT, "config");
 	const tplDataDir = join(tplConfigDir, "data");
 
-	const countTsFiles = async (dir) => {
+	const countImmediateTs = async (dir) => {
 		if (!existsSync(dir)) return 0;
 		const entries = await readdir(dir, { withFileTypes: true });
-		return entries.filter((e) => e.isFile() && e.name.endsWith(".ts")).length;
+		return entries.filter((entry) => entry.isFile() && entry.name.endsWith(".ts")).length;
 	};
-	const configModules = await countTsFiles(tplConfigDir);
-	const dataModules = await countTsFiles(tplDataDir);
+	const configModules = await countImmediateTs(tplConfigDir);
+	const dataModules = await countImmediateTs(tplDataDir);
+	const countFromManifest = (key, fallback = 0) =>
+		Number.isFinite(manifest?.counts?.[key]) ? manifest.counts[key] : fallback;
+	const routes = countFromManifest("routes", await countFiles(pagesDir));
+	const components = countFromManifest("components");
+	const layouts = countFromManifest("layouts");
+	const manifestConfig = countFromManifest("config", configModules);
+	const manifestData = countFromManifest("data", dataModules);
 
-	console.log(`\n${colours.bold}${packageName}${colours.reset}${version ? ` ${colours.dim}v${version}${colours.reset}` : ""}\n`);
-	console.log(`  package         ${PACKAGE_ROOT}`);
-	console.log(`  template        ${existsSync(TEMPLATE_DIR) ? colours.green + "present" + colours.reset : colours.red + "MISSING" + colours.reset}`);
-	console.log(`  project         ${CWD}`);
-	console.log(`  package manager ${detectPackageManager()}`);
-	console.log(`  content dir     ${join(CWD, CONTENT_ROOT)}`);
-	if (existsSync(pagesDir)) {
-		const routes = await countFiles(pagesDir);
-		console.log(`  routes          ${routes} page modules`);
+	const contentDir = join(CWD, CONTENT_ROOT, "content");
+	const posts = await countFiles(join(contentDir, "posts"));
+	const moments = await countFiles(join(contentDir, "moments"));
+	const contentFiles = await countFiles(contentDir);
+	const publicFiles = await countFiles(join(CWD, "public"));
+	const backupDir = join(CWD, BACKUP_DIR);
+	const backupFiles = await countFiles(backupDir);
+	const packageDependency =
+		projectMeta?.dependencies?.[packageName] ??
+		projectMeta?.devDependencies?.[packageName] ??
+		"not declared";
+	const declaredManager = projectMeta?.packageManager ?? "not pinned";
+	const detectedManager = detectPackageManager();
+	const engine = packageMeta?.engines?.node ?? "not declared";
+	const nodeMatch = engine.match(/>=\s*(\d+)\.(\d+)(?:\.(\d+))?/);
+	const currentNode = process.versions.node.split(".").map(Number);
+	const nodeOkay = nodeMatch
+		? currentNode[0] > Number(nodeMatch[1]) ||
+		  (currentNode[0] === Number(nodeMatch[1]) &&
+			(currentNode[1] > Number(nodeMatch[2]) ||
+				(currentNode[1] === Number(nodeMatch[2]) && currentNode[2] >= Number(nodeMatch[3] ?? 0))))
+		: null;
+	const nodeStatus = nodeOkay === null ? "" : nodeOkay ? ` ${colours.green}✓${colours.reset}` : ` ${colours.red}✗${colours.reset}`;
+	const row = (label, value) => console.log(`  ${label.padEnd(20)}${value}`);
+	const section = (title) => console.log(`\n${colours.bold}${title}${colours.reset}`);
+	const listPreview = (label, values) => {
+		if (values.length === 0) return;
+		const preview = values.slice(0, 4).join(", ");
+		const more = values.length > 4 ? ` (+${values.length - 4} more)` : "";
+		console.log(`    ${colours.dim}${label}: ${preview}${more}${colours.reset}`);
+	};
+
+	console.log(`\n${colours.bold}Shirone project info${colours.reset}`);
+	section("Package");
+	row("package", `${packageName}${packageMeta?.version ? ` v${packageMeta.version}` : ""}`);
+	row("package root", PACKAGE_ROOT);
+	row("template", templatePresent ? `${colours.green}present${colours.reset}` : `${colours.red}MISSING${colours.reset}`);
+	row("manifest", manifest ? `${colours.green}present${colours.reset}` : `${colours.yellow}not available${colours.reset}`);
+	row("upstream", buildInfo?.upstreamSha ? `${buildInfo.upstreamRef ?? "ref"}@${buildInfo.upstreamSha.slice(0, 12)}` : "not recorded");
+	row("built", buildInfo?.builtAt ? `${buildInfo.builtAt} (${buildInfo.node ?? "Node unknown"})` : "not recorded");
+	row("Node", `${process.version} / requires ${engine}${nodeStatus}`);
+
+	section("Project");
+	row("project root", CWD);
+	row("status", initialized ? `${colours.green}initialised${colours.reset}` : `${colours.yellow}not initialised${colours.reset}`);
+	row("package dependency", packageDependency);
+	row("package manager", `${detectedManager} (project: ${declaredManager})`);
+	row("content", `${join(CWD, CONTENT_ROOT)} (${contentFiles} files; ${posts} posts, ${moments} moments)`);
+	row("public", `${publicFiles} files`);
+	row("backup", backupFiles ? `${backupFiles} files in ${backupDir}` : "none");
+
+	section("Theme inventory");
+	row("routes", `${routes} page modules`);
+	row("components", `${components} overridable components`);
+	row("layouts", `${layouts} overridable layouts`);
+	row("config", `${manifestConfig} default modules`);
+	row("data", `${manifestData} data modules`);
+
+	if (!initialized) {
+		console.log(`\n${colours.dim}Run \`npx shirones init\` to scaffold this project.${colours.reset}\n`);
+		return;
 	}
-	console.log(`  config modules  ${configModules} defaults${dataModules ? ` (+${dataModules} data)` : ""}`);
 
-	if (existsSync(join(CWD, CONTENT_ROOT))) {
-		const { missing, stale, fieldDiffs, missingRoot } = await checkState();
-		const total = missing.length + stale.length + fieldDiffs.length + missingRoot.length;
-		if (total === 0) {
-			console.log(`  drift           ${colours.green}up to date${colours.reset}`);
-		} else {
-			console.log(`  drift           ${colours.yellow}${total} difference(s)${colours.reset}`);
-			if (missing.length) console.log(`    ${colours.dim}− ${missing.length} config file(s) missing${colours.reset}`);
-			if (missingRoot.length) console.log(`    ${colours.dim}− ${missingRoot.length} root file(s) missing (${missingRoot.join(", ")})${colours.reset}`);
-			if (stale.length) console.log(`    ${colours.dim}− ${stale.length} stale file(s) kept${colours.reset}`);
-			if (fieldDiffs.length) console.log(`    ${colours.dim}− ${fieldDiffs.length} config file(s) differ from the template${colours.reset}`);
-			console.log(`    ${colours.dim}run \`npx shirones init --update\` to restore${colours.reset}`);
-		}
+	const drift = await checkState();
+	const total = drift.missing.length + drift.stale.length + drift.fieldDiffs.length + drift.missingRoot.length;
+	section("Drift");
+	if (total === 0) {
+		row("status", `${colours.green}up to date${colours.reset}`);
 	} else {
-		console.log(`  status          ${colours.yellow}not initialised${colours.reset}`);
-		console.log(`    ${colours.dim}run \`npx shirones init\` to scaffold${colours.reset}`);
+		row("status", `${colours.yellow}${total} difference(s)${colours.reset}`);
+		listPreview("missing config", drift.missing);
+		listPreview("stale files kept", drift.stale);
+		listPreview("changed config", drift.fieldDiffs.map((item) => item.rel));
+		listPreview("missing root", drift.missingRoot);
+		console.log(`    ${colours.dim}Run \`npx shirones init --update\` to restore safe missing files.${colours.reset}`);
 	}
 	console.log();
 }
@@ -1071,13 +1178,15 @@ ${colours.bold}Shirone CLI${colours.reset}
 
   ${colours.cyan}init${colours.reset}                 Scaffold the project — or report drift on an existing one
   ${colours.cyan}init${colours.reset} ${colours.dim}--update${colours.reset}        Restore missing files and refresh the scaffold (never overwrites your files)
-  ${colours.cyan}init${colours.reset} ${colours.dim}--force${colours.reset}         Refresh template files (never your content; replaced files are backed up)
+  ${colours.cyan}init${colours.reset} ${colours.dim}--force${colours.reset}         Replace template files after backing up the previous copy
   ${colours.cyan}info${colours.reset}                 Detailed status and drift report
   ${colours.cyan}help${colours.reset}                 Show this message
 `);
 }
 
 const [command = "help", ...args] = process.argv.slice(2);
+
+await printCliNotice();
 
 switch (command) {
 	case "init":
