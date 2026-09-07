@@ -279,6 +279,10 @@ export const id: Translation = {
 	[Key.retry]: "Coba Lagi",
 	[Key.backToTop]: "Kembali ke atas",
 	[Key.backToComment]: "Lompat ke komentar",
+	[Key.notFound]: "404",
+	[Key.notFoundTitle]: "Halaman ini tersesat",
+	[Key.notFoundDescription]:
+		"Mungkin sudah dipindahkan, diarsipkan, atau memang belum pernah ada.",
 	[Key.backToHome]: "Kembali ke beranda",
 	[Key.close]: "Tutup",
 	[Key.scanToRead]: "Pindai untuk membaca artikel",

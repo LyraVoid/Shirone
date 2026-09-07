@@ -266,6 +266,10 @@ export const zh_TW: Translation = {
 	[Key.retry]: "重試",
 	[Key.backToTop]: "返回頂部",
 	[Key.backToComment]: "直達評論",
+	[Key.notFound]: "404",
+	[Key.notFoundTitle]: "這條路似乎偏離了",
+	[Key.notFoundDescription]:
+		"它可能被移動了、歸檔了，或者本來就不存在。",
 	[Key.backToHome]: "返回首頁",
 	[Key.close]: "關閉",
 	[Key.scanToRead]: "掃碼閱讀全文",

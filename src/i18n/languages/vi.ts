@@ -277,6 +277,10 @@ export const vi: Translation = {
 	[Key.retry]: "Thử lại",
 	[Key.backToTop]: "Về đầu trang",
 	[Key.backToComment]: "Đến bình luận",
+	[Key.notFound]: "404",
+	[Key.notFoundTitle]: "Trang này đã lạc đường",
+	[Key.notFoundDescription]:
+		"Có thể nó đã được di chuyển, lưu trữ hoặc chưa từng tồn tại.",
 	[Key.backToHome]: "Về trang chủ",
 	[Key.close]: "Đóng",
 	[Key.scanToRead]: "Quét mã để đọc bài viết",

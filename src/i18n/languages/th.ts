@@ -265,6 +265,10 @@ export const th: Translation = {
 	[Key.retry]: "ลองอีกครั้ง",
 	[Key.backToTop]: "กลับไปด้านบน",
 	[Key.backToComment]: "ไปยังความคิดเห็น",
+	[Key.notFound]: "404",
+	[Key.notFoundTitle]: "หน้านี้หลงทางแล้ว",
+	[Key.notFoundDescription]:
+		"อาจถูกย้าย เก็บถาวร หรือไม่เคยมีอยู่จริงเลยก็ได้",
 	[Key.backToHome]: "กลับหน้าแรก",
 	[Key.close]: "ปิด",
 	[Key.scanToRead]: "สแกนเพื่ออ่านบทความ",

@@ -274,6 +274,10 @@ export const ko: Translation = {
 	[Key.retry]: "다시 시도",
 	[Key.backToTop]: "맨 위로 돌아가기",
 	[Key.backToComment]: "댓글로 이동",
+	[Key.notFound]: "404",
+	[Key.notFoundTitle]: "이 페이지는 길을 잃었어요",
+	[Key.notFoundDescription]:
+		"이동되었거나 보관되었거나, 처음부터 존재하지 않았을 수도 있어요.",
 	[Key.backToHome]: "홈으로 돌아가기",
 	[Key.close]: "닫기",
 	[Key.scanToRead]: "QR 코드로 글 읽기",

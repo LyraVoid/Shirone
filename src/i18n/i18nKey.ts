@@ -1,5 +1,8 @@
 enum I18nKey {
 	home = "home",
+	notFound = "notFound",
+	notFoundTitle = "notFoundTitle",
+	notFoundDescription = "notFoundDescription",
 	about = "about",
 	archive = "archive",
 	/** 归档分组切换（Tabs）：tablist 无障碍名称 */

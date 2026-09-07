@@ -278,6 +278,10 @@ export const tr: Translation = {
 	[Key.retry]: "Tekrar Dene",
 	[Key.backToTop]: "Yukarı dön",
 	[Key.backToComment]: "Yorumlara git",
+	[Key.notFound]: "404",
+	[Key.notFoundTitle]: "Bu sayfa yolunu kaybetti",
+	[Key.notFoundDescription]:
+		"Taşınmış, arşivlenmiş veya aslen hiç yok olmuş olabilir.",
 	[Key.backToHome]: "Ana sayfaya dön",
 	[Key.close]: "Kapat",
 	[Key.scanToRead]: "Makaleyi okumak için tara",

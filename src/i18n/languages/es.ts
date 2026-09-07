@@ -277,6 +277,10 @@ export const es: Translation = {
 	[Key.retry]: "Reintentar",
 	[Key.backToTop]: "Volver arriba",
 	[Key.backToComment]: "Ir a los comentarios",
+	[Key.notFound]: "404",
+	[Key.notFoundTitle]: "Esta página se perdió en el camino",
+	[Key.notFoundDescription]:
+		"Quizá fue movida, archivada o nunca llegó a existir.",
 	[Key.backToHome]: "Volver al inicio",
 	[Key.close]: "Cerrar",
 	[Key.scanToRead]: "Escanear para leer el artículo",

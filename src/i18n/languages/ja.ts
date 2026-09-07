@@ -276,6 +276,10 @@ export const ja: Translation = {
 	[Key.retry]: "再試行",
 	[Key.backToTop]: "トップへ戻る",
 	[Key.backToComment]: "コメントへ移動",
+	[Key.notFound]: "404",
+	[Key.notFoundTitle]: "このページは迷子になりました",
+	[Key.notFoundDescription]:
+		"移動したり、アーカイブされたり、そもそも存在しなかったりした可能性があります。",
 	[Key.backToHome]: "ホームへ戻る",
 	[Key.close]: "閉じる",
 	[Key.scanToRead]: "QRコードで続きを読む",
