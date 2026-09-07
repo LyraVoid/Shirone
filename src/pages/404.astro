@@ -1,0 +1,141 @@
+---
+import { Icon } from "astro-icon/components";
+import Button from "@components/atoms/action/Button.svelte";
+import I18nKey from "@i18n/i18nKey";
+import { i18n } from "@i18n/translation";
+import MainGridLayout from "@layouts/MainGridLayout.astro";
+---
+
+<MainGridLayout
+	title={i18n(I18nKey.notFound)}
+	description={i18n(I18nKey.notFoundDescription)}
+	page="home"
+>
+	<div class="not-found-shell">
+		<div class="not-found-card">
+			<div class="not-found-mark" aria-hidden="true">
+				<span>{i18n(I18nKey.notFound)}</span>
+			</div>
+
+			<div class="not-found-icon" aria-hidden="true">
+				<Icon name="material-symbols:error-outline-rounded" />
+			</div>
+
+			<div class="not-found-copy">
+				<h1>{i18n(I18nKey.notFoundTitle)}</h1>
+				<p>{i18n(I18nKey.notFoundDescription)}</p>
+			</div>
+
+			<div class="not-found-actions">
+				<Button href="/" variant="filled" size="small" ariaLabel={i18n(I18nKey.backToHome)}>
+					<span class="button-inner">
+						<Icon name="material-symbols:home-rounded" aria-hidden="true" />
+						<span>{i18n(I18nKey.backToHome)}</span>
+					</span>
+				</Button>
+			</div>
+		</div>
+	</div>
+</MainGridLayout>
+
+<style lang="stylus">
+.not-found-shell
+	width: 100%
+	min-height: clamp(20rem, 45vh, 32rem)
+	display: flex
+	align-items: center
+	justify-content: center
+	padding: 1.5rem 0 0
+
+.not-found-card
+	position: relative
+	width: min(100%, 42rem)
+	display: flex
+	flex-direction: column
+	align-items: center
+	text-align: center
+	gap: 1.5rem
+	padding: clamp(1.5rem, 3vw, 3rem)
+	border-radius: var(--shape-corner-xl)
+	background: var(--surface-container-high)
+	border: 1px solid var(--outline-variant)
+	box-shadow: var(--m3e-elevation-1)
+	overflow: hidden
+
+	.not-found-mark
+		position: absolute
+		top: 1.5rem
+		right: 1.5rem
+		font: var(--m3e-type-display-small)
+		letter-spacing: 0.08em
+		color: var(--primary)
+		opacity: 0.14
+		user-select: none
+
+		span
+			display: inline-block
+			transform: translateY(-0.1em)
+
+.not-found-icon
+	width: 5rem
+	height: 5rem
+	display: grid
+	place-items: center
+	border-radius: var(--shape-corner-full)
+	background: var(--primary-container)
+	color: var(--primary)
+	box-shadow: inset 0 0 0 1px var(--outline)
+
+	:global(svg)
+		width: 2.5rem
+		height: 2.5rem
+
+.not-found-copy
+	display: flex
+	flex-direction: column
+	align-items: center
+	gap: 0.75rem
+	max-width: 32rem
+
+	h1
+		margin: 0
+		font: var(--m3e-type-headline-medium)
+		color: var(--on-surface)
+
+	p
+		margin: 0
+		font: var(--m3e-type-body-large)
+		line-height: 1.7
+		color: var(--on-surface-variant)
+
+.not-found-actions
+	display: flex
+	justify-content: center
+
+.button-inner
+	display: inline-flex
+	align-items: center
+	gap: 0.5rem
+
+	:global(svg)
+		width: 1.125rem
+		height: 1.125rem
+
+@media (max-width: 767px)
+	.not-found-card
+		padding: 1.25rem 1rem 1.5rem
+		gap: 1.25rem
+
+	.not-found-mark
+		top: 1rem
+		right: 1rem
+		font-size: 3rem
+
+	.not-found-icon
+		width: 4rem
+		height: 4rem
+
+	.not-found-copy
+		h1
+		font-size: clamp(1.75rem, 7vw, 2.25rem)
+</style>
