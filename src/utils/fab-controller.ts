@@ -135,7 +135,7 @@ class FabController {
 							0,
 							headingEl.getBoundingClientRect().top + window.scrollY - 80,
 						);
-						history.pushState(null, "", hash);
+						history.pushState(history.state, "", hash);
 						window.scrollTo({ top: offsetTop, behavior: "smooth" });
 					}
 				}

@@ -161,6 +161,17 @@ test.describe("番剧页", () => {
 		await expect(page).not.toHaveURL(/q=/);
 	});
 
+	test("筛选 URL 更新保留 Swup history state", async ({ page }) => {
+		await page.goto("/anime/", { waitUntil: "networkidle" });
+		await page.evaluate(() => {
+			history.replaceState({ ...history.state, regressionMarker: "kept" }, "");
+		});
+		await page.locator(".anime-section__chips button").first().click();
+		await expect
+			.poll(() => page.evaluate(() => history.state?.regressionMarker))
+			.toBe("kept");
+	});
+
 	test("工具栏快捷切换布局（List / Grid 互切与独立状态持久化）", async ({
 		page,
 	}) => {

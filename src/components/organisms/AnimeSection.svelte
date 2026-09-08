@@ -135,7 +135,11 @@ $effect(() => {
 	if (s) params.set("status", s);
 	if (q.trim()) params.set("q", q.trim());
 	const qs = params.toString();
-	history.replaceState(null, "", qs ? `?${qs}` : window.location.pathname);
+	history.replaceState(
+		history.state,
+		"",
+		qs ? `?${qs}` : window.location.pathname,
+	);
 });
 
 onMount(() => {

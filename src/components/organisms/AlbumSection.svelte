@@ -56,7 +56,7 @@ $effect(() => {
 	if (selectedTag) params.set("albumTag", selectedTag);
 	const search = params.toString();
 	history.replaceState(
-		null,
+		history.state,
 		"",
 		search ? `?${search}` : window.location.pathname,
 	);

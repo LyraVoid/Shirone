@@ -94,7 +94,11 @@ $effect(() => {
 	if (q) params.set("q", q);
 	if (g) params.set("group", g);
 	const qs = params.toString();
-	history.replaceState(null, "", qs ? `?${qs}` : window.location.pathname);
+	history.replaceState(
+		history.state,
+		"",
+		qs ? `?${qs}` : window.location.pathname,
+	);
 });
 
 onMount(() => {
