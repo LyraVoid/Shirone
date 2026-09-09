@@ -7,6 +7,7 @@ import {
 	TEXTURE_OPACITY_KEY,
 	TEXTURE_PRESET_KEY,
 	TEXTURE_PRESETS,
+	THEME_CHANGE_EVENT,
 	WALLPAPER_MODE_CHANGE_EVENT,
 	WALLPAPER_MODE_KEY,
 } from "@constants/constants.ts";
@@ -155,6 +156,11 @@ export function applyThemeToDocument(theme: LIGHT_DARK_MODE) {
 		isDark
 			? (expressiveCodeConfig.darkTheme ?? expressiveCodeConfig.theme)
 			: (expressiveCodeConfig.lightTheme ?? expressiveCodeConfig.theme),
+	);
+
+	// 广播明暗状态变化，供按需加载的第三方组件（如 giscus iframe）同步主题
+	window.dispatchEvent(
+		new CustomEvent(THEME_CHANGE_EVENT, { detail: { isDark } }),
 	);
 
 	// Dark mode affects the resolved M3/M3E scheme

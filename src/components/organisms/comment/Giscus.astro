@@ -1,0 +1,297 @@
+---
+import LoadingIndicator from "@components/atoms/feedback/LoadingIndicator.svelte";
+import I18nKey from "@i18n/i18nKey";
+import { i18n } from "@i18n/translation";
+import stylus from "stylus";
+import type { CommentContext, GiscusConfig } from "@/types/commentConfig";
+
+interface Props {
+	context: CommentContext;
+	config: GiscusConfig;
+	lazy?: boolean;
+}
+
+const { context, config, lazy = true } = Astro.props;
+
+/**
+ * 站点语言码 → giscus 语言码（构建期纯函数）。
+ * giscus 语言码为 BCP 47（zh-CN、zh-TW、pt-BR 等），站点内部使用小写无连字符形式。
+ * giscus 已覆盖站点全部内置语言；未识别的码回退 "en"。
+ */
+const GISCUS_LANGS = new Set([
+	"ar",
+	"be",
+	"bg",
+	"ca",
+	"cs",
+	"da",
+	"de",
+	"el",
+	"en",
+	"eo",
+	"es",
+	"eu",
+	"fa",
+	"fr",
+	"he",
+	"hbs",
+	"hu",
+	"id",
+	"it",
+	"ja",
+	"kh",
+	"ko",
+	"nl",
+	"pl",
+	"pt",
+	"ro",
+	"ru",
+	"sr-hr",
+	"th",
+	"tr",
+	"uk",
+	"uz",
+	"vi",
+	"zh-CN",
+	"zh-TW",
+	"zh-HK",
+]);
+
+function resolveGiscusLang(lang: string): string {
+	const normalized = (lang || "en").toLowerCase();
+	if (normalized === "zh_cn") return "zh-CN";
+	if (normalized === "zh_tw") return "zh-TW";
+	if (normalized === "zh_hk") return "zh-HK";
+	if (normalized === "pt_br") return "pt-BR";
+	if (normalized === "sr_hr") return "sr-Hr";
+	const primary = normalized.split(/[-_]/)[0];
+	return GISCUS_LANGS.has(primary) ? primary : "en";
+}
+const resolvedLang =
+	config.lang === "auto" ? resolveGiscusLang(context.language) : config.lang;
+const giscusStylus = `/* ==========================================================================
+	   Giscus 最小化补丁（Minimal Patch）
+	   giscus 通过 iframe 自绘主题（data-theme），此处不做 iframe 内部样式接管，
+	   仅处理外壳：骨架屏状态感知、iframe 适配与容器语义令牌。
+	   ========================================================================== */
+
+	.shirone-giscus-wrapper
+		position: relative
+		min-height: 10rem
+
+	/* 骨架屏：CSS :has() 感知 giscus iframe 是否已挂载（L4：不引入 MutationObserver/轮询） */
+	.giscus-skeleton
+		display: flex
+		flex-direction: column
+		align-items: center
+		justify-content: center
+		gap: var(--m3e-space-3, 0.75rem)
+		width: 100%
+		min-height: 10rem
+		padding-block: var(--m3e-space-6, 1.5rem)
+		color: var(--on-surface-variant)
+		font-size: 0.875rem
+
+	.shirone-giscus-wrapper:has(.giscus)
+		.giscus-skeleton
+			display: none !important
+
+	/* iframe 外壳适配：宽度撑满、去边框；iframe 内部主题由 giscus data-theme 负责 */
+	.giscus
+		width: 100%
+
+	.giscus-frame
+		width: 100%
+		border: none
+		color-scheme: normal
+
+	/* 挂载容器收缩到实际内容高度，避免 giscus 挂载后残留多余空白 */
+	.giscus
+		line-height: 0`;
+
+const giscusStyles = await new Promise<string>((resolve, reject) => {
+	stylus.render(giscusStylus, (error, css) => {
+		if (error) reject(error);
+		else resolve(css);
+	});
+});
+---
+
+<div
+	class="shirone-giscus-wrapper w-full"
+	data-giscus-script-url={config.scriptUrl}
+	data-giscus-repo={config.repo}
+	data-giscus-repo-id={config.repoId}
+	data-giscus-category={config.category}
+	data-giscus-category-id={config.categoryId}
+	data-giscus-mapping={config.mapping}
+	data-giscus-term={config.mapping === "specific" || config.mapping === "number" ? context.key : undefined}
+	data-giscus-strict={config.strict ? "1" : "0"}
+	data-giscus-reactions={config.reactionsEnabled ? "1" : "0"}
+	data-giscus-emit-metadata={config.emitMetadata ? "1" : "0"}
+	data-giscus-input-position={config.inputPosition}
+	data-giscus-theme-light={config.theme.light}
+	data-giscus-theme-dark={config.theme.dark}
+	data-giscus-lang={resolvedLang}
+	data-giscus-lazy={lazy ? "true" : "false"}
+>
+	<!-- 初始加载指示：复用 M3E 原子组件，进入视口/挂载后由 :has() 隐藏 -->
+	<div class="giscus-skeleton" role="status">
+		<span aria-hidden="true">
+			<LoadingIndicator client:visible />
+		</span>
+		<span>{i18n(I18nKey.commentsLoading)}</span>
+	</div>
+	<!-- giscus 容器：client.js 会在 .giscus 元素内注入 iframe -->
+
+	<!-- 无 JavaScript 降级提示 -->
+	<noscript>
+		<div class="p-4 rounded-[var(--shape-corner-m)] bg-[var(--surface-container-high)] text-[var(--on-surface-variant)] text-sm text-center">
+			{i18n(I18nKey.commentsRequiresJavaScript)}
+		</div>
+	</noscript>
+</div>
+
+<style is:inline set:html={giscusStyles}></style>
+
+<script>
+	// Giscus 挂载说明：client.js 是一次性 IIFE，挂载逻辑绑定 document.currentScript.dataset，
+	// 且包含「已存在 .giscus 容器则复用，否则在 script 后插入」的分支。
+	// 不能复用 loadScriptOnce()：其 once 语义（Promise 缓存 + script[src] 去重）会阻止
+	// Swup 换页后向新 wrapper 重新执行挂载。因此每次挂载向 wrapper 内注入一个新的
+	// script 元素（HTTP 缓存使重复加载成本极低），旧 script 随容器替换自然丢弃。
+	interface GiscusMountAttributes {
+		repo: string;
+		repoId: string;
+		category: string;
+		categoryId: string;
+		mapping: string;
+		term?: string;
+		strict: string;
+		reactions: string;
+		emitMetadata: string;
+		inputPosition: string;
+		themeLight: string;
+		themeDark: string;
+		lang: string;
+	}
+
+	function currentIsDark(): boolean {
+		return document.documentElement.classList.contains("dark");
+	}
+
+	function scriptOrigin(scriptUrl: string): string {
+		try {
+			return new URL(scriptUrl).origin;
+		} catch {
+			return "https://giscus.app";
+		}
+	}
+
+	function mountGiscusInstance(wrapper: HTMLElement) {
+		if (wrapper.dataset.giscusMounted === "true") return;
+
+		const scriptUrl = wrapper.dataset.giscusScriptUrl;
+		const repo = wrapper.dataset.giscusRepo;
+		const repoId = wrapper.dataset.giscusRepoId;
+		const categoryId = wrapper.dataset.giscusCategoryId;
+		if (!scriptUrl || !repo || !repoId || !categoryId) return;
+
+		const isLazy = wrapper.dataset.giscusLazy === "true";
+		wrapper.dataset.giscusMounted = "true";
+
+		const mount = () => {
+			const container = wrapper.querySelector<HTMLElement>(".giscus");
+			if (!container) return;
+			container.classList.remove("hidden");
+
+			const attributes: GiscusMountAttributes = {
+				repo,
+				repoId,
+				category: wrapper.dataset.giscusCategory ?? "",
+				categoryId,
+				mapping: wrapper.dataset.giscusMapping ?? "pathname",
+				strict: wrapper.dataset.giscusStrict ?? "0",
+				reactions: wrapper.dataset.giscusReactions ?? "1",
+				emitMetadata: wrapper.dataset.giscusEmitMetadata ?? "0",
+				inputPosition: wrapper.dataset.giscusInputPosition ?? "bottom",
+				themeLight: wrapper.dataset.giscusThemeLight ?? "light",
+				themeDark: wrapper.dataset.giscusThemeDark ?? "dark",
+				lang: wrapper.dataset.giscusLang ?? "en",
+			};
+			const term = wrapper.dataset.giscusTerm;
+			if (term) attributes.term = term;
+
+			const script = document.createElement("script");
+			script.src = scriptUrl;
+			script.crossOrigin = "anonymous";
+			script.async = true;
+			script.dataset.repo = attributes.repo;
+			script.dataset.repoId = attributes.repoId;
+			if (attributes.category) script.dataset.category = attributes.category;
+			script.dataset.categoryId = attributes.categoryId;
+			script.dataset.mapping = attributes.mapping;
+			if (attributes.term) script.dataset.term = attributes.term;
+			script.dataset.strict = attributes.strict;
+			script.dataset.reactionsEnabled = attributes.reactions;
+			script.dataset.emitMetadata = attributes.emitMetadata;
+			script.dataset.inputPosition = attributes.inputPosition;
+			script.dataset.theme = currentIsDark() ? attributes.themeDark : attributes.themeLight;
+			script.dataset.lang = attributes.lang;
+			container.appendChild(script);
+		};
+
+		if (isLazy && "IntersectionObserver" in window) {
+			const observer = new IntersectionObserver(
+				(entries, obs) => {
+					if (entries[0].isIntersecting) {
+						obs.disconnect();
+						mount();
+					}
+				},
+				{ rootMargin: "200px" },
+			);
+			observer.observe(wrapper);
+		} else {
+			mount();
+		}
+	}
+
+	function setupAllGiscus() {
+		const wrappers = document.querySelectorAll<HTMLElement>(
+			".shirone-giscus-wrapper",
+		);
+		wrappers.forEach((wrapper) => mountGiscusInstance(wrapper));
+	}
+
+	// 明暗主题同步：监听 setting-utils 广播的主题变化事件，向 giscus iframe 转发 setConfig。
+	// 事件缺失时（旧页面缓存），退回 MutationObserver 之外的静态初始值——不做轮询。
+	function handleThemeChange(wrapper: HTMLElement, event: Event) {
+		const detail = (event as CustomEvent<{ isDark?: boolean }>).detail;
+		const isDark = detail?.isDark ?? currentIsDark();
+		const iframe = wrapper.querySelector<HTMLIFrameElement>("iframe.giscus-frame");
+		if (!iframe?.contentWindow) return;
+		const origin = scriptOrigin(wrapper.dataset.giscusScriptUrl ?? "");
+		const theme = isDark
+			? (wrapper.dataset.giscusThemeDark ?? "dark")
+			: (wrapper.dataset.giscusThemeLight ?? "light");
+		iframe.contentWindow.postMessage(
+			{ giscus: { setConfig: { theme } } },
+			origin,
+		);
+	}
+
+	document.addEventListener("shirone:theme-change", (event) => {
+		const wrappers = document.querySelectorAll<HTMLElement>(
+			".shirone-giscus-wrapper",
+		);
+		wrappers.forEach((wrapper) => handleThemeChange(wrapper, event));
+	});
+
+	// 首次页面直达加载
+	setupAllGiscus();
+
+	// 响应 Swup 页面替换生命周期
+	document.addEventListener("swup:content:replace", setupAllGiscus);
+	document.addEventListener("swup:page:view", setupAllGiscus);
+</script>
