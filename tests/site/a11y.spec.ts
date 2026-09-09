@@ -12,6 +12,7 @@ import { expect, test } from "@playwright/test";
  * - 断言页面确实处于目标模式，防止主题未应用导致“假通过”。
  */
 const pages = [
+	{ name: "404", path: "/404/" },
 	{ name: "首页", path: "/" },
 	{ name: "首页-网格", path: "/", layout: "grid" },
 	{ name: "归档", path: "/archive/" },

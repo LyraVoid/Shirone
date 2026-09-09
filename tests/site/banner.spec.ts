@@ -142,6 +142,9 @@ test.describe("banner wallpaper", () => {
 		expect(resolveBannerState({ ...base, page: "post" }).copyMode).toBe(
 			"context",
 		);
+		expect(resolveBannerState({ ...base, page: "notFound" }).copyMode).toBe(
+			"context",
+		);
 		expect(
 			resolveBannerState({ ...base, viewport: "mobile", page: "post" })
 				.copyMode,

@@ -1,15 +1,15 @@
 ---
-import { Icon } from "astro-icon/components";
 import Button from "@components/atoms/action/Button.svelte";
 import I18nKey from "@i18n/i18nKey";
 import { i18n } from "@i18n/translation";
 import MainGridLayout from "@layouts/MainGridLayout.astro";
+import { Icon } from "astro-icon/components";
 ---
 
 <MainGridLayout
 	title={i18n(I18nKey.notFound)}
 	description={i18n(I18nKey.notFoundDescription)}
-	page="home"
+	page="notFound"
 >
 	<div class="not-found-shell">
 		<div class="not-found-card">
@@ -66,10 +66,9 @@ import MainGridLayout from "@layouts/MainGridLayout.astro";
 		position: absolute
 		top: 1.5rem
 		right: 1.5rem
-		font: var(--m3e-type-display-small)
-		letter-spacing: 0.08em
+		font: var(--m3e-type-headline-medium)
+		letter-spacing: 0
 		color: var(--primary)
-		opacity: 0.14
 		user-select: none
 
 		span
@@ -137,5 +136,5 @@ import MainGridLayout from "@layouts/MainGridLayout.astro";
 
 	.not-found-copy
 		h1
-		font-size: clamp(1.75rem, 7vw, 2.25rem)
+			font-size: clamp(1.75rem, 7vw, 2.25rem)
 </style>

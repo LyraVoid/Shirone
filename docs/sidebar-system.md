@@ -58,6 +58,7 @@ widget 的专属配置（如分类的折叠阈值 `collapseAfter`）只存在于
 
 | 标识符 | 对应页面 |
 |---|---|
+| `"notFound"` | 404 页面（`404.astro`） |
 | `"home"` | 首页（`[...page].astro` 及其分页） |
 | `"archive"` | 归档页（`archive.astro`） |
 | `"friends"` | 友链页（`friends.astro`） |
