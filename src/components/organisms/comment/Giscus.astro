@@ -201,9 +201,8 @@ const giscusStyles = await new Promise<string>((resolve, reject) => {
 		wrapper.dataset.giscusMounted = "true";
 
 		const mount = () => {
-			const container = wrapper.querySelector<HTMLElement>(".giscus");
-			if (!container) return;
-			container.classList.remove("hidden");
+			// client.js 在无 .giscus 容器时会于 script 后自建容器并注入 iframe，
+			// 骨架屏由 wrapper :has(.giscus) 感知——无需（也不能）要求预置容器。
 
 			const attributes: GiscusMountAttributes = {
 				repo,
@@ -238,7 +237,7 @@ const giscusStyles = await new Promise<string>((resolve, reject) => {
 			script.dataset.inputPosition = attributes.inputPosition;
 			script.dataset.theme = currentIsDark() ? attributes.themeDark : attributes.themeLight;
 			script.dataset.lang = attributes.lang;
-			container.appendChild(script);
+			wrapper.appendChild(script);
 		};
 
 		if (isLazy && "IntersectionObserver" in window) {
@@ -281,7 +280,7 @@ const giscusStyles = await new Promise<string>((resolve, reject) => {
 		);
 	}
 
-	document.addEventListener("shirone:theme-change", (event) => {
+	window.addEventListener("shirone:theme-change", (event) => {
 		const wrappers = document.querySelectorAll<HTMLElement>(
 			".shirone-giscus-wrapper",
 		);

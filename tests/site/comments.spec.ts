@@ -95,14 +95,30 @@ async function mockTwikoo(page: Page) {
 const giscusScriptUrl = "https://giscus.app/client.js";
 
 async function mockGiscus(page: Page) {
+	// 模拟 giscus client.js 的真实挂载语义：不要求预置 .giscus 容器，
+	// 在 script 之后自建容器并注入 iframe；widget 页面回显 postMessage 以验证主题转发。
+	await page.route("https://giscus.app/widget*", async (route) => {
+		await route.fulfill({
+			contentType: "text/html",
+			body: `<!doctype html><html><body><script>
+				window.addEventListener("message", function (e) {
+					if (e.data && e.data.giscus) window.parent.postMessage(e.data, "*");
+				});
+			</script></body></html>`,
+		});
+	});
 	await page.route(giscusScriptUrl, async (route) => {
 		await route.fulfill({
 			contentType: "application/javascript",
 			body: `
 				(() => {
 					const current = document.currentScript;
-					const container = current.previousElementSibling;
-					if (!container || !container.classList.contains('giscus')) return;
+					let container = document.querySelector('.giscus');
+					if (!container) {
+						container = document.createElement('div');
+						container.className = 'giscus';
+						current.insertAdjacentElement('afterend', container);
+					}
 					const iframe = document.createElement('iframe');
 					iframe.className = 'giscus-frame giscus-frame--loading';
 					iframe.title = 'Comments';
@@ -110,7 +126,7 @@ async function mockGiscus(page: Page) {
 					for (const [key, value] of Object.entries(current.dataset)) {
 						params.set(key, value);
 					}
-					params.set('origin', window.location.origin);
+					params.set('origin', window.location.href);
 					iframe.src = 'https://giscus.app/widget?' + params.toString();
 					container.appendChild(iframe);
 					window.__giscusMock = { container, iframe };
@@ -284,15 +300,19 @@ test.describe("Comment System - Configuration & Architecture", () => {
 		}
 	});
 
-	// 评论 UI 测试依赖真实渲染的评论区；默认模板关闭评论时跳过，本机开启后自动运行
-	const commentsUiEnabled = resolveCommentOptions(commentConfig) !== null;
+	// giscus UI 测试要求评论启用且 provider 为 giscus（与站点真实配置联动）
+	const giscusUiEnabled =
+		resolveCommentOptions(commentConfig)?.provider === "giscus";
+	// twikoo UI 测试要求评论启用且 provider 为 twikoo（与站点真实配置联动）
+	const twikooUiEnabled =
+		resolveCommentOptions(commentConfig)?.provider === "twikoo";
 
 	test("enabled comment section renders DOM structure with test data", async ({
 		page,
 	}) => {
 		test.skip(
-			!commentsUiEnabled,
-			"评论默认关闭，请在 src/config/commentConfig.ts 开启后运行 UI 测试",
+			!twikooUiEnabled,
+			"评论未启用或 provider 非 twikoo，跳过 twikoo UI 测试",
 		);
 		await mockTwikoo(page);
 		await page.goto("/posts/guide/", { waitUntil: "networkidle" });
@@ -357,8 +377,8 @@ test.describe("Comment System - Configuration & Architecture", () => {
 		page,
 	}) => {
 		test.skip(
-			!commentsUiEnabled,
-			"评论默认关闭，请在 src/config/commentConfig.ts 开启后运行 UI 测试",
+			!twikooUiEnabled,
+			"评论未启用或 provider 非 twikoo，跳过 twikoo UI 测试",
 		);
 		await mockTwikoo(page);
 		await page.goto("/posts/guide/");
@@ -427,8 +447,8 @@ test.describe("Comment System - Configuration & Architecture", () => {
 		page,
 	}) => {
 		test.skip(
-			!commentsUiEnabled,
-			"评论默认关闭，请在 src/config/commentConfig.ts 开启后运行 UI 测试",
+			!twikooUiEnabled,
+			"评论未启用或 provider 非 twikoo，跳过 twikoo UI 测试",
 		);
 		await mockTwikoo(page);
 		await page.goto("/posts/guide/");
@@ -471,8 +491,8 @@ test.describe("Comment System - Configuration & Architecture", () => {
 		page,
 	}) => {
 		test.skip(
-			!commentsUiEnabled,
-			"评论默认关闭，请在 src/config/commentConfig.ts 开启后运行 UI 测试",
+			!twikooUiEnabled,
+			"评论未启用或 provider 非 twikoo，跳过 twikoo UI 测试",
 		);
 		await mockTwikoo(page);
 		await page.goto("/posts/guide/");
@@ -493,8 +513,8 @@ test.describe("Comment System - Configuration & Architecture", () => {
 
 	test("comment loading uses the centered M3E indicator", async ({ page }) => {
 		test.skip(
-			!commentsUiEnabled,
-			"评论默认关闭，请在 src/config/commentConfig.ts 开启后运行 UI 测试",
+			!twikooUiEnabled,
+			"评论未启用或 provider 非 twikoo，跳过 twikoo UI 测试",
 		);
 		await mockTwikoo(page);
 		await page.goto("/posts/guide/");
@@ -533,8 +553,8 @@ test.describe("Comment System - Configuration & Architecture", () => {
 
 	test("Twikoo hash actions preserve page scroll", async ({ page }) => {
 		test.skip(
-			!commentsUiEnabled,
-			"评论默认关闭，请在 src/config/commentConfig.ts 开启后运行 UI 测试",
+			!twikooUiEnabled,
+			"评论未启用或 provider 非 twikoo，跳过 twikoo UI 测试",
 		);
 		await mockTwikoo(page);
 		await page.goto("/posts/guide/");
@@ -618,8 +638,8 @@ test.describe("Comment System - Configuration & Architecture", () => {
 		page,
 	}) => {
 		test.skip(
-			!commentsUiEnabled,
-			"评论默认关闭，请在 src/config/commentConfig.ts 开启后运行 UI 测试",
+			!giscusUiEnabled,
+			"评论未启用或 provider 非 giscus，跳过 giscus UI 测试",
 		);
 		await mockGiscus(page);
 		await page.goto("/posts/guide/");
@@ -630,22 +650,43 @@ test.describe("Comment System - Configuration & Architecture", () => {
 		await expect(wrapper).toHaveCount(1);
 		const iframe = wrapper.locator("iframe.giscus-frame");
 		await expect(iframe).toHaveCount(1);
+		await expect(wrapper.locator(".giscus-skeleton")).toBeHidden();
 
-		// data-* 配置透传到 client.js（通过 dataset 进入 widget URL）
-		const src = await iframe.getAttribute("src");
-		expect(src).toContain("data-repo=");
-		expect(src).toContain("data-repo-id=");
-		expect(src).toContain("data-category-id=");
-		expect(src).toContain("data-mapping=pathname");
-		expect(src).toContain("data-lang=");
+		// data-* 配置经 client.js dataset 进入 widget URL：
+		// 凭据对照 resolveCommentOptions 动态断言（不硬编码），lang/theme 断言 SSR 属性透传链。
+		const options = resolveCommentOptions(commentConfig);
+		const giscusOptions =
+			options?.provider === "giscus" ? options.giscus : null;
+		if (!giscusOptions) return;
+		const widgetUrl = new URL(
+			(await iframe.getAttribute("src")) ?? "",
+			"https://giscus.app",
+		);
+		expect(widgetUrl.searchParams.get("repo")).toBe(giscusOptions.repo);
+		expect(widgetUrl.searchParams.get("repoId")).toBe(giscusOptions.repoId);
+		expect(widgetUrl.searchParams.get("categoryId")).toBe(
+			giscusOptions.categoryId,
+		);
+		expect(widgetUrl.searchParams.get("mapping")).toBe(giscusOptions.mapping);
+		if (giscusOptions.category) {
+			expect(widgetUrl.searchParams.get("category")).toBe(
+				giscusOptions.category,
+			);
+		}
+		expect(widgetUrl.searchParams.get("lang")).toBe(
+			await wrapper.getAttribute("data-giscus-lang"),
+		);
+		expect(widgetUrl.searchParams.get("theme")).toBe(
+			await wrapper.getAttribute("data-giscus-theme-light"),
+		);
 	});
 
 	test("giscus iframe theme follows site dark mode toggle", async ({
 		page,
 	}) => {
 		test.skip(
-			!commentsUiEnabled,
-			"评论默认关闭，请在 src/config/commentConfig.ts 开启后运行 UI 测试",
+			!giscusUiEnabled,
+			"评论未启用或 provider 非 giscus，跳过 giscus UI 测试",
 		);
 		await mockGiscus(page);
 		await page.goto("/posts/guide/");
@@ -673,26 +714,32 @@ test.describe("Comment System - Configuration & Architecture", () => {
 			);
 		});
 
-		const forwarded = await page.evaluate(() => {
-			const state = window as Window & { __themeMessages?: unknown[] };
-			return state.__themeMessages ?? [];
-		});
-		const setConfig = forwarded.find((message) => {
-			if (typeof message !== "object" || message === null) return false;
-			if (!("giscus" in message)) return false;
-			const giscus: unknown = message.giscus;
-			if (typeof giscus !== "object" || giscus === null) return false;
-			return "setConfig" in giscus && typeof giscus.setConfig === "object";
-		});
-		expect(setConfig).toBeDefined();
+		// widget 页面回显 postMessage 为异步到达，轮询收集器直至出现 giscus setConfig
+		let setConfig: unknown;
+		await expect
+			.poll(async () => {
+				const forwarded = await page.evaluate(() => {
+					const state = window as Window & { __themeMessages?: unknown[] };
+					return state.__themeMessages ?? [];
+				});
+				setConfig = forwarded.find((message) => {
+					if (typeof message !== "object" || message === null) return false;
+					if (!("giscus" in message)) return false;
+					const giscus: unknown = message.giscus;
+					if (typeof giscus !== "object" || giscus === null) return false;
+					return "setConfig" in giscus && typeof giscus.setConfig === "object";
+				});
+				return setConfig;
+			})
+			.toBeDefined();
 	});
 
 	test("giscus remounts into fresh wrapper after Swup navigation", async ({
 		page,
 	}) => {
 		test.skip(
-			!commentsUiEnabled,
-			"评论默认关闭，请在 src/config/commentConfig.ts 开启后运行 UI 测试",
+			!giscusUiEnabled,
+			"评论未启用或 provider 非 giscus，跳过 giscus UI 测试",
 		);
 		await mockGiscus(page);
 		await page.goto("/posts/guide/");
