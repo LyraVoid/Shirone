@@ -1,36 +1,36 @@
 {
-  "mode": "external",
-  "hidden": false,
-  "title": "Protected image set",
-  "description": "A password-protected album backed by the reusable protected-content protocol.",
-  "date": "2025-05-22",
-  "location": "Private garden",
-  "tags": ["protected", "password", "example"],
-  "layout": "masonry",
-  "columns": 3,
-  "password": "123456",
-  "passwordHint": "Six digits",
-  "cover": "https://picsum.photos/seed/shirone-protected-cover/800/600",
-  "photos": [
-    {
-      "id": "protected-1",
-      "src": "https://picsum.photos/seed/shirone-protected-1/1200/800",
-      "thumbnail": "https://picsum.photos/seed/shirone-protected-1/600/400",
-      "alt": "A protected garden landscape",
-      "title": "Private landscape",
-      "tags": ["garden"],
-      "width": 1200,
-      "height": 800
-    },
-    {
-      "id": "protected-2",
-      "src": "https://picsum.photos/seed/shirone-protected-2/800/1200",
-      "thumbnail": "https://picsum.photos/seed/shirone-protected-2/400/600",
-      "alt": "A protected vertical photograph",
-      "title": "Private memory",
-      "tags": ["memory"],
-      "width": 800,
-      "height": 1200
-    }
-  ]
+	"mode": "external",
+	"hidden": false,
+	"title": "Protected image set",
+	"description": "A password-protected album backed by the reusable protected-content protocol.",
+	"date": "2025-05-22",
+	"location": "Private garden",
+	"tags": ["protected", "password", "example"],
+	"layout": "masonry",
+	"columns": 3,
+	"password": "123456",
+	"passwordHint": "Six digits",
+	"cover": "https://picsum.photos/seed/shirone-protected-cover/800/600",
+	"photos": [
+		{
+			"id": "protected-1",
+			"src": "https://picsum.photos/seed/shirone-protected-1/1200/800",
+			"thumbnail": "https://picsum.photos/seed/shirone-protected-1/600/400",
+			"alt": "A protected garden landscape",
+			"title": "Private landscape",
+			"tags": ["garden"],
+			"width": 1200,
+			"height": 800
+		},
+		{
+			"id": "protected-2",
+			"src": "https://picsum.photos/seed/shirone-protected-2/800/1200",
+			"thumbnail": "https://picsum.photos/seed/shirone-protected-2/400/600",
+			"alt": "A protected vertical photograph",
+			"title": "Private memory",
+			"tags": ["memory"],
+			"width": 800,
+			"height": 1200
+		}
+	]
 }

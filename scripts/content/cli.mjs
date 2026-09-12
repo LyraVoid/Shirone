@@ -122,11 +122,15 @@ const result = spawnSync(process.execPath, [target.script, ...forwardedArgs], {
 });
 
 if (result.error) {
-	console.error(`[content] Failed to start child process: ${result.error.message}`);
+	console.error(
+		`[content] Failed to start child process: ${result.error.message}`,
+	);
 	process.exit(1);
 }
 
 if (result.signal) {
-	console.error(`[content] Subcommand was terminated by signal ${result.signal}.`);
+	console.error(
+		`[content] Subcommand was terminated by signal ${result.signal}.`,
+	);
 }
 process.exit(result.status ?? 1);

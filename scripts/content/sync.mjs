@@ -208,7 +208,9 @@ function assertReusableWorkingCopy(source, workingCopy, commit, origin) {
 				"Please restore the working copy first, or remove this variable and pull again.",
 		);
 	}
-	log(`Reusing local content working copy ${WORKING_COPY_DIR} @ ${commit.slice(0, 8)}`);
+	log(
+		`Reusing local content working copy ${WORKING_COPY_DIR} @ ${commit.slice(0, 8)}`,
+	);
 	return { directory: workingCopy, commit };
 }
 
@@ -265,7 +267,9 @@ function ensureWorkingCopy(source) {
 			redact: source.url,
 		});
 		origin = source.url;
-		log(`Updated origin in ${WORKING_COPY_DIR}/ to match current content source`);
+		log(
+			`Updated origin in ${WORKING_COPY_DIR}/ to match current content source`,
+		);
 	}
 
 	if (!allowFetch) {
@@ -481,7 +485,9 @@ function runSync() {
 			`${commit ? `, content commit ${commit.slice(0, 8)}` : ""}`,
 	);
 	if (skipped.length > 0) {
-		log(`Content repository did not provide the following directories, corresponding code repository paths kept unchanged: ${skipped.join(", ")}`);
+		log(
+			`Content repository did not provide the following directories, corresponding code repository paths kept unchanged: ${skipped.join(", ")}`,
+		);
 	}
 	return lock;
 }
@@ -490,7 +496,9 @@ function runWatch() {
 	const resolved = resolveContentSource(ROOT);
 	if (resolved.mode === "local") return;
 	if (resolved.source.type !== "path") {
-		throw new Error(`--watch only supports local content directories with source.type = "path".`);
+		throw new Error(
+			`--watch only supports local content directories with source.type = "path".`,
+		);
 	}
 	const sourceRoot = resolve(ROOT, resolved.source.path);
 	log(`Watching ${sourceRoot}, press Ctrl+C to stop`);

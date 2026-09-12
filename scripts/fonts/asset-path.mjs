@@ -5,9 +5,7 @@
  * `dist/_astro/font.woff2`, not `dist/Shirone/_astro/font.woff2`.
  */
 export function resolveFontAssetPath(reference, baseUrl = "/") {
-	const clean = reference
-		.split(/[?#]/, 1)[0]
-		.replace(/^["']|["']$/g, "");
+	const clean = reference.split(/[?#]/, 1)[0].replace(/^["']|["']$/g, "");
 	const normalizedBase = normalizeBase(baseUrl);
 	let path = clean;
 

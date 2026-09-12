@@ -23,10 +23,7 @@ describe("font CSS variable contract", () => {
 			fontFaces,
 			/--font-mono:\s*var\(--m3e-font-mono-family\)\s*;/,
 		);
-		assert.match(
-			main,
-			/--font-mono:\s*var\(--m3e-font-mono-fallback\)\s*;/,
-		);
+		assert.match(main, /--font-mono:\s*var\(--m3e-font-mono-fallback\)\s*;/);
 		assert.match(
 			fontFaces,
 			/font-family:\s*var\(--m3e-font-mono-family\)\s*!important;/,

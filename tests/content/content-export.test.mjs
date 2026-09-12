@@ -761,7 +761,10 @@ describe("content:export 内容文件导出", () => {
 		const output = exportRun(code);
 
 		// 内容仓的 public/ 只有 images/ 与 assets/，因此 favicon/ 是主题自有。
-		assert.match(output, /Not included: content repo does not own this top segment/i);
+		assert.match(
+			output,
+			/Not included: content repo does not own this top segment/i,
+		);
 		assert.match(output, /public\/favicon/);
 		exportRun(code, ["--yes"]);
 		assert.equal(

@@ -306,7 +306,10 @@ describe("content sync", () => {
 					JSON.stringify({ schemaVersion: 1, mounts }),
 				);
 				const { stderr } = runSync(fixture, { expectFailure: true });
-				assert.match(stderr, /relative directory|reserved directory|overlap|duplicate/i);
+				assert.match(
+					stderr,
+					/relative directory|reserved directory|overlap|duplicate/i,
+				);
 			}
 			assert.ok(!exists(fixture, "content.lock.json"));
 		} finally {
@@ -355,7 +358,10 @@ describe("content sync", () => {
 				},
 				expectFailure: true,
 			});
-			assert.match(result.stderr, /matches current URL, ref, and commit exactly/i);
+			assert.match(
+				result.stderr,
+				/matches current URL, ref, and commit exactly/i,
+			);
 		} finally {
 			rmSync(fixture.base, { recursive: true, force: true });
 		}

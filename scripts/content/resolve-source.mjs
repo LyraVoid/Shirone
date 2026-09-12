@@ -225,7 +225,8 @@ function resolveSource(manifest, envOrigins) {
 	}
 
 	if (declared.type === "path") {
-		if (!declared.path) fail(`source.path in ${MANIFEST_FILE} cannot be empty.`);
+		if (!declared.path)
+			fail(`source.path in ${MANIFEST_FILE} cannot be empty.`);
 		return {
 			type: "path",
 			path: declared.path,
@@ -280,7 +281,9 @@ function normalizeMountDirectory(value, label) {
 		rawSegments.includes("..") ||
 		normalized.split("/").includes("..")
 	) {
-		fail(`${label} must be a relative directory without "..", received ${value}.`);
+		fail(
+			`${label} must be a relative directory without "..", received ${value}.`,
+		);
 	}
 	return normalized;
 }
@@ -309,7 +312,9 @@ function validateMountBoundaries(mounts) {
 			);
 		}
 		if (RESERVED_MOUNT_TARGET_ROOTS.has(targetRoot)) {
-			fail(`mounts.${source} cannot write to reserved directory ${targetRoot}/.`);
+			fail(
+				`mounts.${source} cannot write to reserved directory ${targetRoot}/.`,
+			);
 		}
 	}
 

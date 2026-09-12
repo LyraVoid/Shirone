@@ -1,34 +1,34 @@
 {
-  "mode": "external",
-  "hidden": false,
-  "title": "External image set",
-  "description": "A remote album using explicit photo metadata and thumbnails.",
-  "date": "2025-08-28",
-  "location": "Remote source",
-  "tags": ["external", "remote", "example"],
-  "layout": "masonry",
-  "columns": 3,
-  "cover": "https://picsum.photos/seed/shirone-cover/800/600",
-  "photos": [
-    {
-      "id": "external-1",
-      "src": "https://picsum.photos/seed/shirone-remote-1/1200/800",
-      "thumbnail": "https://picsum.photos/seed/shirone-remote-1/600/400",
-      "alt": "A remote landscape photograph",
-      "title": "Remote landscape",
-      "tags": ["landscape", "remote"],
-      "width": 1200,
-      "height": 800
-    },
-    {
-      "id": "external-2",
-      "src": "https://picsum.photos/seed/shirone-remote-2/800/1200",
-      "thumbnail": "https://picsum.photos/seed/shirone-remote-2/400/600",
-      "alt": "A remote portrait photograph",
-      "title": "Vertical study",
-      "tags": ["portrait", "remote"],
-      "width": 800,
-      "height": 1200
-    }
-  ]
+	"mode": "external",
+	"hidden": false,
+	"title": "External image set",
+	"description": "A remote album using explicit photo metadata and thumbnails.",
+	"date": "2025-08-28",
+	"location": "Remote source",
+	"tags": ["external", "remote", "example"],
+	"layout": "masonry",
+	"columns": 3,
+	"cover": "https://picsum.photos/seed/shirone-cover/800/600",
+	"photos": [
+		{
+			"id": "external-1",
+			"src": "https://picsum.photos/seed/shirone-remote-1/1200/800",
+			"thumbnail": "https://picsum.photos/seed/shirone-remote-1/600/400",
+			"alt": "A remote landscape photograph",
+			"title": "Remote landscape",
+			"tags": ["landscape", "remote"],
+			"width": 1200,
+			"height": 800
+		},
+		{
+			"id": "external-2",
+			"src": "https://picsum.photos/seed/shirone-remote-2/800/1200",
+			"thumbnail": "https://picsum.photos/seed/shirone-remote-2/400/600",
+			"alt": "A remote portrait photograph",
+			"title": "Vertical study",
+			"tags": ["portrait", "remote"],
+			"width": 800,
+			"height": 1200
+		}
+	]
 }

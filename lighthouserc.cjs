@@ -15,14 +15,20 @@ module.exports = {
 			numberOfRuns: 3,
 			settings: {
 				...(device === "desktop" ? { preset: "desktop" } : {}),
-				onlyCategories: ["performance", "accessibility", "best-practices", "seo"],
+				onlyCategories: [
+					"performance",
+					"accessibility",
+					"best-practices",
+					"seo",
+				],
 				throttlingMethod: "simulate",
 				formFactor: device,
 				pauseAfterLoadMs: 1000,
 				networkQuietThresholdMs: 1000,
 				maxWaitForFcp: 15000,
 				puppeteerScript: "./scripts/lighthouse/prepare.cjs",
-				chromeFlags: "--headless=new --no-sandbox --disable-dev-shm-usage --disable-gpu",
+				chromeFlags:
+					"--headless=new --no-sandbox --disable-dev-shm-usage --disable-gpu",
 			},
 		},
 		assert: {

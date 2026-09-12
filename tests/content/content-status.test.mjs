@@ -173,7 +173,10 @@ describe("content status", () => {
 			result = runScript(STATUS_SCRIPT, fixture.repo, [], {
 				CONTENT_DIR: other,
 			});
-			assert.match(result.stdout, /Source determination: Process environment variable CONTENT_DIR/i);
+			assert.match(
+				result.stdout,
+				/Source determination: Process environment variable CONTENT_DIR/i,
+			);
 			assert.match(result.stdout, new RegExp(other.replace(/[\\]/g, "\\\\")));
 		} finally {
 			rmSync(fixture.base, { recursive: true, force: true });
@@ -248,7 +251,10 @@ describe("content status", () => {
 				CONTENT_DIR: join(fixture.base, "missing"),
 			});
 			assert.equal(missing.status, 1);
-			assert.match(missing.stdout, /Directory status: Failed \(directory does not exist\)/i);
+			assert.match(
+				missing.stdout,
+				/Directory status: Failed \(directory does not exist\)/i,
+			);
 			assert.doesNotMatch(missing.stdout, /Valid worktree/);
 
 			mkdirSync(join(fixture.content, ".git"), { recursive: true });
@@ -330,14 +336,20 @@ describe("content status", () => {
 			rmSync(join(fixture.repo, "src/user/user-config.ts"));
 			result = statusPath(fixture);
 			assert.equal(result.status, 1);
-			assert.match(result.stdout, /Missing \(project config modules will fail to import\)/i);
+			assert.match(
+				result.stdout,
+				/Missing \(project config modules will fail to import\)/i,
+			);
 
 			syncPath(fixture);
 			write(fixture.content, "content/posts/new.md", "# new\n");
 			commitAll(fixture.content, "test: newer content");
 			result = statusPath(fixture);
 			assert.equal(result.status, 1);
-			assert.match(result.stdout, /Current content repo commit differs from lock file/i);
+			assert.match(
+				result.stdout,
+				/Current content repo commit differs from lock file/i,
+			);
 			assert.match(result.stdout, /unmaterialized or modified/i);
 		} finally {
 			rmSync(fixture.base, { recursive: true, force: true });
@@ -367,8 +379,14 @@ describe("content status", () => {
 			]);
 			result = runScript(STATUS_SCRIPT, fixture.repo, [], env);
 			assert.equal(result.status, 1);
-			assert.match(result.stdout, /Remote working copy origin differs from configured repository URL/i);
-			assert.match(result.stdout, /Content repository unavailable, skipping mount point asset probe/i);
+			assert.match(
+				result.stdout,
+				/Remote working copy origin differs from configured repository URL/i,
+			);
+			assert.match(
+				result.stdout,
+				/Content repository unavailable, skipping mount point asset probe/i,
+			);
 		} finally {
 			rmSync(fixture.base, { recursive: true, force: true });
 		}

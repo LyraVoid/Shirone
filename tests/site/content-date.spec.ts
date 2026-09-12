@@ -19,9 +19,9 @@ test.describe("content date semantics", () => {
 		expect(formatInstantDateInTimeZone(instant, "Asia/Shanghai")).toBe(
 			"2026-06-15",
 		);
-		expect(
-			formatInstantDateTimeInTimeZone(instant, "Asia/Shanghai"),
-		).toBe("2026-06-15 03:14");
+		expect(formatInstantDateTimeInTimeZone(instant, "Asia/Shanghai")).toBe(
+			"2026-06-15 03:14",
+		);
 		expect(formatInstantDateInTimeZone(instant, "America/Los_Angeles")).toBe(
 			"2026-06-14",
 		);
@@ -51,10 +51,9 @@ test.describe("content date semantics", () => {
 			data: { published: new Date("2026-06-15T00:00:00Z") },
 		};
 
-		expect([earlier, later].sort(comparePublicationEntries).map(({ id }) => id)).toEqual([
-			"beta",
-			"alpha",
-		]);
+		expect(
+			[earlier, later].sort(comparePublicationEntries).map(({ id }) => id),
+		).toEqual(["beta", "alpha"]);
 		expect(
 			[sameTimeLaterId, sameTimeEarlierId]
 				.sort(comparePublicationEntries)

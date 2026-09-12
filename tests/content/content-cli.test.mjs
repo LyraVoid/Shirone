@@ -75,10 +75,16 @@ describe("content CLI 总入口与帮助指令", () => {
 			);
 			const res = runCli(["status"], { cwd: root });
 			assert.equal(res.status, 0);
-			assert.match(res.stdout, /Shirone Content Separation Status & Connectivity Report/);
+			assert.match(
+				res.stdout,
+				/Shirone Content Separation Status & Connectivity Report/,
+			);
 			assert.match(res.stdout, /Runtime Mode & Decision Provenance/);
 			assert.match(res.stdout, /Content Source Connectivity & Git Status/);
-			assert.match(res.stdout, /Code Repository Materialized State, Lock File & Freshness/);
+			assert.match(
+				res.stdout,
+				/Code Repository Materialized State, Lock File & Freshness/,
+			);
 		} finally {
 			rmSync(root, { recursive: true, force: true });
 		}

@@ -159,7 +159,10 @@ describe("读取内容仓配置", () => {
 			"site.yaml": "- 我是个数组\n",
 		});
 		try {
-			expectFailure(() => readConfigOverrides(directory), /must be a key-value mapping/i);
+			expectFailure(
+				() => readConfigOverrides(directory),
+				/must be a key-value mapping/i,
+			);
 		} finally {
 			rmSync(base, { recursive: true, force: true });
 		}
@@ -181,7 +184,10 @@ describe("读取内容仓配置", () => {
 			"site.yaml": "banner: &loop\n  homeText: *loop\n",
 		});
 		try {
-			expectFailure(() => readConfigOverrides(directory), /circular reference/i);
+			expectFailure(
+				() => readConfigOverrides(directory),
+				/circular reference/i,
+			);
 		} finally {
 			rmSync(base, { recursive: true, force: true });
 		}

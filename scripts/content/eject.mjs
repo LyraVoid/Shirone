@@ -163,7 +163,9 @@ function assertCleanWorktree() {
 	try {
 		status = git(["status", "--porcelain"]);
 	} catch {
-		throw new Error("Current directory is not a git repository, cannot perform eject.");
+		throw new Error(
+			"Current directory is not a git repository, cannot perform eject.",
+		);
 	}
 	if (status !== "") {
 		throw new Error(
@@ -413,7 +415,9 @@ function untrackPaths() {
 function writeManifest(outAbsolute) {
 	const manifestPath = join(ROOT, MANIFEST_FILE);
 	if (existsSync(manifestPath) && !options.force) {
-		log(`${MANIFEST_FILE} already exists, keeping unchanged (use --force to overwrite).`);
+		log(
+			`${MANIFEST_FILE} already exists, keeping unchanged (use --force to overwrite).`,
+		);
 		return;
 	}
 	const relativeOut = toPosix(relative(ROOT, outAbsolute)) || ".";
@@ -451,7 +455,9 @@ function main() {
 
 	const plan = buildPlan();
 	if (plan.length === 0) {
-		throw new Error("No exportable content found, repository may have already been ejected.");
+		throw new Error(
+			"No exportable content found, repository may have already been ejected.",
+		);
 	}
 
 	log(
@@ -481,7 +487,9 @@ function main() {
 	writeManifest(outAbsolute);
 
 	if (!options.apply) {
-		log("The above is a dry run. Confirm everything is correct, then re-run with --yes.");
+		log(
+			"The above is a dry run. Confirm everything is correct, then re-run with --yes.",
+		);
 		return;
 	}
 
@@ -489,11 +497,15 @@ function main() {
 	log(
 		`  1. cd ${outAbsolute} && git init && git add . && git commit -m "chore: initial content"`,
 	);
-	log("  2. Push content repository to remote and configure secrets.DISPATCH_TOKEN");
+	log(
+		"  2. Push content repository to remote and configure secrets.DISPATCH_TOKEN",
+	);
 	log(
 		"  3. In code repository, copy .github/workflows/deploy.yml.example to deploy.yml and fill in deployment steps",
 	);
-	log("  4. In code repository, commit .gitignore, shirone.content.json, and index changes");
+	log(
+		"  4. In code repository, commit .gitignore, shirone.content.json, and index changes",
+	);
 }
 
 try {

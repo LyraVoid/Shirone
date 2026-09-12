@@ -92,11 +92,20 @@ const CLEAN_EXCLUDES = Object.freeze([
 function cacheTargets() {
 	return [
 		{ path: LOCK_FILE, label: "Content provenance lock file" },
-		{ path: "node_modules/.astro/data-store.json", label: "Astro content layer cache" },
+		{
+			path: "node_modules/.astro/data-store.json",
+			label: "Astro content layer cache",
+		},
 		// Astro 7 之前的落点，老仓库里可能还留着。
-		{ path: ".astro/data-store.json", label: "Astro content layer cache (legacy path)" },
+		{
+			path: ".astro/data-store.json",
+			label: "Astro content layer cache (legacy path)",
+		},
 		{ path: ".astro/collections", label: "Astro collection schema cache" },
-		{ path: "node_modules/.cache/shirone", label: "Config validation cache and digest" },
+		{
+			path: "node_modules/.cache/shirone",
+			label: "Config validation cache and digest",
+		},
 	];
 }
 
@@ -136,7 +145,8 @@ function fail(step, error, details = "") {
 	if (details) console.error(`[content:clean] Context: ${details}`);
 	if (error instanceof Error) {
 		console.error(`[content:clean] Error message: ${error.message}`);
-		if (error.stack) console.error(`[content:clean] Call stack:\n${error.stack}`);
+		if (error.stack)
+			console.error(`[content:clean] Call stack:\n${error.stack}`);
 	} else if (error !== undefined && error !== null) {
 		console.error(`[content:clean] Error details: ${String(error)}`);
 	}
@@ -267,8 +277,13 @@ try {
 		);
 	}
 	// 清单写错不该阻止清理——恰恰这时候最需要回到干净状态。
-	warn(`Failed to read content source config, continuing with default mounts: ${error.message}`);
-	resolved = { mode: "local", reason: "Content source configuration cannot be parsed" };
+	warn(
+		`Failed to read content source config, continuing with default mounts: ${error.message}`,
+	);
+	resolved = {
+		mode: "local",
+		reason: "Content source configuration cannot be parsed",
+	};
 }
 
 const mounts = resolved.mode === "external" ? resolved.mounts : DEFAULT_MOUNTS;
@@ -294,7 +309,9 @@ for (const directory of scopeDirectories) {
 	if (UNSAFE_SCOPE.has(directory) || directory.split("/").includes("..")) {
 		fail(
 			"Validate clean scope",
-			new Error(`Mount target ${directory || "(repo root)"} is too broad, refusing to clean`),
+			new Error(
+				`Mount target ${directory || "(repo root)"} is too broad, refusing to clean`,
+			),
 			`Please point it to a more specific directory (e.g. src/content) in ${MANIFEST_FILE} mounts. ` +
 				"Running git clean -x on this directory would delete uncommitted source code.",
 		);
@@ -445,7 +462,9 @@ function reportPlan() {
 			`A snapshot backup will be created first: ${toBackup.length} files, approx ${formatBytes(backupBytes)}, located in .content-backup/`,
 		);
 	} else if (!options.backup) {
-		warn("Specified --no-backup, no snapshot backup will be created before cleaning.");
+		warn(
+			"Specified --no-backup, no snapshot backup will be created before cleaning.",
+		);
 	}
 	if (isProtected("public/assets/moments/thumbnails/x.webp")) {
 		log(
@@ -605,7 +624,11 @@ try {
 		log(`Reset ${GENERATED_CONFIG_FILE} to empty overlay.`);
 	}
 } catch (error) {
-	fail("Reset user config overlay", error, `Target file: ${GENERATED_CONFIG_FILE}`);
+	fail(
+		"Reset user config overlay",
+		error,
+		`Target file: ${GENERATED_CONFIG_FILE}`,
+	);
 }
 
 // FooterConfig.html：被跟踪时 restore 已经处理；否则它是内容仓带来的自定义页脚，删掉才算纯净。
@@ -684,22 +707,38 @@ function regenerate(script, label) {
 
 // 图标集合与缩略图都是「内容的派生产物」：内容变了必须重算，
 // 否则前台会出现图标空白或指向已删除图片的缩略图。
-if (regenerate("scripts/icons/generate-local-icons.mjs", "Offline icon collections")) {
+if (
+	regenerate(
+		"scripts/icons/generate-local-icons.mjs",
+		"Offline icon collections",
+	)
+) {
 	// 图标集合是被跟踪的生成物，且生成器一律写 LF。在 core.autocrlf=true 的
 	// Windows 检出上，内容完全一致的重写也会让 git status 显示 M。
 	// 内容没变就还原成检出时的形态，保证「清理后 git status 干净」这条承诺成立。
 	const iconFile = "src/generated/local-icon-collections.ts";
 	const unchanged =
-		runGit(["diff", "--quiet", "--", iconFile], "Compare icon collections artifact", {
-			allowFailure: true,
-		}) !== null;
+		runGit(
+			["diff", "--quiet", "--", iconFile],
+			"Compare icon collections artifact",
+			{
+				allowFailure: true,
+			},
+		) !== null;
 	if (unchanged) {
-		runGit(["restore", "--", iconFile], "Normalize icon collections line endings", {
-			allowFailure: true,
-		});
+		runGit(
+			["restore", "--", iconFile],
+			"Normalize icon collections line endings",
+			{
+				allowFailure: true,
+			},
+		);
 	}
 }
-regenerate("scripts/images/generate-moment-thumbnails.mjs", "Moments thumbnails");
+regenerate(
+	"scripts/images/generate-moment-thumbnails.mjs",
+	"Moments thumbnails",
+);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // 8. 收尾体检

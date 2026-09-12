@@ -1,10 +1,10 @@
 {
-  "title": "Hidden album",
-  "description": "This album is omitted from the index but remains available by direct URL.",
-  "date": "2025-08-28",
-  "location": "Private route",
-  "tags": ["hidden", "example"],
-  "layout": "grid",
-  "columns": 3,
-  "hidden": true
+	"title": "Hidden album",
+	"description": "This album is omitted from the index but remains available by direct URL.",
+	"date": "2025-08-28",
+	"location": "Private route",
+	"tags": ["hidden", "example"],
+	"layout": "grid",
+	"columns": 3,
+	"hidden": true
 }

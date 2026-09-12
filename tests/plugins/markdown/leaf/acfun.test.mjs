@@ -21,10 +21,7 @@ test("renders an AcFun facade without a provider iframe", async () => {
 	assert.match(result.code, /data-acfun=""/);
 	assert.match(result.code, /data-acfun-acid="ac48649632"/);
 	assert.match(result.code, /aria-label="Example video"/);
-	assert.match(
-		result.code,
-		/href="https:\/\/www\.acfun\.cn\/v\/ac48649632"/,
-	);
+	assert.match(result.code, /href="https:\/\/www\.acfun\.cn\/v\/ac48649632"/);
 	assert.match(result.code, /rel="noopener noreferrer"/);
 	assert.doesNotMatch(result.code, /<iframe|acfun\.cn\/player|<script/);
 });

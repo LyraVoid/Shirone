@@ -139,10 +139,14 @@ function assertSerializable(value, path, file, seen) {
 		return;
 	}
 	if (kind !== "object") {
-		fail(`${file}'s ${path} is of type ${kind} which cannot be represented as configuration.`);
+		fail(
+			`${file}'s ${path} is of type ${kind} which cannot be represented as configuration.`,
+		);
 	}
 	if (seen.has(value)) {
-		fail(`${file}'s ${path} forms a circular reference (YAML anchor points to itself).`);
+		fail(
+			`${file}'s ${path} forms a circular reference (YAML anchor points to itself).`,
+		);
 	}
 	seen.add(value);
 
@@ -392,7 +396,9 @@ const DIAGNOSTIC_PATTERN = /^(.+?)\((\d+),(\d+)\): error TS\d+: (.+)$/;
 export function typeCheckModule(root, lineOwners) {
 	const tsc = join(root, "node_modules", "typescript", "bin", "tsc");
 	if (!existsSync(tsc)) {
-		fail("Cannot find local typescript to check user config. Please run pnpm install first.");
+		fail(
+			"Cannot find local typescript to check user config. Please run pnpm install first.",
+		);
 	}
 
 	let output = "";

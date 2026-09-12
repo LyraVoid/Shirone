@@ -3,10 +3,7 @@ import test from "node:test";
 import { resolvePageKey } from "../src/utils/nav-utils.ts";
 
 test("resolvePageKey handles root deployment", () => {
-	assert.equal(
-		resolvePageKey(new URL("https://example.com/")),
-		"home",
-	);
+	assert.equal(resolvePageKey(new URL("https://example.com/")), "home");
 	assert.equal(
 		resolvePageKey(new URL("https://example.com/friends/")),
 		"friends",

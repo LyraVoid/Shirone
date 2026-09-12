@@ -102,8 +102,14 @@ test("getPostDateParts extracts date components in UTC date-only and timezone aw
 });
 
 test("hasCustomPermalink recognizes custom permalink in frontmatter", () => {
-	assert.equal(hasCustomPermalink({ data: { permalink: "my-custom-url" } }), true);
-	assert.equal(hasCustomPermalink({ data: { permalink: "/nested/url/" } }), true);
+	assert.equal(
+		hasCustomPermalink({ data: { permalink: "my-custom-url" } }),
+		true,
+	);
+	assert.equal(
+		hasCustomPermalink({ data: { permalink: "/nested/url/" } }),
+		true,
+	);
 	assert.equal(hasCustomPermalink({ data: { permalink: "" } }), false);
 	assert.equal(hasCustomPermalink({ data: {} }), false);
 	assert.equal(hasCustomPermalink({}), false);
@@ -163,7 +169,10 @@ test("generatePermalinkSlug handles custom permalink, aliases, and global templa
 			category: null,
 		},
 	};
-	assert.equal(generatePermalinkSlug(uncategorizedPost), "2024-05-0-uncategorized");
+	assert.equal(
+		generatePermalinkSlug(uncategorizedPost),
+		"2024-05-0-uncategorized",
+	);
 
 	// Restore config
 	permalinkConfig.enable = false;
@@ -191,7 +200,10 @@ test("getPostUrl resolves correct URL according to precedence", () => {
 	initPostIdMap([sample]);
 
 	// Pre-calculated URL takes precedence
-	assert.equal(getPostUrl({ ...sample, url: "/custom-precomputed/" }), "/custom-precomputed/");
+	assert.equal(
+		getPostUrl({ ...sample, url: "/custom-precomputed/" }),
+		"/custom-precomputed/",
+	);
 
 	// Custom permalink
 	assert.equal(

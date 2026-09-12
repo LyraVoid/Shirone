@@ -61,7 +61,9 @@ if (options.help) {
 }
 
 if (unknownArgs.length > 0) {
-	console.error(`[content] status does not support argument(s): ${unknownArgs.join(", ")}`);
+	console.error(
+		`[content] status does not support argument(s): ${unknownArgs.join(", ")}`,
+	);
 	process.exit(1);
 }
 
@@ -258,7 +260,9 @@ function printGitRepository(repository, label = "Git repository") {
 	if (repository.dirty === null) {
 		console.log("  Worktree status: Unreadable");
 	} else if (repository.dirty) {
-		console.log(`  Worktree status: ${repository.changes} uncommitted change(s)`);
+		console.log(
+			`  Worktree status: ${repository.changes} uncommitted change(s)`,
+		);
 	} else {
 		console.log("  Worktree status: Clean");
 	}
@@ -273,7 +277,9 @@ function compareMount(
 	const differences = [];
 	const target = inspectDirectory(targetDirectory);
 	if (!target.exists || !target.isDirectory) {
-		return [`Target directory does not exist or is not a directory: ${targetDirectory}`];
+		return [
+			`Target directory does not exist or is not a directory: ${targetDirectory}`,
+		];
 	}
 
 	const sourceFiles = new Set(
@@ -544,7 +550,9 @@ function describeRefOrigin(source) {
 console.log(
 	"================================================================================",
 );
-console.log("             Shirone Content Separation Status & Connectivity Report");
+console.log(
+	"             Shirone Content Separation Status & Connectivity Report",
+);
 console.log(
 	"================================================================================\n",
 );
@@ -573,11 +581,15 @@ if (resolved.mode === "error") {
 		);
 	}
 } else {
-	console.log("  Current mode: external (external content source configured, connectivity in next section)");
+	console.log(
+		"  Current mode: external (external content source configured, connectivity in next section)",
+	);
 	console.log(`  Source determination: ${describeOrigin(resolved.source)}`);
 }
 console.log("  Configuration files check:");
-console.log(`    - Root .env: ${existsSync(envFile) ? "Present" : "Not created"}`);
+console.log(
+	`    - Root .env: ${existsSync(envFile) ? "Present" : "Not created"}`,
+);
 console.log(
 	`    - Root .env.local: ${existsSync(envLocalFile) ? "Present" : "Not created"}`,
 );
@@ -594,7 +606,9 @@ let currentCommit = null;
 if (resolved.mode === "local") {
 	console.log("  Content source: External content source not enabled");
 } else if (resolved.mode === "error") {
-	console.log("  Content source: Configuration error, cannot continue connectivity diagnosis");
+	console.log(
+		"  Content source: Configuration error, cannot continue connectivity diagnosis",
+	);
 } else if (resolved.source.type === "path") {
 	const sourceAbsolute = resolve(ROOT, resolved.source.path);
 	const directory = inspectDirectory(sourceAbsolute);
@@ -605,7 +619,9 @@ if (resolved.mode === "local") {
 		console.log("  Directory status: Failed (directory does not exist)");
 		addError(`Content directory does not exist: ${sourceAbsolute}`);
 	} else if (!directory.isDirectory) {
-		console.log("  Directory status: Failed (path is not a directory or unreadable)");
+		console.log(
+			"  Directory status: Failed (path is not a directory or unreadable)",
+		);
 		addError(`Content path is not a readable directory: ${sourceAbsolute}`);
 	} else {
 		console.log("  Directory status: OK");
@@ -615,17 +631,23 @@ if (resolved.mode === "local") {
 			printGitRepository(sourceGit);
 			currentCommit = sourceGit.commit;
 			if (sourceGit.dirty) {
-				addWarning("Local content repository has uncommitted changes, locked commit cannot fully represent current content");
+				addWarning(
+					"Local content repository has uncommitted changes, locked commit cannot fully represent current content",
+				);
 			}
 			for (const error of sourceGit.commandErrors) {
 				addWarning(`Failed to read partial Git status: ${error}`);
 			}
 		} else if (sourceGit.unavailable) {
 			console.log("  Git repository: Cannot detect (git not found on system)");
-			addWarning("Git not found on system, skipped local content repo version diagnosis");
+			addWarning(
+				"Git not found on system, skipped local content repo version diagnosis",
+			);
 		} else if (sourceGit.invalidMarker) {
 			console.log(`  Git repository: Invalid (${sourceGit.error})`);
-			addError(`Content directory contains .git but is not a valid Git worktree: ${sourceGit.error}`);
+			addError(
+				`Content directory contains .git but is not a valid Git worktree: ${sourceGit.error}`,
+			);
 		} else {
 			console.log("  Git repository: No (supported regular local directory)");
 		}
@@ -633,7 +655,9 @@ if (resolved.mode === "local") {
 } else {
 	const workingCopy = join(ROOT, WORKING_COPY_DIR);
 	const directory = inspectDirectory(workingCopy);
-	console.log('  Access type: Remote Git repository working copy (type: "git")');
+	console.log(
+		'  Access type: Remote Git repository working copy (type: "git")',
+	);
 	console.log(`  Repository URL: ${redactUrl(resolved.source.url)}`);
 	console.log(`  Target Ref: ${resolved.source.ref}`);
 	console.log(`  Ref source: ${describeRefOrigin(resolved.source)}`);
@@ -646,17 +670,25 @@ if (resolved.mode === "local") {
 	} else {
 		sourceGit = inspectGitRepository(workingCopy);
 		if (sourceGit.unavailable) {
-			console.log("  Working copy status: Cannot detect (git not found on system)");
-			addError("Git not found on system, cannot verify remote content working copy");
+			console.log(
+				"  Working copy status: Cannot detect (git not found on system)",
+			);
+			addError(
+				"Git not found on system, cannot verify remote content working copy",
+			);
 		} else if (!sourceGit.isGit) {
-			console.log(`  Working copy status: Invalid Git worktree (${sourceGit.error})`);
+			console.log(
+				`  Working copy status: Invalid Git worktree (${sourceGit.error})`,
+			);
 			addError(`${WORKING_COPY_DIR}/ is not a valid Git worktree`);
 		} else {
 			sourceRoot = workingCopy;
 			currentCommit = sourceGit.commit;
 			printGitRepository(sourceGit, "Working copy");
 			if (sourceGit.dirty) {
-				addWarning("Remote working copy has uncommitted changes, next sync will clean them up");
+				addWarning(
+					"Remote working copy has uncommitted changes, next sync will clean them up",
+				);
 			}
 
 			const origin = runGit(["remote", "get-url", "origin"], workingCopy);
@@ -670,7 +702,9 @@ if (resolved.mode === "local") {
 					canonicalGitUrl(origin.output) !==
 					canonicalGitUrl(resolved.source.url)
 				) {
-					addError("Remote working copy origin differs from configured repository URL");
+					addError(
+						"Remote working copy origin differs from configured repository URL",
+					);
 					sourceRoot = null;
 				}
 			}
@@ -683,7 +717,9 @@ if (resolved.mode === "local") {
 				console.log(
 					"  FETCH_HEAD: Does not exist, cannot confirm whether working copy was fetched by content sync",
 				);
-				addWarning("Remote working copy lacks FETCH_HEAD, cannot confirm target ref offline");
+				addWarning(
+					"Remote working copy lacks FETCH_HEAD, cannot confirm target ref offline",
+				);
 			} else if (currentCommit !== fetchHead.output) {
 				console.log(
 					`  FETCH_HEAD: ${fetchHead.output.slice(0, 8)} (differs from HEAD)`,
@@ -715,11 +751,15 @@ if (resolved.mode === "local") {
 			const remoteCommit = remote.output.split(/\s/)[0];
 			console.log(`  Remote live probe: OK (${remoteCommit.slice(0, 8)})`);
 			if (currentCommit && currentCommit !== remoteCommit) {
-				addError("Local working copy is behind current remote target ref, please run content sync again");
+				addError(
+					"Local working copy is behind current remote target ref, please run content sync again",
+				);
 			}
 		}
 	} else {
-		console.log("  Remote live probe: Not executed (pass --remote when needed)");
+		console.log(
+			"  Remote live probe: Not executed (pass --remote when needed)",
+		);
 	}
 }
 console.log("");
@@ -727,7 +767,9 @@ console.log("");
 console.log("[3. Content Repository Assets & Mount Points Probe]");
 const mountSnapshots = new Map();
 if (!sourceRoot) {
-	console.log("  Content repository unavailable, skipping mount point asset probe.\n");
+	console.log(
+		"  Content repository unavailable, skipping mount point asset probe.\n",
+	);
 } else {
 	const mounts = resolved.mounts || DEFAULT_MOUNTS;
 	console.log("  Mount directory mapping & asset probe:");
@@ -792,12 +834,16 @@ const configState = {
 	footerPath: null,
 };
 if (!sourceRoot) {
-	console.log("  Content repository unavailable, skipping config overlay probe.\n");
+	console.log(
+		"  Content repository unavailable, skipping config overlay probe.\n",
+	);
 } else {
 	const configDirectory = join(sourceRoot, CONFIG_DIRECTORY);
 	const directory = inspectDirectory(configDirectory);
 	if (!directory.exists) {
-		console.log("  config/ directory: Not provided, all domains using theme default config");
+		console.log(
+			"  config/ directory: Not provided, all domains using theme default config",
+		);
 	} else if (!directory.isDirectory) {
 		console.log("  config/ directory: Failed (path is not a directory)");
 		configState.valid = false;
@@ -847,7 +893,9 @@ if (!sourceRoot) {
 					!rawFiles.includes(`${domain.file}.yaml`) &&
 					!rawFiles.includes(`${domain.file}.yml`),
 			).map((domain) => `${domain.file}.yaml (${domain.key})`);
-			console.log(`  Unprovided domains (${missing.length}, using theme defaults):`);
+			console.log(
+				`  Unprovided domains (${missing.length}, using theme defaults):`,
+			);
 			console.log(`    ${missing.join(", ") || "None"}`);
 			if (configState.entries.length > 0) {
 				const typeErrors = typeCheckConfigSource(
@@ -855,11 +903,17 @@ if (!sourceRoot) {
 					configState.lineOwners,
 				);
 				if (typeErrors.length === 0) {
-					console.log("  TypeScript type check: Passed (in-memory check, zero temp files)");
+					console.log(
+						"  TypeScript type check: Passed (in-memory check, zero temp files)",
+					);
 				} else {
-					console.log(`  TypeScript type check: Failed (${typeErrors.length} item(s))`);
+					console.log(
+						`  TypeScript type check: Failed (${typeErrors.length} item(s))`,
+					);
 					for (const error of typeErrors) console.log(`    - ${error}`);
-					addError(`Config overlay failed TypeScript type checking: ${typeErrors[0]}`);
+					addError(
+						`Config overlay failed TypeScript type checking: ${typeErrors[0]}`,
+					);
 				}
 			} else {
 				console.log("  TypeScript type check: No valid overlays, skipped");
@@ -891,8 +945,12 @@ const generatedConfig = inspectGeneratedConfig(userConfigPath);
 if (lockState.state === "missing") {
 	console.log(`  Content provenance lock (${LOCK_FILE}): Does not exist`);
 } else if (lockState.state === "invalid") {
-	console.log(`  Content provenance lock (${LOCK_FILE}): Invalid (${lockState.error})`);
-	addError(`${LOCK_FILE} cannot be used as trusted provenance: ${lockState.error}`);
+	console.log(
+		`  Content provenance lock (${LOCK_FILE}): Invalid (${lockState.error})`,
+	);
+	addError(
+		`${LOCK_FILE} cannot be used as trusted provenance: ${lockState.error}`,
+	);
 } else {
 	const lock = lockState.lock;
 	console.log(`  Content provenance lock (${LOCK_FILE}): Valid`);
@@ -918,7 +976,9 @@ if (generatedConfig.state === "missing") {
 	console.log(`    Unreadable (${generatedConfig.error})`);
 	addError(`${GENERATED_CONFIG_FILE} is unreadable`);
 } else if (generatedConfig.state === "empty") {
-	console.log("    Empty overlay (semantic check passed, unaffected by comments or line endings)");
+	console.log(
+		"    Empty overlay (semantic check passed, unaffected by comments or line endings)",
+	);
 } else if (generatedConfig.state === "materialized") {
 	console.log("    External config overlay generated");
 } else {
@@ -939,7 +999,9 @@ if (resolved.mode === "external") {
 			: normalizeText(generatedConfig.source) ===
 				normalizeText(configState.expectedSource);
 		if (!configMatches) {
-			addError("Config artifact does not match current content repo YAML, please re-run content sync");
+			addError(
+				"Config artifact does not match current content repo YAML, please re-run content sync",
+			);
 		} else {
 			console.log("  Config consistency: Matches current content repo YAML");
 		}
@@ -948,14 +1010,18 @@ if (resolved.mode === "external") {
 	if (lockState.state === "valid") {
 		const lock = lockState.lock;
 		if (lock.source.type !== resolved.source.type) {
-			addError("Lock file source type does not match current content source config");
+			addError(
+				"Lock file source type does not match current content source config",
+			);
 		} else if (resolved.source.type === "path") {
 			if (
 				!lock.source.path ||
 				normalizePathForCompare(lock.source.path) !==
 					normalizePathForCompare(sourceRoot || resolved.source.path)
 			) {
-				addError("path content source in lock file does not match current config");
+				addError(
+					"path content source in lock file does not match current config",
+				);
 			}
 		} else {
 			if (
@@ -971,9 +1037,13 @@ if (resolved.mode === "external") {
 
 		if (currentCommit && lock.source.commit) {
 			if (currentCommit !== lock.source.commit) {
-				addError("Current content repo commit differs from lock file, materialized result is stale");
+				addError(
+					"Current content repo commit differs from lock file, materialized result is stale",
+				);
 			} else {
-				console.log(`  Commit consistency: Matches (${currentCommit.slice(0, 8)})`);
+				console.log(
+					`  Commit consistency: Matches (${currentCommit.slice(0, 8)})`,
+				);
 			}
 		} else if (currentCommit && !lock.source.commit) {
 			addWarning(
@@ -991,7 +1061,9 @@ if (resolved.mode === "external") {
 				if (!snapshot) continue;
 				const lockedStats = lock.mounts[targetDir];
 				if (!lockedStats || lockedStats.files !== snapshot.count) {
-					addError(`Current file count in ${sourceDir}/ differs from lock file`);
+					addError(
+						`Current file count in ${sourceDir}/ differs from lock file`,
+					);
 				}
 				const differences = compareMount(
 					snapshot,
@@ -1014,7 +1086,9 @@ if (resolved.mode === "external") {
 				!existsSync(footerTarget) ||
 				!readFileSync(configState.footerPath).equals(readFileSync(footerTarget))
 			) {
-				addError("Custom footer.html differs from code repo materialized result");
+				addError(
+					"Custom footer.html differs from code repo materialized result",
+				);
 			}
 		}
 	}

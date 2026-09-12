@@ -57,8 +57,16 @@ function getDateParts(date: Date, timeZone: string): DateParts {
 			.map(({ type, value }) => [type, value]),
 	) as Partial<DateParts>;
 
-	if (!values.year || !values.month || !values.day || !values.hour || !values.minute) {
-		throw new Error("Unable to extract date parts for the configured time zone.");
+	if (
+		!values.year ||
+		!values.month ||
+		!values.day ||
+		!values.hour ||
+		!values.minute
+	) {
+		throw new Error(
+			"Unable to extract date parts for the configured time zone.",
+		);
 	}
 
 	return values as DateParts;
@@ -70,7 +78,10 @@ export function formatCalendarDate(date: Date): string {
 	return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, "0")}-${String(date.getUTCDate()).padStart(2, "0")}`;
 }
 
-export function formatInstantDateInTimeZone(date: Date, timeZone: string): string {
+export function formatInstantDateInTimeZone(
+	date: Date,
+	timeZone: string,
+): string {
 	const parts = getDateParts(date, timeZone);
 	return `${parts.year}-${parts.month}-${parts.day}`;
 }
@@ -108,13 +119,16 @@ export function validatePublicationMetadata(
 	timeZone: string = siteConfig.timeZone,
 ): void {
 	if (!isValidTimeZone(timeZone)) {
-		throw new Error(`siteConfig.timeZone must be a valid IANA time zone; received "${timeZone}".`);
+		throw new Error(
+			`siteConfig.timeZone must be a valid IANA time zone; received "${timeZone}".`,
+		);
 	}
 
 	const publishedDate = formatCalendarDate(entry.data.published);
 	if (
 		entry.data.publishedAt &&
-		formatInstantDateInTimeZone(entry.data.publishedAt, timeZone) !== publishedDate
+		formatInstantDateInTimeZone(entry.data.publishedAt, timeZone) !==
+			publishedDate
 	) {
 		throw new Error(
 			`Post "${entry.id}" has publishedAt outside its published calendar date in ${timeZone}.`,
@@ -132,7 +146,9 @@ export function validatePublicationMetadata(
 		);
 	}
 	if (entry.data.updatedAt && !entry.data.updated) {
-		throw new Error(`Post "${entry.id}" must define updated alongside updatedAt.`);
+		throw new Error(
+			`Post "${entry.id}" must define updated alongside updatedAt.`,
+		);
 	}
 }
 

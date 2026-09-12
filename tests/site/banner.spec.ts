@@ -523,7 +523,10 @@ test.describe("banner wallpaper", () => {
 			const value = (stage as HTMLElement).dataset.desktopImages;
 			return value ? JSON.parse(value) : [];
 		});
-		test.skip(images.length < 4, "carousel order test requires four desktop images");
+		test.skip(
+			images.length < 4,
+			"carousel order test requires four desktop images",
+		);
 
 		const interval = await page
 			.locator("#banner-wrapper")

@@ -13,7 +13,10 @@ async function render(markdown) {
 test("renders a validated GitHub repository card with an SSR link", async () => {
 	const html = await render('::github{repo="LyraVoid/Shirone"}');
 
-	assert.match(html, /<a[^>]+class="card-github fetch-waiting m3-state-layer not-prose"/);
+	assert.match(
+		html,
+		/<a[^>]+class="card-github fetch-waiting m3-state-layer not-prose"/,
+	);
 	assert.match(html, /data-github-card=""/);
 	assert.match(html, /data-github-repo="LyraVoid\/Shirone"/);
 	assert.match(html, /href="https:\/\/github.com\/LyraVoid\/Shirone"/);

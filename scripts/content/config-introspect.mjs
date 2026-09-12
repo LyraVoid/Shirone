@@ -87,11 +87,16 @@ function runWorker(root, mode) {
 	}
 
 	const start = stdout.indexOf("{");
-	if (start === -1) fail(`Config introspection child process did not output JSON (mode=${mode}).`);
+	if (start === -1)
+		fail(
+			`Config introspection child process did not output JSON (mode=${mode}).`,
+		);
 	try {
 		return JSON.parse(stdout.slice(start));
 	} catch (error) {
-		fail(`Config introspection result is not valid JSON (mode=${mode}): ${error.message}`);
+		fail(
+			`Config introspection result is not valid JSON (mode=${mode}): ${error.message}`,
+		);
 	}
 }
 
@@ -109,7 +114,9 @@ function runWorker(root, mode) {
  */
 export function introspectConfig(root) {
 	if (!existsSync(join(root, "src", "config"))) {
-		fail(`No src/config/ found under ${root}, cannot introspect config. Please run at code repository root.`);
+		fail(
+			`No src/config/ found under ${root}, cannot introspect config. Please run at code repository root.`,
+		);
 	}
 
 	const defaults = runWorker(root, "defaults");

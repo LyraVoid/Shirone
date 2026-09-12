@@ -1,10 +1,10 @@
 {
-  "title": "Some lovely pictures",
-  "description": "A local album scanned from this directory.",
-  "date": "2025-08-01",
-  "location": "Local archive",
-  "tags": ["local", "webp", "example"],
-  "layout": "masonry",
-  "columns": 3,
-  "hidden": false
+	"title": "Some lovely pictures",
+	"description": "A local album scanned from this directory.",
+	"date": "2025-08-01",
+	"location": "Local archive",
+	"tags": ["local", "webp", "example"],
+	"layout": "masonry",
+	"columns": 3,
+	"hidden": false
 }

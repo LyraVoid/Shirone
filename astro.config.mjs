@@ -33,10 +33,10 @@ const musicFeatureEnabled =
 const resolvedUmamiOptions = resolveUmamiOptions(umamiConfig);
 const umamiIntegration = resolvedUmamiOptions
 	? (await import("oddmisc/astro")).oddmisc({
-				umami: {
-					shareUrl: resolvedUmamiOptions.shareUrl,
-				},
-			})
+			umami: {
+				shareUrl: resolvedUmamiOptions.shareUrl,
+			},
+		})
 	: null;
 const musicSidebarModuleId = "virtual:shirone-music-sidebar";
 const resolvedMusicSidebarModuleId = `\0${musicSidebarModuleId}`;
@@ -73,10 +73,16 @@ const optionalMusicSidebarPlugin = {
 const isBuildCommand = process.argv.includes("build");
 const isDevCommand = process.argv.includes("dev");
 const iconifyOfflineIconPath = fileURLToPath(
-	new URL("./node_modules/@iconify/svelte/dist/OfflineIcon.svelte", import.meta.url),
+	new URL(
+		"./node_modules/@iconify/svelte/dist/OfflineIcon.svelte",
+		import.meta.url,
+	),
 );
 const iconifyOfflineFunctionsPath = fileURLToPath(
-	new URL("./node_modules/@iconify/svelte/dist/offline-functions.js", import.meta.url),
+	new URL(
+		"./node_modules/@iconify/svelte/dist/offline-functions.js",
+		import.meta.url,
+	),
 );
 
 function resolveVariantSrc(file) {
@@ -156,8 +162,8 @@ export default defineConfig({
 	trailingSlash: "always",
 	fonts: configuredFonts,
 	integrations: [
-			...(umamiIntegration ? [umamiIntegration] : []),
-			swup({
+		...(umamiIntegration ? [umamiIntegration] : []),
+		swup({
 			theme: false,
 			ignore: 'a[href="#"]',
 			animationClass: "transition-swup-",

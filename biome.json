@@ -15,6 +15,9 @@
 			"!**/src/user/user-config.ts",
 			"!**/dist/**/*",
 			"!**/node_modules/**/*",
+			"!**/.astro/**/*",
+			"!**/playwright-report/**/*",
+			"!**/test-results/**/*",
 			"!**/.content-src/**/*",
 			"!**/content.lock.json"
 		]

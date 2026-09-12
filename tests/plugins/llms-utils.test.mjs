@@ -41,14 +41,20 @@ Secret password content that must be completely removed.
 
 	// llm-only 展开，正文中的标签已消失（代码块内的受保护保留）
 	assert.match(cleaned, /\*\*Special instruction for AI models:\*\*/);
-	assert.match(cleaned, /```markdown\n<llm-only>This inside code fence must NOT be removed<\/llm-only>\n```/);
+	assert.match(
+		cleaned,
+		/```markdown\n<llm-only>This inside code fence must NOT be removed<\/llm-only>\n```/,
+	);
 
 	// llm-exclude 移除
 	assert.doesNotMatch(cleaned, /human eyes only/);
 	assert.doesNotMatch(cleaned, /<llm-exclude>/);
 
 	// 代码块内部标签完整保留
-	assert.match(cleaned, /<llm-only>This inside code fence must NOT be removed<\/llm-only>/);
+	assert.match(
+		cleaned,
+		/<llm-only>This inside code fence must NOT be removed<\/llm-only>/,
+	);
 
 	// 注释与加密容器移除
 	assert.doesNotMatch(cleaned, /Hidden HTML comment/);
@@ -62,8 +68,14 @@ test("toAbsoluteUrl correctly handles relative paths and full URLs", () => {
 	const base = "https://example.com";
 	assert.equal(toAbsoluteUrl("/", base), "https://example.com/");
 	assert.equal(toAbsoluteUrl("/about/", base), "https://example.com/about/");
-	assert.equal(toAbsoluteUrl("posts/guide/", base), "https://example.com/posts/guide/");
-	assert.equal(toAbsoluteUrl("https://other.org/docs", base), "https://other.org/docs");
+	assert.equal(
+		toAbsoluteUrl("posts/guide/", base),
+		"https://example.com/posts/guide/",
+	);
+	assert.equal(
+		toAbsoluteUrl("https://other.org/docs", base),
+		"https://other.org/docs",
+	);
 });
 
 test("truncateDescription trims and truncates long text with ellipsis", () => {
@@ -92,9 +104,7 @@ test("generateLlmsTxt produces standard llms.txt structure", () => {
 		enable: true,
 		generateFull: true,
 		descriptionMaxLength: 100,
-		corePages: [
-			{ title: "Home", url: "/", description: "Homepage" },
-		],
+		corePages: [{ title: "Home", url: "/", description: "Homepage" }],
 	};
 
 	const txt = generateLlmsTxt({
@@ -110,9 +120,15 @@ test("generateLlmsTxt produces standard llms.txt structure", () => {
 	assert.match(txt, /## Core Pages/);
 	assert.match(txt, /- \[Home\]\(https:\/\/shirone\.test\/\): Homepage/);
 	assert.match(txt, /## Articles/);
-	assert.match(txt, /- \[Theme Guide\]\(https:\/\/shirone\.test\/posts\/guide\/\): A comprehensive guide to Shirone\./);
+	assert.match(
+		txt,
+		/- \[Theme Guide\]\(https:\/\/shirone\.test\/posts\/guide\/\): A comprehensive guide to Shirone\./,
+	);
 	assert.match(txt, /## Full Text Dump/);
-	assert.match(txt, /- \[Full Text Archive\]\(https:\/\/shirone\.test\/llms-full\.txt\)/);
+	assert.match(
+		txt,
+		/- \[Full Text Archive\]\(https:\/\/shirone\.test\/llms-full\.txt\)/,
+	);
 });
 
 test("generateLlmsFullTxt aggregates post metadata and cleaned body into Markdown stream", () => {
@@ -144,7 +160,10 @@ test("generateLlmsFullTxt aggregates post metadata and cleaned body into Markdow
 
 	assert.match(fullTxt, /^# Shirone - Full Content Archive/);
 	assert.match(fullTxt, /## First Post/);
-	assert.match(fullTxt, /- \*\*URL\*\*: https:\/\/shirone\.test\/posts\/post-1\//);
+	assert.match(
+		fullTxt,
+		/- \*\*URL\*\*: https:\/\/shirone\.test\/posts\/post-1\//,
+	);
 	assert.match(fullTxt, /- \*\*Category\*\*: Tech/);
 	assert.match(fullTxt, /- \*\*Tags\*\*: Astro, Svelte/);
 	assert.match(fullTxt, /Content of article 1\./);

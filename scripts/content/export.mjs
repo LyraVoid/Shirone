@@ -241,7 +241,8 @@ function fail(step, error, details = "") {
 	if (details) console.error(`[content:export] Context: ${details}`);
 	if (error instanceof Error) {
 		console.error(`[content:export] Error message: ${error.message}`);
-		if (error.stack) console.error(`[content:export] Call stack:\n${error.stack}`);
+		if (error.stack)
+			console.error(`[content:export] Call stack:\n${error.stack}`);
 	} else if (error !== undefined && error !== null) {
 		console.error(`[content:export] Error details: ${String(error)}`);
 	}
@@ -465,7 +466,9 @@ const targetRoot =
 if (!existsSync(targetRoot) || !statSync(targetRoot).isDirectory()) {
 	fail(
 		"Resolve export target",
-		new Error(`Export target does not exist or is not a directory: ${targetRoot}`),
+		new Error(
+			`Export target does not exist or is not a directory: ${targetRoot}`,
+		),
 		"content:export only writes to an existing content repository, it does not create one. " +
 			"For initial ejection, please use pnpm content:eject.",
 	);
@@ -473,7 +476,9 @@ if (!existsSync(targetRoot) || !statSync(targetRoot).isDirectory()) {
 if (pathsOverlap(ROOT, targetRoot)) {
 	fail(
 		"Resolve export target",
-		new Error("Export target cannot be the same as code repository, nor can they be parent/child directories of each other"),
+		new Error(
+			"Export target cannot be the same as code repository, nor can they be parent/child directories of each other",
+		),
 		"Content export must write to an independent repository; overlapping paths would cause self-overwrites, duplicate traversal, or nesting.",
 	);
 }
@@ -501,7 +506,9 @@ if (existsSync(lockPath)) {
 			);
 		}
 	} catch (error) {
-		warn(`Failed to parse ${LOCK_FILE}, skipping content source cross-check: ${error.message}`);
+		warn(
+			`Failed to parse ${LOCK_FILE}, skipping content source cross-check: ${error.message}`,
+		);
 	}
 }
 
@@ -878,7 +885,10 @@ log(
 		: `Dry-run mode (no --yes specified, no files will be modified). Target content repository: ${toPosix(targetRoot)}`,
 );
 log(
-	`Scope: ${[options.scopeFiles && "Content files", options.scopeConfig && "Config"]
+	`Scope: ${[
+		options.scopeFiles && "Content files",
+		options.scopeConfig && "Config",
+	]
 		.filter(Boolean)
 		.join(" + ")} (source: ${resolved.source.origin})`,
 );
@@ -979,7 +989,9 @@ if (options.scopeConfig) {
 		);
 	}
 	for (const item of configPlan.excluded) {
-		log(`${item.file} excluded from export: ${item.reason}. Please maintain this file manually in content repo.`);
+		log(
+			`${item.file} excluded from export: ${item.reason}. Please maintain this file manually in content repo.`,
+		);
 	}
 	for (const item of configPlan.unrepresentable) {
 		warn(
@@ -988,7 +1000,9 @@ if (options.scopeConfig) {
 		);
 	}
 	for (const item of configPlan.introspectErrors) {
-		warn(`Domain ${item.key} introspection failed, skipping its config export: ${item.message}`);
+		warn(
+			`Domain ${item.key} introspection failed, skipping its config export: ${item.message}`,
+		);
 	}
 	for (const item of configPlan.credentials) {
 		warn(
@@ -1061,7 +1075,9 @@ if (
 ) {
 	fail(
 		"Check content repo working tree",
-		new Error(`Content repository has ${contentRepo.dirty.length} uncommitted changes`),
+		new Error(
+			`Content repository has ${contentRepo.dirty.length} uncommitted changes`,
+		),
 		"This export will overwrite files in the content repository, and these uncommitted changes will be lost permanently:\n" +
 			contentRepo.dirty.map((path) => `    ${path}`).join("\n") +
 			"\n  Please commit or stash in content repo first, or use --force to bypass this check (verify the above list before bypassing).",
@@ -1083,7 +1099,9 @@ if (options.scopeConfig && configPlan.stale.length > 0 && !options.force) {
 }
 
 if (nothingToDo) {
-	log("Content repository is already in sync with code repository, no export needed.");
+	log(
+		"Content repository is already in sync with code repository, no export needed.",
+	);
 	process.exit(0);
 }
 
@@ -1209,10 +1227,16 @@ if (prunes.length > 0) {
 		try {
 			rmSync(item.contentAbsolute, { force: true });
 		} catch (error) {
-			fail("Delete extraneous content repo file", error, `Path: ${item.content}`);
+			fail(
+				"Delete extraneous content repo file",
+				error,
+				`Path: ${item.content}`,
+			);
 		}
 	}
-	log(`Deleted ${prunes.length} content repository files (--prune). See backup above.`);
+	log(
+		`Deleted ${prunes.length} content repository files (--prune). See backup above.`,
+	);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1322,7 +1346,9 @@ if (options.scopeConfig && (configWrites.length > 0 || footerWrite)) {
 			"Cannot find local typescript, skipped post-export type check. Please run pnpm install and pnpm content:validate.",
 		);
 	} else if (result === "ok") {
-		log("Exported config passed type checking (same validation path as content:sync).");
+		log(
+			"Exported config passed type checking (same validation path as content:sync).",
+		);
 	}
 }
 
@@ -1333,8 +1359,12 @@ if (options.scopeConfig && (configWrites.length > 0 || footerWrite)) {
 log(`Export complete, target content repository: ${toPosix(targetRoot)}`);
 log("Next steps:");
 log(`  1. cd ${targetRoot} && git status   # Review diffs`);
-log("  2. Commit & push in content repo (this script intentionally does not commit for you)");
-log("  3. Return to code repository and run pnpm content:sync to re-align materialized files");
+log(
+	"  2. Commit & push in content repo (this script intentionally does not commit for you)",
+);
+log(
+	"  3. Return to code repository and run pnpm content:sync to re-align materialized files",
+);
 
 warn(
 	"Code repository's src/content/, src/data/ etc. remain materialized artifacts: next content:sync will be based on content repository, " +
@@ -1362,5 +1392,7 @@ if (contentRepo.isGit) {
 }
 
 if (backupDirectory) {
-	log(`Snapshot backup retained at ${backupDirectory}. You may delete it after confirming no rollback is needed.`);
+	log(
+		`Snapshot backup retained at ${backupDirectory}. You may delete it after confirming no rollback is needed.`,
+	);
 }

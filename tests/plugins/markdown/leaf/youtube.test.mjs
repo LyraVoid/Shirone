@@ -26,10 +26,7 @@ test("renders a YouTube facade without a provider iframe", async () => {
 		/href="https:\/\/www\.youtube\.com\/watch\?v=5gIf0_xpFPI"/,
 	);
 	assert.match(result.code, /rel="noopener noreferrer"/);
-	assert.doesNotMatch(
-		result.code,
-		/<iframe|youtube-nocookie\.com|<script/,
-	);
+	assert.doesNotMatch(result.code, /<iframe|youtube-nocookie\.com|<script/);
 });
 
 test("rejects malformed YouTube fields without producing a facade", async () => {
