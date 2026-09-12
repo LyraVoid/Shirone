@@ -68,7 +68,7 @@ test.describe("FAB Navigation System", () => {
 
 		// 点击后自动收起
 		await expect(panel).not.toHaveClass(/is-open/);
-		await expect(page).toHaveURL(/#front-matter-of-posts/);
+		await expect(page).toHaveURL(/#1-creating-a-new-post/);
 	});
 
 	test("Mobile: Home action stays hidden on the home page", async ({
@@ -77,6 +77,60 @@ test.describe("FAB Navigation System", () => {
 		await page.setViewportSize({ width: 375, height: 667 });
 		await page.goto("/", { waitUntil: "domcontentloaded" });
 		await expect(page.locator("#fab-home-btn")).toBeHidden();
+	});
+
+	test("Mobile: controls hide on downward scroll and reset after navigation", async ({
+		page,
+	}) => {
+		await page.setViewportSize({ width: 375, height: 667 });
+		await page.goto("/posts/guide/", { waitUntil: "networkidle" });
+		const controls = page.locator("#floating-controls");
+
+		await page.evaluate(() => window.scrollTo(0, 800));
+		await expect(controls).toHaveClass(/fab-scroll-hidden/);
+		await expect(controls).toHaveAttribute("inert", "");
+		await expect(controls).toHaveAttribute("aria-hidden", "true");
+		await page.evaluate(() => window.scrollBy(0, -120));
+		await expect(controls).not.toHaveClass(/fab-scroll-hidden/);
+		await expect(controls).not.toHaveAttribute("inert", "");
+		await expect(controls).not.toHaveAttribute("aria-hidden", "true");
+
+		await page.evaluate(() => window.scrollTo(0, 900));
+		await expect(controls).toHaveClass(/fab-scroll-hidden/);
+		await page.evaluate(() => window.swup?.navigate("/posts/expressive-code/"));
+		await page.waitForURL("**/posts/expressive-code/");
+		await expect(controls).not.toHaveClass(/fab-scroll-hidden/);
+	});
+
+	test("Mobile: browser chrome collapse hides controls without a scroll delta", async ({
+		page,
+	}) => {
+		await page.addInitScript(() => {
+			class TestVisualViewport extends EventTarget {
+				width = 375;
+				height = 560;
+				offsetTop = 0;
+			}
+			Object.defineProperty(window, "visualViewport", {
+				configurable: true,
+				value: new TestVisualViewport(),
+			});
+		});
+		await page.setViewportSize({ width: 375, height: 667 });
+		await page.goto("/posts/guide/", { waitUntil: "networkidle" });
+		await page.evaluate(() => window.scrollTo(0, 800));
+		await page.evaluate(() => window.scrollBy(0, -120));
+		const controls = page.locator("#floating-controls");
+		await expect(controls).not.toHaveClass(/fab-scroll-hidden/);
+
+		await page.evaluate(() => {
+			const viewport = window.visualViewport as VisualViewport & {
+				height: number;
+			};
+			viewport.height = 640;
+			viewport.dispatchEvent(new Event("resize"));
+		});
+		await expect(controls).toHaveClass(/fab-scroll-hidden/);
 	});
 
 	test("Dark mode: FAB keeps tonal contrast over dark surfaces", async ({

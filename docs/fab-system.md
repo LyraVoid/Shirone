@@ -129,6 +129,10 @@ resolveDeviceClasses(undefined)              => "flex"              // 全设备
    - 若悬浮目录面板处于展开状态，导航开始时自动收起面板；
 3. **滚动阈值监听**：
    - 返回顶部按钮实时监听滚动高度，超过视口横幅高度阈值（`data-banner-height`）后平滑淡入。
+4. **移动端内容优先**：
+   - 手机端向下滚动时收起整组 FAB，向上滚动、回到页面顶部或 Swup 导航完成时恢复；
+   - 同时监听 `VisualViewport` 高度变化，使浏览器地址栏折叠时即使没有明显的文档滚动增量也能收起；
+   - 软键盘编辑和横竖屏宽度变化不会被误判为地址栏折叠。
 
 ---
 
@@ -140,6 +144,7 @@ resolveDeviceClasses(undefined)              => "flex"              // 全设备
 |---|---|
 | **Desktop 测试** | 桌面视口（1280px）下 FAB-TOC 严格隐藏（`display: none`），BackToTop 滚动后正常浮现并支持回顶 |
 | **Mobile 测试** | 移动视口（375px）下 FAB-TOC 正常显示，点击呼出大纲卡片，ESC 键与点击外部收起，点击标题平滑定位 |
+| **Mobile visibility** | 下滚收起、上滚和导航恢复；地址栏折叠通过 `VisualViewport` 高度变化触发，且不依赖滚动增量 |
 | **Tablet 测试** | 平板视口（820px）下 FAB-TOC 正确呈现 |
 | **A11y 测试** | 亮暗主题全页面无障碍扫描（`tests/site/a11y.spec.ts`）0 违规 |
 | **TOC 回归** | 侧栏目录与长目录内部滚动测试（`tests/site/toc.spec.ts`）全部通过 |
