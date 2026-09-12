@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import {
 	existsSync,
 	mkdirSync,
@@ -10,8 +11,10 @@ import {
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { describe, it } from "node:test";
+import { fileURLToPath } from "node:url";
 import {
 	commitSnapshot,
+	isSnapshotStale,
 	readSnapshotItemCount,
 } from "../scripts/anime/snapshot-store.mjs";
 
@@ -215,6 +218,129 @@ describe("anime snapshot readSnapshotItemCount", () => {
 			assert.equal(readSnapshotItemCount(file), 1);
 		} finally {
 			rmSync(root, { recursive: true, force: true });
+		}
+	});
+});
+
+describe("anime snapshot isSnapshotStale", () => {
+	const DAY = 24 * 60 * 60 * 1000;
+	const topLevel = (fetchedAt) =>
+		JSON.stringify({
+			schemaVersion: 1,
+			provider: "bilibili",
+			fetchedAt,
+			accountRef: "",
+			items: [],
+		});
+
+	it("文件缺失视为过期（需要同步）", () => {
+		const root = tempDir();
+		try {
+			assert.equal(isSnapshotStale(join(root, "bilibili.json"), 30), true);
+		} finally {
+			rmSync(root, { recursive: true, force: true });
+		}
+	});
+
+	it("新鲜快照（顶层 fetchedAt）视为新鲜", () => {
+		const root = tempDir();
+		try {
+			const file = writeSnapshot(
+				root,
+				"bilibili.json",
+				topLevel(new Date().toISOString()),
+			);
+			assert.equal(isSnapshotStale(file, 30), false);
+		} finally {
+			rmSync(root, { recursive: true, force: true });
+		}
+	});
+
+	it("超过 staleAfterDays 的快照视为过期", () => {
+		const root = tempDir();
+		try {
+			const file = writeSnapshot(
+				root,
+				"bilibili.json",
+				topLevel(new Date(Date.now() - 31 * DAY).toISOString()),
+			);
+			assert.equal(isSnapshotStale(file, 30), true);
+		} finally {
+			rmSync(root, { recursive: true, force: true });
+		}
+	});
+
+	it("envelope 包裹的 fetchedAt 同样被识别（历史格式兼容）", () => {
+		const root = tempDir();
+		try {
+			const file = writeSnapshot(
+				root,
+				"bilibili.json",
+				JSON.stringify({
+					envelope: {
+						schemaVersion: 1,
+						fetchedAt: new Date().toISOString(),
+					},
+					items: [],
+				}),
+			);
+			assert.equal(isSnapshotStale(file, 30), false);
+		} finally {
+			rmSync(root, { recursive: true, force: true });
+		}
+	});
+
+	it("损坏 JSON 或缺失 fetchedAt 视为过期", () => {
+		const root = tempDir();
+		try {
+			const broken = writeSnapshot(root, "bilibili.json", "{ not json");
+			assert.equal(isSnapshotStale(broken, 30), true);
+			const noTime = writeSnapshot(
+				root,
+				"other.json",
+				JSON.stringify({ items: [] }),
+			);
+			assert.equal(isSnapshotStale(noTime, 30), true);
+		} finally {
+			rmSync(root, { recursive: true, force: true });
+		}
+	});
+});
+
+describe("anime sync --if-stale CLI", () => {
+	it("快照新鲜时跳过同步（不触达 provider）", (t) => {
+		const projectRoot = join(dirname(fileURLToPath(import.meta.url)), "..");
+		if (!existsSync(join(projectRoot, "src/user/user-config.ts"))) {
+			t.skip(
+				"src/user/user-config.ts 尚未生成（先运行 astro check / content:sync）",
+			);
+			return;
+		}
+		const snapshotDir = join(projectRoot, "src/data/anime-snapshots");
+		const file = join(snapshotDir, "bilibili.json");
+		const backup = existsSync(file) ? readFileSync(file) : null;
+		try {
+			mkdirSync(snapshotDir, { recursive: true });
+			writeFileSync(
+				file,
+				JSON.stringify({
+					schemaVersion: 1,
+					provider: "bilibili",
+					fetchedAt: new Date().toISOString(),
+					accountRef: "",
+					items: [],
+				}),
+			);
+			const result = spawnSync(
+				process.execPath,
+				["scripts/anime/sync.mjs", "--provider", "bilibili", "--if-stale"],
+				{ cwd: projectRoot, encoding: "utf8" },
+			);
+			assert.equal(result.status, 0, result.stderr);
+			assert.match(result.stdout, /Skipping sync due to --if-stale/);
+		} finally {
+			if (backup) writeFileSync(file, backup);
+			else rmSync(file, { force: true });
 		}
 	});
 });

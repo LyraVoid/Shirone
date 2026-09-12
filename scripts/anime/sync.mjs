@@ -11,7 +11,7 @@ import {
 import { loadEnvFile } from "./load-env.mjs";
 import { fetchBangumiData } from "./providers/bangumi.mjs";
 import { fetchBilibiliData } from "./providers/bilibili.mjs";
-import { commitSnapshot } from "./snapshot-store.mjs";
+import { commitSnapshot, isSnapshotStale } from "./snapshot-store.mjs";
 
 const projectRoot = fileURLToPath(new URL("../../", import.meta.url));
 
@@ -200,22 +200,12 @@ async function main() {
 	}
 
 	if (ifStale) {
-		providersToSync = providersToSync.filter((p) => {
-			const snapshotFile = join(targetDir, `${p}.json`);
-			if (!existsSync(snapshotFile)) {
-				return true;
-			}
-			try {
-				const content = JSON.parse(readFileSync(snapshotFile, "utf8"));
-				if (!content.envelope?.fetchedAt) return true;
-				const fetchedTime = new Date(content.envelope.fetchedAt).getTime();
-				if (Number.isNaN(fetchedTime)) return true;
-				const ageDays = (Date.now() - fetchedTime) / (1000 * 60 * 60 * 24);
-				return ageDays >= resolved.snapshot.staleAfterDays;
-			} catch {
-				return true;
-			}
-		});
+		providersToSync = providersToSync.filter((p) =>
+			isSnapshotStale(
+				join(targetDir, `${p}.json`),
+				resolved.snapshot.staleAfterDays,
+			),
+		);
 
 		if (providersToSync.length === 0) {
 			console.log(

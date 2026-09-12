@@ -73,3 +73,25 @@ export function commitSnapshot({
 		throw err;
 	}
 }
+
+/**
+ * 判断快照是否「过期」——`--if-stale` 的过滤依据。
+ *
+ * - 文件缺失 / 解析失败 / 缺少 fetchedAt / 时间戳非法 → 视为过期（需要同步）；
+ * - fetchedAt 兼容两种历史格式：顶层字段（本模块写入格式）与 envelope 包裹格式；
+ * - 未来时间（时钟偏差）→ 视为新鲜（ageDays 为负）。
+ */
+export function isSnapshotStale(snapshotFile, staleAfterDays) {
+	if (!existsSync(snapshotFile)) return true;
+	try {
+		const content = JSON.parse(readFileSync(snapshotFile, "utf8"));
+		const fetchedAt = content.fetchedAt ?? content.envelope?.fetchedAt;
+		if (!fetchedAt) return true;
+		const fetchedTime = new Date(fetchedAt).getTime();
+		if (Number.isNaN(fetchedTime)) return true;
+		const ageDays = (Date.now() - fetchedTime) / (1000 * 60 * 60 * 24);
+		return ageDays >= staleAfterDays;
+	} catch {
+		return true;
+	}
+}
