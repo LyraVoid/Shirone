@@ -70,6 +70,21 @@ async function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
 	}
 }
 
+/**
+ * shuffle 模式下为「随机开局」挑选歌单就绪后的初始曲目索引。
+ * 显示与播放共用这一索引：随机只发生在歌单就绪时（任何曲目展示之前），
+ * 之后两者一致跟随，不会出现「首屏显示 A、点播放变 B」的错位。
+ * sequence / repeat-one 固定返回 0。静态本地列表不经过此函数（SSR 确定性）。
+ */
+function randomStartIndex(
+	length: number,
+	mode: PlaybackMode,
+	random: () => number,
+): number {
+	if (mode !== "shuffle" || length <= 1) return 0;
+	return Math.floor(random() * length);
+}
+
 function isAutoplayError(error: unknown): boolean {
 	return (
 		error instanceof DOMException &&
@@ -280,9 +295,15 @@ export function createMusicRuntime(
 							}
 							currentPlaylist = Object.freeze(merged);
 							if (!hadTracks) {
+								const initialIndex = randomStartIndex(
+									currentPlaylist.length,
+									state.mode,
+									random,
+								);
 								patch({
-									currentIndex: 0,
-									duration: currentPlaylist[0]?.duration ?? 0,
+									currentIndex: initialIndex,
+									duration:
+										currentPlaylist[initialIndex]?.duration ?? 0,
 									status: "idle",
 									error: null,
 								});
@@ -298,10 +319,16 @@ export function createMusicRuntime(
 							currentPlaylist = Object.freeze(
 								fetched.map((track) => Object.freeze({ ...track })),
 							);
+							const initialIndex = randomStartIndex(
+								currentPlaylist.length,
+								state.mode,
+								random,
+							);
 							patch({
-								currentIndex: 0,
+								currentIndex: initialIndex,
 								status: "idle",
-								duration: currentPlaylist[0]?.duration ?? 0,
+								duration:
+									currentPlaylist[initialIndex]?.duration ?? 0,
 								error: null,
 							});
 						}

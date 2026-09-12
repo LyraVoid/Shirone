@@ -586,6 +586,112 @@ test.describe("music runtime", () => {
 		expect(runtime.getSnapshot().error).toBe("source-unavailable");
 	});
 
+	test("meting provider with shuffle mode starts at a random track before anything is displayed", async () => {
+		const mockTracks = [
+			{
+				id: 111,
+				name: "Shuffle Song A",
+				artist: "Artist A",
+				url: "https://example.com/a.mp3",
+				duration: 180000,
+			},
+			{
+				id: 222,
+				name: "Shuffle Song B",
+				artist: "Artist B",
+				url: "https://example.com/b.mp3",
+				duration: 200000,
+			},
+			{
+				id: 333,
+				name: "Shuffle Song C",
+				artist: "Artist C",
+				url: "https://example.com/c.mp3",
+				duration: 220000,
+			},
+		];
+		const mockFetch = (async () => ({
+			ok: true,
+			json: async () => mockTracks,
+		})) as unknown as typeof fetch;
+
+		const runtime = createMusicRuntime(
+			{
+				provider: "meting",
+				playlist: [],
+				meting: {
+					id: "123456",
+					server: "netease",
+					type: "playlist",
+					preload: "none",
+				},
+				defaultVolume: 0.7,
+				defaultMode: "shuffle",
+			},
+			{
+				createAudio: () => new MockAudio() as unknown as HTMLAudioElement,
+				fetch: mockFetch,
+				// 固定随机源：0.999… → 最后一个索引（长度 3 → 2）
+				random: () => 0.999999,
+			},
+		);
+
+		await runtime.initialize();
+		const snapshot = runtime.getSnapshot();
+		expect(snapshot.status).toBe("idle");
+		expect(snapshot.currentIndex).toBe(2);
+		expect(snapshot.currentTrack?.title).toBe("Shuffle Song C");
+		expect(snapshot.duration).toBe(220);
+	});
+
+	test("meting provider with sequence mode keeps the first fetched track", async () => {
+		const mockTracks = [
+			{
+				id: 111,
+				name: "Sequence Song A",
+				artist: "Artist A",
+				url: "https://example.com/a.mp3",
+				duration: 180000,
+			},
+			{
+				id: 222,
+				name: "Sequence Song B",
+				artist: "Artist B",
+				url: "https://example.com/b.mp3",
+				duration: 200000,
+			},
+		];
+		const mockFetch = (async () => ({
+			ok: true,
+			json: async () => mockTracks,
+		})) as unknown as typeof fetch;
+
+		const runtime = createMusicRuntime(
+			{
+				provider: "meting",
+				playlist: [],
+				meting: {
+					id: "123456",
+					server: "netease",
+					type: "playlist",
+					preload: "none",
+				},
+				defaultVolume: 0.7,
+				defaultMode: "sequence",
+			},
+			{
+				createAudio: () => new MockAudio() as unknown as HTMLAudioElement,
+				fetch: mockFetch,
+			},
+		);
+
+		await runtime.initialize();
+		const snapshot = runtime.getSnapshot();
+		expect(snapshot.status).toBe("idle");
+		expect(snapshot.currentIndex).toBe(0);
+		expect(snapshot.currentTrack?.title).toBe("Sequence Song A");
+	});
+
 	test("mixed provider combines local tracks with fetched meting tracks seamlessly", async () => {
 		const mockTracks = [
 			{
