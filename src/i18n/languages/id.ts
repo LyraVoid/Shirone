@@ -215,6 +215,7 @@ export const id: Translation = {
 	[Key.musicHidePlaylist]: "Sembunyikan daftar putar",
 	[Key.musicEmpty]: "Tidak ada lagu dalam daftar putar",
 	[Key.musicLoading]: "Memuat musik...",
+	[Key.musicNotRequested]: "Belum diminta",
 	[Key.musicNowPlaying]: "Sedang diputar: {title}",
 	[Key.musicErrorEmptyPlaylist]: "Daftar putar kosong.",
 	[Key.musicErrorSourceUnavailable]: "Lagu ini tidak tersedia.",

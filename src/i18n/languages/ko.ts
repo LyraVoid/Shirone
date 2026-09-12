@@ -211,6 +211,7 @@ export const ko: Translation = {
 	[Key.musicHidePlaylist]: "재생 목록 숨기기",
 	[Key.musicEmpty]: "재생 목록에 곡이 없습니다",
 	[Key.musicLoading]: "음악을 불러오는 중...",
+	[Key.musicNotRequested]: "아직 요청되지 않음",
 	[Key.musicNowPlaying]: "지금 재생 중: {title}",
 	[Key.musicErrorEmptyPlaylist]: "재생 목록이 비어 있습니다.",
 	[Key.musicErrorSourceUnavailable]: "이 곡을 재생할 수 없습니다.",

@@ -27,6 +27,7 @@ export const fixtureLabels = {
 	hidePlaylist: "Hide playlist",
 	empty: "No tracks available",
 	loading: "Loading track",
+	notRequested: "Not requested yet",
 	nowPlaying: "Now playing: {title}",
 	errors: {
 		"empty-playlist": "No tracks available",

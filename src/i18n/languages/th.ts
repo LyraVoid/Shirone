@@ -204,6 +204,7 @@ export const th: Translation = {
 	[Key.musicHidePlaylist]: "ซ่อนรายการเพลง",
 	[Key.musicEmpty]: "ไม่มีเพลงในรายการ",
 	[Key.musicLoading]: "กำลังโหลดเพลง...",
+	[Key.musicNotRequested]: "ยังไม่ได้ร้องขอ",
 	[Key.musicNowPlaying]: "กำลังเล่น: {title}",
 	[Key.musicErrorEmptyPlaylist]: "รายการเพลงว่างเปล่า",
 	[Key.musicErrorSourceUnavailable]: "ไม่สามารถเล่นเพลงนี้ได้",

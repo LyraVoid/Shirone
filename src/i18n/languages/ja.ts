@@ -212,6 +212,7 @@ export const ja: Translation = {
 	[Key.musicHidePlaylist]: "プレイリストを非表示",
 	[Key.musicEmpty]: "プレイリストに曲がありません",
 	[Key.musicLoading]: "音楽を読み込み中...",
+	[Key.musicNotRequested]: "まだ要求されていません",
 	[Key.musicNowPlaying]: "再生中: {title}",
 	[Key.musicErrorEmptyPlaylist]: "プレイリストが空です。",
 	[Key.musicErrorSourceUnavailable]: "この曲は再生できません。",

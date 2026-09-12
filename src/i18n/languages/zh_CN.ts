@@ -205,6 +205,7 @@ export const zh_CN: Translation = {
 	[Key.musicHidePlaylist]: "隐藏播放列表",
 	[Key.musicEmpty]: "播放列表暂无歌曲",
 	[Key.musicLoading]: "正在加载音乐...",
+	[Key.musicNotRequested]: "音乐尚未请求",
 	[Key.musicNowPlaying]: "正在播放：{title}",
 	[Key.musicErrorEmptyPlaylist]: "播放列表为空",
 	[Key.musicErrorSourceUnavailable]: "该音源不可用",

@@ -213,6 +213,7 @@ export const en: Translation = {
 	[Key.musicHidePlaylist]: "Hide playlist",
 	[Key.musicEmpty]: "No tracks in the playlist",
 	[Key.musicLoading]: "Loading music...",
+	[Key.musicNotRequested]: "Not requested yet",
 	[Key.musicNowPlaying]: "Now playing: {title}",
 	[Key.musicErrorEmptyPlaylist]: "The playlist is empty.",
 	[Key.musicErrorSourceUnavailable]: "This track is unavailable.",

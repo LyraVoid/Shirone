@@ -38,10 +38,36 @@ export interface MusicRuntimeDependencies {
 	getStorage?: () => Storage | null;
 	random?: () => number;
 	fetch?: typeof fetch;
+	/** Meting 元数据请求的超时毫秒数（默认 8000）。 */
+	fetchTimeoutMs?: number;
 }
+
+const DEFAULT_FETCH_TIMEOUT_MS = 8_000;
 
 function finiteMediaValue(value: number): number {
 	return Number.isFinite(value) && value > 0 ? value : 0;
+}
+
+/**
+ * 给 Meting 请求加超时上限：第三方 API 挂起时不能把卡片永远钉在「正在加载」。
+ * 超时后按「源不可用」错误处理，与请求失败同路径兜底。
+ */
+async function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+	let timer: ReturnType<typeof setTimeout> | undefined;
+	const timeout = new Promise<never>((_, reject) => {
+		timer = setTimeout(
+			() => reject(new Error(`request timed out after ${ms}ms`)),
+			ms,
+		);
+	});
+	// 防止竞速落败的一方（fetch 或 timeout）在之后 reject 时触发 unhandled rejection。
+	promise.catch(() => {});
+	timeout.catch(() => {});
+	try {
+		return await Promise.race([promise, timeout]);
+	} finally {
+		if (timer !== undefined) clearTimeout(timer);
+	}
 }
 
 function isAutoplayError(error: unknown): boolean {
@@ -74,7 +100,7 @@ export function createMusicRuntime(
 
 	let state: RuntimeState = {
 		currentIndex: hasInitialTracks ? 0 : -1,
-		status: !hasInitialTracks && hasMeting ? "loading" : "idle",
+		status: "idle",
 		currentTime: 0,
 		duration: currentPlaylist[0]?.duration ?? 0,
 		volume: clampMusicVolume(options.defaultVolume),
@@ -236,7 +262,10 @@ export function createMusicRuntime(
 					patch({ status: "loading", error: null });
 				}
 				try {
-					const fetched = await fetchMetingTracks(options.meting, customFetch);
+					const fetched = await withTimeout(
+						fetchMetingTracks(options.meting, customFetch),
+						dependencies.fetchTimeoutMs ?? DEFAULT_FETCH_TIMEOUT_MS,
+					);
 					if (generation !== lifecycleGeneration) return;
 					if (fetched.length > 0) {
 						if (options.provider === "mixed") {

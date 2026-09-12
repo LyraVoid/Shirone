@@ -214,6 +214,7 @@ export const es: Translation = {
 	[Key.musicHidePlaylist]: "Ocultar lista de reproducción",
 	[Key.musicEmpty]: "No hay pistas en la lista de reproducción",
 	[Key.musicLoading]: "Cargando música...",
+	[Key.musicNotRequested]: "Aún no solicitado",
 	[Key.musicNowPlaying]: "Reproduciendo ahora: {title}",
 	[Key.musicErrorEmptyPlaylist]: "La lista de reproducción está vacía.",
 	[Key.musicErrorSourceUnavailable]: "Esta pista no está disponible.",
