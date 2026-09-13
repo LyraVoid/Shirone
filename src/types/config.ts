@@ -1,6 +1,7 @@
 export type { PermalinkConfig } from "./permalinkConfig.ts";
 
 import type { AUTO_MODE, DARK_MODE, LIGHT_MODE } from "@constants/constants";
+import type { RainyDayConfig } from "./rainyDayConfig";
 import type { TextureConfig } from "./textureConfig";
 
 export type WallpaperMode = "banner" | "none";
@@ -20,6 +21,8 @@ export type DisplaySettingsConfig = {
 	reduceMotion?: boolean;
 	/** 是否在显示设置面板展示背景纹理选择器（默认 true，且受 texture.enable 控制） */
 	texture?: boolean;
+	/** 是否在显示设置面板展示雨滴特效开关（默认 true，且受 rainyDay.enable 控制） */
+	rainyDay?: boolean;
 };
 
 export type BannerThemeSource = {
@@ -116,6 +119,11 @@ export type SiteConfig = {
 	};
 	/** 页面背景纹理系统配置，支持布尔值直接开关或详细配置对象 */
 	texture?: boolean | TextureConfig;
+	/**
+	 * 雨滴窗玻璃特效（Banner 上的 WebGL 雨滴），支持布尔值直接开关或详细配置对象。
+	 * 重量级可选特性：未配置即关闭，关闭时零 DOM / 零样式 / 零 bundle。
+	 */
+	rainyDay?: boolean | RainyDayConfig;
 	banner: BannerConfig;
 	/** Markdown 正文图片处理配置。 */
 	imageOptimization?: {

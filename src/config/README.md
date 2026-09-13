@@ -121,6 +121,7 @@ export const siteConfig: SiteConfig = withUserConfig("site", {
 | `devicesConfig.ts` | 设备页行为控制：页面总开关、场景分类清单与单项禁用列表（设备清单维护在 `src/data/devices.ts`）；关闭页面时导航入口同步隐藏 |
 | `animeConfig.ts` | 番剧页与外部追番数据源：数据源选择（本地 / Bangumi 快照 / Bilibili 快照）、失败降级、提供方凭据环境配置与快照生命周期管理（本地番剧维护在 `src/data/anime.ts`） |
 | `llmsConfig.ts` | 大语言模型与 AI 友好内容系统：`/llms.txt`（索引）与 `/llms-full.txt`（全量正文汇编）静态端点生成控制、加密文章过滤、排除标签与自定义章节配置；支持内容仓 `config/llms.yaml` 覆盖（领域键 `llms`） |
+| `rainyDayConfig.ts` | 雨滴窗玻璃特效：Banner 图片上的 WebGL 雨滴（基于 `@arayui/rainy-day`）。总开关默认开启（构建期生效；改 false 时零 DOM / 零样式 / 零 bundle）、访客可在显示设置里开关（存 localStorage）、以及密度/速度/模糊/限帧/懒加载等参数；`resolveRainyDayOptions()` 负责校验与关闭短路，消费方是 `components/molecules/BannerRainyWindow.astro`（由 BannerStage 动态导入） |
 
 非首页 Banner 的标题、说明和可选日期由各页面通过 `MainGridLayout` 提供，并在 Swup 导航后从被替换的主内容容器同步。该上下文默认显示、不设配置开关；说明为空或与标题相同时自动省略，移动端非首页仍沿用紧凑布局并隐藏 Banner。
 

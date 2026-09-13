@@ -317,4 +317,9 @@ export const es: Translation = {
 		"Añade esta URL a tu lector RSS/Atom favorito (como NetNewsWire, Feedly, Inoreader o Follow) para recibir actualizaciones.",
 	[Key.feedOpenXml]: "Ver XML original",
 	[Key.feedRecentPosts]: "Artículos recientes del canal",
+
+	// Efecto de ventana con lluvia (panel de ajustes de pantalla)
+	[Key.rainyDay]: "Efecto de lluvia",
+	[Key.rainyDayHint]:
+		"Añade gotas de lluvia sobre la imagen del banner (requiere el fondo de banner).",
 };

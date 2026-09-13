@@ -3,6 +3,8 @@ import {
 	DARK_MODE,
 	DEFAULT_THEME,
 	LIGHT_MODE,
+	RAINY_DAY_CHANGE_EVENT,
+	RAINY_DAY_ENABLED_KEY,
 	TEXTURE_CHANGE_EVENT,
 	TEXTURE_OPACITY_KEY,
 	TEXTURE_PRESET_KEY,
@@ -12,7 +14,11 @@ import {
 	WALLPAPER_MODE_KEY,
 } from "@constants/constants.ts";
 import { applyCurrentScheme } from "@utils/theme-utils";
-import { expressiveCodeConfig, siteConfig } from "@/config";
+import {
+	expressiveCodeConfig,
+	resolveRainyDayOptions,
+	siteConfig,
+} from "@/config";
 import type { LIGHT_DARK_MODE, WallpaperMode } from "@/types/config";
 import type { TexturePreset } from "@/types/textureConfig";
 
@@ -107,6 +113,36 @@ export function setWallpaperMode(mode: WallpaperMode): void {
 	document.documentElement.dataset.wallpaperMode = mode;
 	window.dispatchEvent(
 		new CustomEvent(WALLPAPER_MODE_CHANGE_EVENT, { detail: { mode } }),
+	);
+}
+
+/**
+ * 雨滴特效的默认状态：以配置载体上的值为准，回退到 rainyDayConfig 解析结果。
+ *
+ * 主题未启用该特性（`rainyDayConfig.enable: false`）时恒为 false —— 此时组件不会渲染，
+ * 这里的返回值也不会被使用。
+ */
+export function getDefaultRainyDayEnabled(): boolean {
+	const value =
+		document.getElementById("config-carrier")?.dataset.rainyDayEnabled;
+	if (value === "true") return true;
+	if (value === "false") return false;
+	const options = resolveRainyDayOptions(siteConfig.rainyDay);
+	return options.enable && options.defaultEnabled;
+}
+
+export function getStoredRainyDayEnabled(): boolean {
+	const value = localStorage.getItem(RAINY_DAY_ENABLED_KEY);
+	if (value === "true") return true;
+	if (value === "false") return false;
+	return getDefaultRainyDayEnabled();
+}
+
+export function setRainyDayEnabled(enabled: boolean): void {
+	localStorage.setItem(RAINY_DAY_ENABLED_KEY, String(enabled));
+	document.documentElement.dataset.rainyDay = String(enabled);
+	window.dispatchEvent(
+		new CustomEvent(RAINY_DAY_CHANGE_EVENT, { detail: { enabled } }),
 	);
 }
 

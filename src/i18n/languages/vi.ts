@@ -317,4 +317,8 @@ export const vi: Translation = {
 		"Thêm URL nguồn cấp ở trên vào trình đọc RSS/Atom yêu thích của bạn (như NetNewsWire, Feedly, Inoreader, Follow) để nhận thông báo bài viết mới.",
 	[Key.feedOpenXml]: "Xem XML gốc",
 	[Key.feedRecentPosts]: "Bài viết mới nhất trong nguồn cấp",
+
+	// Hiệu ứng cửa sổ mưa (bảng cài đặt hiển thị)
+	[Key.rainyDay]: "Hiệu ứng mưa",
+	[Key.rainyDayHint]: "Thêm hạt mưa lên ảnh banner (cần nền dạng banner).",
 };

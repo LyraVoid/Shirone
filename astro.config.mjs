@@ -14,6 +14,10 @@ import icon from "astro-icon";
 import { expressiveCodeConfig } from "./src/config/expressiveCodeConfig.ts";
 import { resolvedFontOptions } from "./src/config/fontConfig.ts";
 import { musicConfig, resolveMusicOptions } from "./src/config/musicConfig.ts";
+import {
+	rainyDayConfig,
+	resolveRainyDayOptions,
+} from "./src/config/rainyDayConfig.ts";
 import { sidebarConfig } from "./src/config/sidebarConfig.ts";
 import { siteConfig } from "./src/config/siteConfig.ts";
 import { resolveUmamiOptions, umamiConfig } from "./src/config/umamiConfig.ts";
@@ -41,6 +45,40 @@ const umamiIntegration = resolvedUmamiOptions
 	: null;
 const musicSidebarModuleId = "virtual:shirone-music-sidebar";
 const resolvedMusicSidebarModuleId = `\0${musicSidebarModuleId}`;
+
+// 雨滴特效（Banner 上的 WebGL 雨滴）：关闭时同样用虚拟模块 + 残留 chunk 清理，
+// 保证组件、特效库（含 Three.js）与样式都不进产物。
+const rainyDayFeatureEnabled = resolveRainyDayOptions(rainyDayConfig).enable;
+const bannerRainyWindowModuleId = "virtual:shirone-banner-rainy-window";
+const resolvedBannerRainyWindowModuleId = `\0${bannerRainyWindowModuleId}`;
+
+const optionalBannerRainyWindowPlugin = {
+	name: "shirone-optional-banner-rainy-window",
+	enforce: "pre",
+	resolveId(source) {
+		return source === bannerRainyWindowModuleId
+			? resolvedBannerRainyWindowModuleId
+			: null;
+	},
+	load(id) {
+		if (id !== resolvedBannerRainyWindowModuleId) return null;
+		return rainyDayFeatureEnabled
+			? 'export { default } from "/src/components/molecules/BannerRainyWindow.astro";'
+			: "export default null;";
+	},
+	generateBundle(_options, bundle) {
+		if (rainyDayFeatureEnabled) return;
+		for (const fileName of Object.keys(bundle)) {
+			if (
+				fileName.includes("BannerRainyWindow") ||
+				fileName.startsWith("_astro/rainy") ||
+				fileName.includes("/rainy.")
+			) {
+				delete bundle[fileName];
+			}
+		}
+	},
+};
 
 const optionalMusicSidebarPlugin = {
 	name: "shirone-optional-music-sidebar",
@@ -276,7 +314,11 @@ export default defineConfig({
 				},
 			],
 		},
-		plugins: [optionalMusicSidebarPlugin, tailwindcss()],
+		plugins: [
+			optionalMusicSidebarPlugin,
+			optionalBannerRainyWindowPlugin,
+			tailwindcss(),
+		],
 		optimizeDeps: {
 			include: [
 				"mermaid",

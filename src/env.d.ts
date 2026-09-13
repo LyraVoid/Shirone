@@ -8,6 +8,13 @@ declare module "virtual:shirone-music-sidebar" {
 	export default component;
 }
 
+declare module "virtual:shirone-banner-rainy-window" {
+	const component:
+		| typeof import("@components/molecules/BannerRainyWindow.astro").default
+		| null;
+	export default component;
+}
+
 declare module "*scripts/anime/providers/bangumi.mjs" {
 	export function fetchBangumiData(config: unknown): Promise<{
 		provider: "bangumi";

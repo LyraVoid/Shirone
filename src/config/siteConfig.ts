@@ -4,6 +4,9 @@ import type {
 	TextureConfig,
 } from "@/types/textureConfig";
 import { withUserConfig } from "../utils/config-overlay.ts";
+// 注意：本文件会被 scripts/*.mjs 在 Node 里直接 import（如 fonts/check-fonts.mjs），
+// 因此相对导入必须带 .ts 扩展名
+import { resolveRainyDayOptions } from "./rainyDayConfig.ts";
 
 /**
  * 站点核心配置：标题 / 语言 / 主题色（HCT 动态配色）/ 横幅 / 目录 / 进度条 / favicon。
@@ -26,6 +29,7 @@ export const siteConfig: SiteConfig = withUserConfig("site", {
 		layoutMode: true, // 是否展示文章列表布局（列表/网格）切换
 		reduceMotion: true, // 是否展示减少动效切换
 		texture: true, // 是否展示背景纹理选择
+		rainyDay: true, // 是否展示雨滴特效开关（雨滴特效本身由 rainyDayConfig.enable 决定是否启用）
 	},
 	lang: "en", // Language code, e.g. 'en', 'zh_CN', 'ja', etc.
 	// IANA time zone for precise post and moment timestamps. It is independent of lang.
@@ -187,12 +191,16 @@ export function resolveDisplaySettings(): {
 	layoutMode: boolean;
 	reduceMotion: boolean;
 	texture: boolean;
+	rainyDay: boolean;
 } {
 	const cfg = siteConfig.displaySettings;
 	const textureOpts = resolveTextureOptions(
 		siteConfig.texture,
 		cfg?.texture ?? true,
 	);
+	// 雨滴特效是重量级可选特性：只有主题把它编译进来（rainyDayConfig.enable）时面板才
+	// 提供开关，displaySettings.rainyDay 仅用于作者侧隐藏该开关。
+	const rainyDayOpts = resolveRainyDayOptions(siteConfig.rainyDay);
 	return {
 		colorStyle: cfg?.colorStyle ?? true,
 		colorSpec: cfg?.colorSpec ?? true,
@@ -200,5 +208,6 @@ export function resolveDisplaySettings(): {
 		layoutMode: cfg?.layoutMode ?? true,
 		reduceMotion: cfg?.reduceMotion ?? true,
 		texture: textureOpts.enable && (cfg?.texture ?? true),
+		rainyDay: rainyDayOpts.enable && (cfg?.rainyDay ?? true),
 	};
 }

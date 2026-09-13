@@ -4,7 +4,7 @@ import BannerWaves from "@components/molecules/BannerWaves.astro";
 import { resolveImageAsset } from "@utils/asset-utils";
 import { url } from "@utils/url-utils";
 import { Icon } from "astro-icon/components";
-import { siteConfig } from "@/config";
+import { resolveRainyDayOptions, siteConfig } from "@/config";
 import type { SidebarPage } from "@/types/sidebarConfig";
 
 interface Props {
@@ -81,9 +81,14 @@ const optimizeBannerImage = async (
 	};
 };
 
-function normalizeBannerSource(source: unknown, name: string): { light: string[]; dark: string[] } {
+function normalizeBannerSource(
+	source: unknown,
+	name: string,
+): { light: string[]; dark: string[] } {
 	if (Array.isArray(source)) {
-		const list = source.filter((item): item is string => typeof item === "string");
+		const list = source.filter(
+			(item): item is string => typeof item === "string",
+		);
 		return { light: list, dark: list };
 	}
 	if (typeof source === "object" && source !== null) {
@@ -94,15 +99,23 @@ function normalizeBannerSource(source: unknown, name: string): { light: string[]
 			);
 		}
 		return {
-			light: obj.light.filter((item): item is string => typeof item === "string"),
+			light: obj.light.filter(
+				(item): item is string => typeof item === "string",
+			),
 			dark: obj.dark.filter((item): item is string => typeof item === "string"),
 		};
 	}
 	return { light: [], dark: [] };
 }
 
-const desktopSource = normalizeBannerSource(siteConfig.banner.src.desktop, "desktop");
-const mobileSource = normalizeBannerSource(siteConfig.banner.src.mobile, "mobile");
+const desktopSource = normalizeBannerSource(
+	siteConfig.banner.src.desktop,
+	"desktop",
+);
+const mobileSource = normalizeBannerSource(
+	siteConfig.banner.src.mobile,
+	"mobile",
+);
 
 // 对图片按路径去重进行优化缓存
 const optimizationCache = new Map<string, Promise<ResponsiveBannerImage>>();
@@ -157,6 +170,11 @@ const initialDesktopImage = desktopLightResponsive[0];
 const initialMobileImage = mobileLightResponsive[0];
 const initialImage = initialDesktopImage ?? initialMobileImage;
 const initialMobileBanner = page === "home";
+
+// 雨滴特效：关闭时虚拟模块导出 null → 组件不进模块图（零 DOM / 零样式 / 零 chunk）
+const RainyWindow = resolveRainyDayOptions(siteConfig.rainyDay).enable
+	? (await import("virtual:shirone-banner-rainy-window")).default
+	: null;
 ---
 
 <section
@@ -211,9 +229,17 @@ const initialMobileBanner = page === "home";
 				decoding="async"
 				alt=""
 				style={`object-position: ${siteConfig.banner.position ?? "center"};`}
+				crossorigin="anonymous"
 			/>
 		</picture>
-		<img class="banner-stage__image banner-stage__image--back" alt="" />
+		{/* 与 RainyWindow 的纹理加载共用同一份 CORS 缓存，避免同一张横幅图被下载两次 */}
+		<img
+			class="banner-stage__image banner-stage__image--back"
+			alt=""
+			crossorigin="anonymous"
+		/>
+		{/* 雨滴窗玻璃特效：仅在主题启用时才会被解析成组件，关闭时为 null（零 DOM） */}
+		{RainyWindow && <RainyWindow />}
 	</div>
 	{siteConfig.banner.dim.enable && (
 		<div class="banner-stage__scrim" style={`--banner-dim-opacity: ${dimOpacity}`}></div>

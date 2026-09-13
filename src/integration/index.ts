@@ -12,7 +12,11 @@ import {
 } from "./load-config.ts";
 import { shironesOverlay } from "./overlay.ts";
 import { normalisePath, resolvePaths } from "./paths.ts";
-import { buildOverrideRegistry, createOverlayTargets, type OverrideRegistryRef } from "./registry.ts";
+import {
+	buildOverrideRegistry,
+	createOverlayTargets,
+	type OverrideRegistryRef,
+} from "./registry.ts";
 import { collectRoutes, filterRoutes } from "./routes.ts";
 import { shironesSsrNodeShims } from "./ssr-node-shims.ts";
 import type { ResolvedShironesPaths, ShironesOptions } from "./types.ts";
@@ -30,6 +34,8 @@ export type {
 
 const MUSIC_VIRTUAL_ID = "virtual:shirone-music-sidebar";
 const RESOLVED_MUSIC_VIRTUAL_ID = `\0${MUSIC_VIRTUAL_ID}`;
+const RAINY_WINDOW_VIRTUAL_ID = "virtual:shirone-banner-rainy-window";
+const RESOLVED_RAINY_WINDOW_VIRTUAL_ID = `\0${RAINY_WINDOW_VIRTUAL_ID}`;
 
 /**
  * Vite aliases mapping the theme's TypeScript path aliases onto the installed
@@ -120,6 +126,47 @@ function createMusicSidebarPlugin(
 		},
 	};
 }
+/**
+ * 同 `createMusicSidebarPlugin`：雨滴特效关闭时把它的客户端 bundle 整体丢弃，
+ * 而不是把特效库（含 Three.js）与组件脚本作为死代码留在产物里。
+ */
+function createBannerRainyWindowPlugin(
+	paths: ResolvedShironesPaths,
+	enabled: boolean,
+) {
+	const componentPath = join(
+		paths.packageSrc,
+		"components/molecules/BannerRainyWindow.astro",
+	);
+
+	return {
+		name: "shirones:optional-banner-rainy-window",
+		enforce: "pre" as const,
+		resolveId(source: string) {
+			return source === RAINY_WINDOW_VIRTUAL_ID
+				? RESOLVED_RAINY_WINDOW_VIRTUAL_ID
+				: null;
+		},
+		load(id: string) {
+			if (id !== RESOLVED_RAINY_WINDOW_VIRTUAL_ID) return null;
+			return enabled
+				? `export { default } from ${JSON.stringify(componentPath)};`
+				: "export default null;";
+		},
+		generateBundle(_options: unknown, bundle: Record<string, unknown>) {
+			if (enabled) return;
+			for (const fileName of Object.keys(bundle)) {
+				if (
+					fileName.includes("BannerRainyWindow") ||
+					fileName.startsWith("_astro/rainy") ||
+					fileName.includes("/rainy.")
+				) {
+					delete bundle[fileName];
+				}
+			}
+		},
+	};
+}
 
 /**
  * The Shirone theme, packaged as an Astro integration.
@@ -169,7 +216,9 @@ export function shirones(options: ShironesOptions = {}): AstroIntegration {
 					);
 					if (total > 0) {
 						logger.info(
-							`[overrides] ${total} registered (${Object.entries(registry.counts)
+							`[overrides] ${total} registered (${Object.entries(
+								registry.counts,
+							)
 								.map(([label, n]) => `${label}:${n}`)
 								.join(", ")})`,
 						);
@@ -184,25 +233,52 @@ export function shirones(options: ShironesOptions = {}): AstroIntegration {
 				}
 
 				// ── 1. Load user configuration (Node side) ──────────────────────
-				const siteModule = await loadConfigModule(paths, "siteConfig", registryRef);
+				const siteModule = await loadConfigModule(
+					paths,
+					"siteConfig",
+					registryRef,
+				);
 				const siteConfig = siteModule.siteConfig as {
 					site?: string;
 					base?: string;
 				};
 
-				const sidebarModule = await loadConfigModule(paths, "sidebarConfig", registryRef);
+				const sidebarModule = await loadConfigModule(
+					paths,
+					"sidebarConfig",
+					registryRef,
+				);
 				const sidebarConfig = sidebarModule.sidebarConfig as {
 					enable?: boolean;
 					components?: { type: string; enable: boolean }[];
 				};
 
-				const musicModule = await loadConfigModule(paths, "musicConfig", registryRef);
+				const musicModule = await loadConfigModule(
+					paths,
+					"musicConfig",
+					registryRef,
+				);
 				const musicConfig = musicModule.musicConfig;
 				const resolveMusicOptions = musicModule.resolveMusicOptions as (
 					c: unknown,
 				) => unknown;
 
-				const umamiModule = await loadConfigModule(paths, "umamiConfig", registryRef);
+				const rainyDayModule = await loadConfigModule(
+					paths,
+					"rainyDayConfig",
+					registryRef,
+				);
+				const rainyDayConfig = rainyDayModule.rainyDayConfig;
+				const resolveRainyDayOptions =
+					rainyDayModule.resolveRainyDayOptions as (
+						c: unknown,
+					) => { enable?: boolean } | null;
+
+				const umamiModule = await loadConfigModule(
+					paths,
+					"umamiConfig",
+					registryRef,
+				);
 				const umamiConfig = umamiModule.umamiConfig as { shareUrl: string };
 				const resolveUmamiOptions = umamiModule.resolveUmamiOptions as (
 					c: unknown,
@@ -216,6 +292,9 @@ export function shirones(options: ShironesOptions = {}): AstroIntegration {
 				);
 				const musicEnabled =
 					musicWidgetEnabled && resolveMusicOptions(musicConfig) !== null;
+				const rainyDayEnabled = Boolean(
+					resolveRainyDayOptions(rainyDayConfig)?.enable,
+				);
 				const umamiEnabled = resolveUmamiOptions(umamiConfig) !== null;
 
 				// ── 2. Watch config files so the dev server restarts on edits ───
@@ -277,6 +356,7 @@ export function shirones(options: ShironesOptions = {}): AstroIntegration {
 							shironesFallbackResolver(paths),
 							shironesSsrNodeShims(),
 							createMusicSidebarPlugin(paths, musicEnabled),
+							createBannerRainyWindowPlugin(paths, rainyDayEnabled),
 							(await import("@tailwindcss/vite")).default(),
 						],
 						optimizeDeps: {
@@ -430,7 +510,11 @@ async function createBundledIntegrations(
 			})
 		: null;
 
-	const ecModule = await loadConfigModule(paths, "expressiveCodeConfig", registryRef);
+	const ecModule = await loadConfigModule(
+		paths,
+		"expressiveCodeConfig",
+		registryRef,
+	);
 	const expressiveCodeConfig = ecModule.expressiveCodeConfig as {
 		theme: string;
 		lightTheme?: string;

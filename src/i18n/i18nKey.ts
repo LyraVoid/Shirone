@@ -306,6 +306,10 @@ enum I18nKey {
 	feedHowToUseDesc = "feedHowToUseDesc",
 	feedOpenXml = "feedOpenXml",
 	feedRecentPosts = "feedRecentPosts",
+
+	// 雨滴窗玻璃特效（显示设置面板）
+	rainyDay = "rainyDay",
+	rainyDayHint = "rainyDayHint",
 }
 
 export default I18nKey;

@@ -32,6 +32,17 @@
 | `src/types/stylus.d.ts` | `stylus` 包最小类型声明（构建期编译样式用） |
 | `src/utils/script-loader.ts` | `loadScriptOnce()` 动态加载第三方 SDK 并去重 |
 
+**第二个参考实现（值得为重量级 npm 依赖抄一遍）：雨滴窗玻璃特效**
+
+| 文件 | 职责 |
+|---|---|
+| `src/config/rainyDayConfig.ts` + `src/types/rainyDayConfig.ts` | 配置单一真源 + `resolveRainyDayOptions()` 校验、数值裁剪与关闭短路 |
+| `src/components/molecules/BannerRainyWindow.astro` | 特性组件：零 CSS（全内联样式）+ 运行时懒加载（`load` + 空闲后才 `import("@arayui/rainy-day")`） |
+| `astro.config.mjs` / `src/integration/index.ts` | 关闭时把组件模块整体替换为 `null`（`virtual:shirone-banner-rainy-window` + `generateBundle` 丢弃残留 chunk） |
+
+它与评论系统的差别：依赖是 **npm 包而非 CDN 脚本**，所以「不进主 bundle」不能靠运行时注入 script，
+必须配合虚拟模块把整块模块图摘掉；`astro.config.mjs` 里的开关与 `src/integration/` 必须同步（打包契约）。
+
 ---
 
 ## 3. 四层防护（按顺序落实）
