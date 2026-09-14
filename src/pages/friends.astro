@@ -11,7 +11,10 @@ if (!friendsConfig.enable) {
 }
 
 const pageTitle = resolveI18nText(friendsConfig.title, I18nKey.friends);
-const pageDescription = resolveI18nText(friendsConfig.description, I18nKey.friendsBanner);
+const pageDescription = resolveI18nText(
+	friendsConfig.description,
+	I18nKey.friendsBanner,
+);
 ---
 
 <MainGridLayout title={pageTitle} description={pageDescription} page="friends">

@@ -9,7 +9,10 @@ export const I18N_REFERENCE_PREFIX = "$t:";
  * 若以 `$t:` 开头，则校验并提取对应 I18nKey 调用 i18n()；
  * 否则作为字面量原样返回。
  */
-export function resolveI18nText(text: string | undefined, fallbackKey?: I18nKey): string {
+export function resolveI18nText(
+	text: string | undefined,
+	fallbackKey?: I18nKey,
+): string {
 	if (!text) {
 		return fallbackKey ? i18n(fallbackKey) : "";
 	}

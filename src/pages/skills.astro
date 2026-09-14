@@ -12,7 +12,10 @@ if (!skillsConfig.enable) {
 }
 
 const pageTitle = resolveI18nText(skillsConfig.title, I18nKey.skills);
-const pageDescription = resolveI18nText(skillsConfig.description, I18nKey.skillsBanner);
+const pageDescription = resolveI18nText(
+	skillsConfig.description,
+	I18nKey.skillsBanner,
+);
 
 const items = resolveSkillsData(skillsConfig);
 ---

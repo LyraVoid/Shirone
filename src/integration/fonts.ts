@@ -1,5 +1,13 @@
 import { existsSync } from "node:fs";
-import { mkdir, readFile, readdir, rename, rm, stat, writeFile } from "node:fs/promises";
+import {
+	mkdir,
+	readFile,
+	readdir,
+	rename,
+	rm,
+	stat,
+	writeFile,
+} from "node:fs/promises";
 import { basename, extname, join } from "node:path";
 import { loadConfigModule } from "./load-config.ts";
 import type { ResolvedShironesPaths } from "./types.ts";
@@ -104,7 +112,10 @@ export async function collectSiteText(
 	}
 
 	if (subsetting.includeI18n ?? true) {
-		for (const file of await walkFiles(join(paths.packageSrc, "i18n"), [".ts", ".js"])) {
+		for (const file of await walkFiles(join(paths.packageSrc, "i18n"), [
+			".ts",
+			".js",
+		])) {
 			await absorbFile(charSet, file);
 		}
 	}
@@ -113,7 +124,11 @@ export async function collectSiteText(
 		for (const file of await walkFiles(paths.configDir, [".ts", ".js"])) {
 			await absorbFile(charSet, file);
 		}
-		for (const file of await walkFiles(paths.dataDir, [".ts", ".js", ".json"])) {
+		for (const file of await walkFiles(paths.dataDir, [
+			".ts",
+			".js",
+			".json",
+		])) {
 			await absorbFile(charSet, file);
 		}
 	}
@@ -271,7 +286,8 @@ export async function buildFontDeclarations(
 	if (!fontConfig || !resolvedFontOptions) return [];
 	if (resolvedFontOptions.mode !== "custom") return [];
 
-	const shouldSubset = options.subset && (fontConfig.subsetting?.enable ?? false);
+	const shouldSubset =
+		options.subset && (fontConfig.subsetting?.enable ?? false);
 	let subsets = new Map<string, string>();
 	if (shouldSubset) {
 		({ outputs: subsets } = await runFontSubsetting(
@@ -296,7 +312,9 @@ export async function buildFontDeclarations(
 			? { fallbacks: [], optimizedFallbacks: false }
 			: {};
 
-		const localVariants = resolvedRole.variants.filter((v) => v.source === "local");
+		const localVariants = resolvedRole.variants.filter(
+			(v) => v.source === "local",
+		);
 
 		if (localVariants.length > 0) {
 			declarations.push({
@@ -316,7 +334,9 @@ export async function buildFontDeclarations(
 							style: variant.style,
 							display: resolvedRole.display,
 							...(variant.subset ? { subset: variant.subset } : {}),
-							...(variant.unicodeRange ? { unicodeRange: variant.unicodeRange } : {}),
+							...(variant.unicodeRange
+								? { unicodeRange: variant.unicodeRange }
+								: {}),
 						};
 					}),
 				},
