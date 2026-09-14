@@ -14,17 +14,17 @@ export type { RainyDayConfig, ResolvedRainyDayOptions };
  * 以「当前可见的横幅图片」为折射源，折射后整页背景呈现为「壁纸 + 雨」，
  * 内容、顶栏与 hero 文案都浮在它之上。
  *
- * 本仓库默认关闭（`enable: false`）：关闭时遵循「关闭零开销」——不渲染组件（零 DOM）、
- * 不加载特效库（含 Three.js）、不输出任何样式与 DOM、产物里零 chunk。
- * 想用时把 `enable` 改为 `true`：构建后访客首次进入即看到雨幕，也可随时在
- * 「显示设置」里关掉（存 localStorage）。纯色背景（`wallpaperMode: none`）、移动端
- * 非首页与弱网/减少动效环境下不会挂载。
+ * 本仓库默认开启（`enable: true`）：构建后访客首次进入即看到雨幕，也可随时在
+ * 「显示设置」里关掉（存 localStorage）。不想用时把 `enable` 改为 `false` —— 关闭时
+ * 遵循「关闭零开销」：不渲染组件（零 DOM）、不加载特效库（含 Three.js）、不输出任何
+ * 样式与 DOM、产物里零 chunk。纯色背景（`wallpaperMode: none`）、移动端非首页与
+ * 弱网/减少动效环境下不会挂载。
  *
  * 参数范围：intensity 0-1、speed 0-10、brightness 0-1、normal 0-3、zoom 0.1-3、
- * blurIntensity 0-10、blurIterations 1-64、fps 15-120；越界值会被 resolve 时裁剪。
+ * blurIntensity 0-10、blurIterations 1-64、fps 15-120、mistStrength 0-1；越界值会被 resolve 时裁剪。
  */
 export const rainyDayConfig: RainyDayConfig = withUserConfig("rainyDay", {
-	enable: false, // 总开关（构建期生效）：false = 该特性完全不进产物
+	enable: true, // 总开关（构建期生效）：false = 该特性完全不进产物
 	defaultEnabled: true, // 主题启用后访客首次进入时的默认状态（之后由访客自己的开关决定）
 
 	intensity: 0.2, // 雨滴密度
@@ -43,6 +43,12 @@ export const rainyDayConfig: RainyDayConfig = withUserConfig("rainyDay", {
 	respectReducedMotion: true, // 系统开了「减少动效」就不渲染
 	skipOnSlowNetwork: true, // 弱网 / 省流不加载
 	pauseWhenHidden: true, // 切到后台标签页暂停渲染
+
+	// 雨雾浓度 0-1（默认 0.25）：特效库输出的是不透明画面，所以「背景保持原样 + 全页都有雨」
+	// 只能靠让雨层半透明——本值即「雨层的不透明度」。
+	// 0 = 看不到雨；0.25 = 默认，柔和雨雾/水光叠在整页，页面底色与背景纹理保持原样；
+	// 0.4 ≈ 雨感明显；0.7 ≈ 照片为主；1 = 完全不透明雨幕（页面背景被壁纸照片替换，雨最明显）。
+	mistStrength: 0.25,
 
 	bgFadeMs: 500, // 轮播换图时雨层交叉淡入时长
 	lazy: true, // 延后到 load + 空闲再挂载
@@ -69,6 +75,7 @@ const DISABLED_RAINY_DAY_OPTIONS: ResolvedRainyDayOptions = Object.freeze({
 	respectReducedMotion: true,
 	skipOnSlowNetwork: true,
 	pauseWhenHidden: true,
+	mistStrength: 0,
 	bgFadeMs: 0,
 	lazy: true,
 	idleDelayMs: 0,
@@ -120,6 +127,7 @@ export function resolveRainyDayOptions(
 			blurIterations: 12,
 			postProcessing: true,
 			fps: 30,
+			mistStrength: 0.25,
 			bgFadeMs: 500,
 			idleDelayMs: 2500,
 			fadeInMs: 600,
@@ -144,6 +152,7 @@ export function resolveRainyDayOptions(
 		respectReducedMotion: boolOption(config.respectReducedMotion, true),
 		skipOnSlowNetwork: boolOption(config.skipOnSlowNetwork, true),
 		pauseWhenHidden: boolOption(config.pauseWhenHidden, true),
+		mistStrength: clampNumber(config.mistStrength, 0.25, 0, 1),
 		bgFadeMs: clampNumber(config.bgFadeMs, 500, 0, 5000),
 		lazy: boolOption(config.lazy, true),
 		idleDelayMs: clampNumber(config.idleDelayMs, 2500, 0, 10000),

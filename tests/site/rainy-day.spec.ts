@@ -6,7 +6,7 @@ import { i18n } from "../../src/i18n/translation.ts";
 /**
  * 全页雨幕（原雨滴窗玻璃特效，Banner 上的 WebGL 雨滴）
  *
- * 该特性是重量级可选特性，本仓库默认关闭（rainyDayConfig.enable: false）：
+ * 该特性是重量级可选特性，本仓库默认开启（rainyDayConfig.enable: true）：
  * - 关闭时（enable: false）只断言「零足迹」（无图层、无载体属性、无 CORS 属性）；
  * - 开启时跑渲染、层级、交互与 HiDPI 用例；两种状态各自 test.skip 守卫，
  *   保证任一种配置下套件都是绿的（见 docs/on-demand-loading.md §4.3）。
@@ -68,7 +68,7 @@ test.describe("Rainy window layer — 开启后", () => {
 			2,
 		);
 
-		// 层级契约：纹理层(-20) < 雨层(0) < 主内容(z-30) < 顶栏(z-50)
+		// 层级契约（静态部分）：雨层固定在 0
 		const zIndexOf = (selector: string) =>
 			page
 				.locator(selector)
@@ -77,9 +77,6 @@ test.describe("Rainy window layer — 开启后", () => {
 			Number(getComputedStyle(el).zIndex),
 		);
 		expect(layerZ).toBe(0);
-		expect(await zIndexOf("#m3e-texture-canvas")).toBeLessThan(layerZ);
-		expect(await zIndexOf("#main-layout")).toBeGreaterThan(layerZ);
-		expect(await zIndexOf("#top-row")).toBeGreaterThan(layerZ);
 
 		// 绘制顺序：同层（z-index 0）按树序，雨层必须晚于横幅子树 → 盖住横幅图片
 		const afterBanner = await layer.evaluate((el) => {
@@ -95,6 +92,24 @@ test.describe("Rainy window layer — 开启后", () => {
 			timeout: 15000,
 		});
 		await expect(layer.locator("canvas")).toHaveCount(1);
+
+		// 激活后的层级契约：雨层(0) < 背景纹理(1) < 主内容(z-30) < 顶栏(z-50)。
+		// 雨层不透明，纹理必须被抬到它之上才可见（见 styles/textures.css）
+		await expect(page.locator("html")).toHaveAttribute(
+			"data-rainy-active",
+			"true",
+		);
+		const textureZ = await zIndexOf("#m3e-texture-canvas");
+		expect(textureZ).toBeGreaterThan(layerZ);
+		expect(await zIndexOf("#main-layout")).toBeGreaterThan(textureZ);
+		expect(await zIndexOf("#top-row")).toBeGreaterThan(textureZ);
+
+		// 半透明雨雾 + 纹理层保护：纹理必须留在雨层之上才能保持原样强度
+		// （挂载后还有 ~600ms 淡入，用 poll 等它收敛到静止值）
+		const mist = resolveRainyDayOptions().mistStrength;
+		await expect
+			.poll(() => layer.evaluate((el) => Number(getComputedStyle(el).opacity)))
+			.toBeCloseTo(mist, 2);
 	});
 
 	test("Swup 站内导航后雨层仍在（持久壳未重建）", async ({ page }) => {
@@ -154,16 +169,38 @@ test.describe("Rainy window layer — 开启后", () => {
 		await toggle.click({ force: true });
 
 		await expect(layer).not.toHaveAttribute("data-rainy-day-active", "true");
+		// 卸载后：激活标记移除、雨层回到透明，背景纹理回到基线层级（关闭态零变化）
+		await expect(page.locator("html")).not.toHaveAttribute(
+			"data-rainy-active",
+			"true",
+		);
+		// 卸载会走 ~600ms 淡出，用 poll 等它归零
+		await expect
+			.poll(() => layer.evaluate((el) => Number(getComputedStyle(el).opacity)))
+			.toBe(0);
+		expect(
+			await page
+				.locator("#m3e-texture-canvas")
+				.evaluate((el) => Number(getComputedStyle(el).zIndex)),
+		).toBe(-20);
 		const stored = await page.evaluate(() =>
 			window.localStorage.getItem("rainy-day-enabled"),
 		);
 		expect(stored).toBe("false");
 
-		// 再打开：恢复挂载
+		// 再打开：恢复挂载，纹理重新抬到雨层之上，雨层回到半透明雨雾
 		await toggle.click({ force: true });
 		await expect(layer).toHaveAttribute("data-rainy-day-active", "true", {
 			timeout: 15000,
 		});
+		expect(
+			await page
+				.locator("#m3e-texture-canvas")
+				.evaluate((el) => Number(getComputedStyle(el).zIndex)),
+		).toBeGreaterThan(0);
+		await expect
+			.poll(() => layer.evaluate((el) => Number(getComputedStyle(el).opacity)))
+			.toBeCloseTo(resolveRainyDayOptions().mistStrength, 2);
 	});
 
 	test("切到后台标签页暂停渲染循环，回到前台恢复", async ({ page }) => {
@@ -207,6 +244,12 @@ test.describe("Rainy window layer — 开启后", () => {
 			"data-rainy-day-active",
 			"true",
 		);
+		// 未激活：纹理层保持基线层级，背景与改动前一致
+		expect(
+			await page
+				.locator("#m3e-texture-canvas")
+				.evaluate((el) => Number(getComputedStyle(el).zIndex)),
+		).toBe(-20);
 	});
 });
 

@@ -36,13 +36,18 @@
 
 | 文件 | 职责 |
 |---|---|
-| `src/config/rainyDayConfig.ts` + `src/types/rainyDayConfig.ts` | 配置单一真源 + `resolveRainyDayOptions()` 校验、数值裁剪与关闭短路（默认 `enable: false`） |
+| `src/config/rainyDayConfig.ts` + `src/types/rainyDayConfig.ts` | 配置单一真源 + `resolveRainyDayOptions()` 校验、数值裁剪与关闭短路（默认 `enable: true`，改为 `false` 时零 DOM / 零样式 / 零 chunk） |
 | `src/components/organisms/RainyWindowLayer.astro` | 特性组件：`position: fixed; inset: 0; z-index: 0` 的页面级环境层，零 CSS（全内联样式）+ 运行时懒加载（`load` + 空闲后才 `import("@arayui/rainy-day")`）+ `document.hidden` 暂停 rAF |
 | `src/layouts/Layout.astro` | 消费方：`enable` 为真才动态导入，且必须渲染在 `<slot />` **之后**（同层按树序绘制 → 盖住横幅图片、仍低于 `#main-layout` z-30） |
 | `astro.config.mjs` / `src/integration/index.ts` | 关闭时把组件模块整体替换为 `null`（`virtual:shirone-rainy-window` + `generateBundle` 丢弃残留 chunk） |
 
-> 该层的折射源是「当前可见的横幅图片」，因此特效库的不透明输出会把整页背景变成「壁纸 + 雨」，
-> 而不会只作用于横幅矩形；横幅图片仍在 DOM 中提供数据源（关闭态不输出 `crossorigin`）。
+> 该层的折射源是「当前可见的横幅图片」；横幅图片仍在 DOM 中提供数据源（关闭态不输出 `crossorigin`）。
+> 由于特效库输出的是**不透明**画面，画面本身无法像半透明玻璃那样叠在背景上，所以：
+> 1. 雨层按 `rainyDayConfig.mistStrength`（默认 0.25）以**半透明「雨雾/水光」**形式叠加在整页
+>    （含横幅）之上——页面底色与背景纹理因此保持原样；调到 1 则是不透明雨幕（背景被照片替换）；
+> 2. 挂载成功时给 `<html>` 打 `data-rainy-active="true"`，由 `src/styles/textures.css` 把背景纹理层
+>    从基线 `-20` 抬到 `1`（仍低于内容层），避免这层雨雾把纹理打八折。
+> **卸载时全部复原**（标记移除、雨层透明、纹理回到 -20），关闭 / 未激活态与改动前完全一致。
 
 它与评论系统的差别：依赖是 **npm 包而非 CDN 脚本**，所以「不进主 bundle」不能靠运行时注入 script，
 必须配合虚拟模块把整块模块图摘掉；`astro.config.mjs` 里的开关与 `src/integration/` 必须同步（打包契约）。

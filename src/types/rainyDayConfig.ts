@@ -6,8 +6,8 @@
  * 因此整页背景呈现为「壁纸 + 雨」，只有在壁纸可见时（`wallpaperMode: "banner"`）
  * 才会挂载。
  *
- * 效果由 WebGL（Three.js）渲染：本仓库默认关闭（`rainyDayConfig.enable: false`）；
- * 关闭时组件、特效库与相关样式全部不进构建产物（见 `docs/on-demand-loading.md`）。
+ * 效果由 WebGL（Three.js）渲染：本仓库默认开启（`rainyDayConfig.enable: true`）；
+ * 改为 `false` 时组件、特效库与相关样式全部不进构建产物（见 `docs/on-demand-loading.md`）。
  */
 export interface RainyDayConfig {
 	/** 总开关（构建期生效）：false 时该特性零 DOM、零样式、零 bundle */
@@ -47,6 +47,14 @@ export interface RainyDayConfig {
 	/** 切到后台标签页时暂停渲染（默认开） */
 	pauseWhenHidden?: boolean;
 
+	/**
+	 * 雨雾浓度 0-1：特效库输出的是不透明画面（无法像半透明玻璃那样叠在背景上），
+	 * 所以「背景保持原样 + 全页都有雨」靠**让雨层半透明**实现——本值即雨层的不透明度。
+	 * 0 = 看不到雨；0.25 = 默认，柔和雨雾/水光叠在整页，页面底色与背景纹理保持原样；
+	 * 0.4 ≈ 雨感明显；0.7 ≈ 照片为主；1 = 不透明雨幕（页面背景被壁纸照片替换）。默认 0.25。
+	 */
+	mistStrength?: number;
+
 	/** 轮播换图时雨层的交叉淡入时长（毫秒；0 = 直接切换） */
 	bgFadeMs?: number;
 	/** 延后到 load + 浏览器空闲再挂载，把特效库移出首屏关键路径（默认开） */
@@ -80,6 +88,7 @@ export interface ResolvedRainyDayOptions {
 	respectReducedMotion: boolean;
 	skipOnSlowNetwork: boolean;
 	pauseWhenHidden: boolean;
+	mistStrength: number;
 	bgFadeMs: number;
 	lazy: boolean;
 	idleDelayMs: number;

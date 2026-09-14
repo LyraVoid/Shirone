@@ -6,12 +6,12 @@ import {
 } from "../src/config/rainyDayConfig.ts";
 
 describe("Rainy day window config", () => {
-	it("未配置 / undefined 时关闭（主题默认关闭）", () => {
-		// 主题默认值在 rainyDayConfig 里显式声明为 false：可选重量级特性默认关闭
-		assert.equal(rainyDayConfig.enable, false);
+	it("未配置 / undefined 时跟随主题默认值（本仓库默认开启）", () => {
+		// 主题默认值在 rainyDayConfig 里显式声明（当前为 true）：显式 false 才关闭
+		assert.equal(rainyDayConfig.enable, true);
 		const options = resolveRainyDayOptions(undefined);
 		assert.equal(options.enable, rainyDayConfig.enable ?? true);
-		assert.equal(resolveRainyDayOptions(undefined).enable, false);
+		assert.equal(resolveRainyDayOptions(undefined).enable, true);
 		assert.equal(resolveRainyDayOptions(false).enable, false);
 	});
 
@@ -56,6 +56,7 @@ describe("Rainy day window config", () => {
 			blurIntensity: 42,
 			blurIterations: 0,
 			fps: 1000,
+			mistStrength: 5,
 			bgFadeMs: -100,
 			idleDelayMs: 999999,
 			fadeInMs: -1,
@@ -68,9 +69,15 @@ describe("Rainy day window config", () => {
 		assert.equal(options.blurIntensity, 10);
 		assert.equal(options.blurIterations, 1);
 		assert.equal(options.fps, 120);
+		assert.equal(options.mistStrength, 1);
 		assert.equal(options.bgFadeMs, 0);
 		assert.equal(options.idleDelayMs, 10000);
 		assert.equal(options.fadeInMs, 0);
+	});
+
+	it("雨雾浓度缺省为 0.25，负数被裁剪到 0", () => {
+		assert.equal(resolveRainyDayOptions({}).mistStrength, 0.25);
+		assert.equal(resolveRainyDayOptions({ mistStrength: -2 }).mistStrength, 0);
 	});
 
 	it("非数值 / 非布尔值回退到默认值", () => {
