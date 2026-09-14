@@ -292,9 +292,9 @@ const options = resolveRainyDayOptions(siteConfig.rainyDay);
 			delete wrapper.dataset.rainyDayActive;
 		}
 
-		/** 依「访客开关 + 当前背景模式」决定挂载或卸载 */
+		/** 依「访客开关 + 环境 + 背景模式」决定挂载或卸载：环境不满足时把已挂载的实例一起卸掉 */
 		function refresh(): void {
-			if (!getStoredRainyDayEnabled()) {
+			if (!getStoredRainyDayEnabled() || envBlocked()) {
 				unmount();
 				return;
 			}
@@ -376,6 +376,12 @@ const options = resolveRainyDayOptions(siteConfig.rainyDay);
 
 		// 背景模式切换（纯色 / 横幅）→ 重新判定能否挂载
 		window.addEventListener(WALLPAPER_MODE_CHANGE_EVENT, refresh);
+
+		// 运行中环境变化（减少动效 / 移动端断点）→ 即时停用或恢复
+		if (options.respectReducedMotion) {
+			reduceMQ.addEventListener("change", refresh);
+		}
+		if (!options.mobile) mobileMQ.addEventListener("change", refresh);
 
 		if (options.pauseWhenHidden) {
 			document.addEventListener("visibilitychange", () => {

@@ -1,8 +1,17 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { resolveRainyDayOptions } from "../src/config/rainyDayConfig.ts";
+import {
+	rainyDayConfig,
+	resolveRainyDayOptions,
+} from "../src/config/rainyDayConfig.ts";
 
 describe("Rainy day window config", () => {
+	it("未配置 / undefined 时跟随主题默认值", () => {
+		const options = resolveRainyDayOptions(undefined);
+		assert.equal(options.enable, rainyDayConfig.enable ?? true);
+		assert.equal(resolveRainyDayOptions(false).enable, false);
+	});
+
 	it("false 时关闭，并返回零开销默认值", () => {
 		const options = resolveRainyDayOptions(false);
 		assert.equal(options.enable, false);

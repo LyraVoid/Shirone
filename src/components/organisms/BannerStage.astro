@@ -172,9 +172,13 @@ const initialImage = initialDesktopImage ?? initialMobileImage;
 const initialMobileBanner = page === "home";
 
 // 雨滴特效：关闭时虚拟模块导出 null → 组件不进模块图（零 DOM / 零样式 / 零 chunk）
-const RainyWindow = resolveRainyDayOptions(siteConfig.rainyDay).enable
+const rainyDayEnabled = resolveRainyDayOptions(siteConfig.rainyDay).enable;
+const RainyWindow = rainyDayEnabled
 	? (await import("virtual:shirone-banner-rainy-window")).default
 	: null;
+
+// 仅在雨滴特效启用时输出：关闭态保持 DOM 与基线一致，也避免远程图床无 CORS 头导致图片加载失败
+const bannerCors = rainyDayEnabled ? "anonymous" : undefined;
 ---
 
 <section
@@ -229,14 +233,14 @@ const RainyWindow = resolveRainyDayOptions(siteConfig.rainyDay).enable
 				decoding="async"
 				alt=""
 				style={`object-position: ${siteConfig.banner.position ?? "center"};`}
-				crossorigin="anonymous"
+				crossorigin={bannerCors}
 			/>
 		</picture>
 		{/* 与 RainyWindow 的纹理加载共用同一份 CORS 缓存，避免同一张横幅图被下载两次 */}
 		<img
 			class="banner-stage__image banner-stage__image--back"
 			alt=""
-			crossorigin="anonymous"
+			crossorigin={bannerCors}
 		/>
 		{/* 雨滴窗玻璃特效：仅在主题启用时才会被解析成组件，关闭时为 null（零 DOM） */}
 		{RainyWindow && <RainyWindow />}
