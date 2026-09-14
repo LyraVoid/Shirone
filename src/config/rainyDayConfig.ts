@@ -54,6 +54,13 @@ export const rainyDayConfig: RainyDayConfig = withUserConfig("rainyDay", {
 	// 必须明显小于「视口 - banner 带」的高度，否则正文区几乎看不到雨（会烂在折叠线以下）。
 	mistFadeVh: 12,
 
+	// 正文区雨丝（默认开）：WebGL 雨只能"折射"底图，而壁纸下半部分与页面底色近乎同色，
+	// 所以正文区看不到雨滴（实测 Δ≤10/255）。这里补一层纯 CSS 雨丝，天然可见、不改底色，
+	// 只在 banner 带以下出现；关闭时不输出该层。
+	bodyRain: true,
+	bodyRainOpacity: 0.55, // 雨丝浓度 0-1
+	bodyRainSpeed: 1.6, // 下落周期（秒，0.4-5；越小越快）
+
 	bgFadeMs: 500, // 轮播换图时雨层交叉淡入时长
 	lazy: true, // 延后到 load + 空闲再挂载
 	idleDelayMs: 2500, // idle 兜底超时：最迟这么久一定挂载
@@ -81,6 +88,9 @@ const DISABLED_RAINY_DAY_OPTIONS: ResolvedRainyDayOptions = Object.freeze({
 	pauseWhenHidden: true,
 	mistStrength: 0,
 	mistFadeVh: 0,
+	bodyRain: false,
+	bodyRainOpacity: 0,
+	bodyRainSpeed: 1.6,
 	bgFadeMs: 0,
 	lazy: true,
 	idleDelayMs: 0,
@@ -134,6 +144,9 @@ export function resolveRainyDayOptions(
 			fps: 30,
 			mistStrength: 0.4,
 			mistFadeVh: 12,
+			bodyRain: true,
+			bodyRainOpacity: 0.55,
+			bodyRainSpeed: 1.6,
 			bgFadeMs: 500,
 			idleDelayMs: 2500,
 			fadeInMs: 600,
@@ -160,6 +173,9 @@ export function resolveRainyDayOptions(
 		pauseWhenHidden: boolOption(config.pauseWhenHidden, true),
 		mistStrength: clampNumber(config.mistStrength, 0.4, 0, 1),
 		mistFadeVh: clampNumber(config.mistFadeVh, 12, 0, 100, true),
+		bodyRain: boolOption(config.bodyRain, true),
+		bodyRainOpacity: clampNumber(config.bodyRainOpacity, 0.55, 0, 1),
+		bodyRainSpeed: clampNumber(config.bodyRainSpeed, 1.6, 0.4, 5),
 		bgFadeMs: clampNumber(config.bgFadeMs, 500, 0, 5000),
 		lazy: boolOption(config.lazy, true),
 		idleDelayMs: clampNumber(config.idleDelayMs, 2500, 0, 10000),

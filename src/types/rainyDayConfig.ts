@@ -49,16 +49,28 @@ export interface RainyDayConfig {
 
 	/**
 	 * 雨雾浓度 0-1：竖向南端的浓度——banner 带内恒为不透明（雨最明显，接替淡出的横幅图片），
-	 * 往下在 `mistFadeVh` 内过渡到本值：正文区保持浅色 M3 底 + 背景纹理 + 轻雨雾。
-	 * 0 = 正文区完全看不到雨；0.25 = 默认；0.6 以上正文区也会明显变暗。默认 0.25。
+	 * 往下在 `mistFadeVh` 内过渡到本值：正文区保持浅色 M3 底 + 背景纹理 + 雨雾。默认 0.4。
 	 */
 	mistStrength?: number;
 
 	/**
-	 * 蒙版过渡长度（vh，0-100，默认 40）：从 banner 带底部起多少视口高度内，
+	 * 蒙版过渡长度（vh，0-100，默认 12）：从 banner 带底部起多少视口高度内，
 	 * 蒙版从「不透明」过渡到 `mistStrength`。0 = 硬边。
 	 */
 	mistFadeVh?: number;
+
+	/**
+	 * 正文区雨丝（默认开）：WebGL 雨只能折射底图，而壁纸下半部分与页面底色近乎同色，
+	 * 正文区因此看不到雨滴；这里补一层纯 CSS 雨丝（只出现在 banner 带以下，背景与纹理
+	 * 保持原样）。关闭时不输出该层。
+	 */
+	bodyRain?: boolean;
+
+	/** 雨丝浓度 0-1（默认 0.55） */
+	bodyRainOpacity?: number;
+
+	/** 雨丝下落周期（秒，0.4-5；越小越快。默认 1.6） */
+	bodyRainSpeed?: number;
 
 	/** 轮播换图时雨层的交叉淡入时长（毫秒；0 = 直接切换） */
 	bgFadeMs?: number;
@@ -95,6 +107,9 @@ export interface ResolvedRainyDayOptions {
 	pauseWhenHidden: boolean;
 	mistStrength: number;
 	mistFadeVh: number;
+	bodyRain: boolean;
+	bodyRainOpacity: number;
+	bodyRainSpeed: number;
 	bgFadeMs: number;
 	lazy: boolean;
 	idleDelayMs: number;

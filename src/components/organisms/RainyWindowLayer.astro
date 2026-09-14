@@ -51,6 +51,68 @@ const mistMask = [
 	`rgba(0, 0, 0, ${mistAlpha}) calc(var(--banner-stage-height, 65vh) + ${mistFadeVh}vh),`,
 	`rgba(0, 0, 0, ${mistAlpha}) 100%)`,
 ].join(" ");
+
+/**
+ * 正文区雨丝：只在 banner 带以下出现（上沿留 6vh 过渡），与雨幕的「上强下弱」呼应。
+ */
+const bodyRainMask = [
+	"linear-gradient(to bottom, transparent 0,",
+	"transparent var(--banner-stage-height, 65vh),",
+	"#000 calc(var(--banner-stage-height, 65vh) + 6vh),",
+	"#000 100%)",
+].join(" ");
+
+/**
+ * 纯 CSS 雨丝（零 JS、零图片）：两层斜线用 `transform: translate3d` 循环下落，
+ * 走 GPU 合成；只在 `<html data-rainy-active="true">` 时淡入，随雨幕一起开关。
+ * 样式用 `<style is:inline>` 随组件输出，不进 Astro 的 CSS 管线（同 textures.css 的思路）。
+ */
+const bodyRainStyles = `
+.rainy-body-rain {
+	pointer-events: none;
+	opacity: 0;
+	transition: opacity var(--rainy-body-fade, 600ms) ease-out;
+}
+html[data-rainy-active="true"] .rainy-body-rain { opacity: 1; }
+.rainy-body-rain__sheet {
+	position: absolute;
+	left: -12%;
+	right: -12%;
+	top: -60%;
+	height: 220%;
+	color: var(--on-surface);
+	will-change: transform;
+	animation: rainy-body-fall linear infinite;
+	animation-duration: var(--rainy-streak-duration, 1.6s);
+}
+.rainy-body-rain__sheet--near {
+	opacity: var(--rainy-streak-alpha, 0.55);
+	background-image: repeating-linear-gradient(
+		100deg,
+		transparent 0 27px,
+		currentColor 27px 28.5px,
+		transparent 28.5px 56px
+	);
+}
+.rainy-body-rain__sheet--far {
+	opacity: calc(var(--rainy-streak-alpha, 0.55) * 0.45);
+	background-image: repeating-linear-gradient(
+		100deg,
+		transparent 0 40px,
+		currentColor 40px 41px,
+		transparent 41px 84px
+	);
+	animation-duration: calc(var(--rainy-streak-duration, 1.6s) * 1.45);
+}
+@keyframes rainy-body-fall {
+	from { transform: translate3d(0, -57px, 0); }
+	to { transform: translate3d(0, 0, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+	.rainy-body-rain__sheet { animation: none; }
+}
+html.motion-reduced .rainy-body-rain__sheet { animation: none; }
+`;
 ---
 
 <div
@@ -60,6 +122,23 @@ const mistMask = [
 	style={`position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; opacity: 0; -webkit-mask-image: ${mistMask}; mask-image: ${mistMask};`}
 	data-rainy-options={JSON.stringify(options)}
 ></div>
+
+{
+	options.bodyRain && (
+		<>
+			<div
+				class="rainy-body-rain"
+				data-rainy-body-rain
+				aria-hidden="true"
+				style={`position: fixed; inset: 0; z-index: 0; overflow: hidden; --rainy-body-fade: ${options.fadeInMs}ms; --rainy-streak-alpha: ${options.bodyRainOpacity}; --rainy-streak-duration: ${options.bodyRainSpeed}s; -webkit-mask-image: ${bodyRainMask}; mask-image: ${bodyRainMask};`}
+			>
+				<span class="rainy-body-rain__sheet rainy-body-rain__sheet--far" />
+				<span class="rainy-body-rain__sheet rainy-body-rain__sheet--near" />
+			</div>
+			<style is:inline set:html={bodyRainStyles}></style>
+		</>
+	)
+}
 
 <script>
 	import { RAINY_DAY_CHANGE_EVENT, WALLPAPER_MODE_CHANGE_EVENT } from "@constants/constants.ts";

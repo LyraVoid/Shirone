@@ -21,6 +21,7 @@ test.describe("Rainy window layer — 关闭时零足迹", () => {
 	test("首页不输出雨层，也不输出配置载体属性", async ({ page }) => {
 		await page.goto("/", { waitUntil: "domcontentloaded" });
 		await expect(page.locator(LAYER)).toHaveCount(0);
+		await expect(page.locator("[data-rainy-body-rain]")).toHaveCount(0);
 		await expect(page.locator("#config-carrier")).not.toHaveAttribute(
 			"data-rainy-day-enabled",
 		);
@@ -118,6 +119,16 @@ test.describe("Rainy window layer — 开启后", () => {
 			(el) => getComputedStyle(el).maskImage,
 		);
 		expect(maskImage).toContain("linear-gradient");
+
+		// 正文区雨丝：随雨幕一起淡入，并被蒙版挡在 banner 带之外
+		const bodyRain = page.locator("[data-rainy-body-rain]");
+		await expect(bodyRain).toHaveCount(1);
+		await expect
+			.poll(() => bodyRain.evaluate((el) => Number(getComputedStyle(el).opacity)))
+			.toBeCloseTo(1, 2);
+		expect(
+			await bodyRain.evaluate((el) => getComputedStyle(el).maskImage),
+		).toContain("linear-gradient");
 	});
 
 	test("Swup 站内导航后雨层仍在（持久壳未重建）", async ({ page }) => {
@@ -182,9 +193,16 @@ test.describe("Rainy window layer — 开启后", () => {
 			"data-rainy-active",
 			"true",
 		);
-		// 卸载会走 ~600ms 淡出，用 poll 等它归零；横幅图片同时淡回来
+		// 卸载会走 ~600ms 淡出，用 poll 等它归零；横幅图片同时淡回来，雨丝同步骤隐
 		await expect
 			.poll(() => layer.evaluate((el) => Number(getComputedStyle(el).opacity)))
+			.toBe(0);
+		await expect
+			.poll(() =>
+				page
+					.locator("[data-rainy-body-rain]")
+					.evaluate((el) => Number(getComputedStyle(el).opacity)),
+			)
 			.toBe(0);
 		await expect
 			.poll(() =>
