@@ -6,9 +6,12 @@ import {
 } from "../src/config/rainyDayConfig.ts";
 
 describe("Rainy day window config", () => {
-	it("未配置 / undefined 时跟随主题默认值", () => {
+	it("未配置 / undefined 时关闭（主题默认关闭）", () => {
+		// 主题默认值在 rainyDayConfig 里显式声明为 false：可选重量级特性默认关闭
+		assert.equal(rainyDayConfig.enable, false);
 		const options = resolveRainyDayOptions(undefined);
 		assert.equal(options.enable, rainyDayConfig.enable ?? true);
+		assert.equal(resolveRainyDayOptions(undefined).enable, false);
 		assert.equal(resolveRainyDayOptions(false).enable, false);
 	});
 

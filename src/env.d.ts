@@ -8,9 +8,9 @@ declare module "virtual:shirone-music-sidebar" {
 	export default component;
 }
 
-declare module "virtual:shirone-banner-rainy-window" {
+declare module "virtual:shirone-rainy-window" {
 	const component:
-		| typeof import("@components/molecules/BannerRainyWindow.astro").default
+		| typeof import("@components/organisms/RainyWindowLayer.astro").default
 		| null;
 	export default component;
 }

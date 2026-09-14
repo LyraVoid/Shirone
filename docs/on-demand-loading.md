@@ -32,13 +32,17 @@
 | `src/types/stylus.d.ts` | `stylus` 包最小类型声明（构建期编译样式用） |
 | `src/utils/script-loader.ts` | `loadScriptOnce()` 动态加载第三方 SDK 并去重 |
 
-**第二个参考实现（值得为重量级 npm 依赖抄一遍）：雨滴窗玻璃特效**
+**第二个参考实现（值得为重量级 npm 依赖抄一遍）：全页雨幕（原雨滴窗玻璃特效）**
 
 | 文件 | 职责 |
 |---|---|
-| `src/config/rainyDayConfig.ts` + `src/types/rainyDayConfig.ts` | 配置单一真源 + `resolveRainyDayOptions()` 校验、数值裁剪与关闭短路 |
-| `src/components/molecules/BannerRainyWindow.astro` | 特性组件：零 CSS（全内联样式）+ 运行时懒加载（`load` + 空闲后才 `import("@arayui/rainy-day")`） |
-| `astro.config.mjs` / `src/integration/index.ts` | 关闭时把组件模块整体替换为 `null`（`virtual:shirone-banner-rainy-window` + `generateBundle` 丢弃残留 chunk） |
+| `src/config/rainyDayConfig.ts` + `src/types/rainyDayConfig.ts` | 配置单一真源 + `resolveRainyDayOptions()` 校验、数值裁剪与关闭短路（默认 `enable: false`） |
+| `src/components/organisms/RainyWindowLayer.astro` | 特性组件：`position: fixed; inset: 0; z-index: 0` 的页面级环境层，零 CSS（全内联样式）+ 运行时懒加载（`load` + 空闲后才 `import("@arayui/rainy-day")`）+ `document.hidden` 暂停 rAF |
+| `src/layouts/Layout.astro` | 消费方：`enable` 为真才动态导入，且必须渲染在 `<slot />` **之后**（同层按树序绘制 → 盖住横幅图片、仍低于 `#main-layout` z-30） |
+| `astro.config.mjs` / `src/integration/index.ts` | 关闭时把组件模块整体替换为 `null`（`virtual:shirone-rainy-window` + `generateBundle` 丢弃残留 chunk） |
+
+> 该层的折射源是「当前可见的横幅图片」，因此特效库的不透明输出会把整页背景变成「壁纸 + 雨」，
+> 而不会只作用于横幅矩形；横幅图片仍在 DOM 中提供数据源（关闭态不输出 `crossorigin`）。
 
 它与评论系统的差别：依赖是 **npm 包而非 CDN 脚本**，所以「不进主 bundle」不能靠运行时注入 script，
 必须配合虚拟模块把整块模块图摘掉；`astro.config.mjs` 里的开关与 `src/integration/` 必须同步（打包契约）。

@@ -46,31 +46,29 @@ const umamiIntegration = resolvedUmamiOptions
 const musicSidebarModuleId = "virtual:shirone-music-sidebar";
 const resolvedMusicSidebarModuleId = `\0${musicSidebarModuleId}`;
 
-// 雨滴特效（Banner 上的 WebGL 雨滴）：关闭时同样用虚拟模块 + 残留 chunk 清理，
+// 全页雨幕（原 Banner 雨滴特效）：关闭时同样用虚拟模块 + 残留 chunk 清理，
 // 保证组件、特效库（含 Three.js）与样式都不进产物。
 const rainyDayFeatureEnabled = resolveRainyDayOptions(rainyDayConfig).enable;
-const bannerRainyWindowModuleId = "virtual:shirone-banner-rainy-window";
-const resolvedBannerRainyWindowModuleId = `\0${bannerRainyWindowModuleId}`;
+const rainyWindowModuleId = "virtual:shirone-rainy-window";
+const resolvedRainyWindowModuleId = `\0${rainyWindowModuleId}`;
 
-const optionalBannerRainyWindowPlugin = {
-	name: "shirone-optional-banner-rainy-window",
+const optionalRainyWindowPlugin = {
+	name: "shirone-optional-rainy-window",
 	enforce: "pre",
 	resolveId(source) {
-		return source === bannerRainyWindowModuleId
-			? resolvedBannerRainyWindowModuleId
-			: null;
+		return source === rainyWindowModuleId ? resolvedRainyWindowModuleId : null;
 	},
 	load(id) {
-		if (id !== resolvedBannerRainyWindowModuleId) return null;
+		if (id !== resolvedRainyWindowModuleId) return null;
 		return rainyDayFeatureEnabled
-			? 'export { default } from "/src/components/molecules/BannerRainyWindow.astro";'
+			? 'export { default } from "/src/components/organisms/RainyWindowLayer.astro";'
 			: "export default null;";
 	},
 	generateBundle(_options, bundle) {
 		if (rainyDayFeatureEnabled) return;
 		for (const fileName of Object.keys(bundle)) {
 			if (
-				fileName.includes("BannerRainyWindow") ||
+				fileName.includes("RainyWindowLayer") ||
 				fileName.startsWith("_astro/rainy") ||
 				fileName.includes("/rainy.")
 			) {
@@ -316,7 +314,7 @@ export default defineConfig({
 		},
 		plugins: [
 			optionalMusicSidebarPlugin,
-			optionalBannerRainyWindowPlugin,
+			optionalRainyWindowPlugin,
 			tailwindcss(),
 		],
 		optimizeDeps: {

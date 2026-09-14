@@ -34,7 +34,7 @@ export type {
 
 const MUSIC_VIRTUAL_ID = "virtual:shirone-music-sidebar";
 const RESOLVED_MUSIC_VIRTUAL_ID = `\0${MUSIC_VIRTUAL_ID}`;
-const RAINY_WINDOW_VIRTUAL_ID = "virtual:shirone-banner-rainy-window";
+const RAINY_WINDOW_VIRTUAL_ID = "virtual:shirone-rainy-window";
 const RESOLVED_RAINY_WINDOW_VIRTUAL_ID = `\0${RAINY_WINDOW_VIRTUAL_ID}`;
 
 /**
@@ -127,20 +127,20 @@ function createMusicSidebarPlugin(
 	};
 }
 /**
- * 同 `createMusicSidebarPlugin`：雨滴特效关闭时把它的客户端 bundle 整体丢弃，
+ * 同 `createMusicSidebarPlugin`：全页雨幕关闭时把它的客户端 bundle 整体丢弃，
  * 而不是把特效库（含 Three.js）与组件脚本作为死代码留在产物里。
  */
-function createBannerRainyWindowPlugin(
+function createRainyWindowPlugin(
 	paths: ResolvedShironesPaths,
 	enabled: boolean,
 ) {
 	const componentPath = join(
 		paths.packageSrc,
-		"components/molecules/BannerRainyWindow.astro",
+		"components/organisms/RainyWindowLayer.astro",
 	);
 
 	return {
-		name: "shirones:optional-banner-rainy-window",
+		name: "shirones:optional-rainy-window",
 		enforce: "pre" as const,
 		resolveId(source: string) {
 			return source === RAINY_WINDOW_VIRTUAL_ID
@@ -157,7 +157,7 @@ function createBannerRainyWindowPlugin(
 			if (enabled) return;
 			for (const fileName of Object.keys(bundle)) {
 				if (
-					fileName.includes("BannerRainyWindow") ||
+					fileName.includes("RainyWindowLayer") ||
 					fileName.startsWith("_astro/rainy") ||
 					fileName.includes("/rainy.")
 				) {
@@ -356,7 +356,7 @@ export function shirones(options: ShironesOptions = {}): AstroIntegration {
 							shironesFallbackResolver(paths),
 							shironesSsrNodeShims(),
 							createMusicSidebarPlugin(paths, musicEnabled),
-							createBannerRainyWindowPlugin(paths, rainyDayEnabled),
+							createRainyWindowPlugin(paths, rainyDayEnabled),
 							(await import("@tailwindcss/vite")).default(),
 						],
 						optimizeDeps: {

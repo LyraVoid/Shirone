@@ -2,28 +2,41 @@
 import { resolveRainyDayOptions, siteConfig } from "@/config";
 
 /**
- * 雨滴窗玻璃特效（Banner 图片上的 WebGL 雨滴，基于 @arayui/rainy-day）
+ * 雨滴窗玻璃特效（全页 WebGL 雨幕，基于 @arayui/rainy-day）
  *
- * 归属与层级：与 BannerWaves 同级、由 BannerStage 渲染在 `.banner-stage__media` 内。
- * 该容器里的两个 `<img>` 与本组件都是 z-auto，而黑色遮罩（`__scrim`，z-index 1）、
- * 标题文案（`__copy`，z-index 2）、水波纹（`__waves`，z-index 3）都排在它之后 →
- * 遮罩会同时压暗「图 + 雨」（保持标题对比度），文案与波纹始终在最上层。
+ * 归属与层级：页面级环境层（organism），由 `layouts/Layout.astro` 在 `<slot />` **之后**
+ * 挂载，因此位于 Swup 的 `#swup-container` 之外 —— 站内导航不会重建它。
  *
- * 零开销：本组件只在 `rainyDayConfig.enable` 为真时才会被 BannerStage 动态导入
- * （虚拟模块 `virtual:shirone-banner-rainy-window` 在关闭时导出 null），因此关闭状态下
+ * 几何与层级依据：容器为 `position: fixed; inset: 0; z-index: 0`。
+ * - 同层（z-index auto / 0）按树序绘制：本层晚于 `.banner-stage` 子树 → 盖住横幅图片
+ *   （它只作为折射源存在）；而 `#main-layout`（z-30）、`#top-row`（z-50）以及横幅遮罩
+ *   （z-1）/文案（z-2）/水波纹（z-3）都在它之上，内容与 hero 文案的对比度不受影响。
+ * - `#m3e-texture-canvas`（-z-20）在它之下，被不透明雨幕覆盖（要「纹理浮在雨上」需把
+ *   本层压到 -z-30 并同时隐藏横幅图片，属后续优化，见 docs/on-demand-loading.md）。
+ * - 特效库输出不透明画面（片元着色器 alpha 恒为 1），折射源只能是真实图片：这里沿用
+ *   「当前可见的横幅图片」（自动跟随轮播与明暗主题交叉淡入），所以整页背景呈现为
+ *   「壁纸 + 雨」而非只在横幅矩形内下雨；纯色背景（wallpaperMode: none）与移动端
+ *   非首页取不到可见横幅图，自然不会挂载。
+ *
+ * 零开销：本组件只在 `rainyDayConfig.enable` 为真时才会被 Layout 动态导入
+ * （虚拟模块 `virtual:shirone-rainy-window` 在关闭时导出 null），因此关闭状态下
  * 无 DOM、无样式、无 JS chunk，也不会加载特效库（含 Three.js）。样式全部用元素内联
  * style，不进 Astro 的 CSS 管线（见 docs/on-demand-loading.md §3 L3）。
  *
- * 解析后的参数以 `data-rainy-options` 交给客户端脚本，脚本不再二次解析配置。
+ * 运行时契约：懒挂载（load + 空闲）→ 弱网 / 移动端 / 减少动效（系统
+ * `prefers-reduced-motion` 与站内 `html.motion-reduced`）一律不挂载；`document.hidden`
+ * 时暂停渲染（库的 `pause()` 会 `cancelAnimationFrame`），`pagehide` 释放 WebGL 资源；
+ * 访客可在显示设置里开关（存 localStorage）。解析后的参数以 `data-rainy-options`
+ * 交给客户端脚本，脚本不再二次解析配置。
  */
 const options = resolveRainyDayOptions(siteConfig.rainyDay);
 ---
 
 <div
-	class="banner-rainy-window"
+	class="rainy-window-layer"
 	data-rainy-day-layer
 	aria-hidden="true"
-	style="position: absolute; inset: 0; overflow: hidden; pointer-events: none; opacity: 0;"
+	style="position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; opacity: 0;"
 	data-rainy-options={JSON.stringify(options)}
 ></div>
 
@@ -290,6 +303,7 @@ const options = resolveRainyDayOptions(siteConfig.rainyDay);
 			wrapper.replaceChildren();
 			wrapper.style.opacity = "0";
 			delete wrapper.dataset.rainyDayActive;
+			delete wrapper.dataset.rainyDayPaused;
 		}
 
 		/** 依「访客开关 + 环境 + 背景模式」决定挂载或卸载：环境不满足时把已挂载的实例一起卸掉 */
@@ -387,8 +401,14 @@ const options = resolveRainyDayOptions(siteConfig.rainyDay);
 			document.addEventListener("visibilitychange", () => {
 				if (!instance) return;
 				try {
-					if (document.hidden) instance.pause();
-					else instance.resume();
+					if (document.hidden) {
+						instance.pause();
+						// 可观测状态（仅启用时存在）：e2e 用它验证「切后台暂停 rAF 循环」
+						wrapper.dataset.rainyDayPaused = "true";
+					} else {
+						instance.resume();
+						delete wrapper.dataset.rainyDayPaused;
+					}
 				} catch {
 					/* 忽略 */
 				}

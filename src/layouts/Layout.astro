@@ -9,6 +9,7 @@ import {
 	expressiveCodeConfig,
 	profileConfig,
 	resolvedFontOptions,
+	resolveRainyDayOptions,
 	resolveTextureOptions,
 	resolveUmamiOptions,
 	siteConfig,
@@ -87,6 +88,14 @@ const defaultTexturePreset = textureOptions.defaultPreset;
 const defaultTextureOpacity = textureOptions.defaultOpacity;
 const textureEnabled = textureOptions.enable;
 const umamiOptions = resolveUmamiOptions(umamiConfig);
+
+// 全页雨幕：关闭时虚拟模块导出 null → 组件不进模块图（零 DOM / 零样式 / 零 chunk）。
+// 必须渲染在 `<slot />` 之后：同层（z-index 0）按树序绘制，这样才能盖住横幅图片，
+// 同时仍在 `#main-layout`（z-30）与 `#top-row`（z-50）之下。
+const rainyDayEnabled = resolveRainyDayOptions(siteConfig.rainyDay).enable;
+const RainyWindowLayer = rainyDayEnabled
+	? (await import("virtual:shirone-rainy-window")).default
+	: null;
 
 const hasDesktopBanner = hasBannerImages(siteConfig.banner.src.desktop);
 const hasMobileBanner = hasBannerImages(siteConfig.banner.src.mobile);
@@ -240,6 +249,8 @@ const hasMonoFont =
 		)}
 		<Snackbar client:only="svelte"></Snackbar>
 		<slot />
+		{/* 全页雨幕：不透明的环境层，位于内容之下、横幅图片之上（见组件头注释） */}
+		{RainyWindowLayer && <RainyWindowLayer />}
 		<div id="page-height-extend" class="hidden h-[300vh]"></div>
 	</body>
 </html>

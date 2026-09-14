@@ -1,11 +1,12 @@
 /**
- * 雨滴窗玻璃特效（Rainy Window）配置契约
+ * 雨滴窗玻璃特效（全页雨幕 / Rainy Window）配置契约
  *
- * 与 `textureConfig` 的分工：纹理是整页背景上的纯 CSS 图案；雨滴需要一张真实图片
- * 作为折射源，因此只作用在 Banner 图片上，只有在「以横幅作为页面背景」
- * （`wallpaperMode: "banner"`）时才有可见效果。
+ * 与 `textureConfig` 的分工：纹理是整页背景上的纯 CSS 图案；雨幕需要一张真实图片
+ * 作为折射源（取自当前可见的横幅图片），渲染为覆盖整个视口的固定环境层，
+ * 因此整页背景呈现为「壁纸 + 雨」，只有在壁纸可见时（`wallpaperMode: "banner"`）
+ * 才会挂载。
  *
- * 效果由 WebGL（Three.js）渲染：本仓库默认开启（`rainyDayConfig.enable: true`）；
+ * 效果由 WebGL（Three.js）渲染：本仓库默认关闭（`rainyDayConfig.enable: false`）；
  * 关闭时组件、特效库与相关样式全部不进构建产物（见 `docs/on-demand-loading.md`）。
  */
 export interface RainyDayConfig {

@@ -4,19 +4,19 @@ import I18nKey from "../../src/i18n/i18nKey.ts";
 import { i18n } from "../../src/i18n/translation.ts";
 
 /**
- * 雨滴窗玻璃特效（Banner 上的 WebGL 雨滴）
+ * 全页雨幕（原雨滴窗玻璃特效，Banner 上的 WebGL 雨滴）
  *
- * 该特性是重量级可选特性，本仓库默认开启（rainyDayConfig.enable: true）：
+ * 该特性是重量级可选特性，本仓库默认关闭（rainyDayConfig.enable: false）：
  * - 关闭时（enable: false）只断言「零足迹」（无图层、无载体属性、无 CORS 属性）；
- * - 开启时跑渲染、交互与 HiDPI 用例；两种状态各自 test.skip 守卫，
+ * - 开启时跑渲染、层级、交互与 HiDPI 用例；两种状态各自 test.skip 守卫，
  *   保证任一种配置下套件都是绿的（见 docs/on-demand-loading.md §4.3）。
  */
 const rainyDayEnabled = resolveRainyDayOptions().enable;
 
 const LAYER = "[data-rainy-day-layer]";
 
-test.describe("Rainy window effect — 关闭时零足迹", () => {
-	test.skip(rainyDayEnabled, "雨滴特效已开启，零足迹用例不适用");
+test.describe("Rainy window layer — 关闭时零足迹", () => {
+	test.skip(rainyDayEnabled, "全页雨幕已开启，零足迹用例不适用");
 
 	test("首页不输出雨层，也不输出配置载体属性", async ({ page }) => {
 		await page.goto("/", { waitUntil: "domcontentloaded" });
@@ -24,7 +24,7 @@ test.describe("Rainy window effect — 关闭时零足迹", () => {
 		await expect(page.locator("#config-carrier")).not.toHaveAttribute(
 			"data-rainy-day-enabled",
 		);
-		await expect(page.locator(".banner-stage__media canvas")).toHaveCount(0);
+		await expect(page.locator("canvas")).toHaveCount(0);
 		// 关闭态不应输出该属性
 		expect(
 			await page
@@ -35,26 +35,60 @@ test.describe("Rainy window effect — 关闭时零足迹", () => {
 	});
 });
 
-test.describe("Rainy window effect — 开启后", () => {
+test.describe("Rainy window layer — 开启后", () => {
 	test.skip(
 		!rainyDayEnabled,
-		"雨滴特效未启用（rainyDayConfig.enable: false），启用后运行 UI 用例",
+		"全页雨幕未启用（rainyDayConfig.enable: false），启用后运行 UI 用例",
 	);
 
-	test("雨层挂在横幅媒体层内且不拦截交互", async ({ page }) => {
+	test("全页雨层：固定覆盖视口、位于内容之下且不拦截交互", async ({ page }) => {
 		await page.goto("/", { waitUntil: "networkidle" });
 
 		const layer = page.locator(LAYER);
 		await expect(layer).toHaveCount(1);
 		await expect(layer).toHaveAttribute("aria-hidden", "true");
 		await expect(layer).toHaveCSS("pointer-events", "none");
-		await expect(layer).toHaveCSS("position", "absolute");
+		await expect(layer).toHaveCSS("position", "fixed");
 
-		// 归属：必须是 BannerStage 的媒体层子节点（遮罩/文案/水波纹都在它之后）
-		const insideMedia = await layer.evaluate((el) =>
-			Boolean(el.closest(".banner-stage__media")),
+		// 归属：页面级环境层，挂在 Swup 容器之外的持久壳（Layout）里
+		const outsideSwup = await layer.evaluate(
+			(el) => !el.closest("#swup-container"),
 		);
-		expect(insideMedia).toBe(true);
+		expect(outsideSwup).toBe(true);
+
+		// 几何：fixed + inset:0 → 铺满整个视口
+		const box = await layer.boundingBox();
+		const viewport = await page.evaluate(() => ({
+			width: document.documentElement.clientWidth,
+			height: document.documentElement.clientHeight,
+		}));
+		expect(box).not.toBeNull();
+		expect(Math.abs((box?.width ?? 0) - viewport.width)).toBeLessThanOrEqual(2);
+		expect(Math.abs((box?.height ?? 0) - viewport.height)).toBeLessThanOrEqual(
+			2,
+		);
+
+		// 层级契约：纹理层(-20) < 雨层(0) < 主内容(z-30) < 顶栏(z-50)
+		const zIndexOf = (selector: string) =>
+			page
+				.locator(selector)
+				.evaluate((el) => Number(getComputedStyle(el).zIndex), selector);
+		const layerZ = await layer.evaluate((el) =>
+			Number(getComputedStyle(el).zIndex),
+		);
+		expect(layerZ).toBe(0);
+		expect(await zIndexOf("#m3e-texture-canvas")).toBeLessThan(layerZ);
+		expect(await zIndexOf("#main-layout")).toBeGreaterThan(layerZ);
+		expect(await zIndexOf("#top-row")).toBeGreaterThan(layerZ);
+
+		// 绘制顺序：同层（z-index 0）按树序，雨层必须晚于横幅子树 → 盖住横幅图片
+		const afterBanner = await layer.evaluate((el) => {
+			const banner = document.getElementById("banner-wrapper");
+			if (!banner) return false;
+			const relation = banner.compareDocumentPosition(el);
+			return Boolean(relation & Node.DOCUMENT_POSITION_FOLLOWING);
+		});
+		expect(afterBanner).toBe(true);
 
 		// 懒挂载：等 load + 空闲后才会真正创建 WebGL 实例
 		await expect(layer).toHaveAttribute("data-rainy-day-active", "true", {
@@ -131,14 +165,57 @@ test.describe("Rainy window effect — 开启后", () => {
 			timeout: 15000,
 		});
 	});
+
+	test("切到后台标签页暂停渲染循环，回到前台恢复", async ({ page }) => {
+		await page.goto("/", { waitUntil: "networkidle" });
+		const layer = page.locator(LAYER);
+		await expect(layer).toHaveAttribute("data-rainy-day-active", "true", {
+			timeout: 15000,
+		});
+
+		// 浏览器不提供直接切后台的 API：覆写 document.hidden 后派发 visibilitychange。
+		// 组件在该事件里调用库的 pause()（内部 cancelAnimationFrame），并把状态写到属性上。
+		await page.evaluate(() => {
+			Object.defineProperty(document, "hidden", {
+				configurable: true,
+				get: () => true,
+			});
+			document.dispatchEvent(new Event("visibilitychange"));
+		});
+		await expect(layer).toHaveAttribute("data-rainy-day-paused", "true");
+
+		await page.evaluate(() => {
+			Object.defineProperty(document, "hidden", {
+				configurable: true,
+				get: () => false,
+			});
+			document.dispatchEvent(new Event("visibilitychange"));
+		});
+		await expect(layer).not.toHaveAttribute("data-rainy-day-paused", "true");
+	});
+
+	test("纯色背景（wallpaperMode: none）时取不到壁纸，不挂载", async ({
+		page,
+	}) => {
+		await page.addInitScript(() =>
+			window.localStorage.setItem("wallpaper-mode", "none"),
+		);
+		await page.goto("/", { waitUntil: "networkidle" });
+		// 图层容器仍在（SSR 输出），但不创建 WebGL 实例
+		await page.waitForTimeout(3500);
+		await expect(page.locator(LAYER)).not.toHaveAttribute(
+			"data-rainy-day-active",
+			"true",
+		);
+	});
 });
 
 /**
  * HiDPI / 4K 回归：修复前 `canvas.width / clientWidth` 等于 devicePixelRatio，修复后恒为 1
  */
-test.describe("Rainy window effect — 高分屏（dpr = 2）", () => {
+test.describe("Rainy window layer — 高分屏（dpr = 2）", () => {
 	test.use({ deviceScaleFactor: 2 });
-	test.skip(!rainyDayEnabled, "雨滴特效未启用（rainyDayConfig.enable: false）");
+	test.skip(!rainyDayEnabled, "全页雨幕未启用（rainyDayConfig.enable: false）");
 
 	test("画布绘制缓冲与 CSS 像素一致，背景不错位", async ({ page }) => {
 		await page.goto("/", { waitUntil: "networkidle" });
