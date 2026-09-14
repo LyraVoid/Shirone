@@ -41,7 +41,7 @@ Shirone is a blog theme built with Astro 7, Svelte 5, Tailwind 4, Stylus, and pn
 ## Validation
 
 - Common commands: `pnpm.cmd astro dev --port 4321`, `npx.cmd astro check`, `npx.cmd playwright test tests/site/<spec>.spec.ts`, `pnpm.cmd check:manifest`, `pnpm.cmd exec biome ci ./src`, `pnpm.cmd type-check`, and `pnpm.cmd build`.
-- `pnpm.cmd lint` and `pnpm.cmd format` include `--write`; do not use them as read-only review checks. Use `pnpm.cmd exec biome ci ./src` when validation must not modify files.
+- `pnpm.cmd lint` and `pnpm.cmd format` include `--write`; do not use them as read-only review checks. Use `pnpm.cmd exec biome ci ./src` when validation must not modify files. Both are scoped to `src/`: the root config (`astro.config.mjs`) and `tests/**` sit outside that scope and keep pre-existing formatting deviations, so verify the files you touched with a path-scoped, no-write `biome format <path>` and never reformat the rest of the repository inside an unrelated change.
 - Run the smallest relevant Playwright fragment plus `tests/site/a11y.spec.ts` for page/component changes. Run album, icon, or motion fragments when those domains change. The visual suite uses local snapshots that are ignored by Git; update them only after confirming every difference is intentional, and do not absorb unrelated page-height or environment drift.
 - If Stylus/Svelte changes appear stale in dev, clear `node_modules/.vite` and `.astro` and restart. If a Markdown/rehype/remark change appears stale, clear `.astro/data-store.json` and restart.
 - Wait for theme initialization (`--mc-primary`) and `onload-animation` convergence before asserting computed styles or running accessibility checks.

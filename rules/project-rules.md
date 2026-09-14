@@ -73,7 +73,7 @@ content/（Markdown 正文，仅 pages 引用）
 
 ## 6. 代码风格与格式化
 
-- **强制 Biome 格式化**：提交代码前**必须**运行 `pnpm format` 格式化所有代码文件，确保全仓代码缩进（tab）、引号（double）及导入顺序完全统一；CI 环境下执行 `pnpm exec biome ci ./src` 进行零写入校验。
+- **强制 Biome 格式化**：提交代码前**必须**运行 `pnpm format` 格式化改动文件，确保缩进（tab）、引号（double）及导入顺序统一；CI 环境下执行 `pnpm exec biome ci ./src` 进行零写入校验。两者作用域都是 `src/`：根配置（如 `astro.config.mjs`）与 `tests/**` 不在范围内，且当前带有**既有**格式偏差——**禁止**在无关改动里跑仓库级 `biome format --write .`（会一次性重写这些文件，淹没 diff），也不要把不带路径的 `biome ci` 当作回归判据（它会连带报出 `scripts/**`、`tests/**` 与根配置的既有问题）。改动 `src/` 之外的文件时，只对具体路径操作：`pnpm exec biome format --write <path>`，再用不带 `--write` 的同名命令复核。
 - **禁止硬编码**：色值、圆角、阴影、动效时长一律走 token（唯一例外：图片上的覆盖层用固定黑/白）。
 - **禁止散落的非令牌动效**：如 `transition: all 0.3s`、`animation: xxx 1s linear`。
 - **限制 `!important`**：仅允许用于不可控第三方/生成样式、明确的组件覆盖 API 或用户偏好边界，并遵循 `rules/css-important.md` 的作用域、注释和测试要求。
