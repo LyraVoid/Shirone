@@ -253,6 +253,16 @@ const mistMask = [
 				incoming.style.opacity = "0";
 				incoming.style.transition = `opacity ${duration}ms ease-in-out`;
 				const nextInstance = await createInstance(incoming, next);
+				// 建新实例期间可能已被卸载（切到纯色背景 / 关掉雨滴）：销毁这一份，别留孤立画布
+				if (!instance) {
+					try {
+						nextInstance.destroy();
+					} catch {
+						/* 忽略：上下文可能已失效 */
+					}
+					incoming.remove();
+					return;
+				}
 
 				await new Promise<void>((resolve) =>
 					requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
@@ -369,14 +379,21 @@ const mistMask = [
 			cleanupTimer = window.setTimeout(release, options.fadeInMs + 80);
 		}
 
-		/** 依「访客开关 + 环境 + 背景模式」决定挂载或卸载：环境不满足时把已挂载的实例一起卸掉 */
+		/**
+		 * 依「访客开关 + 环境 + 背景模式」决定挂载或卸载：环境不满足时把已挂载的实例一起卸掉
+		 *
+		 * 注意纯色背景这一支必须**卸载**而不是直接返回：雨层是不透明的，它渲染的是切模式前
+		 * 那张壁纸 + 雨；只 return 会把它留在页面上（横幅此时已被 `display: none` 隐藏），
+		 * 表现为「切到 Solid 后雨还在、壁纸背景也还在」。
+		 */
 		function refresh(): void {
 			if (!getStoredRainyDayEnabled() || envBlocked()) {
 				unmount();
 				return;
 			}
-			// 纯色背景（wallpaperMode: none）时没有可折射的图，等模式切回横幅再挂载
+			// 纯色背景（wallpaperMode: none）没有可折射的图：卸掉已挂载的，等模式切回横幅再挂载
 			if (document.documentElement.dataset.wallpaperMode === "none") {
+				if (instance || activeLayer) unmount();
 				return;
 			}
 			void mount();

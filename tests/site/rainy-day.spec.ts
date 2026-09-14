@@ -294,6 +294,59 @@ test.describe("Rainy window layer — 开启后", () => {
 				.evaluate((el) => Number(getComputedStyle(el).zIndex)),
 		).toBe(-20);
 	});
+
+	/**
+	 * 回归：开着雨滴切到 Solid（wallpaper-mode: none）时，雨层必须立刻卸载。
+	 *
+	 * 早前 `refresh()` 在这一支只 `return`、不卸载，已挂载的实例会继续渲染「切模式前那张
+	 * 壁纸 + 雨」（横幅此时已被 `display: none` 隐藏），表现为「切到纯色后雨还在、壁纸
+	 * 背景也还在」。
+	 */
+	test("运行中切到纯色背景会卸载雨层，切回横幅模式再挂载", async ({ page }) => {
+		await page.goto("/", { waitUntil: "networkidle" });
+		const layer = page.locator(LAYER);
+		await expect(layer).toHaveAttribute("data-rainy-day-active", "true", {
+			timeout: 15000,
+		});
+
+		await page.locator("#display-settings-switch").click();
+		await page
+			.getByText(i18n(I18nKey.wallpaperModeNone), { exact: true })
+			.first()
+			.click();
+
+		// 卸载契约：激活标记移除、画布销毁、纹理层回基线、水波回到满强度
+		await expect(layer).not.toHaveAttribute("data-rainy-day-active", "true");
+		await expect(page.locator("html")).not.toHaveAttribute(
+			"data-rainy-active",
+			"true",
+		);
+		await expect.poll(() => layer.locator("canvas").count()).toBe(0);
+		expect(
+			await page
+				.locator("#m3e-texture-canvas")
+				.evaluate((el) => Number(getComputedStyle(el).zIndex)),
+		).toBe(-20);
+		await expect
+			.poll(() =>
+				page
+					.locator(".banner-waves")
+					.evaluate((el) => Number(getComputedStyle(el).opacity)),
+			)
+			.toBe(1);
+
+		// 切回横幅模式：重新挂载
+		const bannerOption = page
+			.getByText(i18n(I18nKey.wallpaperModeBanner), { exact: true })
+			.first();
+		if (!(await bannerOption.isVisible())) {
+			await page.locator("#display-settings-switch").click();
+		}
+		await bannerOption.click();
+		await expect(layer).toHaveAttribute("data-rainy-day-active", "true", {
+			timeout: 15000,
+		});
+	});
 });
 
 /**
