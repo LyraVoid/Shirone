@@ -42,12 +42,17 @@
 | `astro.config.mjs` / `src/integration/index.ts` | 关闭时把组件模块整体替换为 `null`（`virtual:shirone-rainy-window` + `generateBundle` 丢弃残留 chunk） |
 
 > 该层的折射源是「当前可见的横幅图片」；横幅图片仍在 DOM 中提供数据源（关闭态不输出 `crossorigin`）。
-> 由于特效库输出的是**不透明**画面，画面本身无法像半透明玻璃那样叠在背景上，所以：
-> 1. 雨层按 `rainyDayConfig.mistStrength`（默认 0.25）以**半透明「雨雾/水光」**形式叠加在整页
->    （含横幅）之上——页面底色与背景纹理因此保持原样；调到 1 则是不透明雨幕（背景被照片替换）；
-> 2. 挂载成功时给 `<html>` 打 `data-rainy-active="true"`，由 `src/styles/textures.css` 把背景纹理层
->    从基线 `-20` 抬到 `1`（仍低于内容层），避免这层雨雾把纹理打八折。
-> **卸载时全部复原**（标记移除、雨层透明、纹理回到 -20），关闭 / 未激活态与改动前完全一致。
+> 由于特效库输出的是**不透明**画面，画面本身无法像半透明玻璃那样叠在背景上，所以用**竖向蒙版**
+> 分配浓度：`0 → var(--banner-stage-height)`（banner 带）恒为不透明 —— 雨最明显，同时
+> `BannerStage` 的 `.banner-stage__media` 在激活期过渡到 `opacity: 0`（用父容器透明度而非
+> `<img>` 自身 opacity，否则雨层按计算 opacity 选轮播图会选错），两者交叉淡入淡出形成过场；
+> 往下 `mistFadeVh`（默认 12vh，必须落在视口内）内过渡到 `mistStrength`（默认 0.4），
+> 正文区即保持「浅色 M3 底 + 背景纹理 + 明显可见的雨雾」。蒙版的 alpha 在构建期写死为字面量
+> （不放进 `rgba()` 的 `var()`），避免解析兼容性风险。
+> 挂载成功时给 `<html>` 打 `data-rainy-active="true"`，由 `src/styles/textures.css` 把背景纹理层
+> 从基线 `-20` 抬到 `1`（仍低于内容层），避免这层雨雾把纹理打八折；挂载淡入、卸载先淡出再释放
+> WebGL 资源。**卸载后全部复原**（标记移除、纹理回到 -20、横幅图片淡回），关闭 / 未激活态与
+> 改动前完全一致。
 
 它与评论系统的差别：依赖是 **npm 包而非 CDN 脚本**，所以「不进主 bundle」不能靠运行时注入 script，
 必须配合虚拟模块把整块模块图摘掉；`astro.config.mjs` 里的开关与 `src/integration/` 必须同步（打包契约）。

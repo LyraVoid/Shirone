@@ -48,12 +48,17 @@ export interface RainyDayConfig {
 	pauseWhenHidden?: boolean;
 
 	/**
-	 * 雨雾浓度 0-1：特效库输出的是不透明画面（无法像半透明玻璃那样叠在背景上），
-	 * 所以「背景保持原样 + 全页都有雨」靠**让雨层半透明**实现——本值即雨层的不透明度。
-	 * 0 = 看不到雨；0.25 = 默认，柔和雨雾/水光叠在整页，页面底色与背景纹理保持原样；
-	 * 0.4 ≈ 雨感明显；0.7 ≈ 照片为主；1 = 不透明雨幕（页面背景被壁纸照片替换）。默认 0.25。
+	 * 雨雾浓度 0-1：竖向南端的浓度——banner 带内恒为不透明（雨最明显，接替淡出的横幅图片），
+	 * 往下在 `mistFadeVh` 内过渡到本值：正文区保持浅色 M3 底 + 背景纹理 + 轻雨雾。
+	 * 0 = 正文区完全看不到雨；0.25 = 默认；0.6 以上正文区也会明显变暗。默认 0.25。
 	 */
 	mistStrength?: number;
+
+	/**
+	 * 蒙版过渡长度（vh，0-100，默认 40）：从 banner 带底部起多少视口高度内，
+	 * 蒙版从「不透明」过渡到 `mistStrength`。0 = 硬边。
+	 */
+	mistFadeVh?: number;
 
 	/** 轮播换图时雨层的交叉淡入时长（毫秒；0 = 直接切换） */
 	bgFadeMs?: number;
@@ -89,6 +94,7 @@ export interface ResolvedRainyDayOptions {
 	skipOnSlowNetwork: boolean;
 	pauseWhenHidden: boolean;
 	mistStrength: number;
+	mistFadeVh: number;
 	bgFadeMs: number;
 	lazy: boolean;
 	idleDelayMs: number;

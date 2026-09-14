@@ -75,9 +75,12 @@ describe("Rainy day window config", () => {
 		assert.equal(options.fadeInMs, 0);
 	});
 
-	it("雨雾浓度缺省为 0.25，负数被裁剪到 0", () => {
-		assert.equal(resolveRainyDayOptions({}).mistStrength, 0.25);
+	it("雨雾浓度缺省为 0.4、过渡长度缺省为 12vh，越界被裁剪", () => {
+		assert.equal(resolveRainyDayOptions({}).mistStrength, 0.4);
 		assert.equal(resolveRainyDayOptions({ mistStrength: -2 }).mistStrength, 0);
+		assert.equal(resolveRainyDayOptions({}).mistFadeVh, 12);
+		assert.equal(resolveRainyDayOptions({ mistFadeVh: 999 }).mistFadeVh, 100);
+		assert.equal(resolveRainyDayOptions({ mistFadeVh: -5 }).mistFadeVh, 0);
 	});
 
 	it("非数值 / 非布尔值回退到默认值", () => {

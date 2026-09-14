@@ -1026,6 +1026,16 @@ const bannerCors = rainyDayEnabled ? "anonymous" : undefined;
 			position: absolute
 			inset: 0
 
+		.banner-stage__media
+			transition: opacity var(--m3e-duration-long) var(--m3e-easing-standard)
+
+		/* 雨幕激活时让出横幅图片：雨层已经在同一区域接替显示壁纸 + 雨，
+		   这里用「父容器透明度」而不是改 <img> 自身 opacity —— 雨层靠 <img> 的
+		   计算 opacity 判断「当前可见的轮播图」，动图片自身会让它选错图。
+		   过渡与雨层淡入/淡出交叉，形成过场动画。 */
+		:global(html[data-rainy-active="true"]) .banner-stage__media
+			opacity: 0
+
 		.banner-stage__image
 			position: absolute
 			inset: 0

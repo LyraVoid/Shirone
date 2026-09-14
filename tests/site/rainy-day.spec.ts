@@ -104,12 +104,20 @@ test.describe("Rainy window layer — 开启后", () => {
 		expect(await zIndexOf("#main-layout")).toBeGreaterThan(textureZ);
 		expect(await zIndexOf("#top-row")).toBeGreaterThan(textureZ);
 
-		// 半透明雨雾 + 纹理层保护：纹理必须留在雨层之上才能保持原样强度
-		// （挂载后还有 ~600ms 淡入，用 poll 等它收敛到静止值）
-		const mist = resolveRainyDayOptions().mistStrength;
+		// 过场＋纹理层保护：纹理必须留在雨层之上才能保持原样强度；雨层淡入到 1，
+		// 同时横幅图片（.banner-stage__media）淡出，让雨层在同一位置接替壁纸
+		const media = page.locator(".banner-stage__media");
 		await expect
 			.poll(() => layer.evaluate((el) => Number(getComputedStyle(el).opacity)))
-			.toBeCloseTo(mist, 2);
+			.toBeCloseTo(1, 2);
+		await expect
+			.poll(() => media.evaluate((el) => Number(getComputedStyle(el).opacity)))
+			.toBeCloseTo(0, 2);
+		// 竖向蒙版把 banner 带设为不透明，正文区落到配置的雨雾浓度
+		const maskImage = await layer.evaluate(
+			(el) => getComputedStyle(el).maskImage,
+		);
+		expect(maskImage).toContain("linear-gradient");
 	});
 
 	test("Swup 站内导航后雨层仍在（持久壳未重建）", async ({ page }) => {
@@ -174,10 +182,17 @@ test.describe("Rainy window layer — 开启后", () => {
 			"data-rainy-active",
 			"true",
 		);
-		// 卸载会走 ~600ms 淡出，用 poll 等它归零
+		// 卸载会走 ~600ms 淡出，用 poll 等它归零；横幅图片同时淡回来
 		await expect
 			.poll(() => layer.evaluate((el) => Number(getComputedStyle(el).opacity)))
 			.toBe(0);
+		await expect
+			.poll(() =>
+				page
+					.locator(".banner-stage__media")
+					.evaluate((el) => Number(getComputedStyle(el).opacity)),
+			)
+			.toBeCloseTo(1, 2);
 		expect(
 			await page
 				.locator("#m3e-texture-canvas")
@@ -188,7 +203,7 @@ test.describe("Rainy window layer — 开启后", () => {
 		);
 		expect(stored).toBe("false");
 
-		// 再打开：恢复挂载，纹理重新抬到雨层之上，雨层回到半透明雨雾
+		// 再打开：恢复挂载，纹理重新抬到雨层之上，雨层淡入、横幅图片再次淡出
 		await toggle.click({ force: true });
 		await expect(layer).toHaveAttribute("data-rainy-day-active", "true", {
 			timeout: 15000,
@@ -200,7 +215,14 @@ test.describe("Rainy window layer — 开启后", () => {
 		).toBeGreaterThan(0);
 		await expect
 			.poll(() => layer.evaluate((el) => Number(getComputedStyle(el).opacity)))
-			.toBeCloseTo(resolveRainyDayOptions().mistStrength, 2);
+			.toBeCloseTo(1, 2);
+		await expect
+			.poll(() =>
+				page
+					.locator(".banner-stage__media")
+					.evaluate((el) => Number(getComputedStyle(el).opacity)),
+			)
+			.toBeCloseTo(0, 2);
 	});
 
 	test("切到后台标签页暂停渲染循环，回到前台恢复", async ({ page }) => {

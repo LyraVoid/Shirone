@@ -21,7 +21,8 @@ export type { RainyDayConfig, ResolvedRainyDayOptions };
  * 弱网/减少动效环境下不会挂载。
  *
  * 参数范围：intensity 0-1、speed 0-10、brightness 0-1、normal 0-3、zoom 0.1-3、
- * blurIntensity 0-10、blurIterations 1-64、fps 15-120、mistStrength 0-1；越界值会被 resolve 时裁剪。
+ * blurIntensity 0-10、blurIterations 1-64、fps 15-120、mistStrength 0-1、mistFadeVh 0-100；
+ * 越界值会被 resolve 时裁剪。
  */
 export const rainyDayConfig: RainyDayConfig = withUserConfig("rainyDay", {
 	enable: true, // 总开关（构建期生效）：false = 该特性完全不进产物
@@ -44,11 +45,14 @@ export const rainyDayConfig: RainyDayConfig = withUserConfig("rainyDay", {
 	skipOnSlowNetwork: true, // 弱网 / 省流不加载
 	pauseWhenHidden: true, // 切到后台标签页暂停渲染
 
-	// 雨雾浓度 0-1（默认 0.25）：特效库输出的是不透明画面，所以「背景保持原样 + 全页都有雨」
-	// 只能靠让雨层半透明——本值即「雨层的不透明度」。
-	// 0 = 看不到雨；0.25 = 默认，柔和雨雾/水光叠在整页，页面底色与背景纹理保持原样；
-	// 0.4 ≈ 雨感明显；0.7 ≈ 照片为主；1 = 完全不透明雨幕（页面背景被壁纸照片替换，雨最明显）。
-	mistStrength: 0.25,
+	// 雨雾浓度 0-1（默认 0.4）：正文区（banner 带以下）的雨浓度——banner 带内恒为不透明
+	// （雨最明显，接替淡出的横幅图片），往下在 mistFadeVh 内过渡到本值，正文区保持
+	// 「浅色 M3 底 + 背景纹理 + 雨雾」。0 = 正文区完全看不到雨；0.4 = 默认（肉眼明显）；
+	// 1 = 正文区也完全不透明（背景被壁纸照片替换）。
+	mistStrength: 0.4,
+	// 蒙版过渡长度（vh，默认 12）：从 banner 带底部起多少视口高度内过渡到 mistStrength。
+	// 必须明显小于「视口 - banner 带」的高度，否则正文区几乎看不到雨（会烂在折叠线以下）。
+	mistFadeVh: 12,
 
 	bgFadeMs: 500, // 轮播换图时雨层交叉淡入时长
 	lazy: true, // 延后到 load + 空闲再挂载
@@ -76,6 +80,7 @@ const DISABLED_RAINY_DAY_OPTIONS: ResolvedRainyDayOptions = Object.freeze({
 	skipOnSlowNetwork: true,
 	pauseWhenHidden: true,
 	mistStrength: 0,
+	mistFadeVh: 0,
 	bgFadeMs: 0,
 	lazy: true,
 	idleDelayMs: 0,
@@ -127,7 +132,8 @@ export function resolveRainyDayOptions(
 			blurIterations: 12,
 			postProcessing: true,
 			fps: 30,
-			mistStrength: 0.25,
+			mistStrength: 0.4,
+			mistFadeVh: 12,
 			bgFadeMs: 500,
 			idleDelayMs: 2500,
 			fadeInMs: 600,
@@ -152,7 +158,8 @@ export function resolveRainyDayOptions(
 		respectReducedMotion: boolOption(config.respectReducedMotion, true),
 		skipOnSlowNetwork: boolOption(config.skipOnSlowNetwork, true),
 		pauseWhenHidden: boolOption(config.pauseWhenHidden, true),
-		mistStrength: clampNumber(config.mistStrength, 0.25, 0, 1),
+		mistStrength: clampNumber(config.mistStrength, 0.4, 0, 1),
+		mistFadeVh: clampNumber(config.mistFadeVh, 12, 0, 100, true),
 		bgFadeMs: clampNumber(config.bgFadeMs, 500, 0, 5000),
 		lazy: boolOption(config.lazy, true),
 		idleDelayMs: clampNumber(config.idleDelayMs, 2500, 0, 10000),
