@@ -319,4 +319,9 @@ export const id: Translation = {
 		"Tambahkan URL umpan di atas ke pembaca RSS/Atom favorit Anda (seperti NetNewsWire, Feedly, Inoreader, Follow) untuk menerima pembaruan.",
 	[Key.feedOpenXml]: "Lihat XML Asli",
 	[Key.feedRecentPosts]: "Artikel Terbaru di Umpan",
+
+	// Efek jendela hujan (panel pengaturan tampilan)
+	[Key.rainyDay]: "Efek hujan",
+	[Key.rainyDayHint]:
+		"Menambahkan tetesan hujan pada gambar banner (perlu latar banner).",
 };

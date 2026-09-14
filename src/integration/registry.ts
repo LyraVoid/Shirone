@@ -45,7 +45,9 @@ export interface OverlayTarget {
  * | `src/components/**` | `src/components/**`          |
  * | `src/layouts/**`    | `src/layouts/**`             |
  */
-export function createOverlayTargets(paths: ResolvedShironesPaths): OverlayTarget[] {
+export function createOverlayTargets(
+	paths: ResolvedShironesPaths,
+): OverlayTarget[] {
 	return [
 		{
 			label: "config",
@@ -149,7 +151,9 @@ export interface OverrideRegistry {
  * probe per import, and the registry doubles as the single source of truth for
  * "what is overridden and what is not".
  */
-export function buildOverrideRegistry(paths: ResolvedShironesPaths): OverrideRegistry {
+export function buildOverrideRegistry(
+	paths: ResolvedShironesPaths,
+): OverrideRegistry {
 	const targets = createOverlayTargets(paths);
 	const overrides = new Map<string, string>();
 	const counts: Record<string, number> = {};

@@ -20,6 +20,10 @@ export const TEXTURE_PRESETS = [
 	"sakura",
 ] as const;
 
+// 雨滴窗玻璃特效（Banner 上的 WebGL 雨滴）：总开关在 rainyDayConfig，这里只存访客偏好
+export const RAINY_DAY_ENABLED_KEY = "rainy-day-enabled";
+export const RAINY_DAY_CHANGE_EVENT = "rainy-day:change";
+
 // Banner height unit: vh
 export const BANNER_HEIGHT = 35;
 export const BANNER_HEIGHT_EXTEND = 30;

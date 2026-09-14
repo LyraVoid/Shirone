@@ -28,6 +28,10 @@ import {
 	viteBuildShared,
 } from "./src/config/integrationsConfig.ts";
 import { musicConfig, resolveMusicOptions } from "./src/config/musicConfig.ts";
+import {
+	rainyDayConfig,
+	resolveRainyDayOptions,
+} from "./src/config/rainyDayConfig.ts";
 import { sidebarConfig } from "./src/config/sidebarConfig.ts";
 import { siteConfig } from "./src/config/siteConfig.ts";
 import { resolveUmamiOptions, umamiConfig } from "./src/config/umamiConfig.ts";
@@ -55,9 +59,42 @@ const umamiIntegration = resolvedUmamiOptions
 	: null;
 const resolvedMusicSidebarModuleId = `\0${MUSIC_SIDEBAR_VIRTUAL_ID}`;
 
+// 全页雨幕（原 Banner 雨滴特效）：关闭时同样用虚拟模块 + 残留 chunk 清理，
+// 保证组件、特效库（含 Three.js）与样式都不进产物。
+const rainyDayFeatureEnabled = resolveRainyDayOptions(rainyDayConfig).enable;
+const rainyWindowModuleId = "virtual:shirone-rainy-window";
+const resolvedRainyWindowModuleId = `\0${rainyWindowModuleId}`;
+
+const optionalRainyWindowPlugin = {
+	name: "shirone-optional-rainy-window",
+	enforce: "pre",
+	resolveId(source) {
+		return source === rainyWindowModuleId ? resolvedRainyWindowModuleId : null;
+	},
+	load(id) {
+		if (id !== resolvedRainyWindowModuleId) return null;
+		return rainyDayFeatureEnabled
+			? 'export { default } from "/src/components/organisms/RainyWindowLayer.astro";'
+			: "export default null;";
+	},
+	generateBundle(_options, bundle) {
+		if (rainyDayFeatureEnabled) return;
+		for (const fileName of Object.keys(bundle)) {
+			if (
+				fileName.includes("RainyWindowLayer") ||
+				fileName.startsWith("_astro/rainy") ||
+				fileName.includes("/rainy.")
+			) {
+				delete bundle[fileName];
+			}
+		}
+	},
+};
+
 // The package-mode twin of this plugin is createMusicSidebarPlugin() in
 // src/integration/index.ts. The two differ only in where the sidebar file
 // lives; the virtual id and the bundle-pruning rule are shared.
+
 const optionalMusicSidebarPlugin = {
 	name: "shirone-optional-music-sidebar",
 	enforce: "pre",
@@ -230,7 +267,11 @@ export default defineConfig({
 				},
 			],
 		},
-		plugins: [optionalMusicSidebarPlugin, tailwindcss()],
+		plugins: [
+			optionalMusicSidebarPlugin,
+			optionalRainyWindowPlugin,
+			tailwindcss(),
+		],
 		optimizeDeps: {
 			// Source mode lists these unconditionally: they are installed at the
 			// repo root, so Vite can resolve them from here. Package mode filters

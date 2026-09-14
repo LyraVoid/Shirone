@@ -100,6 +100,8 @@ To verify formatting in CI or pre-commit checks without writing files:
 pnpm exec biome ci ./src
 ```
 
+Both commands are scoped to `src/`: the repository-root config (`astro.config.mjs`) and `tests/**` are outside that scope and still carry pre-existing formatting deviations. Never reformat them as a side effect of an unrelated change — a repo-wide `biome format --write .` rewrites all of them at once and buries your diff. Verify the files you touched explicitly, for example `pnpm exec biome format tests/site/your.spec.ts` (read-only) or the same command with `--write` on that single path. A repo-wide `biome ci` without a path additionally reports pre-existing diagnostics from `scripts/**`, `tests/**` and the root config; the CI gate is the scoped `./src` check.
+
 ### 2. Quality Checks & Diagnostics
 
 Run Astro diagnostics:

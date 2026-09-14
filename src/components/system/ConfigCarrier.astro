@@ -1,7 +1,13 @@
 ---
-import { resolveTextureOptions, siteConfig } from "@/config";
+import {
+	resolveRainyDayOptions,
+	resolveTextureOptions,
+	siteConfig,
+} from "@/config";
 
 const textureOptions = resolveTextureOptions();
+// 雨滴特效未启用时不输出任何载体属性（关闭即零足迹，也避免打包产物差异比对出现噪音）
+const rainyDayOptions = resolveRainyDayOptions(siteConfig.rainyDay);
 ---
 
 <div
@@ -13,6 +19,9 @@ const textureOptions = resolveTextureOptions();
 				"data-texture-preset": textureOptions.defaultPreset,
 				"data-texture-opacity": textureOptions.defaultOpacity,
 			}
+		: {})}
+	{...(rainyDayOptions.enable
+		? { "data-rainy-day-enabled": String(rainyDayOptions.defaultEnabled) }
 		: {})}
 >
 </div>

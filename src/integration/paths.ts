@@ -34,7 +34,9 @@ export function findPackageRoot(fromUrl: string): string {
  * from a checkout of the Shirone repository. Mirrors Starlight/Stalux detection.
  */
 export function detectPluginMode(fromUrl: string): boolean {
-	return fromUrl.includes("/node_modules/") || fromUrl.includes("\\node_modules\\");
+	return (
+		fromUrl.includes("/node_modules/") || fromUrl.includes("\\node_modules\\")
+	);
 }
 
 function toAbsolute(projectRoot: string, candidate: string): string {

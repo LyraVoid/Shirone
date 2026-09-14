@@ -315,4 +315,9 @@ export const en: Translation = {
 		"Add this feed URL to your favorite RSS/Atom reader (e.g. NetNewsWire, Feedly, Inoreader, Follow) to get instant updates.",
 	[Key.feedOpenXml]: "View Raw XML",
 	[Key.feedRecentPosts]: "Recent Posts in Feed",
+
+	// Rainy window effect (display settings panel)
+	[Key.rainyDay]: "Rain effect",
+	[Key.rainyDayHint]:
+		"Adds raindrops on the banner image (needs the banner background).",
 };

@@ -12,7 +12,10 @@ if (!projectsConfig.enable) {
 }
 
 const pageTitle = resolveI18nText(projectsConfig.title, I18nKey.projects);
-const pageDescription = resolveI18nText(projectsConfig.description, I18nKey.projectsBanner);
+const pageDescription = resolveI18nText(
+	projectsConfig.description,
+	I18nKey.projectsBanner,
+);
 
 const items = resolveProjectsData(projectsConfig);
 ---

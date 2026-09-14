@@ -32,6 +32,8 @@ Shirone 是 Astro 7 + Svelte 5 + Tailwind 4 + Stylus + pnpm 的 M3E 博客主题
 | `pnpm.cmd exec biome ci ./src` | 只读 lint 校验(`lint`/`format` 带 `--write`,**不能**当只读检查用) |
 | `npx.cmd playwright test tests/site/<spec>.spec.ts` | 只跑最小相关分片;UI 变更必加 `tests/site/a11y.spec.ts` |
 
+> `format` 与 `biome ci ./src` 的作用域都只有 `src/`:根配置(`astro.config.mjs`)与 `tests/**` 不在范围内且带既有格式偏差——不要跑仓库级 `biome format --write .`(会带出无关 diff),也不要把不带路径的 `biome ci` 当回归判据;改动这些文件时只对具体路径 `biome format --write <path>` 并用不带 `--write` 的同名命令复核。
+
 ## 缓存与陈旧问题
 
 - Stylus/Svelte 变更不生效:清 `node_modules/.vite` 与 `.astro` 后重启 dev。

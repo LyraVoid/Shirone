@@ -303,4 +303,8 @@ export const th: Translation = {
 		"เพิ่ม URL ฟีดด้านบนลงในโปรแกรมอ่าน RSS/Atom (เช่น NetNewsWire, Feedly, Inoreader, Follow) เพื่อรับการแจ้งเตือนบทความใหม่",
 	[Key.feedOpenXml]: "ดู XML ต้นฉบับ",
 	[Key.feedRecentPosts]: "บทความล่าสุดในฟีด",
+
+	// เอฟเฟกต์หน้าต่างฝน (แผงตั้งค่าการแสดงผล)
+	[Key.rainyDay]: "เอฟเฟกต์ฝน",
+	[Key.rainyDayHint]: "เพิ่มหยดฝนบนภาพแบนเนอร์ (ต้องใช้พื้นหลังแบบแบนเนอร์)",
 };

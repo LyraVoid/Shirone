@@ -62,6 +62,7 @@
     "perf:measure": "node scripts/perf/measure.mjs"
   },
   "dependencies": {
+    "@arayui/rainy-day": "^1.0.6",
     "@astrojs/check": "^0.9.10",
     "@astrojs/markdown-remark": "^7.3.1",
     "@astrojs/mdx": "^8.0.1",

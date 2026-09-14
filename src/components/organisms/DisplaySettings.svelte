@@ -23,15 +23,18 @@ import {
 } from "@utils/mc-utils";
 import {
 	getDefaultHue,
+	getDefaultRainyDayEnabled,
 	getDefaultTextureOpacity,
 	getDefaultTexturePreset,
 	getHue,
 	getMotionPreference,
+	getStoredRainyDayEnabled,
 	getStoredTextureOpacity,
 	getStoredTexturePreset,
 	getStoredWallpaperMode,
 	setHue,
 	setMotionPreference,
+	setRainyDayEnabled,
 	setTextureOpacity,
 	setTexturePreset,
 	setWallpaperMode,
@@ -79,6 +82,11 @@ const defaultTextureOpacity = getDefaultTextureOpacity();
 let texturePreset = $state<TexturePreset>(getStoredTexturePreset());
 let lastAppliedTexturePreset = texturePreset;
 let textureOpacity = $state<number>(getStoredTextureOpacity());
+
+// 雨滴特效：只有主题把它编译进来（rainyDayConfig.enable）时 displayConfig.rainyDay 才为真
+const defaultRainyDayEnabled = getDefaultRainyDayEnabled();
+let rainyDayEnabled = $state<boolean>(getStoredRainyDayEnabled());
+let lastAppliedRainyDayEnabled = rainyDayEnabled;
 
 const textureOptions: {
 	value: TexturePreset;
@@ -130,7 +138,7 @@ onMount(() => {
 	return () => observer.disconnect();
 });
 
-/** 完整重置：色相 / 配色风格 / Color Spec / 列表布局 / 背景纹理 全部还原为站点默认（点击即生效，无确认弹窗） */
+/** 完整重置：色相 / 配色风格 / Color Spec / 列表布局 / 背景纹理 / 雨滴特效 全部还原为站点默认（点击即生效，无确认弹窗） */
 function confirmReset() {
 	hue = defaultHue;
 	style = defaultStyle;
@@ -139,6 +147,7 @@ function confirmReset() {
 	wallpaperMode = defaultWallpaperMode;
 	texturePreset = defaultTexturePreset;
 	textureOpacity = defaultTextureOpacity;
+	rainyDayEnabled = defaultRainyDayEnabled;
 }
 
 /** 是否有可重置的偏离（控制 Reset 按钮可见性） */
@@ -149,7 +158,8 @@ const isDirty = $derived(
 		postListMode !== defaultLayoutMode ||
 		wallpaperMode !== defaultWallpaperMode ||
 		texturePreset !== defaultTexturePreset ||
-		textureOpacity !== defaultTextureOpacity,
+		textureOpacity !== defaultTextureOpacity ||
+		rainyDayEnabled !== defaultRainyDayEnabled,
 );
 
 $effect(() => {
@@ -176,6 +186,11 @@ $effect(() => {
 });
 $effect(() => {
 	setTextureOpacity(textureOpacity);
+});
+$effect(() => {
+	if (rainyDayEnabled === lastAppliedRainyDayEnabled) return;
+	lastAppliedRainyDayEnabled = rainyDayEnabled;
+	setRainyDayEnabled(rainyDayEnabled);
 });
 $effect(() => {
 	if (postListMode === lastAppliedMode) return;
@@ -307,8 +322,8 @@ const stylePreviews = $derived(
             {/if}
         </div>
 
-        <!-- 段二：界面布局（页面背景 + 列表布局 + 背景纹理） -->
-        {#if displayConfig.wallpaperMode || displayConfig.layoutMode || displayConfig.texture}
+        <!-- 段二：界面布局（页面背景 + 列表布局 + 背景纹理 + 雨滴特效） -->
+        {#if displayConfig.wallpaperMode || displayConfig.layoutMode || displayConfig.texture || displayConfig.rainyDay}
             <div class="p-4 flex flex-col gap-3">
                 {#if displayConfig.wallpaperMode}
                     <div class="flex flex-col gap-1.5">
@@ -358,6 +373,18 @@ const stylePreviews = $derived(
                                 </button>
                             {/each}
                         </div>
+                    </div>
+                {/if}
+                {#if displayConfig.rainyDay}
+                    <div class="flex items-center justify-between gap-2 pt-1">
+                        <div class="flex flex-col gap-0.5 min-w-0">
+                            <div class="flex items-center gap-2">
+                                <Icon icon="material-symbols:rainy" class="text-lg text-[var(--primary)]" />
+                                <span class="text-sm font-bold text-[var(--on-surface)]">{i18n(I18nKey.rainyDay)}</span>
+                            </div>
+                            <span class="display-settings__section-label opacity-80">{i18n(I18nKey.rainyDayHint)}</span>
+                        </div>
+                        <Switch bind:checked={rainyDayEnabled} label={i18n(I18nKey.rainyDay)} icons />
                     </div>
                 {/if}
             </div>

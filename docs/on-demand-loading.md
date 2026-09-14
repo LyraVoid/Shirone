@@ -32,6 +32,39 @@
 | `src/types/stylus.d.ts` | `stylus` 包最小类型声明（构建期编译样式用） |
 | `src/utils/script-loader.ts` | `loadScriptOnce()` 动态加载第三方 SDK 并去重 |
 
+**第二个参考实现（值得为重量级 npm 依赖抄一遍）：全页雨幕（原雨滴窗玻璃特效）**
+
+| 文件 | 职责 |
+|---|---|
+| `src/config/rainyDayConfig.ts` + `src/types/rainyDayConfig.ts` | 配置单一真源 + `resolveRainyDayOptions()` 校验、数值裁剪与关闭短路（默认 `enable: false`：不渲染组件、不加载特效库，产物零 DOM / 零样式 / 零 chunk；改为 `true` 才启用） |
+| `src/components/organisms/RainyWindowLayer.astro` | 特性组件：`position: fixed; inset: 0; z-index: 0` 的页面级环境层，零 CSS（全内联样式）+ 运行时懒加载（`load` + 空闲后才 `import("@arayui/rainy-day")`）+ `document.hidden` 暂停 rAF |
+| `src/layouts/Layout.astro` | 消费方：`enable` 为真才动态导入，且必须渲染在 `<slot />` **之后**（同层按树序绘制 → 盖住横幅图片、仍低于 `#main-layout` z-30） |
+| `astro.config.mjs` / `src/integration/index.ts` | 关闭时把组件模块整体替换为 `null`（`virtual:shirone-rainy-window` + `generateBundle` 丢弃残留 chunk） |
+
+> 该层的折射源是「当前可见的横幅图片」；横幅图片仍在 DOM 中提供数据源（关闭态不输出 `crossorigin`）。
+> 由于特效库输出的是**不透明**画面，画面本身无法像半透明玻璃那样叠在背景上，所以用**竖向蒙版**
+> 分配浓度：`0 → var(--banner-stage-height)`（banner 带）恒为不透明 —— 雨最明显，同时
+> `BannerStage` 的 `.banner-stage__media` 在激活期过渡到 `opacity: 0`（用父容器透明度而非
+> `<img>` 自身 opacity，否则雨层按计算 opacity 选轮播图会选错），两者交叉淡入淡出形成过场；
+> 往下 `mistFadeVh`（默认 12vh，必须落在视口内）内过渡到 `mistStrength`（默认 0.4），
+> 正文区即保持「浅色 M3 底 + 背景纹理 + 明显可见的雨雾」。蒙版的 alpha 在构建期写死为字面量
+> （不放进 `rgba()` 的 `var()`），避免解析兼容性风险。
+> 挂载成功时给 `<html>` 打 `data-rainy-active="true"`，由 `src/styles/textures.css` 把背景纹理层
+> 从基线 `-20` 抬到 `1`（仍低于内容层），避免这层雨雾把纹理打八折；挂载淡入、卸载先淡出再释放
+> WebGL 资源。**卸载后全部复原**（标记移除、纹理回到 -20、横幅图片淡回），关闭 / 未激活态与
+> 改动前完全一致。
+>
+> 卸载触发条件有四类：访客关掉雨滴、环境不满足（无 WebGL / 减少动效 / `<768px` 且 `mobile: false` /
+> 弱网）、切到后台标签页（只暂停渲染循环）、以及背景模式切到纯色（`wallpaperMode: none`）。最后一种
+> 必须把实例一起卸掉——雨层不透明，留在画面上渲染的是「切模式前那张壁纸 + 雨」，而横幅此时已被
+> `display: none` 隐藏，表现为「切到 Solid 后雨还在、壁纸背景也还在」；切回横幅模式会重新挂载。
+>
+> 正文区（banner 带以下）只保留这层雨雾：WebGL 雨只能折射底图，而壁纸下半部分与页面底色近乎同色
+> （实测 Δ≤10/255），所以那里看不到雨滴——这是该特效的固有限制，不再额外叠加 CSS 雨丝。
+
+它与评论系统的差别：依赖是 **npm 包而非 CDN 脚本**，所以「不进主 bundle」不能靠运行时注入 script，
+必须配合虚拟模块把整块模块图摘掉；`astro.config.mjs` 里的开关与 `src/integration/` 必须同步（打包契约）。
+
 ---
 
 ## 3. 四层防护（按顺序落实）
@@ -153,7 +186,7 @@ dist 中无对应 CSS 资产、无对应 JS chunk。验证后恢复配置。
 
 ### 4.2 构建产物扫描（开启状态）
 
-`enable: true` 构建后确认：特性样式**只**出现在渲染该特性的页面，非使用页面零引用。
+临时把 `enable` 设为 `true` 后构建确认：特性样式**只**出现在渲染该特性的页面，非使用页面零引用。
 
 ### 4.3 Playwright
 
@@ -183,7 +216,7 @@ test("...", async ({ page }) => {
 |---|---|---|
 | Astro CSS 提升 | 组件内 `<style>` / `?url` / `?inline` 导入会被收集进共享 CSS，所有页面加载 | `<style is:inline>` + 构建期编译（§3 L3） |
 | `import.meta.env` 开关 | 非 Vite 上下文（Node 配置加载）下为 `undefined`，直接崩溃 | 开关走 config 字面量，不用 env |
-| 测试依赖默认开启 | 默认关闭后 UI 测试失败 | `test.skip` 守卫（§4.3） |
+| 测试依赖默认开启 | 特性默认关闭后开启态用例被跳过（漏测风险） | `test.skip` 守卫（§4.3）双向覆盖：默认关闭时跑零足迹用例，临时开启时跑渲染用例 |
 | 第三方 SDK 进 bundle | 可选依赖被静态导入进主包 | 动态 `<script>` 注入 + `loadScriptOnce`（§3 L4） |
 | 加载状态轮询 | 引入 MutationObserver / setInterval 增加复杂度 | CSS `:has()` 感知状态（§3 L4） |
 | 关闭时输出骨架 | 即使关闭也渲染占位 DOM 造成布局偏移 | 消费组件短路 `return null`（§3 L1） |

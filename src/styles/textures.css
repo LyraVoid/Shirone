@@ -18,6 +18,15 @@
 	transition: opacity var(--m3e-duration-long, 400ms) var(--m3e-easing-standard, cubic-bezier(0.2, 0, 0, 1));
 }
 
+/* 全页雨幕激活（RainyWindowLayer 挂载成功时给 <html> 打的标记）：
+   雨层固定在 z-index 0，即使以 20% 的「雨雾」半透明叠加，也会把基线的 -20 纹理打八折 →
+   激活期间把纹理抬到它之上（1），纹理保持 100% 强度、预设照旧可切换；仍低于内容层
+   （#main-layout z-30 / #top-row z-50 / 抽屉与弹层 40-200）。雨幕卸载时标记被移除，
+   纹理自动回到基线 -20，未激活场景零变化。 */
+html[data-rainy-active="true"] #m3e-texture-canvas {
+	z-index: 1;
+}
+
 /* 00. None (纯色无纹理：完全脱离渲染树，0 绘制与渲染开销) */
 html[data-texture-preset="none"] #m3e-texture-canvas {
 	display: none !important;

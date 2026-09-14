@@ -1,0 +1,506 @@
+---
+import { resolveRainyDayOptions, siteConfig } from "@/config";
+
+/**
+ * 雨滴窗玻璃特效（全页 WebGL 雨幕，基于 @arayui/rainy-day）
+ *
+ * 归属与层级：页面级环境层（organism），由 `layouts/Layout.astro` 在 `<slot />` **之后**
+ * 挂载，因此位于 Swup 的 `#swup-container` 之外 —— 站内导航不会重建它。
+ *
+ * 几何与层级依据：容器为 `position: fixed; inset: 0; z-index: 0`，并按
+ * `--rainy-mist`（= `rainyDayConfig.mistStrength`，默认 0.25）与
+ * `--rainy-mist-fade`（= `mistFadeVh`，默认 40vh）做**竖向蒙版**：
+ * - banner 带内（`0 → var(--banner-stage-height)`）恒为**不透明**：雨最明显，正好接替
+ *   同一时刻淡出的横幅图片（`BannerStage` 的 `.banner-stage__media` 在激活时过渡到
+ *   `opacity: 0`，见其样式块）；
+ * - 往下 `--rainy-mist-fade` 内平滑过渡到 `--rainy-mist`：正文区保持「浅色 M3 底 +
+ *   背景纹理 + 轻雨雾」，页面底色与 `#m3e-texture-canvas` 与原样基本一致。
+ * 同层（z-index auto / 0）按树序绘制，故本层晚于 `.banner-stage` 子树；`#main-layout`
+ * （z-30）、`#top-row`（z-50）以及横幅遮罩（z-1）/文案（z-2）/水波纹（z-3）都在它之上。
+ *
+ * 纹理层保护：本层在 z-index 0，仍会压住基线的 `#m3e-texture-canvas`（-20），哪怕只是
+ * 区区的雨雾也会把纹理打八折。因此**挂载成功时**在 `<html>` 上打
+ * `data-rainy-active="true"`，由 `src/styles/textures.css` 把纹理层抬到 z-index 1
+ * （仍低于内容层），纹理保持 100% 强度、可继续切换预设；**卸载时**移除该属性，
+ * 纹理回到基线 -20，关闭 / 未激活态（纯色背景、移动端、减少动效…）与改动前完全一致。
+ * 开关都带过场：挂载淡入（`fadeInMs`），卸载先淡出再释放 WebGL 资源。
+ *
+ * 零开销：本组件只在 `rainyDayConfig.enable` 为真时才会被 Layout 动态导入
+ * （虚拟模块 `virtual:shirone-rainy-window` 在关闭时导出 null），因此关闭状态下
+ * 无 DOM、无样式、无 JS chunk，也不会加载特效库（含 Three.js）。样式全部用元素内联
+ * style，不进 Astro 的 CSS 管线（见 docs/on-demand-loading.md §3 L3）。
+ *
+ * 运行时契约：懒挂载（load + 空闲）→ 弱网 / 移动端 / 减少动效（系统
+ * `prefers-reduced-motion` 与站内 `html.motion-reduced`）一律不挂载；`document.hidden`
+ * 时暂停渲染（库的 `pause()` 会 `cancelAnimationFrame`），`pagehide` 释放 WebGL 资源；
+ * 访客可在显示设置里开关（存 localStorage）。解析后的参数以 `data-rainy-options`
+ * 交给客户端脚本，脚本不再二次解析配置。
+ */
+const options = resolveRainyDayOptions(siteConfig.rainyDay);
+/** 蒙版下方的雨雾 alpha：构建期写死，避免在 rgba() 里解析 var() 的兼容性风险 */
+const mistAlpha = Math.min(Math.max(options.mistStrength, 0), 1).toFixed(2);
+const mistFadeVh = Math.round(options.mistFadeVh);
+/**
+ * 竖向蒙版：banner 带（0 → --banner-stage-height）恒为不透明 —— 雨最明显；
+ * 往下 `mistFadeVh` 内过渡到 `mistAlpha`，正文区即「浅色 M3 底 + 背景纹理 + 雨雾」。
+ * 过渡终点必须落在视口内（mistFadeVh 取小值），否则正文区会被"烂在折叠线以下"而几乎看不到雨。
+ */
+const mistMask = [
+	"linear-gradient(to bottom, #000 0,",
+	"#000 var(--banner-stage-height, 65vh),",
+	`rgba(0, 0, 0, ${mistAlpha}) calc(var(--banner-stage-height, 65vh) + ${mistFadeVh}vh),`,
+	`rgba(0, 0, 0, ${mistAlpha}) 100%)`,
+].join(" ");
+---
+
+<div
+	class="rainy-window-layer"
+	data-rainy-day-layer
+	aria-hidden="true"
+	style={`position: fixed; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; opacity: 0; -webkit-mask-image: ${mistMask}; mask-image: ${mistMask};`}
+	data-rainy-options={JSON.stringify(options)}
+></div>
+
+<script>
+	import { RAINY_DAY_CHANGE_EVENT, WALLPAPER_MODE_CHANGE_EVENT } from "@constants/constants.ts";
+	import { getStoredRainyDayEnabled } from "@utils/setting-utils";
+
+	/** 与 @arayui/rainy-day 实例保持一致的最小结构（不把三方类型带进项目） */
+	interface RainyInstance {
+		pause: () => void;
+		resume: () => void;
+		destroy: () => void;
+		loadImage: (url: string) => Promise<void>;
+		/** 上游渲染器私有字段，仅用于修正 HiDPI 下的渲染像素比 */
+		renderer?: { setPixelRatio?: (ratio: number) => void };
+	}
+
+	interface RainyOptions {
+		enable: boolean;
+		intensity: number;
+		speed: number;
+		brightness: number;
+		normal: number;
+		zoom: number;
+		blurIntensity: number;
+		blurIterations: number;
+		lightning: boolean;
+		panning: boolean;
+		postProcessing: boolean;
+		fps: number;
+		mobile: boolean;
+		respectReducedMotion: boolean;
+		skipOnSlowNetwork: boolean;
+		pauseWhenHidden: boolean;
+		/** 雨雾浓度 0-1：0 = 看不到雨，1 = 不透明雨幕（页面背景被壁纸照片替换） */
+		mistStrength: number;
+		bgFadeMs: number;
+		lazy: boolean;
+		idleDelayMs: number;
+		fadeInMs: number;
+	}
+
+	const wrapper = document.querySelector<HTMLElement>("[data-rainy-day-layer]");
+	if (wrapper?.dataset.rainyOptions) {
+		const options = JSON.parse(wrapper.dataset.rainyOptions) as RainyOptions;
+		if (options.enable) start(wrapper, options);
+	}
+
+	function start(wrapper: HTMLElement, options: RainyOptions): void {
+		const banner = document.getElementById("banner-wrapper");
+		const mobileMQ = window.matchMedia("(max-width: 767.98px)");
+		const reduceMQ = window.matchMedia("(prefers-reduced-motion: reduce)");
+		const hasWebGL = detectWebGL();
+
+		/**
+		 * 静止不透明度：雨雾浓度由容器上的竖向蒙版承担（banner 带不透明 → 正文区雨雾），
+		 * 所以这里始终淡入到完全不透明。
+		 */
+		const restOpacity = "1";
+
+		let instance: RainyInstance | null = null;
+		let activeLayer: HTMLElement | null = null;
+		let observer: MutationObserver | null = null;
+		let lastBackground: string | null = null;
+		let pendingBg: string | null = null;
+		let booted = false;
+		let swapping = false;
+		let cleanupTimer: number | null = null;
+
+		/** 环境不满足就不挂载：无 WebGL / 减少动效 / 移动端 / 容器不可见 */
+		function envBlocked(): boolean {
+			if (!hasWebGL) return true;
+			if (options.respectReducedMotion && reduceMQ.matches) return true;
+			// 访客在显示设置里手动开的「减少动效」同样生效（等价于 CSS 的 html.motion-reduced）
+			if (document.documentElement.classList.contains("motion-reduced")) {
+				return true;
+			}
+			if (!options.mobile && mobileMQ.matches) return true;
+			return wrapper.clientWidth === 0 || wrapper.clientHeight === 0;
+		}
+
+		/**
+		 * 当前可见的横幅图
+		 *
+		 * BannerStage 用两个常驻 `<img class="banner-stage__image">` 交替承载图片，
+		 * 交叉淡入期间两张同时存在、靠 `--active` 与 CSS 过渡切换。
+		 * 取「计算不透明度最大的那张」即可同时覆盖静态与过渡两种时刻。
+		 */
+		function currentBannerImage(): string | undefined {
+			const images = Array.from(
+				document.querySelectorAll<HTMLImageElement>(".banner-stage__image"),
+			);
+			let best: HTMLImageElement | undefined;
+			let bestOpacity = -1;
+			for (const img of images) {
+				if (!(img.currentSrc || img.src)) continue;
+				if (img.getBoundingClientRect().height === 0) continue;
+				const parsed = Number.parseFloat(
+					window.getComputedStyle(img).opacity || "1",
+				);
+				const value = Number.isFinite(parsed) ? parsed : 1;
+				if (value > bestOpacity) {
+					bestOpacity = value;
+					best = img;
+				}
+			}
+			return best?.currentSrc || best?.src || undefined;
+		}
+
+		/** 对齐 Banner 自身的交叉淡入时长（读不到时回退配置值） */
+		function bannerFadeMs(): number {
+			const raw = banner?.dataset.carouselFadeDuration;
+			const parsed = raw ? Number.parseInt(raw, 10) : Number.NaN;
+			if (Number.isFinite(parsed) && parsed >= 0) return parsed;
+			return Math.max(options.bgFadeMs, 0);
+		}
+
+		function createLayer(): HTMLDivElement {
+			const el = document.createElement("div");
+			el.style.position = "absolute";
+			el.style.inset = "0";
+			el.style.pointerEvents = "none";
+			wrapper.appendChild(el);
+			return el;
+		}
+
+		async function createInstance(
+			container: HTMLElement,
+			backgroundImage: string,
+		): Promise<RainyInstance> {
+			const { RainyWindow } = await import("@arayui/rainy-day");
+			const created = new RainyWindow(container, {
+				intensity: options.intensity,
+				speed: options.speed,
+				brightness: options.brightness,
+				normal: options.normal,
+				zoom: options.zoom,
+				blurIntensity: options.blurIntensity,
+				blurIterations: options.blurIterations,
+				lightning: options.lightning,
+				panning: options.panning,
+				postProcessing: options.postProcessing,
+				fps: options.fps,
+				backgroundImage,
+			}) as unknown as RainyInstance;
+			// HiDPI 修正：上游用 CSS 像素计算 u_resolution，却把画布按 devicePixelRatio
+			// 放大 → Retina / 4K 下背景贴图会错位（表现为「壁纸被拉伸」）。把渲染像素比
+			// 压回 1 让两者一致；dpr = 1 时是空操作。
+			created.renderer?.setPixelRatio?.(1);
+			return created;
+		}
+
+		function fadeIn(): void {
+			if (options.fadeInMs <= 0) {
+				wrapper.style.opacity = restOpacity;
+				return;
+			}
+			wrapper.style.transition = `opacity ${options.fadeInMs}ms ease-out`;
+			requestAnimationFrame(() => {
+				wrapper.style.opacity = restOpacity;
+			});
+			window.setTimeout(() => {
+				wrapper.style.removeProperty("transition");
+			}, options.fadeInMs + 200);
+		}
+
+
+
+		/**
+		 * 轮播换图：双层真交叉淡入
+		 *
+		 * 雨层不透明（着色器 alpha 恒为 1），直接换贴图会看到整块画面跳变；因此新建一层
+		 * 承载新图并淡入，完成后销毁旧实例与旧层 —— 全程不透明，也不会露出 Banner
+		 * 自身的 crossfade 中间态。
+		 */
+		async function crossfadeTo(next: string): Promise<void> {
+			if (!instance || next === lastBackground) return;
+			if (swapping) {
+				pendingBg = next;
+				return;
+			}
+			swapping = true;
+			const duration = bannerFadeMs();
+
+			try {
+				if (duration <= 0) {
+					await instance.loadImage(next);
+					lastBackground = next;
+					return;
+				}
+
+				const incoming = createLayer();
+				incoming.style.opacity = "0";
+				incoming.style.transition = `opacity ${duration}ms ease-in-out`;
+				const nextInstance = await createInstance(incoming, next);
+				// 建新实例期间可能已被卸载（切到纯色背景 / 关掉雨滴）：销毁这一份，别留孤立画布
+				if (!instance) {
+					try {
+						nextInstance.destroy();
+					} catch {
+						/* 忽略：上下文可能已失效 */
+					}
+					incoming.remove();
+					return;
+				}
+
+				await new Promise<void>((resolve) =>
+					requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+				);
+				incoming.style.opacity = "1";
+				await new Promise((resolve) => window.setTimeout(resolve, duration + 60));
+
+				const previousInstance = instance;
+				const previousLayer = activeLayer;
+				instance = nextInstance;
+				activeLayer = incoming;
+				lastBackground = next;
+				try {
+					previousInstance.destroy();
+				} catch {
+					/* 旧实例已随换图退役 */
+				}
+				previousLayer?.remove();
+			} catch (error) {
+				console.warn("[rainy-day] 换图失败，保留原背景：", error);
+			} finally {
+				swapping = false;
+				if (pendingBg) {
+					const queued = pendingBg;
+					pendingBg = null;
+					void crossfadeTo(queued);
+				}
+			}
+		}
+
+		/** 跟随 Banner 换图：监听属性变化即可，无需轮询 */
+		function watchBanner(): void {
+			if (observer || !banner) return;
+			observer = new MutationObserver(() => {
+				if (!instance) return;
+				const next = currentBannerImage();
+				if (!next || next === lastBackground) return;
+				void crossfadeTo(next);
+			});
+			observer.observe(banner, {
+				subtree: true,
+				childList: true,
+				attributes: true,
+				attributeFilter: ["class", "src", "srcset", "style"],
+			});
+		}
+
+		async function mount(): Promise<void> {
+			if (instance || envBlocked()) return;
+			const background = currentBannerImage();
+			// 取不到图就不要挂载：否则特效库会回退加载它自带的占位图
+			if (!background) return;
+
+			try {
+				// 若上一轮的淡出计时器还挂着（关闭后立刻又打开），取消它，别让它清掉新内容
+				if (cleanupTimer !== null) {
+					window.clearTimeout(cleanupTimer);
+					cleanupTimer = null;
+				}
+				activeLayer = createLayer();
+				instance = await createInstance(activeLayer, background);
+				lastBackground = background;
+				wrapper.dataset.rainyDayActive = "true";
+				// 背景纹理层抬到不透明雨幕之上才可见（见头注释与 styles/textures.css）
+				document.documentElement.dataset.rainyActive = "true";
+				fadeIn();
+				watchBanner();
+			} catch (error) {
+				console.warn("[rainy-day] 挂载失败：", error);
+				unmount(true);
+			}
+		}
+
+		function unmount(immediate = false): void {
+			const dyingInstance = instance;
+			const dyingLayer = activeLayer;
+			observer?.disconnect();
+			observer = null;
+			instance = null;
+			activeLayer = null;
+			lastBackground = null;
+			delete wrapper.dataset.rainyDayActive;
+			delete wrapper.dataset.rainyDayPaused;
+			// 纹理层回到基线层级（-20）；同时让 BannerStage 的图片淡回来 → 与雨层淡出交叉
+			delete document.documentElement.dataset.rainyActive;
+
+			const release = (): void => {
+				try {
+					dyingInstance?.destroy();
+				} catch {
+					/* 忽略：上下文可能已失效 */
+				}
+				dyingLayer?.remove();
+				// 淡出期间若已重新挂载（属性被重新写上），不要清掉新内容
+				if (wrapper.dataset.rainyDayActive) return;
+				wrapper.replaceChildren();
+				wrapper.style.opacity = "0";
+				wrapper.style.removeProperty("transition");
+			};
+
+			if (cleanupTimer !== null) {
+				window.clearTimeout(cleanupTimer);
+				cleanupTimer = null;
+			}
+			// reduced-motion 下不做淡出过场，直接释放：与 CSS 侧 html.motion-reduced 契约一致
+			const motionReduced =
+				(options.respectReducedMotion && reduceMQ.matches) ||
+				document.documentElement.classList.contains("motion-reduced");
+			if (immediate || options.fadeInMs <= 0 || motionReduced) {
+				release();
+				return;
+			}
+			// 过场：先淡出，再把 WebGL 资源释放掉
+			wrapper.style.transition = `opacity ${options.fadeInMs}ms ease-out`;
+			requestAnimationFrame(() => {
+				wrapper.style.opacity = "0";
+			});
+			cleanupTimer = window.setTimeout(release, options.fadeInMs + 80);
+		}
+
+		/**
+		 * 依「访客开关 + 环境 + 背景模式」决定挂载或卸载：环境不满足时把已挂载的实例一起卸掉
+		 *
+		 * 注意纯色背景这一支必须**卸载**而不是直接返回：雨层是不透明的，它渲染的是切模式前
+		 * 那张壁纸 + 雨；只 return 会把它留在页面上（横幅此时已被 `display: none` 隐藏），
+		 * 表现为「切到 Solid 后雨还在、壁纸背景也还在」。
+		 */
+		function refresh(): void {
+			if (!getStoredRainyDayEnabled() || envBlocked()) {
+				unmount();
+				return;
+			}
+			// 纯色背景（wallpaperMode: none）没有可折射的图：卸掉已挂载的，等模式切回横幅再挂载
+			if (document.documentElement.dataset.wallpaperMode === "none") {
+				if (instance || activeLayer) unmount();
+				return;
+			}
+			void mount();
+		}
+
+		function isSlowNetwork(): boolean {
+			if (!options.skipOnSlowNetwork) return false;
+			const connection = (
+				navigator as Navigator & {
+					connection?: { saveData?: boolean; effectiveType?: string };
+				}
+			).connection;
+			if (!connection) return false;
+			if (connection.saveData) return true;
+			return (
+				connection.effectiveType === "slow-2g" ||
+				connection.effectiveType === "2g"
+			);
+		}
+
+		function detectWebGL(): boolean {
+			try {
+				const canvas = document.createElement("canvas");
+				return Boolean(
+					canvas.getContext("webgl") ?? canvas.getContext("experimental-webgl"),
+				);
+			} catch {
+				return false;
+			}
+		}
+
+		/** 首次挂载：等 load + 浏览器空闲（lazy 关闭时立即挂载），把特效库移出首屏关键路径 */
+		function boot(): void {
+			if (booted) return;
+			requestAnimationFrame(() => {
+				requestAnimationFrame(() => {
+					if (!isSlowNetwork()) refresh();
+					booted = true;
+				});
+			});
+		}
+
+		function scheduleBoot(): void {
+			if (!options.lazy) {
+				boot();
+				return;
+			}
+			const idleStart = (): void => {
+				const requestIdle = (
+					window as Window & {
+						requestIdleCallback?: (
+							cb: () => void,
+							opts?: { timeout: number },
+						) => number;
+					}
+				).requestIdleCallback;
+				if (typeof requestIdle === "function") {
+					requestIdle(() => boot(), { timeout: options.idleDelayMs });
+				} else {
+					window.setTimeout(() => boot(), Math.min(options.idleDelayMs, 1200));
+				}
+			};
+			if (document.readyState === "complete") idleStart();
+			else window.addEventListener("load", idleStart, { once: true });
+		}
+
+		scheduleBoot();
+
+		// 访客在显示设置里开关雨滴 → 立即生效，不等空闲
+		window.addEventListener(RAINY_DAY_CHANGE_EVENT, () => {
+			booted = true;
+			refresh();
+		});
+
+		// 背景模式切换（纯色 / 横幅）→ 重新判定能否挂载
+		window.addEventListener(WALLPAPER_MODE_CHANGE_EVENT, refresh);
+
+		// 运行中环境变化（减少动效 / 移动端断点）→ 即时停用或恢复
+		if (options.respectReducedMotion) {
+			reduceMQ.addEventListener("change", refresh);
+		}
+		if (!options.mobile) mobileMQ.addEventListener("change", refresh);
+
+		if (options.pauseWhenHidden) {
+			document.addEventListener("visibilitychange", () => {
+				if (!instance) return;
+				try {
+					if (document.hidden) {
+						instance.pause();
+						// 可观测状态（仅启用时存在）：e2e 用它验证「切后台暂停 rAF 循环」
+						wrapper.dataset.rainyDayPaused = "true";
+					} else {
+						instance.resume();
+						delete wrapper.dataset.rainyDayPaused;
+					}
+				} catch {
+					/* 忽略 */
+				}
+			});
+		}
+
+		// 离开页面释放 WebGL 资源（不需要过场）
+		window.addEventListener("pagehide", () => unmount(true));
+	}
+</script>
+

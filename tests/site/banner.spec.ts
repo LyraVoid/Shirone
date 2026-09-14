@@ -347,7 +347,11 @@ test.describe("banner wallpaper", () => {
 	}) => {
 		const requests: string[] = [];
 		page.on("request", (request) => {
-			if (isBannerAsset(request.url())) requests.push(request.url());
+			// resourceType 过滤：Astro dev 工具栏的 Audit 应用会额外用 fetch() 复检页面图片
+			// （dev-only，生产构建不含该应用），否则会污染「只加载横幅资源」的请求数断言
+			if (!isBannerAsset(request.url())) return;
+			if (request.resourceType() !== "image") return;
+			requests.push(request.url());
 		});
 
 		await page.goto("/", { waitUntil: "domcontentloaded" });
@@ -402,7 +406,10 @@ test.describe("banner wallpaper", () => {
 		await page.setViewportSize({ width: 390, height: 844 });
 		const requests: string[] = [];
 		page.on("request", (request) => {
-			if (isBannerAsset(request.url())) requests.push(request.url());
+			// 只统计真实图片请求（见上方 desktop 用例的说明：dev 工具栏会额外 fetch 复检图片）
+			if (!isBannerAsset(request.url())) return;
+			if (request.resourceType() !== "image") return;
+			requests.push(request.url());
 		});
 
 		await page.goto("/posts/guide/", { waitUntil: "domcontentloaded" });
@@ -421,7 +428,10 @@ test.describe("banner wallpaper", () => {
 		await page.setViewportSize({ width: 390, height: 844 });
 		const requests: string[] = [];
 		page.on("request", (request) => {
-			if (isBannerAsset(request.url())) requests.push(request.url());
+			// 只统计真实图片请求（见上方 desktop 用例的说明：dev 工具栏会额外 fetch 复检图片）
+			if (!isBannerAsset(request.url())) return;
+			if (request.resourceType() !== "image") return;
+			requests.push(request.url());
 		});
 
 		await page.goto("/", { waitUntil: "domcontentloaded" });
@@ -456,7 +466,10 @@ test.describe("banner wallpaper", () => {
 		);
 		const requests: string[] = [];
 		page.on("request", (request) => {
-			if (isBannerAsset(request.url())) requests.push(request.url());
+			// 只统计真实图片请求（见上方 desktop 用例的说明：dev 工具栏会额外 fetch 复检图片）
+			if (!isBannerAsset(request.url())) return;
+			if (request.resourceType() !== "image") return;
+			requests.push(request.url());
 		});
 
 		await page.goto("/", { waitUntil: "domcontentloaded" });

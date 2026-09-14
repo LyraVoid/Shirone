@@ -110,7 +110,7 @@ export const siteConfig: SiteConfig = withUserConfig("site", {
 | 文件 | 职责 |
 |---|---|
 | `footerConfig.ts` | 页脚自定义 HTML 注入开关（控制是否读取并注入 `src/config/FooterConfig.html`，关闭时零开销） |
-| `siteConfig.ts` | 站点部署 URL / base 路径 / 标题标识 / 语言 / IANA 时区 / HCT 主题色 / 背景纹理系统 / 显示设置浮层开关 / 横幅 / TOC 深度 / 进度条 / favicon（含 `getDefaultStyle` / `getDefaultSpec` / `resolveDisplaySettings` 回退值） |
+| `siteConfig.ts` | 站点部署 URL / base 路径 / 标题标识 / 语言 / IANA 时区 / HCT 主题色 / 背景纹理系统 / 显示设置浮层开关 / 横幅（`banner.waves.enable` 控制横幅底部水波分隔层，关闭后零 DOM；雨幕激活时该层整体淡化到 `--banner-wave-rainy-opacity`，默认 0.1，见 `components/molecules/BannerWaves.astro`）/ TOC 深度 / 进度条 / favicon（含 `getDefaultStyle` / `getDefaultSpec` / `resolveDisplaySettings` 回退值） |
 | `profileConfig.ts` | 博主资料：头像 / 名称 / 简介 / 社交链接 |
 | `licenseConfig.ts` | 文章版权声明 |
 | `expressiveCodeConfig.ts` | 代码块明暗主题 |
@@ -132,6 +132,7 @@ export const siteConfig: SiteConfig = withUserConfig("site", {
 | `devicesConfig.ts` | 设备页行为控制：页面总开关、场景分类清单与单项禁用列表（设备清单维护在 `src/data/devices.ts`）；关闭页面时导航入口同步隐藏 |
 | `animeConfig.ts` | 番剧页与外部追番数据源：数据源选择（本地 / Bangumi 快照 / Bilibili 快照）、失败降级、提供方凭据环境配置与快照生命周期管理（本地番剧维护在 `src/data/anime.ts`） |
 | `llmsConfig.ts` | 大语言模型与 AI 友好内容系统：`/llms.txt`（索引）与 `/llms-full.txt`（全量正文汇编）静态端点生成控制、加密文章过滤、排除标签与自定义章节配置；支持内容仓 `config/llms.yaml` 覆盖（领域键 `llms`） |
+| `rainyDayConfig.ts` | 全页雨幕（原 Banner 雨滴窗玻璃特效）：覆盖整个视口的 WebGL 雨幕（基于 `@arayui/rainy-day`），以当前可见的横幅图片为折射源。总开关默认**关闭**（构建期生效；改为 true 时才编译进产物，关闭时零 DOM / 零样式 / 零 bundle）、`mistStrength` + `mistFadeVh` 组成竖向蒙版（banner 带内不透明＝雨最明显并接替淡出的横幅图片，往下在 `mistFadeVh` 内过渡到 `mistStrength`；默认 0.4 / 12vh）、访客可在显示设置里开关（存 localStorage）、以及密度/速度/模糊/限帧/懒加载等参数；开关都带淡入淡出过场；`resolveRainyDayOptions()` 负责校验与关闭短路，消费方是 `components/organisms/RainyWindowLayer.astro`（由 `layouts/Layout.astro` 在 `<slot />` 之后动态导入并挂载）；旧字段 `bodyRain` / `bodyRainOpacity` / `bodyRainSpeed` 已废弃（正文区雨丝整层移除），仅保留在类型里供旧配置通过构建，设置后无任何效果 |
 
 非首页 Banner 的标题、说明和可选日期由各页面通过 `MainGridLayout` 提供，并在 Swup 导航后从被替换的主内容容器同步。该上下文默认显示、不设配置开关；说明为空或与标题相同时自动省略，移动端非首页仍沿用紧凑布局并隐藏 Banner。
 

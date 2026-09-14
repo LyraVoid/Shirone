@@ -15,7 +15,10 @@ if (!animeConfig.enable) {
 }
 
 const pageTitle = resolveI18nText(animeConfig.title, I18nKey.anime);
-const pageDescription = resolveI18nText(animeConfig.description, I18nKey.animeBanner);
+const pageDescription = resolveI18nText(
+	animeConfig.description,
+	I18nKey.animeBanner,
+);
 
 const animes = await getAnimeList();
 ---

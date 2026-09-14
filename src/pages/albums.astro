@@ -11,7 +11,10 @@ if (!albumsConfig.enable) {
 }
 
 const pageTitle = resolveI18nText(albumsConfig.title, I18nKey.albums);
-const pageDescription = resolveI18nText(albumsConfig.description, I18nKey.albumsBanner);
+const pageDescription = resolveI18nText(
+	albumsConfig.description,
+	I18nKey.albumsBanner,
+);
 
 const albums = scanVisibleAlbums().map(toAlbumIndexItem);
 ---
