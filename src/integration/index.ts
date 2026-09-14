@@ -3,6 +3,20 @@ import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 import { pathToFileURL } from "node:url";
 import type { AstroIntegration } from "astro";
+import {
+	IMAGE_ENDPOINT_ROUTE,
+	MUSIC_SIDEBAR_VIRTUAL_ID,
+	TRAILING_SLASH,
+	expressiveCodeShared,
+	iconInclude,
+	isMusicBundleFile,
+	mdxOptions,
+	prebundleSpecifiers,
+	svelteCompilerOptions,
+	swupForwardOptions,
+	swupOptions,
+	viteBuildShared,
+} from "../config/integrationsConfig.ts";
 import { shironesFallbackResolver } from "./fallback-resolver.ts";
 import { buildFontDeclarations } from "./fonts.ts";
 import {
@@ -32,8 +46,7 @@ export type {
 // into this Node-side entry would break `astro.config.mjs` loading. Users import
 // it from the dedicated `shirones/collections` entry point instead.
 
-const MUSIC_VIRTUAL_ID = "virtual:shirone-music-sidebar";
-const RESOLVED_MUSIC_VIRTUAL_ID = `\0${MUSIC_VIRTUAL_ID}`;
+const RESOLVED_MUSIC_VIRTUAL_ID = `\0${MUSIC_SIDEBAR_VIRTUAL_ID}`;
 const RAINY_WINDOW_VIRTUAL_ID = "virtual:shirone-rainy-window";
 const RESOLVED_RAINY_WINDOW_VIRTUAL_ID = `\0${RAINY_WINDOW_VIRTUAL_ID}`;
 
@@ -104,7 +117,9 @@ function createMusicSidebarPlugin(
 		name: "shirones:optional-music-sidebar",
 		enforce: "pre" as const,
 		resolveId(source: string) {
-			return source === MUSIC_VIRTUAL_ID ? RESOLVED_MUSIC_VIRTUAL_ID : null;
+			return source === MUSIC_SIDEBAR_VIRTUAL_ID
+				? RESOLVED_MUSIC_VIRTUAL_ID
+				: null;
 		},
 		load(id: string) {
 			if (id !== RESOLVED_MUSIC_VIRTUAL_ID) return null;
@@ -115,11 +130,7 @@ function createMusicSidebarPlugin(
 		generateBundle(_options: unknown, bundle: Record<string, unknown>) {
 			if (enabled) return;
 			for (const fileName of Object.keys(bundle)) {
-				if (
-					fileName.includes("MusicSidebarClient") ||
-					fileName.startsWith("_astro/music.") ||
-					fileName.includes("/music.")
-				) {
+				if (isMusicBundleFile(fileName)) {
 					delete bundle[fileName];
 				}
 			}
@@ -338,10 +349,16 @@ export function shirones(options: ShironesOptions = {}): AstroIntegration {
 							);
 
 				// ── 6. Push everything into the Astro config ────────────────────
+				// TRAILING_SLASH and IMAGE_ENDPOINT_ROUTE are paired, and the pair
+				// has to be spelled out here rather than left to Astro: the
+				// transform that appends the slash to `image.endpoint.route` runs
+				// during resolveConfig, before this hook. See the comment on
+				// IMAGE_ENDPOINT_ROUTE in src/config/integrationsConfig.ts.
 				updateConfig({
 					...(siteConfig?.site ? { site: siteConfig.site } : {}),
 					base: siteConfig?.base ?? "/",
-					trailingSlash: "always",
+					trailingSlash: TRAILING_SLASH,
+					image: { endpoint: { route: IMAGE_ENDPOINT_ROUTE } },
 					fonts: fonts as never,
 					integrations,
 					markdown: { processor: processor as never },
@@ -364,35 +381,12 @@ export function shirones(options: ShironesOptions = {}): AstroIntegration {
 							// resolve. Under pnpm's strict layout these are nested
 							// inside the package, and listing an unresolvable id makes
 							// Vite log a warning for every one of them on every build.
-							include: prebundleCandidates(paths, [
-								"mermaid",
-								"@panzoom/panzoom",
-								"overlayscrollbars",
-								"@fancyapps/ui",
-							]),
+							include: prebundleCandidates(paths, prebundleSpecifiers),
 						},
-						build: {
-							minify: "esbuild",
-							cssCodeSplit: true,
-							cssMinify: "esbuild",
-							chunkSizeWarningLimit: 1000,
-							rollupOptions: {
-								onwarn(
-									warning: { message: string },
-									warn: (warning: unknown) => void,
-								) {
-									// Astro legitimately mixes static and dynamic imports for
-									// islands; silence that specific advisory.
-									if (
-										warning.message.includes("is dynamically imported by") &&
-										warning.message.includes("but also statically imported by")
-									) {
-										return;
-									}
-									warn(warning);
-								},
-							},
-						},
+						// `viteBuildShared` deliberately omits the source-mode
+						// `esbuild` drop/pure options: stripping console.log here
+						// would strip it from a user's own code too.
+						build: viteBuildShared,
 					},
 				});
 
@@ -521,97 +515,54 @@ async function createBundledIntegrations(
 		darkTheme?: string;
 	};
 
+	// Loaded like the other config modules so a user's own copy wins. It ships
+	// inside the package (`dist/src/config/`), so `loadConfigModule`'s
+	// packageSrc fallback always finds it — users do not need it scaffolded
+	// into their project.
+	const sitemapModule = await loadConfigModule(
+		paths,
+		"sitemapFilter",
+		registryRef,
+	);
+	const sitemapFilter = sitemapModule.isSitemapPageAllowed as (
+		page: string,
+	) => boolean;
+
 	const badge = await loadPackageModule(
 		paths,
 		"plugins/expressive-code/language-badge.ts",
-	);
-	const copyButton = await loadPackageModule(
+	);	const copyButton = await loadPackageModule(
 		paths,
 		"plugins/expressive-code/custom-copy-button.js",
 	);
 
-	// Forward-compat options the source `astro.config.mjs` declares but that
-	// `@swup/astro` 1.8.0's `Options` type does not know (and silently drops at
-	// runtime). Spread them so the object-literal excess-property check passes
-	// without deleting them from the mirror or changing runtime behaviour.
-	const swupForwardOptions = {
-		animateHistoryBrowsing: false,
-		skipPopStateHandling: (event: { state?: { url?: string } }) =>
-			Boolean(event.state?.url?.includes("#")),
-	};
+	// Forward-compat options live in the shared module next to swupOptions; see
+	// the comment there for why they are a separate object.
 
 	return [
 		...(oddmiscIntegration ? [oddmiscIntegration] : []),
-		swup({
-			theme: false,
-			ignore: ['a[href="#"]'],
-			animationClass: "transition-swup-",
-			containers: ["main", "#toc"],
-			smoothScrolling: true,
-			cache: true,
-			preload: true,
-			accessibility: true,
-			updateHead: {
-				awaitAssets: false,
-				persistTags: "link[rel=stylesheet], style",
-			},
-			updateBodyClass: false,
-			globalInstance: true,
-			...swupForwardOptions,
-		}),
-		icon({
-			// Every collection the theme references. The upstream source config
-			// carried a stray malformed key here and omitted material-symbols and
-			// simple-icons, which only worked because astro-icon fell back to
-			// auto-discovery in a flat node_modules.
-			include: {
-				"material-symbols": ["*"],
-				"simple-icons": ["*"],
-				"fa6-brands": ["*"],
-				"fa6-regular": ["*"],
-				"fa6-solid": ["*"],
-			},
-		}),
+		swup({ ...swupOptions, ...swupForwardOptions }),
+		icon({ include: iconInclude }),
 		expressiveCode({
+			// `themes` is built here rather than shared: it reads
+			// expressiveCodeConfig, which this mode loads through
+			// loadConfigModule() so a user's own copy wins.
 			themes: [
 				expressiveCodeConfig.lightTheme ?? expressiveCodeConfig.theme,
 				expressiveCodeConfig.darkTheme ?? expressiveCodeConfig.theme,
 			] as never,
+			// Same for `plugins`: they come through loadPackageModule() so a
+			// user's overrides apply.
 			plugins: [
 				pluginCollapsibleSections(),
 				pluginLineNumbers(),
 				(badge.pluginLanguageBadge as () => unknown)(),
 				(copyButton.pluginCustomCopyButton as () => unknown)(),
 			] as never,
-			defaultProps: {
-				wrap: true,
-				overridesByLang: {
-					shellsession: { showLineNumbers: false },
-				},
-			},
-			styleOverrides: {
-				codeBackground: "var(--codeblock-bg)",
-				borderRadius: "0.75rem",
-				borderColor: "none",
-				codeFontSize: "0.875rem",
-				codeFontFamily: "var(--m3e-font-mono-family)",
-				codeLineHeight: "1.5rem",
-				frames: {
-					editorBackground: "var(--codeblock-bg)",
-					terminalBackground: "var(--codeblock-bg)",
-					terminalTitlebarBackground: "var(--codeblock-topbar-bg)",
-					editorTabBarBackground: "var(--codeblock-topbar-bg)",
-					editorActiveTabBackground: "none",
-					editorActiveTabIndicatorBottomColor: "var(--primary)",
-					editorActiveTabIndicatorTopColor: "none",
-					editorTabBarBorderBottomColor: "var(--codeblock-topbar-bg)",
-					terminalTitlebarBorderBottomColor: "none",
-				},
-				// Hue values are numbers at runtime (the source config passes the
-				// same), but the published types only accept unresolved CSS strings.
-				textMarkers: { delHue: 0, insHue: 180, markHue: 250 } as never,
-			},
-			frames: { showCopyToClipboardButton: false },
+			// The shared module types textMarkers' hues as numbers, which is what
+			// they are at runtime, but the published types only accept unresolved
+			// CSS strings.
+			...(expressiveCodeShared as object),
 		}),
 		svelte({
 			// The theme's Svelte components use `<style lang="stylus">`, which
@@ -619,22 +570,15 @@ async function createBundledIntegrations(
 			// `svelte.config.js`; a user's project has no such file, so the
 			// integration supplies it.
 			preprocess: [vitePreprocess({ script: true })],
-			compilerOptions: {
-				// CSS-source hashing keeps SSR and client scope hashes stable.
-				cssHash: ({
-					css,
-					hash,
-				}: {
-					css: string;
-					hash: (s: string) => string;
-				}) => `svelte-${hash(css)}`,
-				// Keep repeated Svelte compiler diagnostics out of the dev
-				// terminal; check/build still surface the full warning set.
-				warningFilter: () => command !== "dev",
-			},
+			compilerOptions: svelteCompilerOptions(command === "dev"),
 		}),
-		sitemap(),
-		mdx({ syntaxHighlight: false, optimize: true }),
+		sitemap({
+			// Loaded through the registry rather than imported, so a user's own
+			// sitemapFilter wins. Without it disabled pages leak into
+			// sitemap.xml, which is what the source config has always filtered.
+			filter: (page: string) => sitemapFilter(page),
+		}),
+		mdx(mdxOptions),
 	];
 }
 

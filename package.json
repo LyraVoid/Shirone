@@ -79,7 +79,7 @@
     "@iconify-json/fa6-brands": "^1.2.6",
     "@iconify-json/fa6-regular": "^1.2.4",
     "@iconify-json/fa6-solid": "^1.2.4",
-    "@iconify-json/material-symbols": "^1.2.91",
+    "@iconify-json/material-symbols": "^1.2.92",
     "@iconify/svelte": "^5.2.2",
     "@material/material-color-utilities": "^0.4.0",
     "@panzoom/panzoom": "4.6.2",
@@ -125,7 +125,7 @@
   "devDependencies": {
     "@astrojs/ts-plugin": "^1.10.11",
     "@axe-core/playwright": "^4.13.0",
-    "@biomejs/biome": "2.5.12",
+    "@biomejs/biome": "2.5.13",
     "@iconify-json/simple-icons": "^1.2.95",
     "@lhci/cli": "0.15.1",
     "@playwright/test": "^1.62.1",

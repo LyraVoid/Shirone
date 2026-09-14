@@ -13,6 +13,20 @@ import expressiveCode from "astro-expressive-code";
 import icon from "astro-icon";
 import { expressiveCodeConfig } from "./src/config/expressiveCodeConfig.ts";
 import { resolvedFontOptions } from "./src/config/fontConfig.ts";
+import {
+	IMAGE_ENDPOINT_ROUTE,
+	MUSIC_SIDEBAR_VIRTUAL_ID,
+	TRAILING_SLASH,
+	expressiveCodeShared,
+	iconInclude,
+	isMusicBundleFile,
+	mdxOptions,
+	prebundleSpecifiers,
+	svelteCompilerOptions,
+	swupForwardOptions,
+	swupOptions,
+	viteBuildShared,
+} from "./src/config/integrationsConfig.ts";
 import { musicConfig, resolveMusicOptions } from "./src/config/musicConfig.ts";
 import {
 	rainyDayConfig,
@@ -43,8 +57,7 @@ const umamiIntegration = resolvedUmamiOptions
 				},
 			})
 	: null;
-const musicSidebarModuleId = "virtual:shirone-music-sidebar";
-const resolvedMusicSidebarModuleId = `\0${musicSidebarModuleId}`;
+const resolvedMusicSidebarModuleId = `\0${MUSIC_SIDEBAR_VIRTUAL_ID}`;
 
 // 全页雨幕（原 Banner 雨滴特效）：关闭时同样用虚拟模块 + 残留 chunk 清理，
 // 保证组件、特效库（含 Three.js）与样式都不进产物。
@@ -78,11 +91,15 @@ const optionalRainyWindowPlugin = {
 	},
 };
 
+// The package-mode twin of this plugin is createMusicSidebarPlugin() in
+// src/integration/index.ts. The two differ only in where the sidebar file
+// lives; the virtual id and the bundle-pruning rule are shared.
+
 const optionalMusicSidebarPlugin = {
 	name: "shirone-optional-music-sidebar",
 	enforce: "pre",
 	resolveId(source) {
-		return source === musicSidebarModuleId
+		return source === MUSIC_SIDEBAR_VIRTUAL_ID
 			? resolvedMusicSidebarModuleId
 			: null;
 	},
@@ -95,11 +112,7 @@ const optionalMusicSidebarPlugin = {
 	generateBundle(_options, bundle) {
 		if (!musicFeatureEnabled) {
 			for (const fileName of Object.keys(bundle)) {
-				if (
-					fileName.includes("MusicSidebarClient") ||
-					fileName.startsWith("_astro/music.") ||
-					fileName.includes("/music.")
-				) {
+				if (isMusicBundleFile(fileName)) {
 					delete bundle[fileName];
 				}
 			}
@@ -190,102 +203,44 @@ const configuredFonts =
 export default defineConfig({
 	site: siteConfig.site,
 	base: siteConfig.base ?? "/",
-	trailingSlash: "always",
+	// Paired with IMAGE_ENDPOINT_ROUTE in the integration; see the comment on
+	// TRAILING_SLASH in src/config/integrationsConfig.ts.
+	trailingSlash: TRAILING_SLASH,
+	// Hand-supplied rather than left to Astro's relative transform: that
+	// transform runs during resolveConfig, before this file's trailingSlash is
+	// visible to the package-mode integration. Setting it here too makes the
+	// two modes agree. See IMAGE_ENDPOINT_ROUTE for the full story.
+	image: { endpoint: { route: IMAGE_ENDPOINT_ROUTE } },
 	fonts: configuredFonts,
 	integrations: [
-			...(umamiIntegration ? [umamiIntegration] : []),
-			swup({
-			theme: false,
-			ignore: 'a[href="#"]',
-			animationClass: "transition-swup-",
-			containers: ["main", "#toc"],
-			smoothScrolling: true,
-			cache: true,
-			preload: true,
-			accessibility: true,
-			updateHead: {
-				awaitAssets: false,
-				// Keep base styles across Swup visits, but let syntax-scoped styles
-				// disappear when the destination page no longer declares them.
-				persistTags:
-					"link[rel=stylesheet]:not([data-swup-optional]), style:not([data-swup-optional])",
-			},
-			updateBodyClass: false,
-			globalInstance: true,
-			animateHistoryBrowsing: false,
-			skipPopStateHandling: (event) => Boolean(event.state?.url?.includes("#")),
-		}),
-		icon({
-			include: {
-				"preprocess: vitePreprocess(),": ["*"],
-				"fa6-brands": ["*"],
-				"fa6-regular": ["*"],
-				"fa6-solid": ["*"],
-			},
-		}),
+		...(umamiIntegration ? [umamiIntegration] : []),
+		swup({ ...swupOptions, ...swupForwardOptions }),
+		icon({ include: iconInclude }),
 		expressiveCode({
+			// `themes` stays here: it reads expressiveCodeConfig, which the
+			// package mode loads through loadConfigModule() instead.
 			themes: [
 				expressiveCodeConfig.lightTheme ?? expressiveCodeConfig.theme,
 				expressiveCodeConfig.darkTheme ?? expressiveCodeConfig.theme,
 			],
+			// `plugins` stays here: the package mode has to load them through
+			// loadPackageModule() so a user's overrides apply.
 			plugins: [
 				pluginCollapsibleSections(),
 				pluginLineNumbers(),
 				pluginLanguageBadge(),
 				pluginCustomCopyButton(),
 			],
-			defaultProps: {
-				wrap: true,
-				overridesByLang: {
-					shellsession: {
-						showLineNumbers: false,
-					},
-				},
-			},
-			styleOverrides: {
-				codeBackground: "var(--codeblock-bg)",
-				borderRadius: "0.75rem",
-				borderColor: "none",
-				codeFontSize: "0.875rem",
-				codeFontFamily: "var(--m3e-font-mono-family)",
-				codeLineHeight: "1.5rem",
-				frames: {
-					editorBackground: "var(--codeblock-bg)",
-					terminalBackground: "var(--codeblock-bg)",
-					terminalTitlebarBackground: "var(--codeblock-topbar-bg)",
-					editorTabBarBackground: "var(--codeblock-topbar-bg)",
-					editorActiveTabBackground: "none",
-					editorActiveTabIndicatorBottomColor: "var(--primary)",
-					editorActiveTabIndicatorTopColor: "none",
-					editorTabBarBorderBottomColor: "var(--codeblock-topbar-bg)",
-					terminalTitlebarBorderBottomColor: "none",
-				},
-				textMarkers: {
-					delHue: 0,
-					insHue: 180,
-					markHue: 250,
-				},
-			},
-			frames: {
-				showCopyToClipboardButton: false,
-			},
+			...expressiveCodeShared,
 		}),
-		svelte({
-			compilerOptions: {
-				// CSS-source hashing keeps SSR and client scope hashes stable after moves.
-				cssHash: ({ css, hash }) => `svelte-${hash(css)}`,
-				// Keep repeated Svelte compiler diagnostics out of the dev terminal;
-				// check/build still surface the full warning set in CI.
-				warningFilter: () => !isDevCommand,
-			},
-		}),
+		// `preprocess` is not shared: it comes from this repo's svelte.config.js
+		// here, and the package mode has to pass it explicitly because a user's
+		// project has no such file.
+		svelte({ compilerOptions: svelteCompilerOptions(isDevCommand) }),
 		sitemap({
 			filter: (page) => isSitemapPageAllowed(page),
 		}),
-		mdx({
-			syntaxHighlight: false,
-			optimize: true,
-		}),
+		mdx(mdxOptions),
 	],
 	markdown: {
 		processor: siteMarkdownProcessor,
@@ -318,35 +273,22 @@ export default defineConfig({
 			tailwindcss(),
 		],
 		optimizeDeps: {
-			include: [
-				"mermaid",
-				"@panzoom/panzoom",
-				"overlayscrollbars",
-				"@fancyapps/ui",
-			],
+			// Source mode lists these unconditionally: they are installed at the
+			// repo root, so Vite can resolve them from here. Package mode filters
+			// the same list through prebundleCandidates() instead.
+			include: prebundleSpecifiers,
 		},
 		build: {
-			minify: "esbuild",
-			cssCodeSplit: true,
-			cssMinify: "esbuild",
-			chunkSizeWarningLimit: 1000,
+			...viteBuildShared,
+			// Source-mode only. Dropping console.log/debugger here would also
+			// strip them from a user's own code, so the package build does not
+			// inherit this. See docs/plans/single-source-config.md (Q3).
 			esbuild: isBuildCommand
 				? {
 						drop: ["debugger"],
 						pure: ["console.log", "console.debug"],
 					}
 				: undefined,
-			rollupOptions: {
-				onwarn(warning, warn) {
-					if (
-						warning.message.includes("is dynamically imported by") &&
-						warning.message.includes("but also statically imported by")
-					) {
-						return;
-					}
-					warn(warning);
-				},
-			},
 		},
 	},
 });

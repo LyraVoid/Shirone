@@ -52,7 +52,7 @@
 }
 
 .m3-blog-toc__item[data-toc-depth="2"] {
-	padding-left: var(--m3e-space-2);
+	padding-left: var(--m3e-space-4);
 }
 
 .m3-blog-toc__item[data-toc-depth="3"] {

@@ -104,6 +104,17 @@ cached against a hash of the collected charset, so repeat builds skip the work.
 - Anything imported by a page must be in `dependencies`, never
   `devDependencies` — the package build fails the release if it finds an
   undeclared bare import. `@iconify-json/simple-icons` was exactly this trap.
+- The two Astro config entry points (`astro.config.mjs` and
+  `src/integration/index.ts`) still each declare a config object, and neither
+  reads the other. The *options* they install now come from one place —
+  `src/config/integrationsConfig.ts` — so adding an integration option there
+  covers both modes at once. What is **not** shared is the wiring, and it is
+  deliberately not shared: the vite aliases, `svelte().preprocess`,
+  `optimizeDeps` filtering, `vite.plugins`, and the way expressive-code's
+  `themes` and `plugins` are resolved all differ because the two modes have
+  different roots, dependency trees and config-resolution paths. Each is
+  commented at its use site. If you add config on one side only, the shirones
+  pipeline's config-parity check fails the release.
 
 ## Package-mode pitfalls that cost us a day
 
@@ -113,7 +124,13 @@ pnpm's strict layout, so the source repository never sees them:
 - **Bare imports inside the package** — Vite resolves them from the *project*
   root and fails (`@astrojs/svelte/server.js`, all the `@swup/astro/*` entries).
   `src/integration/fallback-resolver.ts` retries the failed ones with the
-  package itself as importer.
+  package itself as importer. In `astro dev` the retry has to see through
+  truthy stand-ins first: Vite's builtin dev resolver answers an unresolvable
+  bare specifier from a virtual importer (like `astro:scripts/page.js`) with a
+  root-relative pseudo path instead of `null`, so the plugin verifies a
+  resolution is genuine (the file exists; no `vite:alias.noResolved` sentinel)
+  before standing down.
+
 - **Node-level `require.resolve`** — astro-icon loads icon sets outside Vite, so
   `@iconify-json/*` must really exist in the user's project. They are peer
   dependencies and `init` installs them. Same story for `sharp`, which Astro's

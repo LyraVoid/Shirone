@@ -147,6 +147,18 @@ svelte({
 
 ---
 
+### 2.3 iframe 的 color-scheme 收窄会让 Chromium 强制铺深色画布
+
+**现象**：站点处于亮色模式、浏览器/系统偏好为暗色时，giscus 评论区的 iframe 区域整块变黑（评论卡片本身仍是亮色），与亮色卡片背景割裂（Shirone#80）。
+
+**根因**：`Giscus.astro` 外壳曾经写 `.giscus-frame { color-scheme: normal }`。giscus 自带的 `default.css` 声明的是 `color-scheme: light dark`，主题样式内联在页面后面，`normal` 覆盖掉了它，等于把 iframe 收窄成 light-only。Chromium 对「只声明 light、但用户偏好暗色」的 iframe 会强制绘制不透明深色画布（保护性背景，giscus#675 同类问题），而 iframe 内部画布本来是透明的。
+
+**解法**：外壳声明 `color-scheme: light dark`（与第三方默认一致），iframe 画布保持透明，留白透出卡片底色，内部配色仍由 `data-theme` 自绘。验证方式：亮色站点 + `emulateMedia({ colorScheme: "dark" })`，`.giscus-frame` 的计算值必须是 `light dark`。
+
+**通用教训**：给第三方 iframe 加 `color-scheme` 只能放宽不能收窄；`normal` 不是「不表态」，而是「只支持 light」。
+
+---
+
 ## 3. 组件结构
 
 ### 3.1 不要用整个 `<a>` 包卡片
@@ -165,6 +177,18 @@ svelte({
 - 数据获取（pagefind、`getSortedPosts`）、持久化（localStorage）属于有机体；原子/分子不做。
 
 详见 `docs/atomic-structure.md`。
+
+---
+
+### 3.3 整体替换型配置（`nav-bar.yaml`）不会继承功能开关
+
+**现象**：双仓模式下把 `config/moments.yaml` 改成 `enable: false` 后，顶栏与移动端抽屉仍然显示「动态」，点进去跳 `/404/`。
+
+**根因**：关闭的功能靠页面里的 `Astro.redirect("/404/")` 拦住，而入口的隐藏原先只写在默认导航结构的 `...(momentsConfig.enable ? [...] : [])` 分支里；内容仓的 `config/nav-bar.yaml` 是**整体替换**，条目根本不经过那些分支，于是「功能关了、入口还在」。
+
+**解法**：把「功能关闭 = 入口消失」收敛到解析层统一执行 —— 默认结构与内容仓声明式条目汇合后过一遍 `pruneUnavailableNavLinks()`（`src/utils/nav-utils.ts`，路由表在 `src/config/navBarConfig.ts`），按站内路由裁掉死链，空掉的下拉分组一并隐藏。回归见 `tests/nav-utils.test.mjs` 与 `tests/site/top-app-bar.spec.ts`。
+
+**通用教训**：新增「整体替换」型配置领域时，默认结构里按 `xxx.enable` 写的条件分支无法自动继承；关闭状态影响面覆盖的所有消费方（导航、侧栏 `pages`、FAB、页脚）都要在解析层或渲染层显式尊重开关。
 
 ---
 

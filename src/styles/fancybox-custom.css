@@ -1,117 +1,115 @@
-/* Fancybox 自定义样式 —— 匹配 Shirone 设计语言 */
+/* Fancybox v6 自定义样式 —— 匹配 Shirone 设计语言
+   v6 把 v5 的 .fancybox__toolbar / __button / __caption / __nav / __infobar
+   改为 .f-carousel__toolbar / .f-button / .f-caption / .f-button.is-arrow / .f-counter，
+   并通过 --f-* 变量暴露外观；这里优先覆盖变量，只在变量覆盖不到的地方写规则。 */
 
 .fancybox__container {
 	--fancybox-bg: rgba(0, 0, 0, 0.88);
-	--fancybox-thumbs-width: 56px;
-	--fancybox-thumbs-ratio: 1;
-	--fancybox-thumbs-border-radius: 0.75rem;
+
+	/* 按钮：圆角矩形 + 毛玻璃 */
+	--f-button-width: 48px;
+	--f-button-height: 48px;
+	--f-button-border-radius: 0.75rem;
+	--f-button-color: #fff;
+	--f-button-hover-color: #fff;
+	--f-button-active-color: #fff;
+	--f-button-bg: rgba(0, 0, 0, 0.4);
+	--f-button-hover-bg: rgba(0, 0, 0, 0.55);
+	--f-button-active-bg: rgba(0, 0, 0, 0.65);
+	--f-button-backdrop-filter: blur(4px);
+	--f-button-transition: background-color 0.2s ease, transform 0.2s ease;
+
+	/* 说明文字 */
+	--f-caption-color: #fff;
 }
 
 /* 工具栏 */
-.fancybox__toolbar {
-	background: linear-gradient(to bottom, rgba(0, 0, 0, 0.5), transparent);
+.fancybox__container .f-carousel__toolbar {
 	padding: 0.5rem;
-	backdrop-filter: blur(6px);
+	background: linear-gradient(to bottom, rgba(0, 0, 0, 0.5), transparent);
+}
+
+.fancybox__container .f-button:active {
+	transform: scale(0.92);
+}
+
+/* 计数器 */
+.fancybox__container .f-counter {
+	color: #fff;
+	font-size: 0.9rem;
+	padding: 0 8px;
+	opacity: 0.85;
 }
 
 /* 标题/说明 */
-.fancybox__caption {
+.fancybox__container .f-caption {
 	background: linear-gradient(to top, rgba(0, 0, 0, 0.7), transparent);
-	color: white;
 	font-size: 0.9rem;
 	padding: 1rem;
+	margin: 0 1rem 1rem;
 	text-align: center;
+	border-radius: 0.75rem;
 	backdrop-filter: blur(6px);
-	margin: 0 1rem 1rem 1rem;
 }
 
 /* 缩略图条 */
-.fancybox__thumbs {
+.fancybox__container .fancybox__thumbs {
 	background: rgba(0, 0, 0, 0.6);
 	padding: 4px;
 	border-radius: 0.75rem;
 	backdrop-filter: blur(6px);
 }
 
-.fancybox__thumb {
+.fancybox__container .f-thumbs__slide button {
 	border-radius: 0.5rem;
 	overflow: hidden;
-	border: 2px solid transparent;
-	transition: all 0.2s ease;
+	outline: 2px solid transparent;
+	outline-offset: -2px;
+	transition: outline-color 0.2s ease, transform 0.2s ease;
 }
 
-.fancybox__thumb:hover {
-	border-color: rgba(255, 255, 255, 0.5);
+.fancybox__container .f-thumbs__slide:hover button {
+	outline-color: rgba(255, 255, 255, 0.5);
 	transform: scale(1.05);
 }
 
-.fancybox__thumb.is-active {
-	border-color: #fff;
-}
-
-/* 按钮：圆角矩形风格，匹配 Shirone */
-.fancybox__button {
-	background: rgba(0, 0, 0, 0.4);
-	border-radius: 0.75rem;
-	width: 48px;
-	height: 48px;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	transition: all 0.2s ease;
-	backdrop-filter: blur(4px);
-}
-
-.fancybox__button:hover {
-	background: rgba(0, 0, 0, 0.55);
-}
-
-.fancybox__button:active {
-	background: rgba(0, 0, 0, 0.65);
-	transform: scale(0.92);
-}
-
-/* 导航箭头 */
-.fancybox__nav .carousel__button {
-	width: 48px;
-	height: 48px;
-	border-radius: 0.75rem;
-}
-
-/* 计数器 */
-.fancybox__infobar {
-	color: white;
-	font-size: 0.9rem;
-	padding: 0 8px;
-	opacity: 0.85;
+.fancybox__container .f-thumbs__slide.is-selected button {
+	outline-color: #fff;
 }
 
 /* 响应式：小屏幕 */
 @media (width < 768px) {
-	.fancybox__toolbar {
+	.fancybox__container {
+		--f-button-width: 40px;
+		--f-button-height: 40px;
+		--f-button-border-radius: 0.5rem;
+	}
+
+	.fancybox__container .f-carousel__toolbar {
 		padding: 0.25rem;
 	}
 
-	.fancybox__button {
-		width: 40px;
-		height: 40px;
-		border-radius: 0.5rem;
-	}
-
-	.fancybox__caption {
+	.fancybox__container .f-caption {
 		font-size: 0.85rem;
 		padding: 0.5rem;
-		margin: 0 0.5rem 0.5rem 0.5rem;
+		margin: 0 0.5rem 0.5rem;
 	}
 }
 
 @media (width < 480px) {
-	.fancybox__button {
-		width: 36px;
-		height: 36px;
+	.fancybox__container {
+		--f-button-width: 36px;
+		--f-button-height: 36px;
 	}
 
-	.fancybox__caption {
+	.fancybox__container .f-caption {
 		font-size: 0.8rem;
+	}
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.fancybox__container .f-button:active,
+	.fancybox__container .f-thumbs__slide:hover button {
+		transform: none;
 	}
 }
