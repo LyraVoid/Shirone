@@ -81,23 +81,6 @@ describe("Rainy day window config", () => {
 		assert.equal(resolveRainyDayOptions({}).mistFadeVh, 12);
 		assert.equal(resolveRainyDayOptions({ mistFadeVh: 999 }).mistFadeVh, 100);
 		assert.equal(resolveRainyDayOptions({ mistFadeVh: -5 }).mistFadeVh, 0);
-		// 正文区雨丝：默认开、浓度 0.55、周期 1.6s，越界裁剪
-		assert.equal(resolveRainyDayOptions({}).bodyRain, true);
-		assert.equal(resolveRainyDayOptions({}).bodyRainOpacity, 0.55);
-		assert.equal(resolveRainyDayOptions({}).bodyRainSpeed, 1.6);
-		assert.equal(resolveRainyDayOptions({ bodyRain: false }).bodyRain, false);
-		assert.equal(
-			resolveRainyDayOptions({ bodyRainSpeed: 99 }).bodyRainSpeed,
-			5,
-		);
-		assert.equal(
-			resolveRainyDayOptions({ bodyRainSpeed: 0 }).bodyRainSpeed,
-			0.4,
-		);
-		assert.equal(
-			resolveRainyDayOptions({ bodyRainOpacity: 3 }).bodyRainOpacity,
-			1,
-		);
 	});
 
 	it("非数值 / 非布尔值回退到默认值", () => {

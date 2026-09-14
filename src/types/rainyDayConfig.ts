@@ -59,19 +59,6 @@ export interface RainyDayConfig {
 	 */
 	mistFadeVh?: number;
 
-	/**
-	 * 正文区雨丝（默认开）：WebGL 雨只能折射底图，而壁纸下半部分与页面底色近乎同色，
-	 * 正文区因此看不到雨滴；这里补一层纯 CSS 雨丝（只出现在 banner 带以下，背景与纹理
-	 * 保持原样）。关闭时不输出该层。
-	 */
-	bodyRain?: boolean;
-
-	/** 雨丝浓度 0-1（默认 0.55） */
-	bodyRainOpacity?: number;
-
-	/** 雨丝下落周期（秒，0.4-5；越小越快。默认 1.6） */
-	bodyRainSpeed?: number;
-
 	/** 轮播换图时雨层的交叉淡入时长（毫秒；0 = 直接切换） */
 	bgFadeMs?: number;
 	/** 延后到 load + 浏览器空闲再挂载，把特效库移出首屏关键路径（默认开） */
@@ -107,9 +94,6 @@ export interface ResolvedRainyDayOptions {
 	pauseWhenHidden: boolean;
 	mistStrength: number;
 	mistFadeVh: number;
-	bodyRain: boolean;
-	bodyRainOpacity: number;
-	bodyRainSpeed: number;
 	bgFadeMs: number;
 	lazy: boolean;
 	idleDelayMs: number;
