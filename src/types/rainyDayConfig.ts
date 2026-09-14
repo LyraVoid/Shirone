@@ -59,6 +59,16 @@ export interface RainyDayConfig {
 	 */
 	mistFadeVh?: number;
 
+	/**
+	 * @deprecated 正文区雨丝已整体移除（refactor(rainy-day): remove the CSS body rain overlay）。
+	 * 保留该字段只为让升级后的旧配置继续通过类型检查与构建；设置它不再有任何效果。
+	 */
+	bodyRain?: boolean;
+	/** @deprecated 同上，不再生效 */
+	bodyRainOpacity?: number;
+	/** @deprecated 同上，不再生效 */
+	bodyRainSpeed?: number;
+
 	/** 轮播换图时雨层的交叉淡入时长（毫秒；0 = 直接切换） */
 	bgFadeMs?: number;
 	/** 延后到 load + 浏览器空闲再挂载，把特效库移出首屏关键路径（默认开） */
