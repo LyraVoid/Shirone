@@ -367,7 +367,11 @@ const mistMask = [
 				window.clearTimeout(cleanupTimer);
 				cleanupTimer = null;
 			}
-			if (immediate || options.fadeInMs <= 0) {
+			// reduced-motion 下不做淡出过场，直接释放：与 CSS 侧 html.motion-reduced 契约一致
+			const motionReduced =
+				(options.respectReducedMotion && reduceMQ.matches) ||
+				document.documentElement.classList.contains("motion-reduced");
+			if (immediate || options.fadeInMs <= 0 || motionReduced) {
 				release();
 				return;
 			}
