@@ -6,12 +6,12 @@ import {
 } from "../src/config/rainyDayConfig.ts";
 
 describe("Rainy day window config", () => {
-	it("未配置 / undefined 时跟随主题默认值（本仓库默认开启）", () => {
-		// 主题默认值在 rainyDayConfig 里显式声明（当前为 true）：显式 false 才关闭
-		assert.equal(rainyDayConfig.enable, true);
+	it("未配置 / undefined 时跟随主题默认值（本仓库默认关闭）", () => {
+		// 主题默认值在 rainyDayConfig 里显式声明（当前为 false）：重量级可选特性默认关闭
+		assert.equal(rainyDayConfig.enable, false);
 		const options = resolveRainyDayOptions(undefined);
-		assert.equal(options.enable, rainyDayConfig.enable ?? true);
-		assert.equal(resolveRainyDayOptions(undefined).enable, true);
+		assert.equal(options.enable, rainyDayConfig.enable ?? false);
+		assert.equal(resolveRainyDayOptions(undefined).enable, false);
 		assert.equal(resolveRainyDayOptions(false).enable, false);
 	});
 
@@ -34,9 +34,9 @@ describe("Rainy day window config", () => {
 		assert.equal(options.lazy, true);
 	});
 
-	it("对象缺省字段时取默认值，enable 缺省即启用", () => {
+	it("对象缺省字段时取默认值，enable 缺省即关闭", () => {
 		const options = resolveRainyDayOptions({ intensity: 0.5 });
-		assert.equal(options.enable, true);
+		assert.equal(options.enable, false);
 		assert.equal(options.intensity, 0.5);
 		assert.equal(options.speed, 1);
 		assert.equal(options.postProcessing, true);

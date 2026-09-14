@@ -6,9 +6,9 @@ import { i18n } from "../../src/i18n/translation.ts";
 /**
  * 全页雨幕（原雨滴窗玻璃特效，Banner 上的 WebGL 雨滴）
  *
- * 该特性是重量级可选特性，本仓库默认开启（rainyDayConfig.enable: true）：
- * - 关闭时（enable: false）只断言「零足迹」（无图层、无载体属性、无 CORS 属性）；
- * - 开启时跑渲染、层级、交互与 HiDPI 用例；两种状态各自 test.skip 守卫，
+ * 该特性是重量级可选特性，本仓库默认关闭（rainyDayConfig.enable: false）：
+ * - 默认（enable: false）只断言「零足迹」（无图层、无载体属性、无 CORS 属性）；
+ * - 把 enable 临时改成 true 时跑渲染、层级、交互与 HiDPI 用例；两种状态各自 test.skip 守卫，
  *   保证任一种配置下套件都是绿的（见 docs/on-demand-loading.md §4.3）。
  */
 const rainyDayEnabled = resolveRainyDayOptions().enable;

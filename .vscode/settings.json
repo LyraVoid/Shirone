@@ -139,6 +139,10 @@
     "./.vscode/schemas/nav-bar.schema.json": [
       "config/nav-bar.yaml",
       "config/nav-bar.yml"
+    ],
+    "./.vscode/schemas/rainy-day.schema.json": [
+      "config/rainy-day.yaml",
+      "config/rainy-day.yml"
     ]
   }
 }

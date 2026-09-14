@@ -166,6 +166,24 @@
                 }
               ],
               "description": "是否在显示设置面板展示背景纹理选择器（默认 true，且受 texture.enable 控制）"
+            },
+            "rainyDay": {
+              "anyOf": [
+                {},
+                {
+                  "type": "boolean",
+                  "enum": [
+                    false
+                  ]
+                },
+                {
+                  "type": "boolean",
+                  "enum": [
+                    true
+                  ]
+                }
+              ],
+              "description": "是否在显示设置面板展示雨滴特效开关（默认 true，且受 rainyDay.enable 控制）"
             }
           },
           "additionalProperties": false
@@ -391,6 +409,363 @@
         }
       ],
       "description": "页面背景纹理系统配置，支持布尔值直接开关或详细配置对象"
+    },
+    "rainyDay": {
+      "anyOf": [
+        {},
+        {
+          "type": "boolean",
+          "enum": [
+            false
+          ]
+        },
+        {
+          "type": "boolean",
+          "enum": [
+            true
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "enable": {
+              "anyOf": [
+                {},
+                {
+                  "type": "boolean",
+                  "enum": [
+                    false
+                  ]
+                },
+                {
+                  "type": "boolean",
+                  "enum": [
+                    true
+                  ]
+                }
+              ],
+              "description": "总开关（构建期生效，默认 false）：true 时才编译进产物；false 时该特性零 DOM、零样式、零 bundle"
+            },
+            "defaultEnabled": {
+              "anyOf": [
+                {},
+                {
+                  "type": "boolean",
+                  "enum": [
+                    false
+                  ]
+                },
+                {
+                  "type": "boolean",
+                  "enum": [
+                    true
+                  ]
+                }
+              ],
+              "description": "主题启用后访客首次进入时的默认状态；访客可在显示设置里关掉（存 localStorage）"
+            },
+            "intensity": {
+              "anyOf": [
+                {},
+                {
+                  "type": "number"
+                }
+              ],
+              "description": "雨滴密度 0-1（0.3 稀疏、0.5 适中、0.8 密集）"
+            },
+            "speed": {
+              "anyOf": [
+                {},
+                {
+                  "type": "number"
+                }
+              ],
+              "description": "下落速度 0-10"
+            },
+            "brightness": {
+              "anyOf": [
+                {},
+                {
+                  "type": "number"
+                }
+              ],
+              "description": "亮度 0-1"
+            },
+            "normal": {
+              "anyOf": [
+                {},
+                {
+                  "type": "number"
+                }
+              ],
+              "description": "法线强度 0-3（雨滴立体感）"
+            },
+            "zoom": {
+              "anyOf": [
+                {},
+                {
+                  "type": "number"
+                }
+              ],
+              "description": "雨滴图案缩放 0.1-3（越大雨滴越大、越稀疏）"
+            },
+            "blurIntensity": {
+              "anyOf": [
+                {},
+                {
+                  "type": "number"
+                }
+              ],
+              "description": "玻璃模糊强度 0-10（太大会糊掉背景）"
+            },
+            "blurIterations": {
+              "anyOf": [
+                {},
+                {
+                  "type": "number"
+                }
+              ],
+              "description": "模糊迭代次数 1-64（越大越慢）"
+            },
+            "lightning": {
+              "anyOf": [
+                {},
+                {
+                  "type": "boolean",
+                  "enum": [
+                    false
+                  ]
+                },
+                {
+                  "type": "boolean",
+                  "enum": [
+                    true
+                  ]
+                }
+              ],
+              "description": "闪电效果"
+            },
+            "panning": {
+              "anyOf": [
+                {},
+                {
+                  "type": "boolean",
+                  "enum": [
+                    false
+                  ]
+                },
+                {
+                  "type": "boolean",
+                  "enum": [
+                    true
+                  ]
+                }
+              ],
+              "description": "镜头平移"
+            },
+            "postProcessing": {
+              "anyOf": [
+                {},
+                {
+                  "type": "boolean",
+                  "enum": [
+                    false
+                  ]
+                },
+                {
+                  "type": "boolean",
+                  "enum": [
+                    true
+                  ]
+                }
+              ],
+              "description": "后处理（开启更细腻，稍耗性能）"
+            },
+            "fps": {
+              "anyOf": [
+                {},
+                {
+                  "type": "number"
+                }
+              ],
+              "description": "限帧 15-120（省电关键）"
+            },
+            "mobile": {
+              "anyOf": [
+                {},
+                {
+                  "type": "boolean",
+                  "enum": [
+                    false
+                  ]
+                },
+                {
+                  "type": "boolean",
+                  "enum": [
+                    true
+                  ]
+                }
+              ],
+              "description": "移动端是否启用（默认关闭，省电）"
+            },
+            "respectReducedMotion": {
+              "anyOf": [
+                {},
+                {
+                  "type": "boolean",
+                  "enum": [
+                    false
+                  ]
+                },
+                {
+                  "type": "boolean",
+                  "enum": [
+                    true
+                  ]
+                }
+              ],
+              "description": "尊重系统「减少动效」设置（默认开）"
+            },
+            "skipOnSlowNetwork": {
+              "anyOf": [
+                {},
+                {
+                  "type": "boolean",
+                  "enum": [
+                    false
+                  ]
+                },
+                {
+                  "type": "boolean",
+                  "enum": [
+                    true
+                  ]
+                }
+              ],
+              "description": "弱网 / 省流（saveData 或 2G）不加载（默认开）"
+            },
+            "pauseWhenHidden": {
+              "anyOf": [
+                {},
+                {
+                  "type": "boolean",
+                  "enum": [
+                    false
+                  ]
+                },
+                {
+                  "type": "boolean",
+                  "enum": [
+                    true
+                  ]
+                }
+              ],
+              "description": "切到后台标签页时暂停渲染（默认开）"
+            },
+            "mistStrength": {
+              "anyOf": [
+                {},
+                {
+                  "type": "number"
+                }
+              ],
+              "description": "雨雾浓度 0-1：竖向南端的浓度——banner 带内恒为不透明（雨最明显，接替淡出的横幅图片），\n往下在 `mistFadeVh` 内过渡到本值：正文区保持浅色 M3 底 + 背景纹理 + 雨雾。默认 0.4。"
+            },
+            "mistFadeVh": {
+              "anyOf": [
+                {},
+                {
+                  "type": "number"
+                }
+              ],
+              "description": "蒙版过渡长度（vh，0-100，默认 12）：从 banner 带底部起多少视口高度内，\n蒙版从「不透明」过渡到 `mistStrength`。0 = 硬边。"
+            },
+            "bodyRain": {
+              "anyOf": [
+                {},
+                {
+                  "type": "boolean",
+                  "enum": [
+                    false
+                  ]
+                },
+                {
+                  "type": "boolean",
+                  "enum": [
+                    true
+                  ]
+                }
+              ],
+              "description": "@deprecated 正文区雨丝已整体移除（refactor(rainy-day): remove the CSS body rain overlay）。\n保留该字段只为让升级后的旧配置继续通过类型检查与构建；设置它不再有任何效果。"
+            },
+            "bodyRainOpacity": {
+              "anyOf": [
+                {},
+                {
+                  "type": "number"
+                }
+              ],
+              "description": "@deprecated 同上，不再生效"
+            },
+            "bodyRainSpeed": {
+              "anyOf": [
+                {},
+                {
+                  "type": "number"
+                }
+              ],
+              "description": "@deprecated 同上，不再生效"
+            },
+            "bgFadeMs": {
+              "anyOf": [
+                {},
+                {
+                  "type": "number"
+                }
+              ],
+              "description": "轮播换图时雨层的交叉淡入时长（毫秒；0 = 直接切换）"
+            },
+            "lazy": {
+              "anyOf": [
+                {},
+                {
+                  "type": "boolean",
+                  "enum": [
+                    false
+                  ]
+                },
+                {
+                  "type": "boolean",
+                  "enum": [
+                    true
+                  ]
+                }
+              ],
+              "description": "延后到 load + 浏览器空闲再挂载，把特效库移出首屏关键路径（默认开）"
+            },
+            "idleDelayMs": {
+              "anyOf": [
+                {},
+                {
+                  "type": "number"
+                }
+              ],
+              "description": "`lazy` 的 idle 兜底超时（毫秒）：最迟这么久一定挂载"
+            },
+            "fadeInMs": {
+              "anyOf": [
+                {},
+                {
+                  "type": "number"
+                }
+              ],
+              "description": "挂载完成后的淡入时长（毫秒；0 = 不淡入）"
+            }
+          },
+          "additionalProperties": false
+        }
+      ],
+      "description": "雨滴窗玻璃特效（Banner 上的 WebGL 雨滴），支持布尔值直接开关或详细配置对象。\n重量级可选特性：未配置即关闭，关闭时零 DOM / 零样式 / 零 bundle。"
     },
     "banner": {
       "type": "object",

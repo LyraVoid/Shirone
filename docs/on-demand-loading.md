@@ -36,7 +36,7 @@
 
 | 文件 | 职责 |
 |---|---|
-| `src/config/rainyDayConfig.ts` + `src/types/rainyDayConfig.ts` | 配置单一真源 + `resolveRainyDayOptions()` 校验、数值裁剪与关闭短路（默认 `enable: true`，改为 `false` 时零 DOM / 零样式 / 零 chunk） |
+| `src/config/rainyDayConfig.ts` + `src/types/rainyDayConfig.ts` | 配置单一真源 + `resolveRainyDayOptions()` 校验、数值裁剪与关闭短路（默认 `enable: false`：不渲染组件、不加载特效库，产物零 DOM / 零样式 / 零 chunk；改为 `true` 才启用） |
 | `src/components/organisms/RainyWindowLayer.astro` | 特性组件：`position: fixed; inset: 0; z-index: 0` 的页面级环境层，零 CSS（全内联样式）+ 运行时懒加载（`load` + 空闲后才 `import("@arayui/rainy-day")`）+ `document.hidden` 暂停 rAF |
 | `src/layouts/Layout.astro` | 消费方：`enable` 为真才动态导入，且必须渲染在 `<slot />` **之后**（同层按树序绘制 → 盖住横幅图片、仍低于 `#main-layout` z-30） |
 | `astro.config.mjs` / `src/integration/index.ts` | 关闭时把组件模块整体替换为 `null`（`virtual:shirone-rainy-window` + `generateBundle` 丢弃残留 chunk） |
@@ -181,7 +181,7 @@ dist 中无对应 CSS 资产、无对应 JS chunk。验证后恢复配置。
 
 ### 4.2 构建产物扫描（开启状态）
 
-`enable: true` 构建后确认：特性样式**只**出现在渲染该特性的页面，非使用页面零引用。
+临时把 `enable` 设为 `true` 后构建确认：特性样式**只**出现在渲染该特性的页面，非使用页面零引用。
 
 ### 4.3 Playwright
 
@@ -211,7 +211,7 @@ test("...", async ({ page }) => {
 |---|---|---|
 | Astro CSS 提升 | 组件内 `<style>` / `?url` / `?inline` 导入会被收集进共享 CSS，所有页面加载 | `<style is:inline>` + 构建期编译（§3 L3） |
 | `import.meta.env` 开关 | 非 Vite 上下文（Node 配置加载）下为 `undefined`，直接崩溃 | 开关走 config 字面量，不用 env |
-| 测试依赖默认开启 | 默认关闭后 UI 测试失败 | `test.skip` 守卫（§4.3） |
+| 测试依赖默认开启 | 特性默认关闭后开启态用例被跳过（漏测风险） | `test.skip` 守卫（§4.3）双向覆盖：默认关闭时跑零足迹用例，临时开启时跑渲染用例 |
 | 第三方 SDK 进 bundle | 可选依赖被静态导入进主包 | 动态 `<script>` 注入 + `loadScriptOnce`（§3 L4） |
 | 加载状态轮询 | 引入 MutationObserver / setInterval 增加复杂度 | CSS `:has()` 感知状态（§3 L4） |
 | 关闭时输出骨架 | 即使关闭也渲染占位 DOM 造成布局偏移 | 消费组件短路 `return null`（§3 L1） |

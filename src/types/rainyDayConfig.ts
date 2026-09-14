@@ -6,11 +6,11 @@
  * 因此整页背景呈现为「壁纸 + 雨」，只有在壁纸可见时（`wallpaperMode: "banner"`）
  * 才会挂载。
  *
- * 效果由 WebGL（Three.js）渲染：本仓库默认开启（`rainyDayConfig.enable: true`）；
- * 改为 `false` 时组件、特效库与相关样式全部不进构建产物（见 `docs/on-demand-loading.md`）。
+ * 效果由 WebGL（Three.js）渲染：本仓库默认关闭（`rainyDayConfig.enable: false`）；
+ * 改为 `true` 时才会编译进产物（见 `docs/on-demand-loading.md`），关闭时零 DOM / 零样式 / 零 chunk。
  */
 export interface RainyDayConfig {
-	/** 总开关（构建期生效）：false 时该特性零 DOM、零样式、零 bundle */
+	/** 总开关（构建期生效，默认 false）：true 时才编译进产物；false 时该特性零 DOM、零样式、零 bundle */
 	enable?: boolean;
 	/** 主题启用后访客首次进入时的默认状态；访客可在显示设置里关掉（存 localStorage） */
 	defaultEnabled?: boolean;

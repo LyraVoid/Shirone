@@ -14,8 +14,8 @@ export type { RainyDayConfig, ResolvedRainyDayOptions };
  * 以「当前可见的横幅图片」为折射源，折射后整页背景呈现为「壁纸 + 雨」，
  * 内容、顶栏与 hero 文案都浮在它之上。
  *
- * 本仓库默认开启（`enable: true`）：构建后访客首次进入即看到雨幕，也可随时在
- * 「显示设置」里关掉（存 localStorage）。不想用时把 `enable` 改为 `false` —— 关闭时
+ * 本仓库默认关闭（`enable: false`）：重量级可选特性默认不开，构建期即可零开销；
+ * 想启用时把 `enable` 改为 `true`，访客仍可在「显示设置」里关掉（存 localStorage）。
  * 遵循「关闭零开销」：不渲染组件（零 DOM）、不加载特效库（含 Three.js）、不输出任何
  * 样式与 DOM、产物里零 chunk。纯色背景（`wallpaperMode: none`）、移动端非首页与
  * 弱网/减少动效环境下不会挂载。
@@ -25,7 +25,7 @@ export type { RainyDayConfig, ResolvedRainyDayOptions };
  * 越界值会被 resolve 时裁剪。
  */
 export const rainyDayConfig: RainyDayConfig = withUserConfig("rainyDay", {
-	enable: true, // 总开关（构建期生效）：false = 该特性完全不进产物
+	enable: false, // 总开关（构建期生效）：true 时才进产物；默认关闭 = 零 DOM / 零样式 / 零 chunk
 	defaultEnabled: true, // 主题启用后访客首次进入时的默认状态（之后由访客自己的开关决定）
 
 	intensity: 0.2, // 雨滴密度
@@ -141,7 +141,7 @@ export function resolveRainyDayOptions(
 	}
 
 	return {
-		enable: config.enable ?? true,
+		enable: config.enable ?? false,
 		defaultEnabled: config.defaultEnabled ?? true,
 		intensity: clampNumber(config.intensity, 0.2, 0, 1),
 		speed: clampNumber(config.speed, 1, 0, 10),
