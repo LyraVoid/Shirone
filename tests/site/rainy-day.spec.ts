@@ -113,6 +113,19 @@ test.describe("Rainy window layer — 开启后", () => {
 		await expect
 			.poll(() => media.evaluate((el) => Number(getComputedStyle(el).opacity)))
 			.toBeCloseTo(0, 2);
+		// 水波分隔层与横幅图片同步让位：雨幕激活时整层淡化到 --banner-wave-rainy-opacity
+		// （数值从 CSS 读取，调强度时测试无需改动）
+		const waves = page.locator(".banner-waves");
+		const rainyWaveOpacity = await waves.evaluate((el) =>
+			Number.parseFloat(
+				getComputedStyle(el).getPropertyValue("--banner-wave-rainy-opacity"),
+			),
+		);
+		expect(rainyWaveOpacity).toBeGreaterThan(0);
+		expect(rainyWaveOpacity).toBeLessThan(1);
+		await expect
+			.poll(() => waves.evaluate((el) => Number(getComputedStyle(el).opacity)))
+			.toBeCloseTo(rainyWaveOpacity, 2);
 		// 竖向蒙版把 banner 带设为不透明，正文区落到配置的雨雾浓度
 		const maskImage = await layer.evaluate(
 			(el) => getComputedStyle(el).maskImage,
@@ -193,6 +206,14 @@ test.describe("Rainy window layer — 开启后", () => {
 					.evaluate((el) => Number(getComputedStyle(el).opacity)),
 			)
 			.toBeCloseTo(1, 2);
+		// 水波分隔层同步恢复原强度
+		await expect
+			.poll(() =>
+				page
+					.locator(".banner-waves")
+					.evaluate((el) => Number(getComputedStyle(el).opacity)),
+			)
+			.toBe(1);
 		expect(
 			await page
 				.locator("#m3e-texture-canvas")

@@ -72,6 +72,10 @@ const waveB = buildWavePath({
 	overflow: hidden
 	color: var(--page-bg)
 	pointer-events: none
+	/* 雨幕激活时（切换开雨滴的那一刻起）整层的淡化程度：1 = 不淡，0.1 = 几乎只剩一层淡淡的边。
+	   只改这一处即可调强度 */
+	--banner-wave-rainy-opacity: 0.1
+	transition: opacity var(--m3e-duration-long) var(--m3e-easing-standard)
 
 	svg
 		display: block
@@ -118,6 +122,11 @@ const waveB = buildWavePath({
 			--banner-wave-y: var(--m3e-space-3)
 			animation-duration: var(--m3e-duration-ambient-extra-long)
 
+/* 雨幕激活时整层淡化，与 .banner-stage__media 让位 / 纹理层抬升同一节奏
+   （标记由 components/organisms/RainyWindowLayer.astro 维护） */
+:global(html[data-rainy-active="true"]) .banner-waves
+	opacity: var(--banner-wave-rainy-opacity)
+
 @keyframes banner-wave-flow
 	to
 		transform: translate3d(var(--banner-wave-end), var(--banner-wave-y), 0) scaleY(var(--banner-wave-scale-y))
@@ -155,7 +164,14 @@ const waveB = buildWavePath({
 :global(html.motion-reduced) .banner-waves__layer
 	animation: none
 
+/* 淡化本身是过渡动画：手动「减少动效」时直接到位，不做渐变 */
+:global(html.motion-reduced) .banner-waves
+	transition: none
+
 @media (prefers-reduced-motion: reduce)
 	.banner-waves__layer
 		animation: none
+
+	.banner-waves
+		transition: none
 </style>
