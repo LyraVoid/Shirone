@@ -37,10 +37,11 @@ export type {
 	ShironesPaths,
 } from "./types.ts";
 
-// NOTE: `defineCollections` is deliberately *not* re-exported here. It imports
-// `astro:content`, a virtual module that only exists inside Vite, so pulling it
-// into this Node-side entry would break `astro.config.mjs` loading. Users import
-// it from the dedicated `shirones/collections` entry point instead.
+// NOTE: `defineCollections` function is no longer exported. The schemas
+// (`postSchema`, `momentSchema`, `specSchema`) are exported from
+// `shirones/collections` for users to use inline in their
+// `src/content.config.ts` with \`defineCollection\` from "astro:content".
+// This ensures Astro's typegen works correctly in both source and package modes.
 
 const RESOLVED_MUSIC_VIRTUAL_ID = `\0${MUSIC_SIDEBAR_VIRTUAL_ID}`;
 

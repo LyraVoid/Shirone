@@ -1043,7 +1043,7 @@ ${colours.green}${colours.bold}Done.${colours.reset} ${postCount} example conten
 
 ${colours.bold}Project layout${colours.reset}
   astro.config.mjs          the only Astro config
-  src/content.config.ts     collection definitions
+  src/content.config.ts     inline collection schemas (postSchema, momentSchema, specSchema)
   src/components/           drop a file here to override a theme component
   src/layouts/              …same for layouts
   ${CONTENT_ROOT}/config/            site configuration (TypeScript, fully typed)

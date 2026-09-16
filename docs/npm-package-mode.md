@@ -41,8 +41,8 @@ src/integration/
 ├── load-config.ts  Node-side loader for user TypeScript config
 ├── routes.ts       src/pages scan → injectRoute patterns
 ├── fonts.ts        font declarations + subsetting (`.shirones/fonts/` in package mode, `src/assets/fonts/.subset/` in-repo)
-├── collections.ts  defineCollections() for src/content.config.ts
-├── cli.mjs         `shirones init`
+├── collections.ts  collection schemas (postSchema, momentSchema, specSchema)
+├── cli.mjs         \`shirones init\`
 ├── paths.ts        directory resolution
 └── types.ts        public option types
 ```
