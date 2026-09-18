@@ -1,0 +1,266 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "games configuration override",
+  "description": "Shirone games config schema generated from @/types/gamesConfig.GamesConfig",
+  "type": "object",
+  "properties": {
+    "enable": {
+      "type": "boolean",
+      "description": "页面总开关；关闭后隐藏导航入口并将 /games/ 重定向到 404。"
+    },
+    "categories": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "description": "稳定标识，供游戏引用与筛选。"
+          },
+          "label": {
+            "type": "string",
+            "description": "用户可编辑的分类名称。"
+          },
+          "icon": {
+            "anyOf": [
+              {},
+              {
+                "type": "string"
+              }
+            ],
+            "description": "Iconify 图标名（筛选 Chip 前置图标）。"
+          },
+          "description": {
+            "anyOf": [
+              {},
+              {
+                "type": "string"
+              }
+            ],
+            "description": "可选的分类说明。"
+          }
+        },
+        "additionalProperties": false
+      },
+      "description": "游戏分类列表（决定 Chips 渲染顺序）。"
+    },
+    "disabledIds": {
+      "anyOf": [
+        {},
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      ],
+      "description": "可选被禁用的游戏 ID 列表。"
+    },
+    "disabledKeys": {
+      "anyOf": [
+        {},
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      ],
+      "description": "兼容通用 disabledKeys 别名。"
+    },
+    "items": {
+      "anyOf": [
+        {},
+        {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "enable": {
+                "anyOf": [
+                  {},
+                  {
+                    "type": "boolean",
+                    "enum": [
+                      false
+                    ]
+                  },
+                  {
+                    "type": "boolean",
+                    "enum": [
+                      true
+                    ]
+                  }
+                ],
+                "description": "可选独立开关；关闭后不参与渲染与计数（优先使用 config.disabledIds）。"
+              },
+              "id": {
+                "type": "string",
+                "description": "稳定标识（URL 片段 / 测试选择器）。"
+              },
+              "name": {
+                "type": "string",
+                "description": "游戏名称。"
+              },
+              "developer": {
+                "type": "string",
+                "description": "开发商/工作室（如 miHoYo, FromSoftware）。"
+              },
+              "category": {
+                "type": "string",
+                "description": "所属分类（对应 GameCategory.key）。"
+              },
+              "status": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "wishlist"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "enum": [
+                      "playing"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "enum": [
+                      "completed"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "enum": [
+                      "backlog"
+                    ]
+                  }
+                ],
+                "description": "游玩状态。"
+              },
+              "cover": {
+                "anyOf": [
+                  {},
+                  {
+                    "type": "string"
+                  }
+                ],
+                "description": "横屏封面图（站内绝对路径，建议 16:9 或更宽的本地 WebP/AVIF）。"
+              },
+              "icon": {
+                "anyOf": [
+                  {},
+                  {
+                    "type": "string"
+                  }
+                ],
+                "description": "无封面时使用的 Iconify 图标。"
+              },
+              "rating": {
+                "anyOf": [
+                  {},
+                  {
+                    "type": "number"
+                  }
+                ],
+                "description": "评分（0–5，支持 0.5 步进）。"
+              },
+              "hours": {
+                "anyOf": [
+                  {},
+                  {
+                    "type": "number"
+                  }
+                ],
+                "description": "已游玩时长（小时）。"
+              },
+              "platform": {
+                "anyOf": [
+                  {},
+                  {
+                    "type": "string"
+                  }
+                ],
+                "description": "平台（如 PC / PlayStation / Switch / Mobile）。"
+              },
+              "year": {
+                "anyOf": [
+                  {},
+                  {
+                    "type": "string"
+                  }
+                ],
+                "description": "发行年份（自由格式，如 \"2024\"）。"
+              },
+              "tags": {
+                "anyOf": [
+                  {},
+                  {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                ],
+                "description": "类型标签（渲染为卡片上的 chips）。"
+              },
+              "description": {
+                "type": "string",
+                "description": "游戏简评/感受。"
+              },
+              "link": {
+                "anyOf": [
+                  {},
+                  {
+                    "type": "string"
+                  }
+                ],
+                "description": "商店页、官网或评测链接。"
+              },
+              "featured": {
+                "anyOf": [
+                  {},
+                  {
+                    "type": "boolean",
+                    "enum": [
+                      false
+                    ]
+                  },
+                  {
+                    "type": "boolean",
+                    "enum": [
+                      true
+                    ]
+                  }
+                ],
+                "description": "特别推荐标记（渲染 Featured 徽章）。"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      ],
+      "description": "可选自定义数据（向后兼容；默认读取 src/data/games.ts）。"
+    },
+    "title": {
+      "anyOf": [
+        {},
+        {
+          "type": "string"
+        }
+      ],
+      "description": "页面标题：字面量（个人化、语言无关），或 \"$t:<i18nKey>\"（本地化；默认即当前词条）"
+    },
+    "description": {
+      "anyOf": [
+        {},
+        {
+          "type": "string"
+        }
+      ],
+      "description": "页面副标题：同上"
+    }
+  },
+  "additionalProperties": false
+}

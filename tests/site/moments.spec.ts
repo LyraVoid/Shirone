@@ -301,4 +301,61 @@ test.describe("动态页", () => {
 			"No moments matched your filters",
 		);
 	});
+
+	test("窄宽度下长链接折行，不撑破卡片与网格轨道", async ({ page }) => {
+		// 回归：动态正文里的长链接会把 1fr 网格轨道撑到卡片之外，
+		// 窄宽度（400px）下整卡溢出内容区被裁切
+		await page.setViewportSize({ width: 400, height: 800 });
+		const first = page.locator(".moment-card").first();
+		const longUrl =
+			"https://example.com/a/very/long/path/that/keeps/going/and/going/without/any/spaces/at/all/0123456789abcdefghijklmnopqrstuvwxyz";
+		const geometry = await first.evaluate((card, url) => {
+			const content = card.querySelector<HTMLElement>(".moment-card__content");
+			if (!content) throw new Error("Moment content is missing");
+			// 模拟作者写入的超长链接（构建期渲染结果同样是 .custom-md a）
+			const paragraph = document.createElement("p");
+			const link = document.createElement("a");
+			link.href = url;
+			link.textContent = url;
+			paragraph.appendChild(link);
+			content.appendChild(paragraph);
+
+			const list = card.parentElement;
+			const section = card.closest<HTMLElement>(".moment-section");
+			if (!list || !section) throw new Error("Moment section is missing");
+
+			// Range 取文本行盒（排除链接自带的内边距），确认折行后仍在内容区内
+			const range = document.createRange();
+			range.selectNodeContents(link);
+			const lines = range.getClientRects();
+			let textRight = 0;
+			for (let index = 0; index < lines.length; index += 1) {
+				const line = lines[index];
+				if (line) textRight = Math.max(textRight, line.right);
+			}
+
+			const cardRect = card.getBoundingClientRect();
+			return {
+				lineCount: lines.length,
+				overflowWrap: getComputedStyle(link).overflowWrap,
+				cardWidth: cardRect.width,
+				listWidth: list.getBoundingClientRect().width,
+				cardRight: cardRect.right,
+				sectionRight: section.getBoundingClientRect().right,
+				textRight,
+				contentRight: content.getBoundingClientRect().right,
+				documentOverflow:
+					document.documentElement.scrollWidth -
+					document.documentElement.clientWidth,
+			};
+		}, longUrl);
+
+		// 长链接折成多行，而不是把卡片顶宽
+		expect(geometry.lineCount).toBeGreaterThan(1);
+		expect(geometry.overflowWrap).toBe("anywhere");
+		expect(geometry.cardWidth).toBeLessThanOrEqual(geometry.listWidth + 1);
+		expect(geometry.cardRight).toBeLessThanOrEqual(geometry.sectionRight + 1);
+		expect(geometry.textRight).toBeLessThanOrEqual(geometry.contentRight + 1);
+		expect(geometry.documentOverflow).toBeLessThanOrEqual(1);
+	});
 });

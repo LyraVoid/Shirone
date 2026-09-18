@@ -7,6 +7,7 @@ import { friendsConfig } from "./friendsConfig.ts";
 import { gamesConfig } from "./gamesConfig.ts";
 import { momentsConfig } from "./momentsConfig.ts";
 import { projectsConfig } from "./projectsConfig.ts";
+import { seriesConfig } from "./seriesConfig.ts";
 import { skillsConfig } from "./skillsConfig.ts";
 import { timelineConfig } from "./timelineConfig.ts";
 
@@ -24,6 +25,7 @@ export function getDisabledPages(): string[] {
 	if (momentsConfig.enable === false) disabled.push("moments");
 	if (albumsConfig.enable === false) disabled.push("albums");
 	if (compassConfig.enable === false) disabled.push("compass");
+	if (seriesConfig.enable === false) disabled.push("series");
 	return disabled;
 }
 

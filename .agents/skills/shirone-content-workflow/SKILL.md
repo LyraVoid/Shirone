@@ -70,7 +70,7 @@ description: Operate Shirone content separation and dual-repository workflows af
   > 依据 `docs/asset-pipeline.md`，`src/assets/` 和 `public/images/` 归属内容仓，而 `public/assets/` 下按业务域归档的是可重复构建的派生产物，二者绝不能混淆。
 
 - **顶层目录对等裁剪**：
-  同步裁剪只在内容仓确实拥有的顶层目录内发生。例如内容仓没有 `content/spec/` 时，代码仓原有的 `src/content/spec/` 将完整保留，反向导出亦同理。
+  同步裁剪只在内容仓确实拥有的顶层目录内发生。例如内容仓没有 `content/spec/` 或 `content/series/` 时，代码仓原有的 `src/content/spec/`、`src/content/series/` 将完整保留，反向导出亦同理。
 
 - **反向导出写入规范**：
   导出操作会直接向外部 Git 仓库写盘，因此严格拒绝 `local` 模式、`CI=true` 或浅克隆工作副本；要求内容仓工作区干净且与配置现状一致。默认绝不删除文件，只有附加 `--prune` / `--prune-config` 时才允许清理多余文件（删除前强制备份）。

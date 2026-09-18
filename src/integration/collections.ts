@@ -19,6 +19,14 @@ export const postSchema = z.object({
 	image: z.string().optional().default(""),
 	tags: z.array(z.string()).optional().default([]),
 	category: z.string().optional().nullable().default(""),
+	/** Series slug the post belongs to (empty = none; single series per post). */
+	series: z
+		.string()
+		.optional()
+		.default("")
+		.transform((value) => value.trim()),
+	/** Position inside the series; falls back to publication order when absent. */
+	seriesOrder: z.number().int().optional(),
 	lang: z.string().optional().default(""),
 
 	/* Post encryption */
@@ -67,16 +75,36 @@ export const momentSchema = z.object({
 export const specSchema = z.object({});
 
 /**
+/**
+ * Schema for series entities. Each entry is one series; the Markdown body is
+ * the optional overview rendered on the series page.
+ */
+export const seriesSchema = z.object({
+	title: z.string(),
+	status: z.enum(["ongoing", "completed"]).optional().default("ongoing"),
+	defaultCategory: z.string().optional().default(""),
+});
+
+/**
  * Helper to create a collection definition with the standard glob loader.
  * Package mode users can import this if they need custom paths.
  */
-export function createCollection(key: "posts" | "moments" | "spec", base: string) {
+export function createCollection(
+	key: "posts" | "moments" | "spec" | "series",
+	base: string,
+) {
 	const loaders = {
 		posts: glob({ base: `${base}/posts`, pattern: "**/*.{md,mdx}" }),
 		moments: glob({ base: `${base}/moments`, pattern: "**/*.md" }),
 		spec: glob({ base: `${base}/spec`, pattern: "**/*.{md,mdx}" }),
+		series: glob({ base: `${base}/series`, pattern: "**/*.md" }),
 	};
-	const schemas = { posts: postSchema, moments: momentSchema, spec: specSchema };
+	const schemas = {
+		posts: postSchema,
+		moments: momentSchema,
+		spec: specSchema,
+		series: seriesSchema,
+	};
 	return defineCollection({
 		loader: loaders[key],
 		schema: schemas[key],

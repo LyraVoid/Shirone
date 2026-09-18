@@ -9,6 +9,7 @@ import ImageWrapper from "@components/molecules/ImageWrapper.astro";
 import LastUpdatedNotice from "@components/molecules/LastUpdatedNotice.astro";
 import License from "@components/molecules/License.astro";
 import PostMetadata from "@components/molecules/PostMeta.astro";
+import SeriesCard from "@components/molecules/SeriesCard.astro";
 import ArticleDiscovery from "@components/organisms/ArticleDiscovery.astro";
 import ArticleShare from "@components/organisms/ArticleShare.svelte";
 import CommentSection from "@components/organisms/comment/CommentSection.astro";
@@ -20,7 +21,11 @@ import MainGridLayout from "@layouts/MainGridLayout.astro";
 import { discoverArticles } from "@utils/article-discovery";
 import { resolveAsset } from "@utils/asset-utils";
 import { getPublishedInstant, getUpdatedInstant } from "@utils/content-date";
-import { getSortedPosts, type PostForList } from "@utils/content-utils";
+import {
+	getSeriesCatalog,
+	getSortedPosts,
+	type PostForList,
+} from "@utils/content-utils";
 import { formatDateToYYYYMMDD } from "@utils/date-utils";
 import { getMarkdownStylesheetAssets } from "@utils/markdown-assets";
 import { getSourceMarkdownSyntaxSnapshot } from "@utils/markdown-source-syntaxes.mjs";
@@ -33,6 +38,10 @@ import {
 	hasCustomPermalink,
 	initPostIdMap,
 } from "@utils/permalink-utils";
+import {
+	buildSeriesContexts,
+	type SeriesPostContext,
+} from "@utils/series-utils";
 import { getDir, getPostUrl, getPostUrlBySlug } from "@utils/url-utils";
 import { Icon } from "astro-icon/components";
 import katexStylesheet from "katex/dist/katex.css?url";
@@ -48,6 +57,7 @@ import {
 	resolveCommentOptions,
 	resolveLastUpdatedNoticeOptions,
 	resolveUmamiOptions,
+	seriesConfig,
 	siteConfig,
 	umamiConfig,
 } from "@/config";
@@ -62,11 +72,27 @@ export async function getStaticPaths() {
 	}));
 	const discoveryOptions = resolveArticleDiscoveryOptions(articleConfig);
 
+	// 与 posts/[...slug].astro 保持一致：permalink 路由同样承载文章内系列卡；
+	// 功能关闭时不查集合、不构建上下文（零额外负担）
+	const seriesContexts = seriesConfig.enable
+		? buildSeriesContexts({
+				catalog: await getSeriesCatalog(),
+				posts: blogEntries.map((entry) => ({
+					slug: entry.id,
+					title: entry.data.title,
+					published: entry.data.published,
+					series: entry.data.series,
+					seriesOrder: entry.data.seriesOrder,
+				})),
+			})
+		: new Map<string, SeriesPostContext>();
+
 	const paths: {
 		params: { permalink: string };
 		props: {
 			entry: CollectionEntry<"posts">;
 			discovery: { related: PostForList[]; random: PostForList[] };
+			series: SeriesPostContext | null;
 		};
 	}[] = [];
 
@@ -96,7 +122,11 @@ export async function getStaticPaths() {
 
 			paths.push({
 				params: { permalink },
-				props: { entry, discovery },
+				props: {
+					entry,
+					discovery,
+					series: seriesContexts.get(entry.id) ?? null,
+				},
 			});
 		}
 	}
@@ -104,10 +134,17 @@ export async function getStaticPaths() {
 	return paths;
 }
 
-const { entry, discovery } = Astro.props;
+const { entry, discovery, series } = Astro.props;
+const seriesCardAtTop = seriesConfig.cardPosition !== "bottom";
 const isEncrypted = Boolean(
 	entry.data.password && entry.data.password.trim().length > 0,
 );
+// 加密且隐藏首页内容的文章：元信息区已被加密徽标替代，系列卡同样不渲染；
+// 功能关闭时同样不渲染（与 posts/[...slug].astro 一致）
+const seriesCardVisible =
+	seriesConfig.enable &&
+	series !== null &&
+	!(isEncrypted && entry.data.hideHomeContent);
 const scope = `post:${entry.id}`;
 
 const { Content, headings, remarkPluginFrontmatter } = await render(entry);
@@ -243,6 +280,9 @@ const jsonLd = {
 						category={entry.data.category}
 					></PostMetadata>
 				)}
+				{seriesCardVisible && seriesCardAtTop && series && (
+					<SeriesCard context={series} class="mb-5 onload-animation" />
+				)}
 				{!entry.data.image && <div class="border-[var(--outline-variant)] border-dashed border-b-[1px] mb-5"></div>}
 			</div>
 
@@ -300,6 +340,10 @@ const jsonLd = {
 				random={discovery.random}
 				class="onload-animation"
 			/>
+
+			{seriesCardVisible && !seriesCardAtTop && series && (
+				<SeriesCard context={series} class="mb-6 onload-animation" />
+			)}
 
 		</Card>
     </div>

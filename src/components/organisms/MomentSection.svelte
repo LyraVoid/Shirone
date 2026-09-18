@@ -263,7 +263,8 @@ onMount(() => {
 
 	&__list
 		display: grid
-		grid-template-columns: 1fr
+		/* 显式下限 0：长链接等不可断 token 的 min-content 不得撑宽网格轨道 */
+		grid-template-columns: minmax(0, 1fr)
 		gap: 1rem
 		padding-top: 1.5rem
 

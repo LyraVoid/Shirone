@@ -31,6 +31,8 @@ const pages = [
 	{ name: "MDX文章页", path: "/posts/mdx-showcase/" },
 	{ name: "分类索引", path: "/categories/" },
 	{ name: "标签索引", path: "/tags/" },
+	{ name: "系列索引", path: "/series/" },
+	{ name: "系列详情", path: "/series/markdown-syntax-guide/" },
 ];
 
 const DISABLED_RULES = ["page-has-heading-one"];

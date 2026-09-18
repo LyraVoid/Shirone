@@ -1,0 +1,198 @@
+---
+/**
+ * 系列详情页：单个系列的落地页。
+ * 总览正文（可选，来自系列实体 body）+ 按 seriesOrder 排序的文章列表
+ * （列表项标注「第 N 篇」）。系列实体缺失时重定向到 404 存根。
+ */
+import { render } from "astro:content";
+import Card from "@components/atoms/display/Card.svelte";
+import PageHeader from "@components/atoms/display/PageHeader.astro";
+import Markdown from "@components/content/Markdown.astro";
+import I18nKey from "@i18n/i18nKey";
+import { i18n } from "@i18n/translation";
+import MainGridLayout from "@layouts/MainGridLayout.astro";
+import { seriesConfig } from "@/config";
+
+if (!seriesConfig.enable) {
+	return Astro.redirect("/404/");
+}
+
+import { getSeriesCatalog, getSortedPostsList } from "@utils/content-utils";
+import { formatDateToYYYYMMDD } from "@utils/date-utils";
+import { getMarkdownStylesheetAssets } from "@utils/markdown-assets";
+import {
+	normaliseSeriesSlug,
+	orderSeriesMembers,
+	type SeriesMemberInput,
+} from "@utils/series-utils";
+import { url } from "@utils/url-utils";
+
+export async function getStaticPaths() {
+	const catalog = await getSeriesCatalog();
+	return [...catalog.keys()].map((slug) => ({ params: { slug } }));
+}
+
+const { slug } = Astro.params;
+const catalog = await getSeriesCatalog();
+const series = slug ? catalog.get(slug) : undefined;
+if (!series) {
+	return Astro.redirect("/404/");
+}
+
+const { Content, remarkPluginFrontmatter } = await render(series);
+const markdownStylesheetAssets = await getMarkdownStylesheetAssets(
+	remarkPluginFrontmatter.markdownSyntaxes,
+);
+
+const posts = await getSortedPostsList();
+const members: SeriesMemberInput[] = posts
+	.filter((post) => normaliseSeriesSlug(post.data.series) === series.id)
+	.map((post) => ({
+		slug: post.slug,
+		title: post.data.title,
+		published: post.data.published,
+		series: normaliseSeriesSlug(post.data.series),
+		seriesOrder: post.data.seriesOrder,
+	}));
+const ordered = orderSeriesMembers(members);
+
+const statusLabel =
+	series.data.status === "completed"
+		? i18n(I18nKey.seriesStatusCompleted)
+		: i18n(I18nKey.seriesStatusOngoing);
+const subtitle = `${statusLabel} · ${ordered.length} ${i18n(I18nKey.postsCount)}`;
+---
+
+<MainGridLayout title={series.data.title} description={subtitle} page="series">
+	{markdownStylesheetAssets.map(({ pack, css }) => (
+		<style is:inline slot="head" data-swup-optional={pack} set:html={css}></style>
+	))}
+	<Card color="var(--card-bg)" radius="l" class="series-detail px-8 py-6">
+		<PageHeader
+			icon="material-symbols:auto-stories-rounded"
+			title={series.data.title}
+			subtitle={subtitle}
+		/>
+		{series.body && (
+			<section class="series-detail__overview">
+				<Markdown class="series-detail__overview-markdown">
+					<Content />
+				</Markdown>
+			</section>
+		)}
+		{ordered.length > 0 && (
+			<ol class="series-detail__list">
+				{ordered.map((member, index) => {
+					const postUrl =
+						posts.find((post) => post.slug === member.slug)?.url ??
+						url("/");
+					return (
+						<li>
+							<a
+								class="series-detail__row m3-state-layer"
+								href={postUrl}
+							>
+								<span class="series-detail__index" aria-hidden="true">
+									{String(index + 1).padStart(2, "0")}
+								</span>
+								<span class="series-detail__title">{member.title}</span>
+								<span
+									class="series-detail__rule"
+									aria-hidden="true"
+								></span>
+								<span class="series-detail__date">
+									{formatDateToYYYYMMDD(member.published)}
+								</span>
+							</a>
+						</li>
+					);
+				})}
+			</ol>
+		)}
+		{ordered.length === 0 && (
+			<div class="series-detail__empty">
+				<span>{i18n(I18nKey.noData)}</span>
+			</div>
+		)}
+	</Card>
+</MainGridLayout>
+
+<style lang="stylus">
+.series-detail
+	display: block
+
+	&__overview
+		margin-top: var(--m3e-space-4)
+		padding: var(--m3e-space-4)
+		border-radius: var(--shape-corner-m)
+		background: var(--surface-container-low)
+
+	/* 单列：两列时每行只有 ~280px（桌面侧栏占据后卡片仅 ~640px），
+	   标题会被压到 110px 左右并截断，点线引导也退化成最小值 */
+	&__list
+		display: flex
+		flex-direction: column
+		gap: var(--m3e-space-2)
+		margin: var(--m3e-space-4) 0 0
+		padding: 0
+		list-style: none
+
+	&__row
+		display: flex
+		align-items: center
+		gap: var(--m3e-space-3)
+		min-height: 3.5rem
+		padding: var(--m3e-space-3) var(--m3e-space-4)
+		border-radius: var(--shape-corner-m)
+		background: var(--surface-container-low)
+		text-decoration: none
+		--m3e-state-color: var(--on-surface)
+		transition: background-color var(--m3e-duration-short) var(--m3e-easing-standard)
+		&:hover
+			background: unquote("color-mix(in oklab, var(--on-surface) 6%, transparent)")
+
+	&__index
+		display: inline-flex
+		align-items: center
+		justify-content: center
+		min-width: 1.75rem
+		height: 1.75rem
+		padding: 0 0.375rem
+		border-radius: var(--shape-corner-full)
+		background: unquote("color-mix(in oklab, var(--primary) 12%, transparent)")
+		color: var(--primary)
+		font: var(--m3e-type-label-small)
+		font-weight: 600
+		font-variant-numeric: tabular-nums
+		flex-shrink: 0
+
+	&__title
+		font: var(--m3e-type-body-large)
+		font-weight: 500
+		color: var(--on-surface)
+		flex: 0 1 auto
+		min-width: 0
+		white-space: nowrap
+		overflow: hidden
+		text-overflow: ellipsis
+
+	&__rule
+		flex: 1 1 0
+		align-self: flex-end
+		margin-bottom: 0.35em
+		min-width: var(--m3e-space-4)
+		border-bottom: 2px dotted var(--outline-variant)
+
+	&__date
+		font: var(--m3e-type-label-small)
+		color: var(--on-surface-variant)
+		white-space: nowrap
+
+	&__empty
+		display: flex
+		align-items: center
+		justify-content: center
+		min-height: 11rem
+		color: var(--on-surface-variant)
+		font: var(--m3e-type-body-large)
+</style>

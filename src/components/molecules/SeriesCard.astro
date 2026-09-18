@@ -1,0 +1,286 @@
+---
+import I18nKey from "@i18n/i18nKey";
+import { i18n } from "@i18n/translation";
+import type { SeriesPostContext, SeriesPostRef } from "@utils/series-utils";
+import { getPostUrlBySlug, getSeriesUrl } from "@utils/url-utils";
+import { Icon } from "astro-icon/components";
+
+/**
+ * 文章内系列导航（纯 SSR）。
+ * 视觉语言与它上方的 ArticleDiscovery 保持一致：不套容器背景
+ * （DESIGN.md 禁止卡片套卡片 / 把卡片当通用分节外壳），用「图标 + 标题 + 横线」
+ * 的 lane 标题建立分节，条目是「标题 + 元信息」的整行状态层链接。
+ * 上一/下一篇沿用文章末尾全局 post-nav 的方向语言（箭头在外侧、hover 位移）；
+ * 状态 pill 使用 M3 tonal 配对（与 GameCard 的状态语言一致）。
+ */
+interface Props {
+	context: SeriesPostContext;
+	class?: string;
+}
+
+const { context, class: className = "" } = Astro.props;
+
+// `seriesPart` 的 `{index}` / `{total}` 在 10 种语言中同名；这里给数字加粗
+const partMessage = i18n(I18nKey.seriesPart).split(/(\{index\}|\{total\})/g);
+const statusLabel =
+	context.status === "completed"
+		? i18n(I18nKey.seriesStatusCompleted)
+		: i18n(I18nKey.seriesStatusOngoing);
+
+const headingId = `series-card-title-${context.slug}`;
+// 相邻篇章与前/后位次一一对应，可直接由当前位置换算
+const partLabel = (index: number) =>
+	i18n(I18nKey.seriesPart)
+		.replace("{index}", String(index))
+		.replace("{total}", String(context.total));
+
+const neighbours: {
+	ref: SeriesPostRef;
+	direction: "prev" | "next";
+	index: number;
+}[] = [];
+if (context.prev) {
+	neighbours.push({
+		ref: context.prev,
+		direction: "prev",
+		index: context.index - 1,
+	});
+}
+if (context.next) {
+	neighbours.push({
+		ref: context.next,
+		direction: "next",
+		index: context.index + 1,
+	});
+}
+const directionLabel = {
+	prev: I18nKey.seriesPrevInSeries,
+	next: I18nKey.seriesNextInSeries,
+} as const;
+---
+
+<section
+	class={`series-card${className ? ` ${className}` : ""}`}
+	data-series-card
+	data-series-slug={context.slug}
+	data-series-status={context.status}
+	aria-labelledby={headingId}
+>
+	<header class="series-card__head">
+		<div class="series-card__lane">
+			<Icon name="material-symbols:auto-stories-outline-rounded" />
+			<h2 class="series-card__title" id={headingId}>
+				<a class="series-card__link m3-state-layer" href={getSeriesUrl(context.slug)}>
+					{context.title}
+				</a>
+			</h2>
+			<span class="series-card__rule" aria-hidden="true"></span>
+			<span class={`series-card__status series-card__status--${context.status}`}>
+				{statusLabel}
+			</span>
+		</div>
+		<p class="series-card__meta">
+			{partMessage.map((part) => {
+				if (part === "{index}") {
+					return <span class="series-card__meta-value">{context.index}</span>;
+				}
+				if (part === "{total}") {
+					return <span class="series-card__meta-value">{context.total}</span>;
+				}
+				return part;
+			})}
+			<span class="series-card__meta-sep" aria-hidden="true">·</span>
+			{i18n(I18nKey.seriesPartOf)}
+		</p>
+	</header>
+
+	{neighbours.length > 0 && (
+		<ul
+			class={`series-card__list${
+				neighbours.length === 1 ? " series-card__list--single" : ""
+			}`}
+		>
+			{neighbours.map((neighbour) => (
+				<li>
+					<a
+						class={`series-card__row series-card__row--${neighbour.direction} m3-state-layer`}
+						href={getPostUrlBySlug(neighbour.ref.slug)}
+						aria-label={`${i18n(directionLabel[neighbour.direction])}: ${neighbour.ref.title}`}
+					>
+						{neighbour.direction === "prev" && (
+							<Icon
+								class="series-card__arrow"
+								name="material-symbols:chevron-left-rounded"
+							/>
+						)}
+						<span class="series-card__row-body">
+							<span class="series-card__row-title">{neighbour.ref.title}</span>
+							<span class="series-card__row-meta">
+								{partLabel(neighbour.index)}
+							</span>
+						</span>
+						{neighbour.direction === "next" && (
+							<Icon
+								class="series-card__arrow"
+								name="material-symbols:chevron-right-rounded"
+							/>
+						)}
+					</a>
+				</li>
+			))}
+		</ul>
+	)}
+</section>
+
+<style lang="stylus">
+@import "../../styles/breakpoints.styl"
+
+/* 与 article-discovery 同一节奏：section 上边距 + lane 内边距 */
+.series-card
+	display: flex
+	flex-direction: column
+	gap: var(--m3e-space-3)
+	margin-top: var(--m3e-space-6)
+	padding-top: var(--m3e-space-2)
+	min-width: 0
+
+	&__head
+		display: flex
+		flex-direction: column
+		gap: var(--m3e-space-2)
+		min-width: 0
+		padding-inline: var(--m3e-space-3)
+
+	/* lane 标题：图标 + 标题 + 横线 + 状态，与 article-discovery__lane-title 同语言 */
+	&__lane
+		display: flex
+		align-items: center
+		gap: var(--m3e-space-2)
+		min-width: 0
+		color: var(--primary)
+
+		> :global(svg)
+			flex: 0 0 var(--m3e-space-5)
+			width: var(--m3e-space-5)
+			height: var(--m3e-space-5)
+
+	&__title
+		margin: 0
+		min-width: 0
+		font: var(--m3e-type-title-medium)
+		font-weight: 700
+		color: inherit
+		white-space: nowrap
+		overflow: hidden
+		text-overflow: ellipsis
+
+	&__link
+		color: inherit
+		text-decoration: none
+		border-radius: var(--shape-corner-xs)
+
+	&__rule
+		flex: 1
+		min-width: var(--m3e-space-4)
+		height: 1px
+		background: var(--outline-variant)
+
+	/* 状态 pill：M3 tonal 配对（bg/fg 成对，对比度达标；与 GameCard 状态语言一致） */
+	&__status
+		display: inline-flex
+		align-items: center
+		flex-shrink: 0
+		padding: 0.125rem var(--m3e-space-2)
+		border-radius: var(--shape-corner-full)
+		font: var(--m3e-type-label-small)
+		font-weight: 600
+		white-space: nowrap
+
+		&--ongoing
+			background: var(--primary-container)
+			color: var(--on-primary-container)
+
+		/* 已完结是「沉淀」状态：用中性容器，避免抢走正文/续读的注意力 */
+		&--completed
+			background: var(--surface-container-highest)
+			color: var(--on-surface-variant)
+
+	&__meta
+		margin: 0
+		font: var(--m3e-type-body-small)
+		color: var(--on-surface-variant)
+
+	&__meta-value
+		color: var(--on-surface)
+		font-weight: 600
+
+	&__meta-sep
+		margin: 0 var(--m3e-space-1)
+
+	&__list
+		display: grid
+		grid-template-columns: repeat(2, minmax(0, 1fr))
+		gap: var(--m3e-space-1)
+		margin: 0
+		padding: 0
+		list-style: none
+
+	&__list--single
+		grid-template-columns: minmax(0, 1fr)
+
+	&__row
+		display: flex
+		align-items: center
+		gap: var(--m3e-space-3)
+		min-width: 0
+		min-height: calc(var(--m3e-space-10) + var(--m3e-space-4))
+		padding: var(--m3e-space-2) var(--m3e-space-3)
+		border-radius: var(--shape-corner-s)
+		text-decoration: none
+		--m3e-state-color: var(--primary)
+		--m3e-focus-outline: var(--primary)
+
+	&__row--next
+		justify-content: flex-end
+		text-align: right
+
+	/* 箭头盒与 lane 图标同宽（--m3e-space-5），保证两行左边缘光学对齐 */
+	&__arrow
+		flex: 0 0 var(--m3e-space-5)
+		width: var(--m3e-space-5)
+		height: var(--m3e-space-5)
+		color: var(--primary)
+		transition: transform var(--m3e-duration-medium) var(--m3e-easing-emphasized-decelerate)
+
+	&__row-body
+		display: flex
+		flex-direction: column
+		gap: var(--m3e-space-1)
+		min-width: 0
+
+	&__row-title
+		font: var(--m3e-type-title-small)
+		font-weight: 600
+		color: var(--on-surface)
+		white-space: nowrap
+		overflow: hidden
+		text-overflow: ellipsis
+		transition: color var(--m3e-duration-short) var(--m3e-easing-standard)
+
+	&__row-meta
+		font: var(--m3e-type-body-small)
+		color: var(--on-surface-variant)
+
+	&__row:hover &__row-title
+		color: var(--primary)
+
+	&__row--prev:hover &__arrow
+		transform: translateX(calc(var(--m3e-space-1) * -1))
+
+	&__row--next:hover &__arrow
+		transform: translateX(var(--m3e-space-1))
+
+	@media (max-width: bp-md - 1px)
+		&__list
+			grid-template-columns: minmax(0, 1fr)
+</style>

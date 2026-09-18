@@ -17,6 +17,14 @@ const postsCollection = defineCollection({
 		image: z.string().optional().default(""),
 		tags: z.array(z.string()).optional().default([]),
 		category: z.string().optional().nullable().default(""),
+		/** 所属系列 slug（空 = 不属于任何系列；单归属；落库前统一 trim） */
+		series: z
+			.string()
+			.optional()
+			.default("")
+			.transform((value) => value.trim()),
+		/** 系列内顺序；缺省回退为按发布日期排 */
+		seriesOrder: z.number().int().optional(),
 		lang: z.string().optional().default(""),
 
 		/* Post Encryption */
@@ -47,6 +55,19 @@ const specCollection = defineCollection({
 	schema: z.object({}),
 });
 
+/**
+ * 系列实体集合：每篇 = 一个系列。body 是可选总览，未写则系列页仅列文章。
+ * defaultCategory 是回退值（显式 category 优先），解析见 utils/series-utils.ts。
+ */
+const seriesCollection = defineCollection({
+	loader: glob({ base: "./src/content/series", pattern: "**/*.md" }),
+	schema: z.object({
+		title: z.string(),
+		status: z.enum(["ongoing", "completed"]).optional().default("ongoing"),
+		defaultCategory: z.string().optional().default(""),
+	}),
+});
+
 const momentsCollection = defineCollection({
 	loader: glob({ base: "./src/content/moments", pattern: "**/*.md" }),
 	schema: z.object({
@@ -72,5 +93,6 @@ const momentsCollection = defineCollection({
 export const collections = {
 	posts: postsCollection,
 	spec: specCollection,
+	series: seriesCollection,
 	moments: momentsCollection,
 } as const;

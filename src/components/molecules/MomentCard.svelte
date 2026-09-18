@@ -112,6 +112,8 @@ const timeText = $derived(formatDateToYYYYMMDDHHmm(publishedAt));
 	flex-direction: column
 	box-sizing: border-box
 	width: 100%
+	/* 网格项自动最小尺寸归零：卡片随轨道收缩，长内容由正文自行换行 */
+	min-width: 0
 	padding: var(--m3e-space-4) var(--m3e-space-5)
 	border-radius: var(--shape-corner-l)
 	background: var(--card-bg)
@@ -176,7 +178,8 @@ const timeText = $derived(formatDateToYYYYMMDDHHmm(publishedAt));
 		color: var(--on-surface)
 		font: var(--m3e-type-body-medium)
 		line-height: 1.75
-		overflow-wrap: break-word
+		/* anywhere：换行同时参与 min-content 计算，窄宽度下长链接才不会溢出 */
+		overflow-wrap: anywhere
 		:global(p:first-child)
 			margin-top: 0
 		:global(p:last-child)

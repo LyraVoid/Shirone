@@ -43,6 +43,7 @@ export type SidebarPage =
 	| "about" // 关于
 	| "categories" // 分类索引
 	| "tags" // 标签索引
+	| "series" // 系列索引
 	| "rss" // RSS 订阅指南
 	| "atom" // Atom 订阅指南
 	| "post"; // 文章详情页
@@ -76,6 +77,18 @@ export interface TagsWidget {
 	slot: SidebarWidgetSlot;
 	column?: SidebarColumn;
 	/** 侧栏直接展示上限，默认 20 */
+	collapseAfter?: number;
+	/** 限定显示的页面，省略或空数组表示所有页面 */
+	pages?: SidebarPage[];
+}
+
+/** 系列列表（最多显示 collapseAfter 项，超出后链接到完整索引页） */
+export interface SeriesWidget {
+	type: "series";
+	enable: boolean;
+	slot: SidebarWidgetSlot;
+	column?: SidebarColumn;
+	/** 侧栏直接展示上限，默认 5 */
 	collapseAfter?: number;
 	/** 限定显示的页面，省略或空数组表示所有页面 */
 	pages?: SidebarPage[];
@@ -136,6 +149,7 @@ export type SidebarWidget =
 	| ProfileWidget
 	| CategoriesWidget
 	| TagsWidget
+	| SeriesWidget
 	| AnnouncementWidget
 	| StatsWidget
 	| CalendarWidget

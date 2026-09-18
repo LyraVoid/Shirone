@@ -9,6 +9,7 @@ import { friendsConfig } from "@/config/friendsConfig";
 import { gamesConfig } from "@/config/gamesConfig";
 import { momentsConfig } from "@/config/momentsConfig";
 import { projectsConfig } from "@/config/projectsConfig";
+import { seriesConfig } from "@/config/seriesConfig";
 import { skillsConfig } from "@/config/skillsConfig";
 import { timelineConfig } from "@/config/timelineConfig";
 import type {
@@ -115,6 +116,12 @@ export const LinkPresets: Record<string, NavBarLink> = {
 		icon: "material-symbols:tag-rounded",
 		pageKey: "tags",
 	},
+	Series: {
+		name: i18n(I18nKey.series),
+		url: "/series/",
+		icon: "material-symbols:auto-stories-outline-rounded",
+		pageKey: "series",
+	},
 	About: {
 		name: i18n(I18nKey.about),
 		url: "/about/",
@@ -187,6 +194,7 @@ const unavailableFeatureRoutes: ReadonlySet<string> = new Set([
 	...(gamesConfig.enable ? [] : ["/games"]),
 	...(timelineConfig.enable ? [] : ["/timeline"]),
 	...(aboutConfig.enable ? [] : ["/about"]),
+	...(seriesConfig.enable ? [] : ["/series"]),
 ]);
 
 /**

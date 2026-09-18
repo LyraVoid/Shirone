@@ -134,6 +134,7 @@ export const siteConfig: SiteConfig = withUserConfig("site", {
 | `gamesConfig.ts` | 游戏页行为控制：页面总开关、游戏分类清单与单项禁用列表（游戏清单维护在 `src/data/games.ts`，封面支持 src/assets 相对路径、/public 绝对路径与远程 URL）；关闭页面时导航入口同步隐藏 |
 | `animeConfig.ts` | 番剧页与外部追番数据源：数据源选择（本地 / Bangumi 快照 / Bilibili 快照）、失败降级、提供方凭据环境配置与快照生命周期管理（本地番剧维护在 `src/data/anime.ts`） |
 | `llmsConfig.ts` | 大语言模型与 AI 友好内容系统：`/llms.txt`（索引）与 `/llms-full.txt`（全量正文汇编）静态端点生成控制、加密文章过滤、排除标签与自定义章节配置；支持内容仓 `config/llms.yaml` 覆盖（领域键 `llms`） |
+| `seriesConfig.ts` | 系列连载：`/series/` 索引与 `/series/<slug>/` 详情页总开关（默认开启）、索引页 `title`/`description`（`$t:` i18n 引用或字面量，描述留空用动态汇总）、文章内系列卡位置 `cardPosition: "top" \| "bottom"`；支持内容仓 `config/series.yaml` 覆盖（领域键 `series`）。关闭时系列页 404、导航/侧栏/sitemap 入口裁剪、文章内系列卡消失（系列实体与文章 frontmatter 见 `shirone-writing` 与内容分离文档） |
 
 非首页 Banner 的标题、说明和可选日期由各页面通过 `MainGridLayout` 提供，并在 Swup 导航后从被替换的主内容容器同步。该上下文默认显示、不设配置开关；说明为空或与标题相同时自动省略，移动端非首页仍沿用紧凑布局并隐藏 Banner。
 

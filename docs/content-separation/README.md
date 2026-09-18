@@ -57,10 +57,12 @@ shirone-content/
 ├── content/                    # 核心内容区（映射至 src/content/）
 │   ├── posts/                  # 博客文章与配图
 │   ├── moments/                # 说说动态
+│   ├── series/                 # 系列实体（每个 <slug>.md = 一个系列；须平铺，slug 即路由段）
 │   └── spec/                   # 特殊页面
 ├── data/                       # 结构化数据（映射至 src/data/）
 │   ├── projects.ts  skills.ts  timeline.ts  devices.ts
 │   ├── friends.ts   compass.ts music.ts     anime.ts
+│   ├── games.ts
 │   └── anime-snapshots/        # 番剧数据快照基线（可选；anime:sync 会覆盖 <provider>.json）
 ├── assets/                     # 高清原始图片（映射至 src/assets/，参与构建期压缩转码）
 │   └── images/

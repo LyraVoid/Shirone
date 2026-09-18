@@ -38,7 +38,7 @@
 | 层 | 目录 | 职责 | 允许依赖 |
 |---|---|---|---|
 | **原子** | `atoms/` | 单一职责的 UI 元素（64 个，清单单一真源见 `atoms/manifest.json`） | 仅设计令牌（`--mc-*`、`--m3e-*`、语义别名）与 `.m3-state-layer`，**不得 import 任何组件** |
-| **分子** | `molecules/` | 原子的固定组合：PageHeader、SectionTitle、ButtonLink、ButtonTag、Tags、Categories、PostMeta、SearchBar、SidebarTOC、FloatingActionButton、FloatingTOCPanel、WidgetLayout、ImageWrapper、License、Pagination、ArticleDiscoveryItem 等 | atoms + 同层分子（须同层方向合理） |
+| **分子** | `molecules/` | 原子的固定组合：PageHeader、SectionTitle、ButtonLink、ButtonTag、Tags、Categories、Series、SeriesCard、PostMeta、SearchBar、SidebarTOC、FloatingActionButton、FloatingTOCPanel、WidgetLayout、ImageWrapper、License、Pagination、ArticleDiscoveryItem 等 | atoms + 同层分子（须同层方向合理） |
 | **有机体** | `organisms/` | 独立业务区块：TopAppBar、SideBar、Footer、Search、PostCard、PostPage、FloatingControls、ArchivePanel、DisplaySettings、Profile、LightDarkSwitch、SiteNavigationDrawer、RouteProgress、CategoryBar、BackToTop、BannerStage、MusicSidebar 等 | atoms + molecules + 被组合的**更小** organism |
 | **模板** | `layouts/` | 页面骨架与网格布局：Layout、MainGridLayout | organisms + molecules + system |
 | **页面** | `pages/` | 路由级编排：`[...page].astro`、`about.astro`、`archive.astro`、`posts/[...slug].astro` | layouts + organisms + molecules + content |
@@ -115,7 +115,7 @@
 | 层 | 组件 |
 |---|---|
 | atoms/ | 63 个原子组件（Button、Chip、IconButton、FAB、FABMenu、Slider、SegmentedButton、TextField、Switch、Checkbox、RadioButton、Dialog、Menu、Badge、Divider、Snackbar、Tabs、Select、DataTable、SearchView、Autocomplete、SheetSide、Carousel、PullToRefresh、DatePicker、TimePicker、Chips、Banner、Tooltip、Card、AppBar、NavigationBar/Rail/Drawer、ExposedDropdownMenu、ListItem、LoadingIndicator、ProgressIndicator、AlertDialog、BadgedBox、SplitButton、ToggleButton、ButtonGroup、SearchBar、DateInput、FloatingToolbar、BottomSheet 等；完整清单与 tier 见 `atoms/manifest.json`） |
-| molecules/ | PageHeader、SectionTitle、ButtonLink、ButtonTag、Tags、Categories、Announcement、SiteStats、Calendar、CalendarView、AnimeCard、CompassTile、PostMeta、SearchBar、SidebarTOC、FloatingActionButton、FloatingTOCPanel、WidgetLayout、ImageWrapper、License、Pagination、FriendCard、MomentCard、MomentGallery、AlbumCard、LastUpdatedNotice、ArticleDiscoveryItem、SkillCard、ProjectCard、TimelineCard、GameCard、BannerWaves、MermaidDiagramViewer |
+| molecules/ | PageHeader、SectionTitle、ButtonLink、ButtonTag、Tags、Categories、Series、Announcement、SiteStats、Calendar、CalendarView、AnimeCard、CompassTile、PostMeta、SeriesCard、SearchBar、SidebarTOC、FloatingActionButton、FloatingTOCPanel、WidgetLayout、ImageWrapper、License、Pagination、FriendCard、MomentCard、MomentGallery、AlbumCard、LastUpdatedNotice、ArticleDiscoveryItem、SkillCard、ProjectCard、TimelineCard、GameCard、BannerWaves、MermaidDiagramViewer |
 | organisms/ | TopAppBar、SideBar、Footer、Search、PostCard、PostPage、FloatingControls、ArchivePanel、DisplaySettings、Profile、LightDarkSwitch、SiteNavigationDrawer、RouteProgress、CategoryBar、BackToTop、BannerStage、FriendSection、MomentSection、AnimeSection、CompassSection、AlbumSection、AlbumGallery、PasswordGate、ProtectedAlbum、EncryptedContent、ProtectedPost、ArticleDiscovery、ArticleShare、SkillSection、ProjectSection、TimelineSection、GamesSection、MusicSidebar |
 | system/ | ConfigCarrier、GlobalStyles |
 | content/ | Markdown |

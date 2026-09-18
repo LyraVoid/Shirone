@@ -9,8 +9,8 @@ description: Working on the Shirone sidebar system, widgets, FAB floating contro
 
 ## 核心红线
 
-1. **widget 三标签 + 页面过滤**:每个 widget 条目携带 `enable`(必填)、`slot`(`top` 固定顶部 / `sticky` 跟随滚动,必填)、`column`(`primary`/`secondary`,仅双栏时生效);可选 `pages: SidebarPage[]` 控制只在指定页面显示,省略即全页显示(向后兼容)。widget 专属配置进 `SidebarWidget` 判别联合分支,不搞扁平大对象。
-2. **页面标识符以 `SidebarPage` 为权威**:`home`、`archive`、`friends`、`moments`、`anime`、`compass`、`albums`、`about`、`categories`、`tags`、`post` 等;新增页面类时同步更新类型、侧栏过滤与相关测试。
+1. **widget 三标签 + 页面过滤**:每个 widget 条目携带 `enable`(必填)、`slot`(`top` 固定顶部 / `sticky` 跟随滚动,必填)、`column`(`primary`/`secondary`,仅双栏时生效);可选 `pages: SidebarPage[]` 控制只在指定页面显示,省略即全页显示(向后兼容)。widget 专属配置进 `SidebarWidget` 判别联合分支,不搞扁平大对象。内置 `series` widget(判别分支 `type: "series"`,`collapseAfter` 默认 5)按最近更新列出系列,超出阈值链接到 `/series/`,站点没有系列实体时不渲染任何内容,整体可用性由 `seriesConfig.enable` 门控。
+2. **页面标识符以 `SidebarPage` 为权威**:`notFound`、`home`、`archive`、`friends`、`moments`、`anime`、`compass`、`skills`、`projects`、`devices`、`games`、`timeline`、`albums`、`about`、`categories`、`tags`、`rss`、`atom`、`post`、`series` 等;新增页面类时同步更新类型、侧栏过滤与相关测试。
 3. **Swup 持久壳规则**:`#swup-container` 之外的元素(侧栏、TopAppBar、FAB、横幅等)不会被 Swup 重渲染。依赖当前路由的壳逻辑必须挂在 Swup 生命周期钩子(`content:replace` / `page:view`)或事件委托上;页面过滤读取 `#swup-container` 的 `data-current-page`,SSR 与 Swup 替换后都要成立。
 4. **测试必须覆盖两条路径**:直接刷新加载 + Swup 站内导航,缺一不可。
 5. **编排与宽度自动联动**:`arrangement: "single"`(默认,页框 85rem)/ `"dual"`(副栏接收 `column: "secondary"`,页框 96rem,≥1280px 生效,以下自动退化单栏);`side` 决定主栏物理侧。宽度由 `resolvePageWidth()` 自动解析,不提供手动覆盖。

@@ -199,6 +199,12 @@
                         {
                           "type": "string",
                           "enum": [
+                            "games"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
                             "timeline"
                           ]
                         },
@@ -224,6 +230,12 @@
                           "type": "string",
                           "enum": [
                             "tags"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "series"
                           ]
                         },
                         {
@@ -409,6 +421,12 @@
                         {
                           "type": "string",
                           "enum": [
+                            "games"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
                             "timeline"
                           ]
                         },
@@ -434,6 +452,12 @@
                           "type": "string",
                           "enum": [
                             "tags"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "series"
                           ]
                         },
                         {
@@ -586,6 +610,12 @@
                         {
                           "type": "string",
                           "enum": [
+                            "games"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
                             "timeline"
                           ]
                         },
@@ -611,6 +641,12 @@
                           "type": "string",
                           "enum": [
                             "tags"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "series"
                           ]
                         },
                         {
@@ -772,6 +808,12 @@
                         {
                           "type": "string",
                           "enum": [
+                            "games"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
                             "timeline"
                           ]
                         },
@@ -797,6 +839,12 @@
                           "type": "string",
                           "enum": [
                             "tags"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "series"
                           ]
                         },
                         {

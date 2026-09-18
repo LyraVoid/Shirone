@@ -1,6 +1,6 @@
 ---
 name: shirone-data
-description: Managing Shirone data-backed pages and albums - adding or editing album folders, info.json metadata, local or external photos, friends, compass, anime, projects, skills, devices, timelines, and music data. Use when changing content outside src/content/ that feeds these pages.
+description: Managing Shirone data-backed pages and albums - adding or editing album folders, info.json metadata, local or external photos, friends, compass, anime, projects, skills, devices, games, timelines, and music data. Use when changing content outside src/content/ that feeds these pages.
 ---
 
 # Shirone 数据与相册
@@ -16,7 +16,7 @@ description: Managing Shirone data-backed pages and albums - adding or editing a
 
 1. 先阅读对应类型和数据文件：`src/types/<domain>Config.ts`、`src/data/<domain>.ts`，确认字段和现有条目形状。
 2. 只修改内容实体；筛选、排序、页面开关使用对应 `src/config/*Config.ts` 的 `categories`、`disabledKeys`、`order` 和 `enable`。
-3. 新增条目后运行 `npx.cmd astro check`、`pnpm.cmd check:manifest`，并执行对应页面测试，例如 `tests/site/friends.spec.ts`、`tests/site/anime.spec.ts`、`tests/site/projects.spec.ts`、`tests/site/devices.spec.ts`、`tests/site/timeline.spec.ts`。
+3. 新增条目后运行 `npx.cmd astro check`、`pnpm.cmd check:manifest`，并执行对应页面测试，例如 `tests/site/friends.spec.ts`、`tests/site/anime.spec.ts`、`tests/site/projects.spec.ts`、`tests/site/devices.spec.ts`、`tests/site/games.spec.ts`、`tests/site/timeline.spec.ts`。
 
 ## 相册工作流
 

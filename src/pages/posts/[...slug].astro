@@ -9,6 +9,7 @@ import ImageWrapper from "@components/molecules/ImageWrapper.astro";
 import LastUpdatedNotice from "@components/molecules/LastUpdatedNotice.astro";
 import License from "@components/molecules/License.astro";
 import PostMetadata from "@components/molecules/PostMeta.astro";
+import SeriesCard from "@components/molecules/SeriesCard.astro";
 import ArticleDiscovery from "@components/organisms/ArticleDiscovery.astro";
 import ArticleShare from "@components/organisms/ArticleShare.svelte";
 import CommentSection from "@components/organisms/comment/CommentSection.astro";
@@ -20,7 +21,11 @@ import MainGridLayout from "@layouts/MainGridLayout.astro";
 import { discoverArticles } from "@utils/article-discovery";
 import { resolveAsset } from "@utils/asset-utils";
 import { getPublishedInstant, getUpdatedInstant } from "@utils/content-date";
-import { getSortedPosts, type PostForList } from "@utils/content-utils";
+import {
+	getSeriesCatalog,
+	getSortedPosts,
+	type PostForList,
+} from "@utils/content-utils";
 import { formatDateToYYYYMMDD } from "@utils/date-utils";
 import { getMarkdownStylesheetAssets } from "@utils/markdown-assets";
 import { getSourceMarkdownSyntaxSnapshot } from "@utils/markdown-source-syntaxes.mjs";
@@ -29,6 +34,10 @@ import {
 	mergeMarkdownSyntaxSnapshots,
 } from "@utils/markdown-syntaxes.mjs";
 import { initPostIdMap } from "@utils/permalink-utils";
+import {
+	buildSeriesContexts,
+	type SeriesPostContext,
+} from "@utils/series-utils";
 import {
 	getDir,
 	getPostUrl,
@@ -48,6 +57,7 @@ import {
 	resolveCommentOptions,
 	resolveLastUpdatedNoticeOptions,
 	resolveUmamiOptions,
+	seriesConfig,
 	siteConfig,
 	umamiConfig,
 } from "@/config";
@@ -55,6 +65,21 @@ import {
 export async function getStaticPaths() {
 	const blogEntries = await getSortedPosts();
 	initPostIdMap(blogEntries);
+
+	// 系列上下文：阅读顺序 + index/total + 组内上一篇/下一篇（仅对有系列的文章）。
+	// 功能关闭时不查集合、不构建上下文，文章页不产出任何系列 DOM（零额外负担）。
+	const seriesContexts = seriesConfig.enable
+		? buildSeriesContexts({
+				catalog: await getSeriesCatalog(),
+				posts: blogEntries.map((entry) => ({
+					slug: entry.id,
+					title: entry.data.title,
+					published: entry.data.published,
+					series: entry.data.series,
+					seriesOrder: entry.data.seriesOrder,
+				})),
+			})
+		: new Map<string, SeriesPostContext>();
 
 	const discoveryCandidates = blogEntries.map((entry) => ({
 		slug: entry.id,
@@ -67,6 +92,7 @@ export async function getStaticPaths() {
 		props: {
 			entry: CollectionEntry<"posts">;
 			discovery: { related: PostForList[]; random: PostForList[] };
+			series: SeriesPostContext | null;
 		};
 	}[] = [];
 
@@ -87,7 +113,11 @@ export async function getStaticPaths() {
 
 		paths.push({
 			params: { slug: defaultSlug },
-			props: { entry, discovery },
+			props: {
+				entry,
+				discovery,
+				series: seriesContexts.get(entry.id) ?? null,
+			},
 		});
 
 		if (entry.data.alias) {
@@ -98,7 +128,11 @@ export async function getStaticPaths() {
 			if (alias && alias !== defaultSlug) {
 				paths.push({
 					params: { slug: alias },
-					props: { entry, discovery },
+					props: {
+						entry,
+						discovery,
+						series: seriesContexts.get(entry.id) ?? null,
+					},
 				});
 			}
 		}
@@ -107,10 +141,17 @@ export async function getStaticPaths() {
 	return paths;
 }
 
-const { entry, discovery } = Astro.props;
+const { entry, discovery, series } = Astro.props;
+const seriesCardAtTop = seriesConfig.cardPosition !== "bottom";
 const isEncrypted = Boolean(
 	entry.data.password && entry.data.password.trim().length > 0,
 );
+// 加密且隐藏首页内容的文章：元信息区已被加密徽标替代，系列卡同样不渲染，
+// 避免用系列名/相邻文章标题绕过元信息隐藏；功能关闭时同样不渲染
+const seriesCardVisible =
+	seriesConfig.enable &&
+	series !== null &&
+	!(isEncrypted && entry.data.hideHomeContent);
 const scope = `post:${entry.id}`;
 
 const { Content, headings, remarkPluginFrontmatter } = await render(entry);
@@ -246,6 +287,9 @@ const jsonLd = {
 						category={entry.data.category}
 					></PostMetadata>
 				)}
+				{seriesCardVisible && seriesCardAtTop && series && (
+					<SeriesCard context={series} class="mb-5 onload-animation" />
+				)}
 				{!entry.data.image && <div class="border-[var(--outline-variant)] border-dashed border-b-[1px] mb-5"></div>}
 			</div>
 
@@ -303,6 +347,10 @@ const jsonLd = {
 				random={discovery.random}
 				class="onload-animation"
 			/>
+
+			{seriesCardVisible && !seriesCardAtTop && series && (
+				<SeriesCard context={series} class="mb-6 onload-animation" />
+			)}
 
 		</Card>
     </div>

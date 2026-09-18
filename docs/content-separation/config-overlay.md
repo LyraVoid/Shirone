@@ -50,6 +50,11 @@ themeColor:
 | `fab.yaml` | `fabConfig` 浮动操作按钮 | `image-bloom.yaml` | `imageBloomConfig` 图片光晕特效 |
 | `footer.yaml` | `footerConfig` 页脚基本信息 | `expressive-code.yaml` | `expressiveCodeConfig` 代码高亮设置 |
 | `llms.yaml` | `llmsConfig` 大模型索引与全文输出 | `umami.yaml` | `umamiConfig` Umami 网站统计 |
+| `friends.yaml` | `friendsConfig` 友情链接 | `moments.yaml` | `momentsConfig` 说说动态 |
+| `albums.yaml` | `albumsConfig` 摄影相册 | `compass.yaml` | `compassConfig` 站点罗盘 |
+| `about.yaml` | `aboutConfig` 关于页 | `games.yaml` | `gamesConfig` 游戏展示 |
+| `permalink.yaml` | `permalinkConfig` 文章固定链接 | `context-menu.yaml` | `contextMenuConfig` 桌面右键增强 |
+| `i18n.yaml` | `i18nConfig` 多语言与本地化 | `series.yaml` | `seriesConfig` 系列连载 |
 
 各配置领域的可用字段、默认值与逐项注释均以代码仓中的 `src/config/<domain>Config.ts` 为准。系统同样支持 `.yml` 后缀；空文件与纯注释文件视作不覆盖。
 
@@ -163,7 +168,7 @@ customSections:
 
 ### 2. 完整导航预设清单速查表
 
-主题内置了 15 个开箱即用的页面预设（定义于 `src/config/navBarConfig.ts`）：
+主题内置了 17 个开箱即用的页面预设（定义于 `src/config/navBarConfig.ts`）：
 
 | 预设名称 (`preset`) | 目标路由 | 对应功能与页面 |
 | --- | --- | --- |
@@ -176,10 +181,12 @@ customSections:
 | `Skills` | `/skills/` | 个人专业技能清单 |
 | `Projects` | `/projects/` | 开源项目与作品集 |
 | `Devices` | `/devices/` | 我的数字设备与装备 |
+| `Games` | `/games/` | 游戏展示与游玩清单 |
 | `Timeline` | `/timeline/` | 个人经历与大事件时间轴 |
 | `Albums` | `/albums/` | 摄影相册与图库 |
 | `Categories` | `/categories/` | 文章分类聚合独立页 |
 | `Tags` | `/tags/` | 标签聚合独立页 |
+| `Series` | `/series/` | 系列连载聚合独立页 |
 | `About` | `/about/` | 关于博主与站点 |
 | `GitHub` | `https://github.com/...` | GitHub 外部项目外链 |
 

@@ -1,0 +1,211 @@
+---
+/**
+ * 系列索引页：全部系列的总览入口。系列是文章之上的概念，
+ * 每个系列一张通栏大卡片：图标 + 名称 + 状态徽标 + 篇数/最近更新/默认分类 +
+ * 总览摘要；整卡点击进入系列页（/series/<slug>/）。
+ */
+import Card from "@components/atoms/display/Card.svelte";
+import MetaIcon from "@components/atoms/display/MetaIcon.astro";
+import PageHeader from "@components/atoms/display/PageHeader.astro";
+import I18nKey from "@i18n/i18nKey";
+import { i18n } from "@i18n/translation";
+import MainGridLayout from "@layouts/MainGridLayout.astro";
+import { seriesConfig } from "@/config";
+
+if (!seriesConfig.enable) {
+	return Astro.redirect("/404/");
+}
+
+import { getSeriesCatalog, getSortedPostsList } from "@utils/content-utils";
+import { formatDateToYYYYMMDD } from "@utils/date-utils";
+import { resolveI18nText } from "@utils/i18n-utils";
+import { excerptFromMarkdown, normaliseSeriesSlug } from "@utils/series-utils";
+import { getSeriesUrl } from "@utils/url-utils";
+
+interface SeriesIndexItem {
+	slug: string;
+	title: string;
+	status: "ongoing" | "completed";
+	count: number;
+	latest: Date | null;
+	/** 系列默认分类（可空） */
+	category: string;
+	/** 总览摘要（可空 = 系列未写总览） */
+	overview: string;
+}
+
+const catalog = await getSeriesCatalog();
+const posts = await getSortedPostsList();
+
+const items: SeriesIndexItem[] = [];
+for (const [slug, entity] of catalog) {
+	const members = posts.filter(
+		(post) => normaliseSeriesSlug(post.data.series) === slug,
+	);
+	const latest = members.reduce<Date | null>((acc, post) => {
+		const published = post.data.published;
+		return acc === null || published > acc ? published : acc;
+	}, null);
+	items.push({
+		slug,
+		title: entity.data.title,
+		status: entity.data.status,
+		count: members.length,
+		latest,
+		category: entity.data.defaultCategory.trim(),
+		overview: excerptFromMarkdown(entity.body ?? ""),
+	});
+}
+items.sort((a, b) => (b.latest?.getTime() ?? 0) - (a.latest?.getTime() ?? 0));
+
+const totalPosts = items.reduce((sum, item) => sum + item.count, 0);
+const seriesSummary = `${items.length} ${i18n(items.length === 1 ? I18nKey.seriesCount : I18nKey.seriesCounts)} · ${totalPosts} ${i18n(I18nKey.postsCount)}`;
+const pageTitle = resolveI18nText(seriesConfig.title, I18nKey.series);
+// 描述：未配置时退回动态汇总；配置了（$t: 或字面量）则整体替换
+const pageDescription = seriesConfig.description
+	? resolveI18nText(seriesConfig.description)
+	: seriesSummary;
+---
+
+<MainGridLayout title={pageTitle} description={pageDescription} page="series">
+	<Card color="var(--card-bg)" radius="l" class="series-index px-8 py-6">
+		<PageHeader
+			icon="material-symbols:auto-stories-rounded"
+			title={pageTitle}
+			subtitle={seriesSummary}
+		/>
+		{items.length > 0 && (
+			<div class="series-index__list">
+				{items.map((item) => (
+					<a
+						class="series-index__card m3-state-layer"
+						href={getSeriesUrl(item.slug)}
+					>
+						<div class="series-index__head">
+							<MetaIcon icon="material-symbols:auto-stories-outline-rounded" />
+							<span class="series-index__title">{item.title}</span>
+							<span
+								class="series-index__status"
+								data-series-status={item.status}
+							>
+								{item.status === "completed"
+									? i18n(I18nKey.seriesStatusCompleted)
+									: i18n(I18nKey.seriesStatusOngoing)}
+							</span>
+						</div>
+						<div class="series-index__meta">
+							<span>
+								{item.count} {i18n(I18nKey.postsCount)}
+							</span>
+							{item.latest && (
+								<span>
+									{i18n(I18nKey.statsUpdated)}{" "}
+									{formatDateToYYYYMMDD(item.latest)}
+								</span>
+							)}
+							{item.category && (
+								<span>
+									{i18n(I18nKey.categories)} · {item.category}
+								</span>
+							)}
+						</div>
+						{item.overview && (
+							<p class="series-index__overview">{item.overview}</p>
+						)}
+					</a>
+				))}
+			</div>
+		)}
+		{items.length === 0 && (
+			<div class="series-index__empty">
+				<span>{i18n(I18nKey.noData)}</span>
+			</div>
+		)}
+	</Card>
+</MainGridLayout>
+
+<style lang="stylus">
+.series-index
+	display: block
+
+	&__list
+		display: flex
+		flex-direction: column
+		gap: var(--m3e-space-4)
+		margin-top: var(--m3e-space-4)
+
+	&__card
+		display: flex
+		flex-direction: column
+		gap: var(--m3e-space-2)
+		padding: var(--m3e-space-4) var(--m3e-space-5)
+		border-radius: var(--shape-corner-l)
+		background: var(--surface-container-low)
+		text-decoration: none
+		--m3e-state-color: var(--on-surface)
+		transition: background-color var(--m3e-duration-short) var(--m3e-easing-standard)
+		&:hover
+			background: unquote("color-mix(in oklab, var(--on-surface) 6%, transparent)")
+
+	&__head
+		display: flex
+		align-items: center
+		gap: var(--m3e-space-3)
+		min-width: 0
+
+	&__title
+		font: var(--m3e-type-title-medium)
+		font-weight: 600
+		color: var(--on-surface)
+		white-space: nowrap
+		overflow: hidden
+		text-overflow: ellipsis
+
+	/* 状态 pill：M3 tonal 配对（与文章内系列卡同一套状态语言） */
+	&__status
+		margin-left: auto
+		flex-shrink: 0
+		display: inline-flex
+		align-items: center
+		padding: 0.125rem var(--m3e-space-2)
+		border-radius: var(--shape-corner-full)
+		font: var(--m3e-type-label-small)
+		font-weight: 600
+		white-space: nowrap
+
+		&[data-series-status="ongoing"]
+			background: var(--primary-container)
+			color: var(--on-primary-container)
+
+		&[data-series-status="completed"]
+			background: var(--surface-container-highest)
+			color: var(--on-surface-variant)
+
+	&__meta
+		display: flex
+		flex-wrap: wrap
+		align-items: center
+		font: var(--m3e-type-body-small)
+		color: var(--on-surface-variant)
+
+		span + span::before
+			content: "·"
+			margin: 0 var(--m3e-space-2)
+
+	&__overview
+		margin: 0
+		font: var(--m3e-type-body-medium)
+		color: var(--on-surface-variant)
+		display: -webkit-box
+		-webkit-line-clamp: 2
+		-webkit-box-orient: vertical
+		overflow: hidden
+
+	&__empty
+		display: flex
+		align-items: center
+		justify-content: center
+		min-height: 11rem
+		color: var(--on-surface-variant)
+		font: var(--m3e-type-body-large)
+</style>

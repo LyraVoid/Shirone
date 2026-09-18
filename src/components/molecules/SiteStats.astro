@@ -9,6 +9,7 @@ import I18nKey from "@i18n/i18nKey";
 import { i18n } from "@i18n/translation";
 import { formatDateToYYYYMMDD } from "@utils/date-utils";
 import { getSiteStats } from "@utils/site-stats";
+import { seriesConfig } from "@/config";
 import type { StatsWidget } from "@/types/sidebarConfig";
 import WidgetLayout from "./WidgetLayout.astro";
 
@@ -55,6 +56,16 @@ const rows = [
 		label: i18n(I18nKey.tags),
 		value: fmt(stats.tags),
 	},
+	// 系列功能关闭时不产出统计行（零额外负担）
+	...(seriesConfig.enable
+		? [
+				{
+					icon: "material-symbols:auto-stories-outline-rounded",
+					label: i18n(I18nKey.series),
+					value: fmt(stats.series),
+				},
+			]
+		: []),
 	{
 		icon: "material-symbols:edit-note-outline-rounded",
 		label: i18n(I18nKey.statsWords),
