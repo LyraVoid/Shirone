@@ -363,7 +363,9 @@ export function shirones(options: ShironesOptions = {}): AstroIntegration {
 				// cache in every mode.
 				server.watcher.on("all", (_event, file) => {
 					if (typeof file !== "string") return;
-					if (file.startsWith(paths.configDir)) {
+					// Trailing separator so a sibling such as `src/configFoo`
+					// does not also match.
+					if (file.startsWith(`${paths.configDir}/`)) {
 						invalidateConfigCache();
 					}
 				});
@@ -526,9 +528,9 @@ async function createBundledIntegrations(
 		}),
 		svelte({
 			// The theme's Svelte components use `<style lang="stylus">`, which
-			// needs `vitePreprocess`. In source mode that comes from the repo's
-			// `svelte.config.js`; a user's project has no such file, so the
-			// integration supplies it.
+			// needs `vitePreprocess`. Supplied here for *every* mode: the repo's
+			// own `svelte.config.js` is only read by editor tooling now, and a
+			// user's project has no such file at all.
 			preprocess: [vitePreprocess({ script: true })],
 			compilerOptions: svelteCompilerOptions(command === "dev"),
 		}),
