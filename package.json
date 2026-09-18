@@ -92,7 +92,7 @@
     "hastscript": "^9.0.1",
     "katex": "^0.16.47",
     "lxgw-wenkai-screen-webfont": "^1.7.0",
-    "markdown-it": "^14.3.1",
+    "markdown-it": "^14.3.2",
     "mdast-util-to-string": "^4.0.0",
     "mermaid": "^11.17.2",
     "oddmisc": "^1.2.11",
@@ -119,13 +119,13 @@
     "typescript": "^6.0.3",
     "unified": "11.0.5",
     "unist-util-visit": "^5.1.0",
-    "yaml": "^2.9.0"
+    "yaml": "^2.9.1"
   },
   "devDependencies": {
     "@astrojs/ts-plugin": "^1.10.11",
     "@axe-core/playwright": "^4.13.0",
     "@biomejs/biome": "2.5.13",
-    "@iconify-json/simple-icons": "^1.2.95",
+    "@iconify-json/simple-icons": "^1.2.96",
     "@lhci/cli": "0.15.1",
     "@playwright/test": "^1.63.0",
     "@rollup/plugin-yaml": "^4.1.2",
