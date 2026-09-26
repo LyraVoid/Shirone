@@ -12,7 +12,10 @@ if (!timelineConfig.enable) {
 }
 
 const pageTitle = resolveI18nText(timelineConfig.title, I18nKey.timeline);
-const pageDescription = resolveI18nText(timelineConfig.description, I18nKey.timelineBanner);
+const pageDescription = resolveI18nText(
+	timelineConfig.description,
+	I18nKey.timelineBanner,
+);
 
 const items = resolveTimelineData(timelineConfig);
 ---

@@ -113,7 +113,10 @@ export function resolveSkillsData(
  * 排序主要基于起始时间（若起始时间相同则比较结束时间）。
  * 无法识别的格式返回负无穷（desc排在末尾）。
  */
-export function parseTimelineDateKey(dateStr: string): { start: number; end: number } {
+export function parseTimelineDateKey(dateStr: string): {
+	start: number;
+	end: number;
+} {
 	if (!dateStr || typeof dateStr !== "string") {
 		return { start: -Infinity, end: -Infinity };
 	}
@@ -139,8 +142,8 @@ export function parseTimelineDateKey(dateStr: string): { start: number; end: num
 		if (!match) return -Infinity;
 
 		const year = Number.parseInt(match[1], 10);
-		const month = match[2] ? Number.parseInt(match[2], 10) - 1 : (isEnd ? 11 : 0);
-		const day = match[3] ? Number.parseInt(match[3], 10) : (isEnd ? 28 : 1);
+		const month = match[2] ? Number.parseInt(match[2], 10) - 1 : isEnd ? 11 : 0;
+		const day = match[3] ? Number.parseInt(match[3], 10) : isEnd ? 28 : 1;
 
 		const d = new Date(Date.UTC(year, month, day));
 		return Number.isNaN(d.getTime()) ? -Infinity : d.getTime();

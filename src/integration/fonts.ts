@@ -1,5 +1,13 @@
 import { existsSync } from "node:fs";
-import { mkdir, readFile, readdir, rename, rm, stat, writeFile } from "node:fs/promises";
+import {
+	mkdir,
+	readFile,
+	readdir,
+	rename,
+	rm,
+	stat,
+	writeFile,
+} from "node:fs/promises";
 import { basename, extname, join } from "node:path";
 import { buildMetingUrl } from "../utils/music/meting.ts";
 import type { MetingMusicConfig, MusicProvider } from "../types/musicConfig.ts";
@@ -116,7 +124,10 @@ export async function collectSiteText(
 	}
 
 	if (subsetting.includeI18n ?? true) {
-		for (const file of await walkFiles(join(paths.packageSrc, "i18n"), [".ts", ".js"])) {
+		for (const file of await walkFiles(join(paths.packageSrc, "i18n"), [
+			".ts",
+			".js",
+		])) {
 			await absorbFile(charSet, file);
 		}
 	}
@@ -125,7 +136,11 @@ export async function collectSiteText(
 		for (const file of await walkFiles(paths.configDir, [".ts", ".js"])) {
 			await absorbFile(charSet, file);
 		}
-		for (const file of await walkFiles(paths.dataDir, [".ts", ".js", ".json"])) {
+		for (const file of await walkFiles(paths.dataDir, [
+			".ts",
+			".js",
+			".json",
+		])) {
 			await absorbFile(charSet, file);
 		}
 		// Generated config-overlay modules (`src/user/user-config.ts` in source
@@ -152,7 +167,8 @@ interface MusicConfigLike {
 	meting?: MetingMusicConfig;
 }
 
-const METING_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Shirone/1.0";
+const METING_USER_AGENT =
+	"Mozilla/5.0 (Windows NT 10.0; Win64; x64) Shirone/1.0";
 
 /**
  * Mirror of the repo-side text collector's Meting step: when the music module
@@ -210,7 +226,12 @@ async function collectMetingText(
 		let songCount = 0;
 		const charSet = new Set<string>();
 		for (const song of data) {
-			const record = song as { name?: string; title?: string; artist?: string; author?: string };
+			const record = song as {
+				name?: string;
+				title?: string;
+				artist?: string;
+				author?: string;
+			};
 			const str = `${record.name ?? record.title ?? ""} ${record.artist ?? record.author ?? ""}`;
 			if (!str.trim()) continue;
 			songCount += 1;
@@ -272,7 +293,12 @@ export async function runFontSubsetting(
 	}
 
 	const text = await collectSiteText(paths, fontConfig, extraCharacters);
-	const metingText = await collectMetingText(paths, fontConfig, logger, registryRef);
+	const metingText = await collectMetingText(
+		paths,
+		fontConfig,
+		logger,
+		registryRef,
+	);
 	const charset = text + metingText;
 	if (!charset) {
 		logger.warn("collected an empty charset; skipping subsetting");
@@ -377,7 +403,8 @@ export async function buildFontDeclarations(
 	if (!fontConfig || !resolvedFontOptions) return [];
 	if (resolvedFontOptions.mode !== "custom") return [];
 
-	const shouldSubset = options.subset && (fontConfig.subsetting?.enable ?? false);
+	const shouldSubset =
+		options.subset && (fontConfig.subsetting?.enable ?? false);
 	let subsets = new Map<string, string>();
 	if (shouldSubset) {
 		({ outputs: subsets } = await runFontSubsetting(
@@ -403,7 +430,9 @@ export async function buildFontDeclarations(
 			? { fallbacks: [], optimizedFallbacks: false }
 			: {};
 
-		const localVariants = resolvedRole.variants.filter((v) => v.source === "local");
+		const localVariants = resolvedRole.variants.filter(
+			(v) => v.source === "local",
+		);
 
 		if (localVariants.length > 0) {
 			declarations.push({
@@ -423,7 +452,9 @@ export async function buildFontDeclarations(
 							style: variant.style,
 							display: resolvedRole.display,
 							...(variant.subset ? { subset: variant.subset } : {}),
-							...(variant.unicodeRange ? { unicodeRange: variant.unicodeRange } : {}),
+							...(variant.unicodeRange
+								? { unicodeRange: variant.unicodeRange }
+								: {}),
 						};
 					}),
 				},

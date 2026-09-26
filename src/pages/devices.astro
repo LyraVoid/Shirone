@@ -12,7 +12,10 @@ if (!devicesConfig.enable) {
 }
 
 const pageTitle = resolveI18nText(devicesConfig.title, I18nKey.devices);
-const pageDescription = resolveI18nText(devicesConfig.description, I18nKey.devicesBanner);
+const pageDescription = resolveI18nText(
+	devicesConfig.description,
+	I18nKey.devicesBanner,
+);
 
 const items = resolveDevicesData(devicesConfig);
 ---

@@ -61,8 +61,9 @@ export function shironesSsrNodeShims(): Plugin {
 		renderChunk(code) {
 			if (!isSsr) return null;
 
-			const filenameDeclared =
-				/(?:const|let|var|function)\s+__filename\b/.test(code);
+			const filenameDeclared = /(?:const|let|var|function)\s+__filename\b/.test(
+				code,
+			);
 			const needsFilename =
 				/(?<![\w$.])__filename(?![\w$])/.test(code) && !filenameDeclared;
 			const needsDirname =

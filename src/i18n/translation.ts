@@ -52,9 +52,7 @@ export function i18n(key: I18nKey): string {
 	if (i18nConfig && typeof i18nConfig === "object") {
 		const langOverrides =
 			i18nConfig[lang] ??
-			Object.entries(i18nConfig).find(
-				([k]) => k.toLowerCase() === lang,
-			)?.[1];
+			Object.entries(i18nConfig).find(([k]) => k.toLowerCase() === lang)?.[1];
 
 		if (langOverrides && typeof langOverrides === "object") {
 			const customVal = langOverrides[key];

@@ -15,7 +15,10 @@ if (!compassConfig.enable) {
 }
 
 const pageTitle = resolveI18nText(compassConfig.title, I18nKey.compass);
-const pageDescription = resolveI18nText(compassConfig.description, I18nKey.compassBanner);
+const pageDescription = resolveI18nText(
+	compassConfig.description,
+	I18nKey.compassBanner,
+);
 ---
 
 <MainGridLayout title={pageTitle} description={pageDescription} page="compass">

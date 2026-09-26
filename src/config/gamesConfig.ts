@@ -19,13 +19,13 @@ export const gamesConfig: GamesConfig = withUserConfig("games", {
 	categories: [
 		{
 			key: "open-world",
-			label: "Open World",
+			label: "开放世界",
 			icon: "material-symbols:explore-outline-rounded",
 			description: "Open-world adventures",
 		},
 		{
 			key: "sandbox",
-			label: "Sandbox",
+			label: "沙盒建造",
 			icon: "material-symbols:widgets-rounded",
 			description: "Building, crafting & creative worlds",
 		},
@@ -46,6 +46,12 @@ export const gamesConfig: GamesConfig = withUserConfig("games", {
 			label: "Casual",
 			icon: "material-symbols:extension-outline-rounded",
 			description: "Cozy, casual & party games",
+		},
+		{
+			key: "galgame",
+			label: "GalGame",
+			icon: "material-symbols:extension-outline-rounded",
+			description: "视觉小说",
 		},
 	],
 	// disabledIds: [],

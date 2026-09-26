@@ -1,76 +1,116 @@
 /**
- * 设备展示页数据源（纯内容）。
- * 页面展示与筛选规则由 src/config/devicesConfig.ts 控制。
+ * 个人设备展示页数据源
+ * 行为与分类规则由 config/devices.yaml 控制
  */
-import type { DeviceItem } from "@/types/devicesConfig";
+
+export type DeviceStatus = "active" | "backup" | "archived" | "wishlist";
+
+export interface DeviceSpecItem {
+	key: string;
+	label: string;
+	value: string;
+}
+
+export interface DeviceItem {
+	enable?: boolean;
+	id: string;
+	name: string;
+	brand: string;
+	category: string;
+	status: DeviceStatus;
+	specs: string;
+	specDetails?: DeviceSpecItem[];
+	description: string;
+	image?: string;
+	icon?: string;
+	link?: string;
+	featured?: boolean;
+	year?: string;
+}
 
 export const devicesData: DeviceItem[] = [
 	{
-		id: "macbook-pro-16",
-		name: 'MacBook Pro 16"',
-		brand: "Apple",
+		id: "matebook",
+		name: "MateBook D 14",
+		brand: "Huawei",
 		category: "desk",
 		status: "active",
-		specs: "M3 Max / 64GB / 2TB",
-		description:
-			"Primary workstation for development, design, and heavy rendering workloads.",
-		icon: "material-symbols:laptop-mac-rounded",
-		featured: true,
-		year: "2024",
-		link: "https://www.apple.com/macbook-pro/",
+		specs: "Intel Core i5-1155G7 / 16GB / 512GB",
+		description: "天下PC谁最美？大家都说是XX",
+		icon: "material-symbols:laptop-windows-outline-rounded",
+		featured: false,
+		year: "2022",
 	},
 	{
-		id: "iphone-16-pro",
-		name: "iPhone 16 Pro",
-		brand: "Apple",
+		id: "server",
+		name: "Fedora Server",
+		brand: "unknown",
+		category: "desk",
+		status: "active",
+		specs: "Intel Core i7-2600 / 16GB / 1TB",
+		description: "天下PC谁最美？大家都说是XX",
+		icon: "material-symbols:desktop-windows-outline-rounded",
+		featured: false,
+		year: "2022",
+	},
+	{
+		id: "xiaomi",
+		name: "Redmi K70E",
+		brand: "Xiaomi",
 		category: "mobile",
 		status: "active",
-		specs: "Natural Titanium / 256GB",
-		description:
-			"Daily driver smartphone with outstanding cameras and a smooth 120Hz ProMotion display.",
+		specs: "MediaTek 8300 Ultra / 12GB / 256GB",
+		description: "用着还行",
 		icon: "material-symbols:phone-iphone",
 		featured: true,
 		year: "2024",
 	},
 	{
-		id: "sony-wh1000xm5",
-		name: "Sony WH-1000XM5",
-		brand: "Sony",
-		category: "audio",
+		id: "gamesir",
+		name: "启明星 2",
+		brand: "Gamesir",
+		category: "gamepad",
 		status: "active",
-		specs: "Silver / ANC / LDAC",
-		description:
-			"Industry-leading noise-canceling headphones for immersive coding sessions and travels.",
-		icon: "material-symbols:headphones-rounded",
-		year: "2023",
-	},
-	{
-		id: "custom-keyboard-75",
-		name: "Custom 75% Mechanical Keyboard",
-		brand: "Custom",
-		category: "peripheral",
-		status: "active",
-		specs: "Anodized Aluminum / Linear Switches",
-		description:
-			"Custom gasket-mounted keyboard tuned for deep, quiet typing acoustics.",
-		icon: "material-symbols:keyboard-outline-rounded",
+		specs: "Nothing",
+		description: "手柄",
+		icon: "material-symbols:gamepad",
+		featured: true,
 		year: "2025",
 	},
 	{
-		id: "ipad-pro-11",
-		name: 'iPad Pro 11"',
-		brand: "Apple",
+		id: "oppo",
+		name: "OPPO A55 5G",
+		brand: "OPPO",
 		category: "mobile",
 		status: "backup",
-		specs: "Space Gray / 128GB",
-		description:
-			"Secondary mobile screen and digital notepad for sketching ideas and reading papers.",
-		icon: "material-symbols:tablet-mac-rounded",
-		year: "2021",
+		specs: "MediaTek 700 / 6GB / 128GB",
+		description: "备用机",
+		icon: "material-symbols:phone-iphone",
+		featured: false,
+		year: "2024",
+	},
+	{
+		id: "huawei",
+		name: "HUAWEI 畅享 7",
+		brand: "Huawei",
+		category: "mobile",
+		status: "archived",
+		specs: "Snapdragon 425 / 4GB / 16GB",
+		description: "天下手机谁最美？大家都说是XX",
+		icon: "material-symbols:phone-iphone",
+		featured: false,
+		year: "2017",
+	},
+	{
+		id: "vivo",
+		name: "vivo Y35A",
+		brand: "Vivo",
+		category: "mobile",
+		status: "archived",
+		specs: "Snapdragon 410 / 2GB / 16GB",
+		description: "这位更是重量级",
+		icon: "material-symbols:phone-iphone",
+		featured: false,
+		year: "2015",
 	},
 ];
-
-/** 获取所有设备数据列表 */
-export function getDevicesList(): DeviceItem[] {
-	return devicesData;
-}

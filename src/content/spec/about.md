@@ -1,26 +1,26 @@
-# About Shirone
+# 关于我
+Hi，我是 BoochiChaos，一个正在学习写项目的小白
 
-Welcome to the demo site of **Shirone** (白音) — an expressive, anime-inspired blog theme built on the **Material 3 Expressive (M3E)** design system.
+# 博客的主要内容
 
-::github{repo="LyraVoid/Shirone"}
+博客里主要写
 
-## ✦ Design & Philosophy
+- 运维技术
+- 数码
+- 番剧
+- 游戏
+- 闲聊
 
-Shirone aims to combine the warmth of expressive anime aesthetics with the rigor of modern web engineering:
+# 联系我
 
-- **Dynamic Chromatic Spell**: Full dynamic HCT palette generation responding seamlessly to light/dark modes and user preferences with zero layout shifts.
-- **Seamless Shell Navigation**: Persistent application shell driven by Swup for continuous music playback, smooth page transitions, and preserved state.
-- **Rich Story Grimoire**: Markdown and MDX authoring with KaTeX math, Mermaid diagrams, interactive admonitions, expressive code blocks, and adaptive image galleries.
-- **Zero Extra Burden**: Optional integrations (comments, analytics, music widgets) load dynamically on demand — zero DOM footprint and zero bundle overhead when disabled.
+- Github [mefengxiao](https://github.com/mefengxiao)
+- 个人邮箱 [mchuangofficial@outlook.com](mailto:mchuangofficial@outlook.com) （推荐）
+- 网站邮箱 [ciallo@hxf.dpdns.org](mailto:ciallo@hxf1.dpdns.org)
 
-## ✦ Tech Stack
+# 本站说明
 
-- **Framework**: [Astro 7](https://astro.build/) & [Svelte 5](https://svelte.dev/) (Runes-driven islands)
-- **Styling**: [Tailwind CSS 4](https://tailwindcss.com/) & [Stylus](https://stylus-lang.com/)
-- **Design Standard**: [Material 3 Expressive](https://m3.material.io/)
-- **Typography**: Outfit & Yozai (悠哉圆体) with automated build-time subsetting
-- **Search Engine**: [Pagefind](https://pagefind.app/) offline full-text search
+本站只是个人想分享些随笔就建立起了 ~~好随便~~
 
-## ✦ Credits
+如果你想添加友链的话，请到 [这里](https://github.com/mefengxiao/Shirone/issues) 提交 issues 我会进行添加，如果你也可以在你的网站友链上添加本站我会很高兴
 
-- **Font**: [Yozai Font (悠哉字体)](https://github.com/lxgw/yozai-font) by [lxgw](https://github.com/lxgw)
+本站通过 [Astro](https://astro.build/) 项目和 [Shirone](https://github.com/LyraVoid/Shirone) 主题构建

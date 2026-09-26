@@ -107,6 +107,7 @@ export function filterRoutes(
 		exclude.map((value) => (value.startsWith("/") ? value : `/${value}`)),
 	);
 	return routes.filter(
-		(route) => !normalised.has(route.pattern) && !normalised.has(`/${route.source}`),
+		(route) =>
+			!normalised.has(route.pattern) && !normalised.has(`/${route.source}`),
 	);
 }

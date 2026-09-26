@@ -81,9 +81,14 @@ const optimizeBannerImage = async (
 	};
 };
 
-function normalizeBannerSource(source: unknown, name: string): { light: string[]; dark: string[] } {
+function normalizeBannerSource(
+	source: unknown,
+	name: string,
+): { light: string[]; dark: string[] } {
 	if (Array.isArray(source)) {
-		const list = source.filter((item): item is string => typeof item === "string");
+		const list = source.filter(
+			(item): item is string => typeof item === "string",
+		);
 		return { light: list, dark: list };
 	}
 	if (typeof source === "object" && source !== null) {
@@ -94,15 +99,23 @@ function normalizeBannerSource(source: unknown, name: string): { light: string[]
 			);
 		}
 		return {
-			light: obj.light.filter((item): item is string => typeof item === "string"),
+			light: obj.light.filter(
+				(item): item is string => typeof item === "string",
+			),
 			dark: obj.dark.filter((item): item is string => typeof item === "string"),
 		};
 	}
 	return { light: [], dark: [] };
 }
 
-const desktopSource = normalizeBannerSource(siteConfig.banner.src.desktop, "desktop");
-const mobileSource = normalizeBannerSource(siteConfig.banner.src.mobile, "mobile");
+const desktopSource = normalizeBannerSource(
+	siteConfig.banner.src.desktop,
+	"desktop",
+);
+const mobileSource = normalizeBannerSource(
+	siteConfig.banner.src.mobile,
+	"mobile",
+);
 
 // 对图片按路径去重进行优化缓存
 const optimizationCache = new Map<string, Promise<ResponsiveBannerImage>>();

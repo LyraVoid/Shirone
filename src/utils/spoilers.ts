@@ -17,7 +17,5 @@ function wire(button: HTMLButtonElement): void {
 /** Adds touch and keyboard toggling to SSR-native spoiler buttons. */
 export function initSpoilers(container: ParentNode = document): void {
 	if (typeof document === "undefined") return;
-	container
-		.querySelectorAll<HTMLButtonElement>(SPOILER_SELECTOR)
-		.forEach(wire);
+	container.querySelectorAll<HTMLButtonElement>(SPOILER_SELECTOR).forEach(wire);
 }
