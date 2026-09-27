@@ -1,5 +1,15 @@
+import { existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { join } from "node:path";
+
 const BANGUMI_API_BASE = "https://api.bgm.tv";
 const USER_AGENT = "Shirone/1.0 (https://github.com/shirone; AnimeSync)";
+
+// Package mode runs this provider from node_modules, so the user's project
+// root must come from the process rather than the module's own location.
+const projectRoot = process.cwd();
+const COVERS_DIR = join(projectRoot, "public/assets/anime/covers");
+const BANGUMI_REFERER = "https://bgm.tv/";
+const COVER_EXTENSIONS = ["webp", "jpg", "png", "gif", "avif"];
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -38,6 +48,125 @@ function extractStudioFromInfobox(infobox) {
 				}
 			}
 		}
+	}
+	return undefined;
+}
+
+function detectImageExtension(buffer, contentType) {
+	if (buffer && buffer.length >= 4) {
+		// JPEG: FF D8 FF
+		if (buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) {
+			return "jpg";
+		}
+		// PNG: 89 50 4E 47
+		if (
+			buffer[0] === 0x89 &&
+			buffer[1] === 0x50 &&
+			buffer[2] === 0x4e &&
+			buffer[3] === 0x47
+		) {
+			return "png";
+		}
+		// WebP: RIFF ... WEBP (52 49 46 46 .... 57 45 42 50)
+		if (
+			buffer.length >= 12 &&
+			buffer[0] === 0x52 &&
+			buffer[1] === 0x49 &&
+			buffer[2] === 0x46 &&
+			buffer[3] === 0x46 &&
+			buffer[8] === 0x57 &&
+			buffer[9] === 0x45 &&
+			buffer[10] === 0x42 &&
+			buffer[11] === 0x50
+		) {
+			return "webp";
+		}
+		// GIF: 47 49 46 38
+		if (
+			buffer[0] === 0x47 &&
+			buffer[1] === 0x49 &&
+			buffer[2] === 0x46 &&
+			buffer[3] === 0x38
+		) {
+			return "gif";
+		}
+		// AVIF: ....ftypavif
+		if (buffer.length >= 12) {
+			const sub = buffer.subarray(4, 12).toString("binary");
+			if (sub === "ftypavif" || sub === "ftypavis") {
+				return "avif";
+			}
+		}
+	}
+
+	if (contentType) {
+		const ct = contentType.toLowerCase();
+		if (ct.includes("image/webp")) return "webp";
+		if (ct.includes("image/png")) return "png";
+		if (ct.includes("image/jpeg") || ct.includes("image/jpg")) return "jpg";
+		if (ct.includes("image/gif")) return "gif";
+		if (ct.includes("image/avif")) return "avif";
+	}
+
+	return "jpg";
+}
+
+/**
+ * 查找已缓存的本地封面：命中时跳过网络下载，避免重复同步重复拉取。
+ */
+function findCachedCover(id) {
+	if (!id) return undefined;
+	for (const ext of COVER_EXTENSIONS) {
+		const fileName = `bgm_${id}.${ext}`;
+		if (existsSync(join(COVERS_DIR, fileName))) {
+			return `/assets/anime/covers/${fileName}`;
+		}
+	}
+	return undefined;
+}
+
+/**
+ * 将 Bangumi 封面下载到站内 public/assets/anime/covers/（local 模式）。
+ * Bangumi 图片 CDN 不支持 B 站式 `@` 处理参数，故原图下载后按魔数修正扩展名。
+ */
+async function downloadCoverLocally(coverUrl, id, coverConfig = {}) {
+	if (!coverUrl?.startsWith("http")) return undefined;
+
+	const cached = findCachedCover(id);
+	if (cached) return cached;
+
+	try {
+		if (!existsSync(COVERS_DIR)) {
+			mkdirSync(COVERS_DIR, { recursive: true });
+		}
+
+		// 优先请求 WebP，CDN/反向代理支持时直接落盘更小的体积
+		const headers = {
+			"User-Agent": USER_AGENT,
+			Referer: BANGUMI_REFERER,
+		};
+		if (coverConfig.useWebp !== false) {
+			headers.Accept = "image/webp,image/avif,image/*,*/*;q=0.8";
+		}
+
+		const res = await fetch(coverUrl, {
+			headers,
+			signal: AbortSignal.timeout(10000),
+		});
+
+		if (res.ok) {
+			const buffer = Buffer.from(await res.arrayBuffer());
+			const ext = detectImageExtension(buffer, res.headers.get("content-type"));
+			const fileName = `bgm_${id}.${ext}`;
+			const filePath = join(COVERS_DIR, fileName);
+
+			writeFileSync(filePath, buffer);
+			return `/assets/anime/covers/${fileName}`;
+		}
+	} catch (error) {
+		console.warn(
+			`[Bangumi] Failed to download cover locally for ${id}: ${error.message}`,
+		);
 	}
 	return undefined;
 }
@@ -138,6 +267,7 @@ export async function fetchBangumiData(bangumiConfig) {
 	}
 
 	const requestOptions = bangumiConfig.request || {};
+	const coverConfig = bangumiConfig.cover || { mode: "local", useWebp: true };
 	console.log(`[Bangumi] Starting sync for user: ${userId}...`);
 
 	const allEntries = [];
@@ -204,13 +334,42 @@ export async function fetchBangumiData(bangumiConfig) {
 								? detail.total_episodes
 								: 0;
 
-				const cover =
+				let cover =
 					subject.images?.medium ||
 					subject.images?.large ||
 					subject.images?.common ||
 					detail?.images?.medium ||
 					detail?.images?.large ||
 					"";
+
+				// 封面处理：local 站内缓存（默认）/ remote 远程链接 / none 占位
+				if (cover) {
+					if (cover.startsWith("//")) cover = `https:${cover}`;
+					if (cover.startsWith("http://")) {
+						cover = cover.replace("http://", "https://");
+					}
+
+					const coverKey = subjectId
+						? String(subjectId)
+						: String(item.id || title)
+								.replace(/[^a-zA-Z0-9_-]/g, "_")
+								.slice(0, 64);
+
+					if (coverConfig.mode === "local") {
+						const localCover = await downloadCoverLocally(
+							cover,
+							coverKey,
+							coverConfig,
+						);
+						cover = localCover || cover;
+					} else if (coverConfig.mode === "remote") {
+						if (coverConfig.mirror) {
+							cover = `${coverConfig.mirror.replace(/\/+$/, "")}/${cover.replace(/^https?:\/\//, "")}`;
+						}
+					} else if (coverConfig.mode === "none") {
+						cover = "";
+					}
+				}
 
 				const rawDate = subject.date || detail?.date || "";
 				const year = rawDate ? String(rawDate).slice(0, 4) : "";

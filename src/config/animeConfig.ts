@@ -54,8 +54,7 @@ export const animeConfig: AnimeConfig = withUserConfig("anime", {
 
 	/** 异常降级策略（快照丢失或解析失败时回退本地数据） */
 	fallback: {
-		kind: "snapshot",
-		provider: "bilibili",
+		kind: "local",
 	},
 
 	/** 外部提供方配置 */

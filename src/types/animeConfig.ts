@@ -69,6 +69,18 @@ export interface AnimeRequestOptions {
 }
 
 /**
+ * 封面处理策略（Bangumi / Bilibili 通用）
+ */
+export interface AnimeCoverConfig {
+	/** 封面资源策略 */
+	mode: AnimeCoverMode;
+	/** 可选封面镜像前缀（如加速 CDN 或反代前缀） */
+	mirror?: string;
+	/** 是否使用 WebP 图片优化参数（默认 true） */
+	useWebp?: boolean;
+}
+
+/**
  * Bangumi 提供方配置
  */
 export interface BangumiProviderConfig {
@@ -76,6 +88,8 @@ export interface BangumiProviderConfig {
 	enable: boolean;
 	/** Bangumi 用户 ID 或公开个性域名（必填，未填时自动禁用） */
 	userId: string;
+	/** 封面处理策略 */
+	cover?: AnimeCoverConfig;
 	/** 可选网络请求参数 */
 	request?: AnimeRequestOptions;
 }
@@ -94,13 +108,7 @@ export interface BilibiliProviderConfig {
 	 */
 	sessdataEnv?: string;
 	/** 封面处理策略 */
-	cover?: {
-		mode: AnimeCoverMode;
-		/** 可选封面镜像前缀（如加速 CDN 或反代前缀） */
-		mirror?: string;
-		/** 是否使用 WebP 图片优化参数（默认 true） */
-		useWebp?: boolean;
-	};
+	cover?: AnimeCoverConfig;
 	/** 可选网络请求参数 */
 	request?: AnimeRequestOptions;
 }
