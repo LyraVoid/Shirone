@@ -82,6 +82,19 @@ jobs:
         working-directory: theme
         run: pnpm install --frozen-lockfile --prefer-offline
 
+      # 官方顺序：先物化，再校验（docs/content-separation/dual-repo-ci.md 的 deploy 流程
+      # 明确「先执行 pnpm content:sync 将文章与配置同步到位，再进行…打包」）。
+      #
+      # 这个顺序不是风格问题：内容分离后代码仓忽略 src/data/ 等物化目录，全新克隆里
+      # src/data/*.ts 并不存在，而 content:validate 的配置类型检查会经 src/types/animeConfig.ts
+      # 直接 import 这些文件 —— 先校验后物化必然 TS2307（本仓 2026-09-27 在全新克隆条件下实测复现）。
+      # 上游仓自带 demo 数据（src/data/*.ts 在主题仓是提交物），所以上游按原顺序跑不会暴露。
+      - name: Materialize content
+        working-directory: theme
+        env:
+          CONTENT_DIR: ${{ github.workspace }}/content
+        run: pnpm content:sync
+
       # 第一关：目录结构、keep 冲突、写入构建期生成物路径等契约问题，
       # 外加 config/*.yaml 的类型校验（拼错的键、越界的枚举都会在这里失败）。
       - name: Validate content structure and config
@@ -97,7 +110,6 @@ jobs:
           CONTENT_DIR: ${{ github.workspace }}/content
         run: |
           set -euo pipefail
-          pnpm content:sync
           node scripts/icons/generate-local-icons.mjs
           pnpm exec astro sync
 
