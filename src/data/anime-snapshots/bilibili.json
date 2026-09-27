@@ -1,7 +1,1461 @@
 {
   "schemaVersion": 1,
   "provider": "bilibili",
-  "fetchedAt": "2026-09-26T23:37:02.725Z",
+  "fetchedAt": "2026-09-27T05:33:54.278Z",
   "accountRef": "689341156",
-  "items": []
+  "items": [
+    {
+      "title": "超辉夜姬！",
+      "status": "completed",
+      "rating": 9.8,
+      "year": "2026",
+      "genres": [
+        "原创",
+        "奇幻",
+        "音乐"
+      ],
+      "cover": "/assets/anime/covers/bili_142945.webp",
+      "link": "https://www.bilibili.com/bangumi/play/ss142945?theme=movie",
+      "description": "在梦与希望汇聚的虚拟空间，少女们相遇又离别的舞台即将拉开帷幕。 在不远的未来，在东京的重点高中学习的17岁女生酒寄彩叶过着半工半读的超忙碌生活。 她每天的精神慰藉仅有网上虚拟空间「月夜见」的管理者兼人...",
+      "studio": "日本",
+      "identity": {
+        "provider": "bilibili",
+        "sourceId": "305846190",
+        "seasonId": "142945"
+      }
+    },
+    {
+      "title": "末日后酒店",
+      "status": "completed",
+      "rating": 9.9,
+      "year": "2025",
+      "genres": [
+        "原创",
+        "奇幻",
+        "科幻",
+        "治愈"
+      ],
+      "cover": "/assets/anime/covers/bili_90684.webp",
+      "link": "https://www.bilibili.com/bangumi/play/ss90684",
+      "description": "人类消失后，地球经历了漫长的岁月。 位于日本首都东京银座的「银河楼」酒店，至今仍在营业中。 工作人员是以酒店机器人八千代为中心，在各个部门工作的员工机器人们。它们一边等待老板的归来和再次迎接人类的时刻...",
+      "studio": "日本",
+      "identity": {
+        "provider": "bilibili",
+        "sourceId": "25467691",
+        "seasonId": "90684"
+      }
+    },
+    {
+      "title": "颂乐人偶",
+      "status": "completed",
+      "rating": 7.2,
+      "year": "2025",
+      "genres": [
+        "原创",
+        "音乐"
+      ],
+      "cover": "/assets/anime/covers/bili_73081.webp",
+      "link": "https://www.bilibili.com/bangumi/play/ss73081",
+      "description": "「我说过了吧？请你们将剩余的人生交给我」 丰川祥子招募组建的乐队・Ave Mujica取得了演唱会和媒体曝光等商业上的成功。 少女失去了曾发誓命运与共的友人，又失去了自己出生长大的家庭。 她为什么要背...",
+      "studio": "日本",
+      "identity": {
+        "provider": "bilibili",
+        "sourceId": "23679586",
+        "seasonId": "73081"
+      }
+    },
+    {
+      "title": "亚托莉 -我挚爱的时光-",
+      "status": "completed",
+      "rating": 9.6,
+      "year": "2024",
+      "genres": [
+        "科幻",
+        "校园",
+        "恋爱",
+        "游戏改"
+      ],
+      "cover": "/assets/anime/covers/bili_48029.webp",
+      "link": "https://www.bilibili.com/bangumi/play/ss48029",
+      "description": "「在逐渐沉没的世界，我找到了你。」 在近未来，不明原因的海平面上升导致大面积地表被海水淹没。 幼时因意外事故失去了一条腿的少年斑鸠夏生厌倦了城市生活，迁居到了海边的乡村小镇。 他无亲无故，留给他的只有...",
+      "studio": "日本",
+      "identity": {
+        "provider": "bilibili",
+        "sourceId": "22097455",
+        "seasonId": "48029"
+      }
+    },
+    {
+      "title": "伍六七之记忆碎片",
+      "status": "completed",
+      "rating": 7.8,
+      "year": "2024",
+      "genres": [],
+      "cover": "/assets/anime/covers/bili_48315.webp",
+      "link": "https://www.bilibili.com/bangumi/play/ss48315",
+      "description": "为了找回珍视的伙伴，伍六七重回玄武国，面对那些被遗忘的记忆碎片。尘封的真相带来痛苦与愤怒，但现在的他不再是孤身一人。拥有力量，究竟是为了什么？这一次，伍六七要为自己的人生做出新的选择…...",
+      "studio": "中国大陆",
+      "identity": {
+        "provider": "bilibili",
+        "sourceId": "22580805",
+        "seasonId": "48315"
+      }
+    },
+    {
+      "title": "少女乐队的呐喊",
+      "status": "completed",
+      "rating": 9.7,
+      "year": "2024",
+      "genres": [
+        "原创",
+        "少女",
+        "励志",
+        "音乐"
+      ],
+      "cover": "/assets/anime/covers/bili_68627.webp",
+      "link": "https://www.bilibili.com/bangumi/play/ss68627",
+      "description": "「被朋友背叛，不知所措的少女；被父母抛弃，靠打工在大城市中勉强维生的女孩。这个世界总是背叛着我们，事情总是无法按照我们的想法进行。但是，因为有着热爱的事物，也因为相信有属于自己的容身之处，因此，不管悲...",
+      "studio": "日本",
+      "identity": {
+        "provider": "bilibili",
+        "sourceId": "23444913",
+        "seasonId": "68627"
+      }
+    },
+    {
+      "title": "摇曳露营 第三季",
+      "status": "completed",
+      "rating": 9.5,
+      "year": "2024",
+      "genres": [
+        "漫画改",
+        "搞笑",
+        "日常",
+        "治愈",
+        "校园"
+      ],
+      "cover": "/assets/anime/covers/bili_47827.webp",
+      "link": "https://www.bilibili.com/bangumi/play/ss47827",
+      "description": "这是冬天与春天之间的故事。 抚子、凛、千明、葵、惠那在伊豆享受了团体露营。 五人在之后仍旧对露营热情高涨，在山梨和静冈，享受着各自的户外活动。 凛和抚子的发小土岐绫乃一起，在大井川周边巡回露营。 抚子...",
+      "studio": "日本",
+      "identity": {
+        "provider": "bilibili",
+        "sourceId": "21775114",
+        "seasonId": "47827"
+      }
+    },
+    {
+      "title": "鹿乃子乃子乃子虎视眈眈",
+      "status": "completed",
+      "rating": 8.4,
+      "year": "2024",
+      "genres": [
+        "搞笑",
+        "校园",
+        "漫画改"
+      ],
+      "cover": "/assets/anime/covers/bili_48923.webp",
+      "link": "https://www.bilibili.com/bangumi/play/ss48923",
+      "description": "女高中生虎视虎子，就读于都立日野南高中。 某天的上学路上，她感觉有凉凉的东西碰到了自己的脸。 猛地向上看去，她发现有个女孩子流着鼻涕，角挂在了电线上，动弹不得了――？！ 因为救下了稀里糊涂地长出奇怪...",
+      "studio": "日本",
+      "identity": {
+        "provider": "bilibili",
+        "sourceId": "23187923",
+        "seasonId": "48923"
+      }
+    },
+    {
+      "title": "不當哥哥了！（僅限港澳台地區）",
+      "status": "completed",
+      "rating": 0,
+      "year": "2023",
+      "genres": [
+        "日常",
+        "搞笑",
+        "校园"
+      ],
+      "cover": "/assets/anime/covers/bili_44493.webp",
+      "link": "https://www.bilibili.com/bangumi/play/ss44493",
+      "description": "某天，家裡蹲的啃老族緒山真尋一覺醒來發現自己變成了“女孩子”！？正當真尋不知道鏡子裡的美少女是自己而陷入混亂的時候，跳級進入大學的科學家妹妹緒山美波里出現了。她透露在飲料里加了一種奇怪的藥物！ 真尋最...",
+      "studio": "日本",
+      "identity": {
+        "provider": "bilibili",
+        "sourceId": "28480920",
+        "seasonId": "44493"
+      }
+    },
+    {
+      "title": "电器少女",
+      "status": "completed",
+      "rating": 9.8,
+      "year": "2023",
+      "genres": [],
+      "cover": "/assets/anime/covers/bili_44809.webp",
+      "link": "https://www.bilibili.com/bangumi/play/ss44809",
+      "description": "梁西瓜是一名在城市夹缝中辛苦谋生的贫寒青年。某一日，陪伴他许多个孤单寒暑的老式冰箱竟然化成人形，强势介入了他的生活。他们因食物针锋相对，为生计绞尽脑汁，互相拖累又互相扶持，碰撞出许多令人啼笑皆非的日常...",
+      "studio": "中国大陆",
+      "identity": {
+        "provider": "bilibili",
+        "sourceId": "20135810",
+        "seasonId": "44809"
+      }
+    },
+    {
+      "title": "迷途之子!!!!!",
+      "status": "completed",
+      "rating": 9.7,
+      "year": "2023",
+      "genres": [
+        "原创",
+        "少女",
+        "励志",
+        "音乐"
+      ],
+      "cover": "/assets/anime/covers/bili_73077.webp",
+      "link": "https://www.bilibili.com/bangumi/play/ss73077",
+      "description": "高一的春末。羽丘女子学园的所有人都加入了乐队， 晚入学的爱音为了尽快融入班级，急急忙忙地寻找着乐队成员。 这时她得知，「羽丘的不可思议女孩」灯还没有加入乐队， 于是爱音不由自主地向她打起了招呼，但是…...",
+      "studio": "日本",
+      "identity": {
+        "provider": "bilibili",
+        "sourceId": "23679123",
+        "seasonId": "73077"
+      }
+    },
+    {
+      "title": "前进吧！登山少女 第四季",
+      "status": "completed",
+      "rating": 9.8,
+      "year": "2022",
+      "genres": [
+        "日常",
+        "治愈",
+        "搞笑",
+        "漫画改"
+      ],
+      "cover": "/assets/anime/covers/bili_43151.webp",
+      "link": "https://www.bilibili.com/bangumi/play/ss43151",
+      "description": "继登上了标高197m的天览山后，葵和日向二人又登上了599m的高尾山、1786m的三峠山，不断创下新高。而后她们也登顶了那座回忆中的山——谷川岳。在周游关东名峰的过程中结识了可可奈、枫以及穗香等人，她...",
+      "studio": "日本",
+      "identity": {
+        "provider": "bilibili",
+        "sourceId": "28339719",
+        "seasonId": "43151"
+      }
+    },
+    {
+      "title": "女孩的钓鱼慢活",
+      "status": "completed",
+      "rating": 9.8,
+      "year": "2022",
+      "genres": [
+        "日常",
+        "治愈",
+        "漫画改"
+      ],
+      "cover": "/assets/anime/covers/bili_40242.webp",
+      "link": "https://www.bilibili.com/bangumi/play/ss40242",
+      "description": "在海边，少女日和独自一人 享受着从亡父那里学来的飞蝇钓。 她和往常一样钓着鱼，这时 和突然想跳入海中的天真烂漫少女小春相遇了。 两人决定一起钓鱼，但却发现， 其实对方是父母再婚对象的孩子…？ 以意想不...",
+      "studio": "日本",
+      "identity": {
+        "provider": "bilibili",
+        "sourceId": "28235946",
+        "seasonId": "40242"
+      }
+    },
+    {
+      "title": "孤独摇滚！",
+      "status": "completed",
+      "rating": 9.9,
+      "year": "2022",
+      "genres": [
+        "日常",
+        "音乐",
+        "漫画改"
+      ],
+      "cover": "/assets/anime/covers/bili_43164.webp",
+      "link": "https://www.bilibili.com/bangumi/play/ss43164",
+      "description": "绰号“小孤独”的后藤独，是一个喜爱吉他的孤独少女。经常在家里独自弹奏吉他，但因为一些事情，加入了伊地知虹夏领衔的“纽带乐队”。不敢在他人面前演奏的后藤，能否成为一个出色的乐队成员呢……...",
+      "studio": "日本",
+      "identity": {
+        "provider": "bilibili",
+        "sourceId": "28339735",
+        "seasonId": "43164"
+      }
+    },
+    {
+      "title": "街角的魔族女孩 第二季（僅限港澳台地區）",
+      "status": "completed",
+      "rating": 0,
+      "year": "2022",
+      "genres": [
+        "日常",
+        "搞笑",
+        "萌系",
+        "魔法",
+        "漫画改"
+      ],
+      "cover": "/assets/anime/covers/bili_41483.webp",
+      "link": "https://www.bilibili.com/bangumi/play/ss41483",
+      "description": "普通少女吉田優子（綽號是夏美子），某日自己被封印的魔族力量突然覺醒，不但長出了角和尾巴，還必須打倒住在鎮上某處的「魔法少女」。 為了破除家族「一家四口每月生活費 4 萬圓」（新台幣 1 萬元）的詛咒...",
+      "studio": "日本",
+      "identity": {
+        "provider": "bilibili",
+        "sourceId": "28237192",
+        "seasonId": "41483"
+      }
+    },
+    {
+      "title": "街角魔族 第二季",
+      "status": "completed",
+      "rating": 9.9,
+      "year": "2022",
+      "genres": [
+        "日常",
+        "奇幻",
+        "搞笑",
+        "萌系",
+        "魔法",
+        "漫画改"
+      ],
+      "cover": "/assets/anime/covers/bili_41520.webp",
+      "link": "https://www.bilibili.com/bangumi/play/ss41520",
+      "description": "超人气小镇日常奇幻故事回来啦！ 自身魔族的力量苏醒之后，为了解除暗之一族的封印，主人公夏美子尽管实力微弱却依然奋斗着。 魔法少女桃原本应是她的对手，但不知为何她们却开始互相协助，一起追寻消失在镇上的魔...",
+      "studio": "日本",
+      "identity": {
+        "provider": "bilibili",
+        "sourceId": "28237229",
+        "seasonId": "41520"
+      }
+    },
+    {
+      "title": "悠哉日常大王 第三季",
+      "status": "completed",
+      "rating": 9.9,
+      "year": "2021",
+      "genres": [
+        "日常",
+        "治愈",
+        "萌系",
+        "漫画改"
+      ],
+      "cover": "/assets/anime/covers/bili_36204.webp",
+      "link": "https://www.bilibili.com/bangumi/play/ss36204",
+      "description": "「旭丘分校」的学生，仅有五人。 虽然学年性格各不相同，但大家一起做菜、一起捉虫、一起试着练习乐器……春夏秋冬四季变换的乡村生活，一直都那么让人兴奋。 虽然一如既往地平和，但在欢笑和感动当中，心中也变得...",
+      "studio": "日本",
+      "identity": {
+        "provider": "bilibili",
+        "sourceId": "28231846",
+        "seasonId": "36204"
+      }
+    },
+    {
+      "title": "恋爱小行星",
+      "status": "completed",
+      "rating": 9.7,
+      "year": "2020",
+      "genres": [
+        "日常",
+        "治愈",
+        "搞笑",
+        "校园",
+        "社团",
+        "漫画改"
+      ],
+      "cover": "/assets/anime/covers/bili_29350.webp",
+      "link": "https://www.bilibili.com/bangumi/play/ss29350",
+      "description": "木之幡米拉在小时候与在露营地遇见的男生约定，“要找到小行星”。上了高中后她本打算加入天文社，但从今年开始“天文社”就和“地质研究会”合并成了“地学社”……！？ 和地学系女孩们一起，去寻找各种各样闪闪发...",
+      "studio": "日本",
+      "identity": {
+        "provider": "bilibili",
+        "sourceId": "28224128",
+        "seasonId": "29350"
+      }
+    },
+    {
+      "title": "请问您今天要来点兔子吗？BLOOM",
+      "status": "completed",
+      "rating": 9.9,
+      "year": "2020",
+      "genres": [
+        "日常",
+        "治愈",
+        "萌系",
+        "漫画改"
+      ],
+      "cover": "/assets/anime/covers/bili_34415.webp",
+      "link": "https://www.bilibili.com/bangumi/play/ss34415",
+      "description": "心爱在木造房屋小镇度过的第二个夏天即将结束，季节即将变成各种盛大活动满载的秋季。 不论是在学校还是在Rabbit House，都有很多开心的事情！ 心爱、智乃以及大家都难以抑制对未来的期待……！...",
+      "studio": "日本",
+      "identity": {
+        "provider": "bilibili",
+        "sourceId": "28229884",
+        "seasonId": "34415"
+      }
+    },
+    {
+      "title": "ENDRO~!",
+      "status": "completed",
+      "rating": 9.8,
+      "year": "2019",
+      "genres": [
+        "奇幻",
+        "搞笑",
+        "萌系",
+        "原创",
+        "架空"
+      ],
+      "cover": "/assets/anime/covers/bili_26275.webp",
+      "link": "https://www.bilibili.com/bangumi/play/ss26275",
+      "description": "人们与怪物共存的剑与魔法的大陆“纳拉尔岛”。那里曾经存在恐怖的“魔王”。很久很久以前，初代勇者打倒了出现在纳拉尔岛的魔王——从那以后，魔王在各种时代不断地复活，同时与之对抗的勇者也再度出现……少女们为...",
+      "studio": "日本",
+      "identity": {
+        "provider": "bilibili",
+        "sourceId": "28227618",
+        "seasonId": "26275"
+      }
+    },
+    {
+      "title": "剧场版 悠哉日常大王 Vacation",
+      "status": "completed",
+      "rating": 9.9,
+      "year": "2019",
+      "genres": [
+        "日常",
+        "治愈",
+        "萌系",
+        "漫画改"
+      ],
+      "cover": "/assets/anime/covers/bili_26632.webp",
+      "link": "https://www.bilibili.com/bangumi/play/ss26632?theme=movie",
+      "description": "「旭丘分校」的学生有五人。 虽然不论是学年还是性格都不同，但总是一年四季彼此一同享受着乡村生活。 某天，在百货公司的抽奖抽中了特等奖——去冲绳的旅行券。 这也让众人决定，利用暑假期间一同前往冲绳去旅行...",
+      "studio": "日本",
+      "identity": {
+        "provider": "bilibili",
+        "sourceId": "16899731",
+        "seasonId": "26632"
+      }
+    },
+    {
+      "title": "街角魔族",
+      "status": "completed",
+      "rating": 9.8,
+      "year": "2019",
+      "genres": [
+        "日常",
+        "奇幻",
+        "搞笑",
+        "萌系",
+        "魔法",
+        "漫画改"
+      ],
+      "cover": "/assets/anime/covers/bili_28007.webp",
+      "link": "https://www.bilibili.com/bangumi/play/ss28007",
+      "description": "某天早晨，突然觉醒了暗之力量的女高中生·吉田优子，为了解除一族所遭受的诅咒而准备开始打倒魔法少女！！但对方却是自己的救命恩人！？而且根本就没可能打赢！？废柴系庶民派魔族与高冷系肌肉魔法少女编织的日常系...",
+      "studio": "日本",
+      "identity": {
+        "provider": "bilibili",
+        "sourceId": "28221404",
+        "seasonId": "28007"
+      }
+    },
+    {
+      "title": "请问您今天要来点兔子吗？？～Sing for You～",
+      "status": "completed",
+      "rating": 9.8,
+      "year": "2019",
+      "genres": [
+        "日常",
+        "治愈",
+        "搞笑",
+        "萌系",
+        "漫画改"
+      ],
+      "cover": "/assets/anime/covers/bili_30288.webp",
+      "link": "https://www.bilibili.com/bangumi/play/ss30288",
+      "description": "被选为音乐会独奏的智乃，让理世对她进行特训，理世为了让智乃习惯在众人面前唱歌而举办了卡拉OK大会，与其说是智乃的练习，倒不如说是大家的狂欢。紧张的智乃能在当天好好的唱歌吗？...",
+      "studio": "日本",
+      "identity": {
+        "provider": "bilibili",
+        "sourceId": "28225115",
+        "seasonId": "30288"
+      }
+    },
+    {
+      "title": "Comic Girls",
+      "status": "completed",
+      "rating": 9.8,
+      "year": "2018",
+      "genres": [
+        "日常",
+        "搞笑",
+        "漫画改"
+      ],
+      "cover": "/assets/anime/covers/bili_23829.webp",
+      "link": "https://www.bilibili.com/bangumi/play/ss23829",
+      "description": "萌田薰子（笔名：薰子）15岁。女子高中生、四格漫画家！搬进漫画家专用的女子宿舍的她，被同室的少女漫画家小梦和TL漫画家琉姬、少年漫画家翼等同伴们所围绕，今天也愉快地绘制原稿，彻夜工作！可爱又有趣的漫画...",
+      "studio": "日本",
+      "identity": {
+        "provider": "bilibili",
+        "sourceId": "77812",
+        "seasonId": "23829"
+      }
+    },
+    {
+      "title": "Slow Start（僅限港澳台地區）",
+      "status": "completed",
+      "rating": 9.5,
+      "year": "2018",
+      "genres": [
+        "少女",
+        "萌系",
+        "漫画改"
+      ],
+      "cover": "/assets/anime/covers/bili_22844.webp",
+      "link": "https://www.bilibili.com/bangumi/play/ss22844",
+      "description": "16歲中學三年級學生一之瀨花名比其他人晚了一年上高中，不過這件事沒有告訴同學。雖然別人可能會認為沒什麼大不了的，但對她來說是個重要的問題，並想要追趕上其他人。...",
+      "studio": "日本",
+      "identity": {
+        "provider": "bilibili",
+        "sourceId": "41912",
+        "seasonId": "22844"
+      }
+    },
+    {
+      "title": "前进吧！登山少女 第三季",
+      "status": "completed",
+      "rating": 9.8,
+      "year": "2018",
+      "genres": [
+        "日常",
+        "萌系",
+        "社团",
+        "漫画改"
+      ],
+      "cover": "/assets/anime/covers/bili_24605.webp",
+      "link": "https://www.bilibili.com/bangumi/play/ss24605",
+      "description": "一起去吧—— 与无可替代的朋友一起，去与那美丽的景色相会。 喜爱室内活动、有恐高症的葵， 升入高中时与儿时好友日向重逢，虽然她在日向的带领下疲惫不堪， 却也因此累积了登山和户外活动的经验。 葵也逐渐...",
+      "studio": "日本",
+      "identity": {
+        "provider": "bilibili",
+        "sourceId": "102152",
+        "seasonId": "24605"
+      }
+    },
+    {
+      "title": "向山进发 回忆的礼物",
+      "status": "completed",
+      "rating": 9.8,
+      "year": "2018",
+      "genres": [
+        "少女",
+        "萌系",
+        "校园",
+        "社团"
+      ],
+      "cover": "/assets/anime/covers/bili_24952.webp",
+      "link": "https://www.bilibili.com/bangumi/play/ss24952",
+      "description": "爱好室内活动但是却有恐高症的雪村葵，某一天，重遇了热爱登山并经常鼓动身边之人的青梅竹马仓上日向，令葵勾起一些回忆。 于是，在希望能再一次看到小时候看过的山顶日出这样心情的鼓动下，两人约定再次进行登山活...",
+      "studio": "日本",
+      "identity": {
+        "provider": "bilibili",
+        "sourceId": "4314782",
+        "seasonId": "24952"
+      }
+    },
+    {
+      "title": "请问您今天要来点兔子吗？？～Dear My Sister～",
+      "status": "completed",
+      "rating": 9.8,
+      "year": "2018",
+      "genres": [
+        "日常",
+        "治愈",
+        "萌系",
+        "萝莉"
+      ],
+      "cover": "/assets/anime/covers/bili_24702.webp",
+      "link": "https://www.bilibili.com/bangumi/play/ss24702?theme=movie",
+      "description": "转学的高中女生保登心爱来到一个充满木㐀房屋与石板路的小镇，寻找寄宿家庭时却迷了路，意外走进咖啡店“Rabbit House”，遇到了娇小的少女智乃、一只安哥拉兔提比，原来“Rabbit House”就...",
+      "studio": "日本",
+      "identity": {
+        "provider": "bilibili",
+        "sourceId": "122632",
+        "seasonId": "24702"
+      }
+    },
+    {
+      "title": "邻家索菲",
+      "status": "completed",
+      "rating": 9.8,
+      "year": "2018",
+      "genres": [
+        "奇幻",
+        "萌系",
+        "漫画改"
+      ],
+      "cover": "/assets/anime/covers/bili_25619.webp",
+      "link": "https://www.bilibili.com/bangumi/play/ss25619",
+      "description": "天野灯在意外的事情中被名为索菲·特瓦伊莱特的吸血鬼女孩所救，于是她对索菲一见钟情。 灯来到了索菲的家中，开始了半强行同居。 索菲虽然是吸血鬼，但她并不会袭击人类，她会在网上购买血液和感兴趣的动画商品，...",
+      "studio": "日本",
+      "identity": {
+        "provider": "bilibili",
+        "sourceId": "139632",
+        "seasonId": "25619"
+      }
+    },
+    {
+      "title": "NEW GAME! OVA",
+      "status": "completed",
+      "rating": 9.6,
+      "year": "2017",
+      "genres": [
+        "职场"
+      ],
+      "cover": "/assets/anime/covers/bili_6158.webp",
+      "link": "https://www.bilibili.com/bangumi/play/ss6158",
+      "description": "高中毕业后，进入了曾制作自己自幼便入迷的游戏的制作公司“Eagle Jump”的青叶，在那里与担任这款游戏角色设计师的八神光相遇了。 开始在憧憬的人手下工作的青叶，虽然对于第一次的工作感到困惑，但在以...",
+      "studio": "日本",
+      "identity": {
+        "provider": "bilibili",
+        "sourceId": "6158",
+        "seasonId": "6158"
+      }
+    },
+    {
+      "title": "NEW GAME!!",
+      "status": "completed",
+      "rating": 9.6,
+      "year": "2017",
+      "genres": [
+        "漫画改",
+        "职场"
+      ],
+      "cover": "/assets/anime/covers/bili_6330.webp",
+      "link": "https://www.bilibili.com/bangumi/play/ss6330",
+      "description": "——有想要实现的梦想！ 高中毕业后，进入游戏制作公司“Eagle Jump”的凉风青叶，开始参与她自幼热衷的游戏《妖精物语》系列的最新作《妖精物语3》的制作。 与使自己立志成为角色设计师的契机——八神...",
+      "studio": "日本",
+      "identity": {
+        "provider": "bilibili",
+        "sourceId": "6330",
+        "seasonId": "6330"
+      }
+    },
+    {
+      "title": "斯特拉的魔法 OVA",
+      "status": "completed",
+      "rating": 9.6,
+      "year": "2017",
+      "genres": [
+        "日常",
+        "校园"
+      ],
+      "cover": "/assets/anime/covers/bili_6049.webp",
+      "link": "https://www.bilibili.com/bangumi/play/ss6049",
+      "description": "高中开学典礼当天与制作同人游戏的社团“SNS部”相遇的本田珠辉。 她觉得自己找到了想要做的事情而入部，但不论是绘图、编程、剧本还是音乐，全部都要从零开始由自己这些人来完成，实在是不得了！ 与学姐和幼时...",
+      "studio": "日本",
+      "identity": {
+        "provider": "bilibili",
+        "sourceId": "6049",
+        "seasonId": "6049"
+      }
+    },
+    {
+      "title": "Anne Happy",
+      "status": "completed",
+      "rating": 9.7,
+      "year": "2016",
+      "genres": [
+        "日常",
+        "萌系",
+        "校园"
+      ],
+      "cover": "/assets/anime/covers/bili_3498.webp",
+      "link": "https://www.bilibili.com/bangumi/play/ss3498",
+      "description": "《Anne-Happy》是作者琴慈在《漫画时光Kirara Forward》上连载的漫画作品。是一部讲述以聚集了全是不幸学生的天之御船学园1年7班为舞台的喜剧。动画监督由出任过《魔法少女伊莉雅》等作品...",
+      "studio": "日本",
+      "identity": {
+        "provider": "bilibili",
+        "sourceId": "3498",
+        "seasonId": "3498"
+      }
+    },
+    {
+      "title": "NEW GAME!",
+      "status": "completed",
+      "rating": 9.7,
+      "year": "2016",
+      "genres": [
+        "日常",
+        "萌系"
+      ],
+      "cover": "/assets/anime/covers/bili_5027.webp",
+      "link": "https://www.bilibili.com/bangumi/play/ss5027",
+      "description": "高中毕业后，进入了曾制作自己自幼便入迷的游戏的制作公司“Eagle Jump”的青叶，在那里与担任这款游戏角色设计师的八神光相遇了。 开始在憧憬的人手下工作的青叶，虽然对于第一次的工作感到困惑，但在以...",
+      "studio": "日本",
+      "identity": {
+        "provider": "bilibili",
+        "sourceId": "5027",
+        "seasonId": "5027"
+      }
+    },
+    {
+      "title": "房东青春期！",
+      "status": "completed",
+      "rating": 9.5,
+      "year": "2016",
+      "genres": [
+        "日常",
+        "萌系"
+      ],
+      "cover": "/assets/anime/covers/bili_3116.webp",
+      "link": "https://www.bilibili.com/bangumi/play/ss3116",
+      "description": "在这个春天走入社会的前田先生在10平方米的小屋子里开始了一个人的生活，然而这所公寓的房东是名——...",
+      "studio": "日本",
+      "identity": {
+        "provider": "bilibili",
+        "sourceId": "3116",
+        "seasonId": "3116"
+      }
+    },
+    {
+      "title": "斯特拉的魔法",
+      "status": "completed",
+      "rating": 9.4,
+      "year": "2016",
+      "genres": [
+        "萌系",
+        "校园",
+        "社团"
+      ],
+      "cover": "/assets/anime/covers/bili_5540.webp",
+      "link": "https://www.bilibili.com/bangumi/play/ss5540",
+      "description": "高中开学典礼当天与制作同人游戏的社团“SNS部”相遇的本田珠辉。 她觉得自己找到了想要做的事情而入部，但不论是绘图、编程、剧本还是音乐，全部都要从零开始由自己这些人来完成，实在是不得了！ 与学姐和幼时...",
+      "studio": "日本",
+      "identity": {
+        "provider": "bilibili",
+        "sourceId": "5540",
+        "seasonId": "5540"
+      }
+    },
+    {
+      "title": "黄金拼图 Pretty Days",
+      "status": "completed",
+      "rating": 9.7,
+      "year": "2016",
+      "genres": [
+        "日常",
+        "治愈",
+        "萌系"
+      ],
+      "cover": "/assets/anime/covers/bili_6205.webp",
+      "link": "https://www.bilibili.com/bangumi/play/ss6205?theme=movie",
+      "description": "来自英国的转学生，爱丽丝·卡塔雷特！现在正在好朋友大宫忍的家中寄宿。爱丽丝与忍、凸凹组合小路绫与猪熊阳子、追着爱丽丝过来的另一位英国留学生九条可怜，亲密五人组迎来了高中二年级的秋天！ 爱丽丝与忍，两人...",
+      "studio": "日本",
+      "identity": {
+        "provider": "bilibili",
+        "sourceId": "8692",
+        "seasonId": "6205"
+      }
+    },
+    {
+      "title": "HELLO!! 黄金拼图",
+      "status": "completed",
+      "rating": 9.8,
+      "year": "2015",
+      "genres": [
+        "日常",
+        "治愈",
+        "校园"
+      ],
+      "cover": "/assets/anime/covers/bili_3491.webp",
+      "link": "https://www.bilibili.com/bangumi/play/ss3491",
+      "description": "【本片翻译由华盟字幕社提供】爱丽丝来到日本已经过了一年，但当她们升入二年级时，忍却被分到了别的班级，爱丽丝因此深受打击。得知爱丽丝心情的忍安慰她“和爱丽丝从海外远道而来相比，这种事不算什么啦！”爱丽丝...",
+      "studio": "日本",
+      "identity": {
+        "provider": "bilibili",
+        "sourceId": "3491",
+        "seasonId": "3491"
+      }
+    },
+    {
+      "title": "若叶女孩",
+      "status": "completed",
+      "rating": 9.7,
+      "year": "2015",
+      "genres": [
+        "日常",
+        "治愈",
+        "萌系",
+        "校园",
+        "萝莉"
+      ],
+      "cover": "/assets/anime/covers/bili_2590.webp",
+      "link": "https://www.bilibili.com/bangumi/play/ss2590",
+      "description": "外貌秀丽却很憧憬“GAL”的若叶，天真无邪的童话少女萌子，奔放而又总是一时兴起的真鱼，以及原本是运动少女、现在却爱好BL的直。这是一部描绘个性洋溢的少女们日常的故事。...",
+      "studio": "日本",
+      "identity": {
+        "provider": "bilibili",
+        "sourceId": "2590",
+        "seasonId": "2590"
+      }
+    },
+    {
+      "title": "请问您今天要来点兔子吗？？",
+      "status": "completed",
+      "rating": 9.8,
+      "year": "2015",
+      "genres": [
+        "日常",
+        "萌系",
+        "美食",
+        "萝莉"
+      ],
+      "cover": "/assets/anime/covers/bili_2762.webp",
+      "link": "https://www.bilibili.com/bangumi/play/ss2762",
+      "description": "作品的舞台是一家咖啡店，在这家店中，以天真烂漫的少女·心爱为中心，讲述了角色们愉快的日常生活。在作品当中登场的妹子们包括酷酷的智乃、有着军人气质的理世、充满和风的千夜、看起来是大小姐实际却非常贫穷的纱...",
+      "studio": "日本",
+      "identity": {
+        "provider": "bilibili",
+        "sourceId": "2762",
+        "seasonId": "2762"
+      }
+    },
+    {
+      "title": "前进吧！登山少女 第二季",
+      "status": "completed",
+      "rating": 9.8,
+      "year": "2014",
+      "genres": [
+        "日常",
+        "治愈",
+        "萌系"
+      ],
+      "cover": "/assets/anime/covers/bili_4115.webp",
+      "link": "https://www.bilibili.com/bangumi/play/ss4115",
+      "description": "故事承接第一季剧情，葵在重遇喜欢户外活动的青梅竹马朋友日向后，再次进行登山活动，实现了再一次看到小时候看过的山顶日出这样想法，并且与枫和心夏成为了好朋友。 而接下来，葵她们将不断的挑战着自己，决定登上...",
+      "studio": "日本",
+      "identity": {
+        "provider": "bilibili",
+        "sourceId": "102352",
+        "seasonId": "4115"
+      }
+    },
+    {
+      "title": "请问您今天要来点兔子吗？",
+      "status": "completed",
+      "rating": 9.7,
+      "year": "2014",
+      "genres": [
+        "日常",
+        "治愈",
+        "萌系",
+        "美食",
+        "萝莉"
+      ],
+      "cover": "/assets/anime/covers/bili_191.webp",
+      "link": "https://www.bilibili.com/bangumi/play/ss191",
+      "description": "【本片翻译由澄空学园x华盟字幕社联合提供】为了上学方便，刚入学的高中新生心爱准备搬来这条由石板路、木制房组成的街道。她在寻找寄宿的地点时迷路了，无意中来到了一家名为“rabbit house”的咖啡店...",
+      "studio": "日本",
+      "identity": {
+        "provider": "bilibili",
+        "sourceId": "191",
+        "seasonId": "191"
+      }
+    },
+    {
+      "title": "前进吧！登山少女",
+      "status": "completed",
+      "rating": 9.7,
+      "year": "2013",
+      "genres": [
+        "日常",
+        "泡面",
+        "萌系"
+      ],
+      "cover": "/assets/anime/covers/bili_4145.webp",
+      "link": "https://www.bilibili.com/bangumi/play/ss4145",
+      "description": "作品以女子高中生登山为主题，讲述了以喜好室内活动并且有恐高症的主人公雪村葵与有着户外活动意向的青梅竹马日向的再会作为契机，两人为了能再次看到年幼时看过的山顶日出而登山的故事。...",
+      "studio": "日本",
+      "identity": {
+        "provider": "bilibili",
+        "sourceId": "134672",
+        "seasonId": "4145"
+      }
+    },
+    {
+      "title": "魔法少女小圆 剧场版 [新篇] 叛逆的物语",
+      "status": "completed",
+      "rating": 9.9,
+      "year": "2013",
+      "genres": [
+        "奇幻",
+        "战斗",
+        "魔法",
+        "原创"
+      ],
+      "cover": "/assets/anime/covers/bili_27063.webp",
+      "link": "https://www.bilibili.com/bangumi/play/ss27063?theme=movie",
+      "description": "鹿目圆，本来是一位拥有幸福日常生活的平凡人，直至为了解放残酷命运连锁的那天，她赌上身心去改变世界法则，拯救一众魔法少女。因为极度思念而奇迹般保着相关记忆的少女，晓美焰，在重组后的世界继续战斗，并一直盼...",
+      "studio": "日本",
+      "identity": {
+        "provider": "bilibili",
+        "sourceId": "28220105",
+        "seasonId": "27063"
+      }
+    },
+    {
+      "title": "黄金拼图",
+      "status": "completed",
+      "rating": 9.7,
+      "year": "2013",
+      "genres": [
+        "日常",
+        "治愈",
+        "萌系"
+      ],
+      "cover": "/assets/anime/covers/bili_443.webp",
+      "link": "https://www.bilibili.com/bangumi/play/ss443",
+      "description": "大宫忍初中时曾经在英国的寄宿家庭中短暂居住，升上高中后某日，收到了一封外国信件。信件寄件者是当时忍在英国认识的少女爱丽丝，信中表示这次换她要来日本留学。爱丽丝与忍、同班同学绫与阳子、再加上另一名来自英...",
+      "studio": "日本",
+      "identity": {
+        "provider": "bilibili",
+        "sourceId": "443",
+        "seasonId": "443"
+      }
+    },
+    {
+      "title": "熊出没",
+      "status": "completed",
+      "rating": 9.7,
+      "year": "2012",
+      "genres": [],
+      "cover": "/assets/anime/covers/bili_47144.webp",
+      "link": "https://www.bilibili.com/bangumi/play/ss47144",
+      "description": "宁静祥和的东北原始森林，空气清新，万物复苏。熊大和熊二两兄弟在林间追逐奔跑，非常快乐。正在此时，发动机的轰鸣打破了森林的宁静，来者是一个伐木队的小老板，他叫光头强。光头强带着老板的重托，竟来到风景优美...",
+      "studio": "中国大陆",
+      "identity": {
+        "provider": "bilibili",
+        "sourceId": "21185045",
+        "seasonId": "47144"
+      }
+    },
+    {
+      "title": "轻音少女 剧场版",
+      "status": "completed",
+      "rating": 9.9,
+      "year": "2011",
+      "genres": [
+        "日常",
+        "音乐",
+        "萌系",
+        "校园"
+      ],
+      "cover": "/assets/anime/covers/bili_1175.webp",
+      "link": "https://www.bilibili.com/bangumi/play/ss1175?theme=movie",
+      "description": "【本片翻译由华盟字幕社提供】本片以伦敦的毕业旅行作为主题。临近毕业的主人公平泽唯与轻音乐部3年级的3人、2年级的1人，当听到教室的同级生关于毕业旅行的计划时，决定也要选择一个地方进行一次毕业旅行。于是...",
+      "studio": "日本",
+      "identity": {
+        "provider": "bilibili",
+        "sourceId": "28220988",
+        "seasonId": "1175"
+      }
+    },
+    {
+      "title": "魔法少女小圆",
+      "status": "completed",
+      "rating": 9.8,
+      "year": "2011",
+      "genres": [
+        "奇幻",
+        "魔法",
+        "原创",
+        "穿越"
+      ],
+      "cover": "/assets/anime/covers/bili_2539.webp",
+      "link": "https://www.bilibili.com/bangumi/play/ss2539",
+      "description": "就读初中二年级的鹿目圆，过着平凡幸福的生活。神秘转学生晓美焰的出现，开始让小圆的命运有了巨大转变。某日一只名为丘比的神秘生物，希望小圆能够与它签订魔法契约，成为“魔法少女”以对抗邪恶的魔女保护世界。正...",
+      "studio": "日本",
+      "identity": {
+        "provider": "bilibili",
+        "sourceId": "2539",
+        "seasonId": "2539"
+      }
+    },
+    {
+      "title": "轻音少女 第二季",
+      "status": "completed",
+      "rating": 9.9,
+      "year": "2010",
+      "genres": [
+        "日常",
+        "音乐",
+        "萌系",
+        "校园",
+        "漫画改"
+      ],
+      "cover": "/assets/anime/covers/bili_1173.webp",
+      "link": "https://www.bilibili.com/bangumi/play/ss1173",
+      "description": "【本片翻译由华盟字幕社提供】故事紧接第一季动画剧情展开，讲述的是平泽唯等四人从升入高三到毕业这一年间和高二部员中野梓的日常温馨生活。...",
+      "studio": "日本",
+      "identity": {
+        "provider": "bilibili",
+        "sourceId": "28220984",
+        "seasonId": "1173"
+      }
+    },
+    {
+      "title": "轻音少女 第一季",
+      "status": "completed",
+      "rating": 9.9,
+      "year": "2009",
+      "genres": [
+        "日常",
+        "音乐",
+        "校园",
+        "漫画改"
+      ],
+      "cover": "/assets/anime/covers/bili_1172.webp",
+      "link": "https://www.bilibili.com/bangumi/play/ss1172",
+      "description": "【本片翻译由华盟字幕社提供】新学年开始，高中一年级新生平泽唯在误将“轻音乐”当做了“轻便、简易的音乐”，而由于自己小时候玩响板得到老师表扬，于是萌发申请入部的想法。 另一方面，樱丘高中“轻音部”因原来...",
+      "studio": "日本",
+      "identity": {
+        "provider": "bilibili",
+        "sourceId": "28220978",
+        "seasonId": "1172"
+      }
+    },
+    {
+      "title": "幸运星",
+      "status": "completed",
+      "rating": 9.9,
+      "year": "2007",
+      "genres": [
+        "日常",
+        "治愈",
+        "搞笑",
+        "萌系"
+      ],
+      "cover": "/assets/anime/covers/bili_1293.webp",
+      "link": "https://www.bilibili.com/bangumi/play/ss1293",
+      "description": "本片讲述的是一群喜爱动漫的高中女生们的日常生活。其中主角泉此方更是为了喜欢的东西会不惜一切的女孩子，整天出入OTAKU们的的圣地秋叶原、到女仆沏茶店打工、天天都有COSPLAY。这样一名标准的AKIB...",
+      "studio": "日本",
+      "identity": {
+        "provider": "bilibili",
+        "sourceId": "1293",
+        "seasonId": "1293"
+      }
+    },
+    {
+      "title": "RPG不动产",
+      "status": "watching",
+      "rating": 8.6,
+      "year": "2022",
+      "genres": [
+        "日常",
+        "治愈",
+        "奇幻",
+        "萌系",
+        "漫画改",
+        "职场"
+      ],
+      "cover": "/assets/anime/covers/bili_41558.webp",
+      "link": "https://www.bilibili.com/bangumi/play/ss41558",
+      "description": "自魔王被击败，世界恢复和平后，已经过去了15年。 风色琴音为了寻找新居，来到“RPG不动产”，但其实那里正是琴音的工作单位！ 她的同事有活泼而调皮的珐珐，对工作要求很高的修士露芙利尔，虽然外表可爱但实...",
+      "studio": "日本",
+      "identity": {
+        "provider": "bilibili",
+        "sourceId": "28237267",
+        "seasonId": "41558"
+      }
+    },
+    {
+      "title": "BanG Dream! 少女乐团派对！☆PICO～大份～",
+      "status": "watching",
+      "rating": 9.8,
+      "year": "2020",
+      "genres": [
+        "音乐",
+        "萌系",
+        "校园",
+        "原创"
+      ],
+      "cover": "/assets/anime/covers/bili_33176.webp",
+      "link": "https://www.bilibili.com/bangumi/play/ss33176",
+      "description": "在少女乐队们之间，不为人熟知的那个圣地——livehouse「CiRCLE」之上，变成萌萌三头身的少女乐队们，再度集结！ 「Poppin'Party」「Afterglow」「Pastel＊Palett...",
+      "studio": "日本",
+      "identity": {
+        "provider": "bilibili",
+        "sourceId": "28228566",
+        "seasonId": "33176"
+      }
+    },
+    {
+      "title": "BanG Dream! 梦想协奏曲 第三季",
+      "status": "watching",
+      "rating": 9.8,
+      "year": "2020",
+      "genres": [
+        "音乐",
+        "校园",
+        "原创"
+      ],
+      "cover": "/assets/anime/covers/bili_29308.webp",
+      "link": "https://www.bilibili.com/bangumi/play/ss29308",
+      "description": "少女香澄一直寻找着幼年时在欣赏星空时所感受到的那股星之鼓动……直至高中入学后不久，香澄在古物商仓库中偶然看见了一把星型吉他、她心中那股封闭已久的情感就此流露而出。以此为契机、香澄与4位同样在寻找光辉之...",
+      "studio": "日本",
+      "identity": {
+        "provider": "bilibili",
+        "sourceId": "28224078",
+        "seasonId": "29308"
+      }
+    },
+    {
+      "title": "熊熊勇闯异世界",
+      "status": "watching",
+      "rating": 8.5,
+      "year": "2020",
+      "genres": [
+        "萌系",
+        "小说改",
+        "魔法",
+        "穿越",
+        "冒险"
+      ],
+      "cover": "/assets/anime/covers/bili_34410.webp",
+      "link": "https://www.bilibili.com/bangumi/play/ss34410",
+      "description": "悠闲地享受着家里蹲生活的美少女优奈，沉迷于VRMMORPG游戏『幻想世界ONLINE』。 某一天和平常一般登录后，却似乎有什么地方不太一样。 难道说……这里是游戏的里面？还是说是在异世界？ 然后，降临...",
+      "studio": "日本",
+      "identity": {
+        "provider": "bilibili",
+        "sourceId": "28229879",
+        "seasonId": "34410"
+      }
+    },
+    {
+      "title": "天使降临到我身边",
+      "status": "watching",
+      "rating": 9.8,
+      "year": "2019",
+      "genres": [
+        "日常",
+        "治愈",
+        "搞笑",
+        "萌系",
+        "漫画改"
+      ],
+      "cover": "/assets/anime/covers/bili_26291.webp",
+      "link": "https://www.bilibili.com/bangumi/play/ss26291",
+      "description": "怕生的御宅族女大学生宫子，遇到了天使般的小学生！？在看到妹妹带来的新朋友小花的瞬间，宫子就无法抑制住心跳！！她为了和小花成为朋友而奋斗，但……“想要和超绝可爱的她做朋友”系小品喜剧，开幕！...",
+      "studio": "日本",
+      "identity": {
+        "provider": "bilibili",
+        "sourceId": "4316442",
+        "seasonId": "26291"
+      }
+    },
+    {
+      "title": "BanG Dream! 少女乐团派对☆PICO",
+      "status": "watching",
+      "rating": 9.8,
+      "year": "2018",
+      "genres": [
+        "少女",
+        "泡面",
+        "音乐",
+        "萌系",
+        "游戏改"
+      ],
+      "cover": "/assets/anime/covers/bili_24569.webp",
+      "link": "https://www.bilibili.com/bangumi/play/ss24569",
+      "description": "Girls Band的秘密圣地、Live House「CIRCLE」，迷你偶像少女们将大显身手，带来有笑有泪还暖心(?)的少女偶像乐团喜剧！ 期待的超新星「Poppin'Party」、于顶点孤高绽放的...",
+      "studio": "日本",
+      "identity": {
+        "provider": "bilibili",
+        "sourceId": "135252",
+        "seasonId": "24569"
+      }
+    },
+    {
+      "title": "后街女孩",
+      "status": "watching",
+      "rating": 9.5,
+      "year": "2018",
+      "genres": [
+        "搞笑",
+        "漫画改"
+      ],
+      "cover": "/assets/anime/covers/bili_24567.webp",
+      "link": "https://www.bilibili.com/bangumi/play/ss24567",
+      "description": "山本健太郎、立花亮与杉原和哉这三个黑道组织的流氓，因为犯了错，而被组织的老大下令转性变成女性偶像歌手替老板赚钱。原先三人想拒绝，但却因为不想死而接受了这个条件。但没想到他们成为偶像歌手之后，居然真的走...",
+      "studio": "日本",
+      "identity": {
+        "provider": "bilibili",
+        "sourceId": "102512",
+        "seasonId": "24567"
+      }
+    },
+    {
+      "title": "BanG Dream!",
+      "status": "watching",
+      "rating": 9.4,
+      "year": "2017",
+      "genres": [
+        "日常",
+        "音乐",
+        "校园",
+        "社团",
+        "励志"
+      ],
+      "cover": "/assets/anime/covers/bili_5807.webp",
+      "link": "https://www.bilibili.com/bangumi/play/ss5807",
+      "description": "如同幼时仰望星空之际听到的“星之鼓动”一般，一直寻找着闪耀而令人心动的事物的香澄。 她在高中入学不久后的某一天，对在老旧当铺找到的“星型吉他” 第一次有了心动的感觉，一直以来封闭的感情开始迸发。 和她...",
+      "studio": "日本",
+      "identity": {
+        "provider": "bilibili",
+        "sourceId": "5807",
+        "seasonId": "5807"
+      }
+    },
+    {
+      "title": "属性咖啡厅",
+      "status": "watching",
+      "rating": 9.6,
+      "year": "2017",
+      "genres": [
+        "少女",
+        "日常",
+        "萌系",
+        "漫画改"
+      ],
+      "cover": "/assets/anime/covers/bili_6432.webp",
+      "link": "https://www.bilibili.com/bangumi/play/ss6432",
+      "description": "以一家咖啡厅为舞台，讲述着店员之间的交流，新人店员苺香来到了有着等各种性格特异员工的咖啡厅，在这充满特色的咖啡厅中，欢乐的打工生活由此展开！...",
+      "studio": "日本",
+      "identity": {
+        "provider": "bilibili",
+        "sourceId": "6432",
+        "seasonId": "6432"
+      }
+    },
+    {
+      "title": "学园孤岛",
+      "status": "watching",
+      "rating": 9.6,
+      "year": "2015",
+      "genres": [
+        "日常",
+        "萌系",
+        "校园",
+        "冒险"
+      ],
+      "cover": "/assets/anime/covers/bili_2592.webp",
+      "link": "https://www.bilibili.com/bangumi/play/ss2592",
+      "description": "巡之丘学园生活社成员的丈枪由纪，将与顾问老师佐仓惠、社长若狭悠里及随身带著圆锹的恵飞须泽胡桃一起度过乍看之下快乐无比的校园生活。但事实上学校早已被一群僵尸所包围，但由纪却犹如失忆般的活在正常生活的幻想...",
+      "studio": "日本",
+      "identity": {
+        "provider": "bilibili",
+        "sourceId": "2592",
+        "seasonId": "2592"
+      }
+    },
+    {
+      "title": "十万个冷笑话 第二季",
+      "status": "watching",
+      "rating": 9.2,
+      "year": "2013",
+      "genres": [],
+      "cover": "/assets/anime/covers/bili_661.webp",
+      "link": "https://www.bilibili.com/bangumi/play/ss661",
+      "description": "《十万个冷笑话》是根据漫画家寒舞的作品改编的动画，由卢恒宇，李姝洁导演。 该动画由一系列吐槽短篇组成，短篇之间目前看似没关系，但关系又非常微妙，语言也十分符合网民需求，被誉为“中国版的日和”。目前已连...",
+      "studio": "中国大陆",
+      "identity": {
+        "provider": "bilibili",
+        "sourceId": "28221499",
+        "seasonId": "661"
+      }
+    },
+    {
+      "title": "男子高中生的日常",
+      "status": "watching",
+      "rating": 9.8,
+      "year": "2012",
+      "genres": [
+        "日常",
+        "搞笑",
+        "校园",
+        "漫画改"
+      ],
+      "cover": "/assets/anime/covers/bili_2680.webp",
+      "link": "https://www.bilibili.com/bangumi/play/ss2680",
+      "description": "在一个普通的城市里，一班普通的男子高中生过著普通的日常生活。想像机动战士和冒险故事，放学后交女朋友的方法，对女生的裙子充满幻想，在家讲恐怖鬼故事，与女生同行被误会，以及遇上文学少女的小插曲，这一切都是...",
+      "studio": "日本",
+      "identity": {
+        "provider": "bilibili",
+        "sourceId": "2680",
+        "seasonId": "2680"
+      }
+    },
+    {
+      "title": "那年那兔那些事儿 第七季",
+      "status": "planned",
+      "rating": 9.3,
+      "year": "2025",
+      "genres": [
+        "漫画改",
+        "萌系",
+        "泡面",
+        "历史"
+      ],
+      "cover": "/assets/anime/covers/bili_80930.webp",
+      "link": "https://www.bilibili.com/bangumi/play/ss80930",
+      "description": "本季（第七季）以志愿军兔退伍老兵和后代的视角，讲述种花家制造业从无到有，从落后到追赶，最终形成完备的自有体系的故事。...",
+      "studio": "中国大陆",
+      "identity": {
+        "provider": "bilibili",
+        "sourceId": "24491383",
+        "seasonId": "80930"
+      }
+    },
+    {
+      "title": "魔法少女与邪恶曾经敌对。",
+      "status": "planned",
+      "rating": 9.8,
+      "year": "2024",
+      "genres": [
+        "奇幻",
+        "恋爱",
+        "漫画改"
+      ],
+      "cover": "/assets/anime/covers/bili_48032.webp",
+      "link": "https://www.bilibili.com/bangumi/play/ss48032",
+      "description": "邪恶组织――侵略一切，毁灭一切。  这个残忍而狡猾的组织，其智囊正是王的心腹，邪恶参谋。  面对地面遭受侵略的危机，奋起迎战的是不幸的魔法少女・白夜。  与她对峙的邪恶参谋・米拉竟对她一见钟情……  ...",
+      "studio": "日本",
+      "identity": {
+        "provider": "bilibili",
+        "sourceId": "21827779",
+        "seasonId": "48032"
+      }
+    },
+    {
+      "title": "雪王驾到",
+      "status": "planned",
+      "rating": 9.9,
+      "year": "2023",
+      "genres": [
+        "原创",
+        "少儿"
+      ],
+      "cover": "/assets/anime/covers/bili_45831.webp",
+      "link": "https://www.bilibili.com/bangumi/play/ss45831",
+      "description": "雪王来到猎猎谷寻找被偷走的冰淇淋权杖，机缘巧合救下了以赚钱振兴饭店为梦想的赏金猎人兔老板，两人带着各自的目标开启了冒险旅程……...",
+      "identity": {
+        "provider": "bilibili",
+        "sourceId": "20338286",
+        "seasonId": "45831"
+      }
+    },
+    {
+      "title": "剧偶像",
+      "status": "planned",
+      "rating": 8.3,
+      "year": "2021",
+      "genres": [
+        "少女",
+        "原创",
+        "架空"
+      ],
+      "cover": "/assets/anime/covers/bili_36289.webp",
+      "link": "https://www.bilibili.com/bangumi/play/ss36289",
+      "description": "神秘灾害·世界同时都市消失的5年后， 世界虽然仍处于混乱当中，但也逐渐开始走向复兴。 在这样的世界中， 使用了应用3D全息技术的「戏剧幻真系统」的演剧， 吸引了一群以光彩夺目的舞台为目标的少女们。 ...",
+      "studio": "日本",
+      "identity": {
+        "provider": "bilibili",
+        "sourceId": "28231932",
+        "seasonId": "36289"
+      }
+    },
+    {
+      "title": "此花亭奇谭",
+      "status": "planned",
+      "rating": 9.8,
+      "year": "2017",
+      "genres": [
+        "日常",
+        "治愈",
+        "奇幻",
+        "萌系",
+        "漫画改",
+        "架空"
+      ],
+      "cover": "/assets/anime/covers/bili_6425.webp",
+      "link": "https://www.bilibili.com/bangumi/play/ss6425",
+      "description": "侍奉神明的狐娘们工作的温泉旅馆“此花亭”。“此花绮谭”便是来此花葶服务的新人服务员柚，和围绕着柚的伙伴们的暖人心怀的故事。 服务员们想法只有一个。“不论真实身份是什么，不论是何等样人，客人就是神。”当...",
+      "studio": "日本",
+      "identity": {
+        "provider": "bilibili",
+        "sourceId": "6425",
+        "seasonId": "6425"
+      }
+    },
+    {
+      "title": "雏子的笔记",
+      "status": "planned",
+      "rating": 9.5,
+      "year": "2017",
+      "genres": [
+        "日常",
+        "萌系",
+        "漫画改"
+      ],
+      "cover": "/assets/anime/covers/bili_5993.webp",
+      "link": "https://www.bilibili.com/bangumi/play/ss5993",
+      "description": "不擅长和人交流却受到动物喜爱，因此在乡村担任“稻草人”这一工作的主人公高中生·雏子，与充满个性的角色们一同挑战演剧的演剧喜剧。...",
+      "studio": "日本",
+      "identity": {
+        "provider": "bilibili",
+        "sourceId": "5993",
+        "seasonId": "5993"
+      }
+    },
+    {
+      "title": "浦和小调",
+      "status": "planned",
+      "rating": 9.1,
+      "year": "2015",
+      "genres": [
+        "日常",
+        "治愈"
+      ],
+      "cover": "/assets/anime/covers/bili_1597.webp",
+      "link": "https://www.bilibili.com/bangumi/play/ss1597",
+      "description": "【本片翻译由澄空学园字幕组提供】《浦和小调》（浦和の调ちゃん）是日本埼玉电视台制作的一部描绘浦和地区的当地动画，于2015年4月开始播出。标题中的“调”读作“うさぎ”（日语兔子之意），取自埼玉县埼玉市...",
+      "studio": "日本",
+      "identity": {
+        "provider": "bilibili",
+        "sourceId": "1597",
+        "seasonId": "1597"
+      }
+    },
+    {
+      "title": "某科学的超电磁炮",
+      "status": "planned",
+      "rating": 9.7,
+      "year": "2009",
+      "genres": [
+        "奇幻",
+        "校园",
+        "战斗",
+        "漫画改"
+      ],
+      "cover": "/assets/anime/covers/bili_425.webp",
+      "link": "https://www.bilibili.com/bangumi/play/ss425",
+      "description": "故事发生在面积占据东京都的三分之一，居住着230万名人口且其中八成人口是学生的巨大都市“学园都市”。学园都市的所有学生均会接受超能力开发，借由药物、催眠术与通电刺激等方式取得超能力。能力者以范围和威力...",
+      "studio": "日本",
+      "identity": {
+        "provider": "bilibili",
+        "sourceId": "425",
+        "seasonId": "425"
+      }
+    }
+  ]
 }

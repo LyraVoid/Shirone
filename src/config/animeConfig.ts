@@ -47,8 +47,8 @@ export const animeConfig: AnimeConfig = withUserConfig("anime", {
 	/** 主数据源选择 */
 	source: {
 		kind: "snapshot",
-		//provider: "bangumi",
-		file: "bangumi.json",
+		provider: "bangumi",
+		//file: "bangumi.json",
 		// fetchOnDev: true,
 	},
 
@@ -63,6 +63,10 @@ export const animeConfig: AnimeConfig = withUserConfig("anime", {
 		bangumi: {
 			enable: true,
 			userId: "1179529", // 填入你的 Bangumi 数字 UID 或公开用户名（测试可填 "sai"）
+			cover: {
+				mode: "local", // "local" 站内下载缓存（推荐）| "remote" 远程链接 | "none"
+				useWebp: true,
+			},
 			request: {
 				pageSize: 50,
 				maxItems: 300,
