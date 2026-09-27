@@ -70,6 +70,15 @@ async function fetchDevLiveSnapshot(
 
 		const sorted = sortAnimeList(items);
 
+		if (sorted.length === 0) {
+			// 空抓取结果不落盘：dev 场景只在快照文件缺失时走到这里，若把空结果写成文件，
+			// 后续启动会因「文件已存在」永远跳过实时拉取，空基线将一直生效。
+			console.warn(
+				"[anime-dev] ⚠ Live fetch returned 0 items; snapshot file not written.",
+			);
+			return null;
+		}
+
 		// 异步更新本地快照文件
 		const filename = options.source.file || `${provider}.json`;
 		const dir = isAbsolute(options.snapshot.directory)

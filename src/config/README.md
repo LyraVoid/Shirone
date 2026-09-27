@@ -19,7 +19,12 @@
 3. **循环依赖规避**：`i18n/translation.ts` 依赖 `siteConfig`，而 `navBarConfig` 等又消费
    i18n——该类反向依赖模块只允许从具体文件导入（如 `@/config/siteConfig`），
    **禁止走 barrel**，否则形成 `index → navBar → translation → index` 环。
-4. `astro.config.mjs` 在 Astro 配置层运行，用相对路径 `./src/config/<file>.ts` 导入。
+4. `astro.config.mjs` 只做接线（`integrations: [shirones()]`），不直接读任何
+   `src/config/` 文件；配置的最终装载入口是 `src/integration/index.ts`。
+5. **`integrationsConfig.ts` 是上述规则的例外**：它被 `src/integration/index.ts`
+   按相对路径导入，且**禁止走 barrel**。原因见该文件头部注释——barrel 不会
+   拷进用户项目，而包模式必须在构建期把它静态打进 bundle。它的 `import type`
+   全部在编译期擦除，不产生运行时依赖。
 
 ## 配置（Behavior）与数据（Content）分层原则
 
@@ -75,6 +80,11 @@ export const siteConfig: SiteConfig = withUserConfig("site", {
 并调用 `i18n()`，深合并只会得到一堆未解析的引用，因此它由 `resolveNavBarLinks()`
 把内容仓的声明式条目还原成 `NavBarLink`。
 
+`config/nav-bar.yaml` 是**整体替换**，不会跟着各功能的 `enable` 走，因此
+`navBarConfig` 在任何来源的条目汇合后都会过一遍 `pruneUnavailableNavLinks()`
+（`src/utils/nav-utils.ts`）：指向已关闭功能页面的入口被裁掉，空掉的下拉分组一并隐藏。
+判定按站内路由（去尾斜杠、忽略查询串与哈希），站外链接与锚点不受影响。
+
 ### 反向导出覆盖层（`content:export --config`）
 
 覆盖层是双向的：`pnpm content:export --config` 会求「当前生效配置」与「主题默认值」的差，
@@ -115,12 +125,16 @@ export const siteConfig: SiteConfig = withUserConfig("site", {
 | `commentConfig.ts` | 评论系统：全局开关（默认关闭）、Provider 选择（Twikoo / Giscus）、视口懒加载与服务凭据配置；Giscus 基于 GitHub Discussions（需公开仓库 + 安装 giscus App + 从 giscus.app 取 repoId/categoryId），主题明暗双值跟随站点切换 |
 | `contextMenuConfig.ts` | 桌面端右键增强：可选开关（当前默认开启）；配置允许页面与操作顺序，关闭时零 DOM、零监听器、零客户端资源 |
 | `umamiConfig.ts` | Umami 统计：全局开关（默认关闭）、公开分享统计读取，以及可选的官方访问采集脚本配置；支持内容仓 `config/umami.yaml` 覆盖（领域键 `umami`） |
+| `integrationsConfig.ts` | 所有模式（源码仓 + npm 包项目）共用的集成选项，唯一装载入口是 `src/integration/index.ts`：swup / astro-icon / expressive-code / svelte / mdx 的选项、`vite.build` 共用部分、`trailingSlash` 与 `image.endpoint.route` 的配对、音乐侧栏虚拟模块 id。**本目录里唯一的例外**：不走 barrel、不经 `withUserConfig`、也不被 `loadConfigModule` 动态加载（包模式在构建期把它打进 `dist/index.js`），所以它没有用户覆盖层，用户项目里的那份拷贝是死的 |
+| `sitemapFilter.ts` | 由 `*Config.enable === false` 推导被关闭的页面清单，供 `sitemap()` 的 `filter` 排除它们。包模式通过 `loadConfigModule` 加载，用户可自行覆盖 |
 | `skillsConfig.ts` | 技能页行为控制：页面总开关、分类清单与单项禁用列表（技能内容维护在 `src/data/skills.ts`）；关闭页面时导航入口同步隐藏 |
 | `projectsConfig.ts` | 项目页行为控制：页面总开关、分类清单与单项禁用列表（项目内容维护在 `src/data/projects.ts`）；关闭页面时导航入口同步隐藏 |
 | `timelineConfig.ts` | 时间线页行为控制：页面总开关、分类清单、排序方向与单项禁用列表（时间线内容维护在 `src/data/timeline.ts`）；关闭页面时导航入口同步隐藏 |
 | `devicesConfig.ts` | 设备页行为控制：页面总开关、场景分类清单与单项禁用列表（设备清单维护在 `src/data/devices.ts`）；关闭页面时导航入口同步隐藏 |
+| `gamesConfig.ts` | 游戏页行为控制：页面总开关、游戏分类清单与单项禁用列表（游戏清单维护在 `src/data/games.ts`，封面支持 src/assets 相对路径、/public 绝对路径与远程 URL）；关闭页面时导航入口同步隐藏 |
 | `animeConfig.ts` | 番剧页与外部追番数据源：数据源选择（本地 / Bangumi 快照 / Bilibili 快照）、失败降级、提供方凭据环境配置与快照生命周期管理（本地番剧维护在 `src/data/anime.ts`） |
 | `llmsConfig.ts` | 大语言模型与 AI 友好内容系统：`/llms.txt`（索引）与 `/llms-full.txt`（全量正文汇编）静态端点生成控制、加密文章过滤、排除标签与自定义章节配置；支持内容仓 `config/llms.yaml` 覆盖（领域键 `llms`） |
+| `seriesConfig.ts` | 系列连载：`/series/` 索引与 `/series/<slug>/` 详情页总开关（默认开启）、索引页 `title`/`description`（`$t:` i18n 引用或字面量，描述留空用动态汇总）、文章内系列块位置 `cardPosition: "top" \| "bottom"`（top = 元信息区下方、正文之前；bottom = 正文之后、版权/分享/延伸阅读之前）；支持内容仓 `config/series.yaml` 覆盖（领域键 `series`）。关闭时系列页 404、导航/侧栏/sitemap 入口裁剪、文章内系列卡消失（系列实体与文章 frontmatter 见 `shirone-writing` 与内容分离文档） |
 
 非首页 Banner 的标题、说明和可选日期由各页面通过 `MainGridLayout` 提供，并在 Swup 导航后从被替换的主内容容器同步。该上下文默认显示、不设配置开关；说明为空或与标题相同时自动省略，移动端非首页仍沿用紧凑布局并隐藏 Banner。
 

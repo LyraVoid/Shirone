@@ -26,7 +26,7 @@ test.describe("分类索引页 /categories/", () => {
 		await expect(rows).toHaveCount(2);
 		const first = rows.first();
 		await expect(first.locator(".category-index__name")).toHaveText("Examples");
-		await expect(first.locator(".category-index__count")).toHaveText("5");
+		await expect(first.locator(".category-index__count")).toHaveText("9");
 		await expect(first).toHaveAttribute("href", "/archive/?category=Examples");
 		// 行内 MetaIcon 徽标（与 SiteStats 同视觉语言）
 		await expect(first.locator(".m3-meta-icon svg")).toHaveCount(1);
@@ -86,11 +86,14 @@ test.describe("标签索引页 /tags/", () => {
 			),
 		).toHaveCount(1);
 		const chips = page.locator(".tag-index__chip");
-		await expect(chips).toHaveCount(7);
-		const first = chips.first();
-		await expect(first).toContainText("Blogging");
-		await expect(first.locator(".tag-index__count")).toHaveText("4");
-		await expect(first).toHaveAttribute("href", "/archive/?tag=Blogging");
+		await expect(chips).toHaveCount(27);
+		const bloggingChip = chips.filter({ hasText: "Blogging" });
+		await expect(bloggingChip).toBeVisible();
+		await expect(bloggingChip.locator(".tag-index__count")).toHaveText("4");
+		await expect(bloggingChip).toHaveAttribute(
+			"href",
+			"/archive/?tag=Blogging",
+		);
 		await expect(page.locator("#category-bar-region")).toBeHidden();
 		await expect(
 			page.locator('widget-layout[data-id="categories"]'),

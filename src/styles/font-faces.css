@@ -5,8 +5,9 @@
     --m3e-font-mono-fallback: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
     --m3e-font-sans: var(--font-body), var(--font-cjk), var(--font-body-fallback), "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji";
     --font-sans: var(--m3e-font-sans);
+    /* Astro Fonts owns --font-mono when a custom mono role is enabled. Keep a
+       one-way alias here so the system-font fallback cannot form a cycle. */
     --m3e-font-mono-family: var(--font-mono, var(--m3e-font-mono-fallback));
-    --font-mono: var(--m3e-font-mono-family);
 }
 
 /* Code is a separate role and must never inherit the body or CJK family. */

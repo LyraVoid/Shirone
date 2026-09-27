@@ -35,7 +35,7 @@ Shirone is a blog theme built with Astro 7, Svelte 5, Tailwind 4, Stylus, and pn
 - `docs/npm-package-mode.md` — how the theme behaves when installed as the `shirones` package (config paths, content root, init).
 - `docs/packaging-contract.md` — the two-mode contract every theme change must respect; see `rules/project-rules.md` §12 for the sync checklist.
 - `docs/ai-skills-maintenance.md` — required for the skills/project documentation split and release checklist.
-- The nearest nested `AGENTS.md` — local rules are additive and narrower than this file.
+- The nearest nested `AGENTS.md` — local rules are additive and narrower than this file. The page-scope file is intentionally named `src/pages/_AGENTS.md`; the leading underscore keeps Astro from treating it as a route.
 - `.agents/skills/README.md` — task-scoped AI skills for developers and theme users; consult the matching skill (and keep its content in sync) when working in its domain.
 
 ## Validation
@@ -48,7 +48,7 @@ Shirone is a blog theme built with Astro 7, Svelte 5, Tailwind 4, Stylus, and pn
 
 ## Repository context
 
-- Sidebar configuration flows from `src/config/sidebarConfig.ts` through the `componentMap` registry in `src/components/organisms/SideBar.astro` to widget rendering. `SidebarPage` in `src/types/sidebarConfig.ts` is authoritative for page identifiers (`home`, `archive`, `friends`, `moments`, `anime`, `compass`, `albums`, `about`, `categories`, `tags`, `post`). The `pages` filter reads `data-current-page` from `#swup-container` on SSR and after Swup replacement.
+- Sidebar configuration flows from `src/config/sidebarConfig.ts` through the `componentMap` registry in `src/components/organisms/SideBar.astro` to widget rendering. `SidebarPage` in `src/types/sidebarConfig.ts` is authoritative for page identifiers (`notFound`, `home`, `archive`, `friends`, `moments`, `anime`, `compass`, `skills`, `projects`, `devices`, `games`, `timeline`, `albums`, `about`, `categories`, `tags`, `rss`, `atom`, `post`). The `pages` filter reads `data-current-page` from `#swup-container` on SSR and after Swup replacement.
 - Motion primitives live in `src/utils/motion.ts` (`fadeOutThenHide`, `flipFromRect`, `revealIn`, `collapse`); `prefersReducedMotion()` must be honored.
 - Atom inventory and count are authoritative only in `src/components/atoms/manifest.json`; do not maintain a second hard-coded count in instructions or prose.
 - Canonical page templates are under `src/layouts/`; `src/components/layout/` is not a parallel template layer.

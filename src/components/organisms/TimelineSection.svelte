@@ -17,9 +17,13 @@ import type { TimelineCategory, TimelineItem } from "@/types/timelineConfig";
 let {
 	categories = [] as TimelineCategory[],
 	items = [] as TimelineItem[],
+	title = i18n(I18nKey.timeline),
+	subtitle = i18n(I18nKey.timelineBanner),
 }: {
 	categories?: TimelineCategory[];
 	items?: TimelineItem[];
+	title?: string;
+	subtitle?: string;
 } = $props();
 
 let selectedCategory = $state("");
@@ -55,8 +59,8 @@ const filteredItems = $derived(
 	<!-- 页面大标题 -->
 	<PageHeader
 		icon="material-symbols:timeline-rounded"
-		title={i18n(I18nKey.timeline)}
-		subtitle={i18n(I18nKey.timelineBanner)}
+		{title}
+		{subtitle}
 	/>
 
 	<!-- 分类筛选器与计数条 -->

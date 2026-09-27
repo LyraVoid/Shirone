@@ -1,12 +1,19 @@
 ---
-
 import { getEntry, render } from "astro:content";
 import Card from "@components/atoms/display/Card.svelte";
 import Markdown from "@components/content/Markdown.astro";
-import I18nKey from "../i18n/i18nKey";
-import { i18n } from "../i18n/translation";
-import MainGridLayout from "../layouts/MainGridLayout.astro";
+import I18nKey from "@i18n/i18nKey";
+import MainGridLayout from "@layouts/MainGridLayout.astro";
+import { resolveI18nText } from "@utils/i18n-utils";
 import { getMarkdownStylesheetAssets } from "@utils/markdown-assets";
+import { aboutConfig } from "@/config/aboutConfig";
+
+if (!aboutConfig.enable) {
+	return Astro.redirect("/404/");
+}
+
+const pageTitle = resolveI18nText(aboutConfig.title, I18nKey.about);
+const pageDescription = resolveI18nText(aboutConfig.description, I18nKey.about);
 
 const aboutPost = await getEntry("spec", "about");
 
@@ -19,10 +26,10 @@ const markdownStylesheetAssets = await getMarkdownStylesheetAssets(
 	remarkPluginFrontmatter.markdownSyntaxes,
 );
 ---
-<MainGridLayout title={i18n(I18nKey.about)} description={i18n(I18nKey.about)} page="about">
+<MainGridLayout title={pageTitle} description={pageDescription} page="about">
     {markdownStylesheetAssets.map(({ pack, css }) => <style is:inline slot="head" data-swup-optional={pack} set:html={css}></style>)}
-    <div class="flex w-full rounded-[var(--radius-large)] overflow-hidden relative min-h-32">
-        <Card color="var(--card-bg)" radius="l" class="z-10 px-9 py-6 relative w-full">
+    <div class="flex w-full rounded-[var(--shape-corner-l)] overflow-hidden relative min-h-32">
+        <Card color="var(--card-bg)" radius="l" class="z-10 p-6 lg:p-8 relative w-full">
             <Markdown class="mt-2">
                 <Content />
             </Markdown>

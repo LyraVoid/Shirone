@@ -1,0 +1,13 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "footer configuration override",
+  "description": "Shirone footer config schema generated from @/types/footerConfig.FooterConfig",
+  "type": "object",
+  "properties": {
+    "enable": {
+      "type": "boolean",
+      "description": "是否启用自定义页脚 HTML 注入。\n开启后将读取 src/config/FooterConfig.html 中的内容注入到页脚；\n关闭时（false）满足零额外负担，不进行文件读取与额外 DOM 渲染。"
+    }
+  },
+  "additionalProperties": false
+}

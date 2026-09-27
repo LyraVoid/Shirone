@@ -25,6 +25,10 @@ class FabController {
 	private animateVisibility = false;
 	private visibilityGeneration = 0;
 	private visibilitySync: Promise<void> = Promise.resolve();
+	private readonly mobileViewport = window.matchMedia("(max-width: 767.98px)");
+	private mobileScrollAnchor = window.scrollY;
+	private visualViewportHeight = window.visualViewport?.height ?? 0;
+	private visualViewportWidth = window.visualViewport?.width ?? 0;
 
 	constructor() {
 		this.init();
@@ -46,6 +50,7 @@ class FabController {
 		this.bound = true;
 
 		this.bindScrollListener();
+		this.bindMobileViewportListener();
 		this.bindEvents();
 		this.bindSwupHooks();
 		this.syncPageState();
@@ -77,10 +82,73 @@ class FabController {
 					this.scheduleVisibilitySync();
 				}
 			}
+			this.syncMobileScrollVisibility(scrollTop);
 		};
 
 		window.addEventListener("scroll", handleScroll, { passive: true });
+		this.mobileViewport.addEventListener("change", () =>
+			this.resetMobileVisibility(),
+		);
 		handleScroll();
+	}
+
+	private syncMobileScrollVisibility(scrollTop: number): void {
+		if (!this.mobileViewport.matches || scrollTop < 80 || this.state.tocOpen) {
+			this.setMobileControlsHidden(false);
+			this.mobileScrollAnchor = scrollTop;
+			return;
+		}
+		const delta = scrollTop - this.mobileScrollAnchor;
+		if (Math.abs(delta) < 8) return;
+		this.setMobileControlsHidden(delta > 0);
+		this.mobileScrollAnchor = scrollTop;
+	}
+
+	private bindMobileViewportListener(): void {
+		const viewport = window.visualViewport;
+		if (!viewport) return;
+		const sync = () => {
+			const widthChanged =
+				Math.abs(viewport.width - this.visualViewportWidth) > 16;
+			const heightDelta = viewport.height - this.visualViewportHeight;
+			const active = document.activeElement;
+			const editing =
+				active instanceof HTMLElement &&
+				(active.matches("input, textarea, select") || active.isContentEditable);
+			if (
+				this.mobileViewport.matches &&
+				!widthChanged &&
+				!editing &&
+				!this.state.tocOpen &&
+				window.scrollY >= 80
+			) {
+				if (heightDelta > 16) this.setMobileControlsHidden(true);
+				else if (heightDelta < -16) this.setMobileControlsHidden(false);
+			}
+			this.visualViewportHeight = viewport.height;
+			this.visualViewportWidth = viewport.width;
+		};
+		viewport.addEventListener("resize", sync);
+		viewport.addEventListener("scroll", sync);
+	}
+
+	private setMobileControlsHidden(hidden: boolean): void {
+		const controls = document.getElementById("floating-controls");
+		if (!controls) return;
+		if (hidden && controls.contains(document.activeElement)) {
+			(document.activeElement as HTMLElement).blur();
+		}
+		controls.classList.toggle("fab-scroll-hidden", hidden);
+		controls.toggleAttribute("inert", hidden);
+		if (hidden) controls.setAttribute("aria-hidden", "true");
+		else controls.removeAttribute("aria-hidden");
+	}
+
+	private resetMobileVisibility(): void {
+		this.mobileScrollAnchor = window.scrollY;
+		this.visualViewportHeight = window.visualViewport?.height ?? 0;
+		this.visualViewportWidth = window.visualViewport?.width ?? 0;
+		this.setMobileControlsHidden(false);
 	}
 
 	private bindEvents(): void {
@@ -116,9 +184,10 @@ class FabController {
 		});
 
 		// 解密协调器重建侧栏 TOC 后发出通知，刷新悬浮目录（覆盖面板已打开时解密完成的情况）
-		document.addEventListener("shirone:toc-synced", () =>
-			this.syncFloatingToc(),
-		);
+		document.addEventListener("shirone:toc-synced", () => {
+			this.resetMobileVisibility();
+			this.syncFloatingToc();
+		});
 
 		// 目录项点击平滑跳转并自动收起
 		panel?.addEventListener("click", (e) => {
@@ -157,6 +226,7 @@ class FabController {
 		this.syncFloatingToc();
 		const panel = document.getElementById("floating-toc-panel");
 		if (!panel) return;
+		this.resetMobileVisibility();
 		this.previousFocus =
 			document.activeElement instanceof HTMLElement
 				? document.activeElement
@@ -220,6 +290,7 @@ class FabController {
 	}
 
 	public syncPageState(): void {
+		this.resetMobileVisibility();
 		const container = document.getElementById("swup-container");
 		const currentPage = container?.dataset.currentPage;
 		const hasCommentsAttr = container?.dataset.hasComments;

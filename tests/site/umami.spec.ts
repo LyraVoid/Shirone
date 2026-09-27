@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { resolveUmamiOptions, umamiConfig } from "../../src/config/UmamiConfig";
+import { resolveUmamiOptions, umamiConfig } from "../../src/config/umamiConfig";
 import type { UmamiConfig } from "../../src/types/umamiConfig";
 
 const umamiEnabled = resolveUmamiOptions(umamiConfig) !== null;

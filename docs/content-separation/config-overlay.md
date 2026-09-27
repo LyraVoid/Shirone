@@ -50,6 +50,11 @@ themeColor:
 | `fab.yaml` | `fabConfig` 浮动操作按钮 | `image-bloom.yaml` | `imageBloomConfig` 图片光晕特效 |
 | `footer.yaml` | `footerConfig` 页脚基本信息 | `expressive-code.yaml` | `expressiveCodeConfig` 代码高亮设置 |
 | `llms.yaml` | `llmsConfig` 大模型索引与全文输出 | `umami.yaml` | `umamiConfig` Umami 网站统计 |
+| `friends.yaml` | `friendsConfig` 友情链接 | `moments.yaml` | `momentsConfig` 说说动态 |
+| `albums.yaml` | `albumsConfig` 摄影相册 | `compass.yaml` | `compassConfig` 站点罗盘 |
+| `about.yaml` | `aboutConfig` 关于页 | `games.yaml` | `gamesConfig` 游戏展示 |
+| `permalink.yaml` | `permalinkConfig` 文章固定链接 | `context-menu.yaml` | `contextMenuConfig` 桌面右键增强 |
+| `i18n.yaml` | `i18nConfig` 多语言与本地化 | `series.yaml` | `seriesConfig` 系列连载 |
 
 各配置领域的可用字段、默认值与逐项注释均以代码仓中的 `src/config/<domain>Config.ts` 为准。系统同样支持 `.yml` 后缀；空文件与纯注释文件视作不覆盖。
 
@@ -163,7 +168,7 @@ customSections:
 
 ### 2. 完整导航预设清单速查表
 
-主题内置了 15 个开箱即用的页面预设（定义于 `src/config/navBarConfig.ts`）：
+主题内置了 17 个开箱即用的页面预设（定义于 `src/config/navBarConfig.ts`）：
 
 | 预设名称 (`preset`) | 目标路由 | 对应功能与页面 |
 | --- | --- | --- |
@@ -176,14 +181,26 @@ customSections:
 | `Skills` | `/skills/` | 个人专业技能清单 |
 | `Projects` | `/projects/` | 开源项目与作品集 |
 | `Devices` | `/devices/` | 我的数字设备与装备 |
+| `Games` | `/games/` | 游戏展示与游玩清单 |
 | `Timeline` | `/timeline/` | 个人经历与大事件时间轴 |
 | `Albums` | `/albums/` | 摄影相册与图库 |
 | `Categories` | `/categories/` | 文章分类聚合独立页 |
 | `Tags` | `/tags/` | 标签聚合独立页 |
+| `Series` | `/series/` | 系列连载聚合独立页 |
 | `About` | `/about/` | 关于博主与站点 |
 | `GitHub` | `https://github.com/...` | GitHub 外部项目外链 |
 
 > **提示**：若预设名称拼写错误（如误写为 `preset: Archives`）或多语言词条不存在，系统在编译构建时会直接报错并列出所有可用预设，便于快速核对。
+
+### 3. 已关闭的功能会自动从导航中消失
+
+导航栏是**整体替换**的，因此它不会跟随各功能自己的 `enable` 开关自动增删；但指向已关闭功能页面的入口会在解析期被统一裁掉，不会留下点进去跳 `/404/` 的死链：
+
+- 判定对象是**站内路由**（去尾斜杠、忽略查询串与哈希），因此 `preset: Moments`、`url: /moments/`、`url: /moments?sort=recent` 三种写法一视同仁；
+- 裁剪对 `children` 递归生效；只作下拉容器（自身无 `url`）的分组若子项被全部裁掉，该分组也会一并隐藏，不会留下点不开的空下拉；
+- 站外链接（`https://...`）、锚点（`#top`）与始终存在的页面（`/`、`/archive/`、`/categories/`、`/tags/`）不受影响。
+
+也就是说：`config/moments.yaml` 里写 `enable: false` 之后，`config/nav-bar.yaml` 中所有指向 `/moments/` 的条目都无需删除即可自动隐身；重新开启时会照常出现（对应路由表见 `src/config/navBarConfig.ts`，实现见 `pruneUnavailableNavLinks()`）。
 
 ---
 

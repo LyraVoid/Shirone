@@ -32,7 +32,7 @@ const categorySummary = `${categories.length} ${i18n(I18nKey.categoriesCount)} Â
 			<ul class="category-index__list">
 				{categories.map((category) => (
 					<li>
-						<a class="category-index__row" href={category.url}>
+						<a class="category-index__row m3-state-layer" href={category.url}>
 							<MetaIcon icon="material-symbols:folder-outline-rounded" />
 							<span class="category-index__name">{category.name}</span>
 							<span class="category-index__rule" aria-hidden="true"></span>
@@ -59,7 +59,7 @@ const categorySummary = `${categories.length} ${i18n(I18nKey.categoriesCount)} Â
 	&__list
 		display: grid
 		grid-template-columns: repeat(2, minmax(0, 1fr))
-		gap: 0.5rem 1rem
+		gap: var(--m3e-space-2) var(--m3e-space-4)
 		margin: 0
 		padding: 0
 		list-style: none
@@ -67,12 +67,13 @@ const categorySummary = `${categories.length} ${i18n(I18nKey.categoriesCount)} Â
 	&__row
 		display: flex
 		align-items: center
-		gap: 0.625rem
+		gap: var(--m3e-space-3)
 		min-height: 3.5rem
-		padding: 0.625rem 0.75rem
+		padding: var(--m3e-space-3) var(--m3e-space-4)
 		border-radius: var(--shape-corner-m)
 		background: var(--surface-container-low)
 		text-decoration: none
+		--m3e-state-color: var(--on-surface)
 		transition: background-color var(--m3e-duration-short) var(--m3e-easing-standard)
 		&:hover
 			background: unquote("color-mix(in oklab, var(--on-surface) 6%, transparent)")

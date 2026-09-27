@@ -3,40 +3,8 @@ import { glob } from "astro/loaders";
 import { z } from "astro/zod";
 
 /**
- * Content collection definitions for Shirone, packaged so a user's
- * `src/content.config.ts` stays three lines long:
- *
- * ```ts
- * import { defineCollections } from "shirones/collections";
- * export const collections = defineCollections();
- * ```
- */
-
-export interface DefineCollectionsOptions {
-	/**
-	 * Directory holding `posts/`, `moments/` and `spec/`, relative to the
-	 * project root.
-	 * @default "shirones/content"
-	 */
-	contentDir?: string;
-	/** Override individual sub-directories. */
-	paths?: {
-		posts?: string;
-		moments?: string;
-		spec?: string;
-	};
-}
-
-const DEFAULT_CONTENT_DIR = "shirones/content";
-
-function normaliseBase(value: string): string {
-	const trimmed = value.replace(/^\.\//, "").replace(/\/+$/, "");
-	return `./${trimmed}`;
-}
-
-/**
- * The post schema. Kept identical to the source template so content authored
- * against the git-clone workflow works unchanged in package mode.
+ * Post schema — used by both source repo (inline) and package mode users
+ * (inline in their `src/content.config.ts`).
  */
 export const postSchema = z.object({
 	title: z.string(),
@@ -51,6 +19,14 @@ export const postSchema = z.object({
 	image: z.string().optional().default(""),
 	tags: z.array(z.string()).optional().default([]),
 	category: z.string().optional().nullable().default(""),
+	/** Series slug the post belongs to (empty = none; single series per post). */
+	series: z
+		.string()
+		.optional()
+		.default("")
+		.transform((value) => value.trim()),
+	/** Position inside the series; falls back to publication order when absent. */
+	seriesOrder: z.number().int().optional(),
 	lang: z.string().optional().default(""),
 
 	/* Post encryption */
@@ -62,7 +38,13 @@ export const postSchema = z.object({
 	passwordHint: z.string().optional().default(""),
 	hideHomeContent: z.boolean().optional().default(true),
 
-	/* Populated internally by the theme during collection post-processing */
+	/* Post alias & custom permalink */
+	alias: z.string().optional(),
+	permalink: z.string().optional(),
+
+	/* For internal use */
+	prevUrl: z.string().optional(),
+	nextUrl: z.string().optional(),
 	prevTitle: z.string().default(""),
 	prevSlug: z.string().default(""),
 	nextTitle: z.string().default(""),
@@ -93,35 +75,37 @@ export const momentSchema = z.object({
 export const specSchema = z.object({});
 
 /**
- * Build the `collections` export for `src/content.config.ts`.
+ * Schema for series entities. Each entry is one series; the Markdown body is
+ * the optional overview rendered on the series page.
  */
-export function defineCollections(options: DefineCollectionsOptions = {}) {
-	const root = normaliseBase(options.contentDir ?? DEFAULT_CONTENT_DIR);
+export const seriesSchema = z.object({
+	title: z.string(),
+	status: z.enum(["ongoing", "completed"]).optional().default("ongoing"),
+	defaultCategory: z.string().optional().default(""),
+});
 
-	const postsBase = options.paths?.posts
-		? normaliseBase(options.paths.posts)
-		: `${root}/posts`;
-	const momentsBase = options.paths?.moments
-		? normaliseBase(options.paths.moments)
-		: `${root}/moments`;
-	const specBase = options.paths?.spec
-		? normaliseBase(options.paths.spec)
-		: `${root}/spec`;
-
-	return {
-		posts: defineCollection({
-			loader: glob({ base: postsBase, pattern: "**/*.{md,mdx}" }),
-			schema: postSchema,
-		}),
-		spec: defineCollection({
-			loader: glob({ base: specBase, pattern: "**/*.{md,mdx}" }),
-			schema: specSchema,
-		}),
-		moments: defineCollection({
-			loader: glob({ base: momentsBase, pattern: "**/*.md" }),
-			schema: momentSchema,
-		}),
-	} as const;
+/**
+ * Helper to create a collection definition with the standard glob loader.
+ * Package mode users can import this if they need custom paths.
+ */
+export function createCollection(
+	key: "posts" | "moments" | "spec" | "series",
+	base: string,
+) {
+	const loaders = {
+		posts: glob({ base: `${base}/posts`, pattern: "**/*.{md,mdx}" }),
+		moments: glob({ base: `${base}/moments`, pattern: "**/*.md" }),
+		spec: glob({ base: `${base}/spec`, pattern: "**/*.{md,mdx}" }),
+		series: glob({ base: `${base}/series`, pattern: "**/*.md" }),
+	};
+	const schemas = {
+		posts: postSchema,
+		moments: momentSchema,
+		spec: specSchema,
+		series: seriesSchema,
+	};
+	return defineCollection({
+		loader: loaders[key],
+		schema: schemas[key],
+	});
 }
-
-export default defineCollections;

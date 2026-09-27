@@ -39,8 +39,10 @@ import { withUserConfig } from "../utils/config-overlay.ts";
  * ─────────────────────────────────────────────────────────────────────────────
  */
 export const animeConfig: AnimeConfig = withUserConfig("anime", {
-	/** 是否启用番剧页（仅控制页面渲染，不发起任何外部网络连接） */
+	/** 是否启用番剧页；false 时导航入口同步隐藏，访问 /anime/ 跳转 404 */
 	enable: true,
+	title: "$t:anime",
+	description: "$t:animeBanner",
 
 	/** 主数据源选择 */
 	source: {

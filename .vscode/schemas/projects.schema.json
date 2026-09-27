@@ -1,0 +1,214 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "projects configuration override",
+  "description": "Shirone projects config schema generated from @/types/projectsConfig.ProjectsConfig",
+  "type": "object",
+  "properties": {
+    "enable": {
+      "type": "boolean",
+      "description": "页面总开关；关闭后隐藏导航入口并将 /projects/ 重定向到 404。"
+    },
+    "categories": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "description": "稳定标识，供项目引用与筛选。"
+          },
+          "label": {
+            "type": "string",
+            "description": "用户可编辑的分类名称。"
+          },
+          "icon": {
+            "anyOf": [
+              {},
+              {
+                "type": "string"
+              }
+            ],
+            "description": "Iconify 图标名。"
+          }
+        },
+        "additionalProperties": false
+      },
+      "description": "分类列表（决定 Chips 显示顺序）。"
+    },
+    "disabledKeys": {
+      "anyOf": [
+        {},
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      ],
+      "description": "可选被禁用的项目 key 列表。"
+    },
+    "items": {
+      "anyOf": [
+        {},
+        {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "enable": {
+                "anyOf": [
+                  {},
+                  {
+                    "type": "boolean",
+                    "enum": [
+                      false
+                    ]
+                  },
+                  {
+                    "type": "boolean",
+                    "enum": [
+                      true
+                    ]
+                  }
+                ],
+                "description": "可选独立开关；关闭后不参与渲染与计数（优先使用 config.disabledKeys）。"
+              },
+              "key": {
+                "type": "string",
+                "description": "稳定标识，用作列表 key 与测试选择器。"
+              },
+              "title": {
+                "type": "string"
+              },
+              "summary": {
+                "type": "string"
+              },
+              "category": {
+                "type": "string"
+              },
+              "phase": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "shipped"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "enum": [
+                      "building"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "enum": [
+                      "exploring"
+                    ]
+                  }
+                ]
+              },
+              "technologies": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "icon": {
+                "anyOf": [
+                  {},
+                  {
+                    "type": "string"
+                  }
+                ],
+                "description": "无封面时使用的 Iconify 图标。"
+              },
+              "cover": {
+                "anyOf": [
+                  {},
+                  {
+                    "type": "string"
+                  }
+                ],
+                "description": "可选项目封面，建议使用本地 WebP/AVIF。"
+              },
+              "coverAlt": {
+                "anyOf": [
+                  {},
+                  {
+                    "type": "string"
+                  }
+                ],
+                "description": "封面承载额外信息时提供；纯装饰封面留空。"
+              },
+              "featured": {
+                "anyOf": [
+                  {},
+                  {
+                    "type": "boolean",
+                    "enum": [
+                      false
+                    ]
+                  },
+                  {
+                    "type": "boolean",
+                    "enum": [
+                      true
+                    ]
+                  }
+                ],
+                "description": "代表项目标记，供页面做重点项目识别。"
+              },
+              "website": {
+                "anyOf": [
+                  {},
+                  {
+                    "type": "string"
+                  }
+                ]
+              },
+              "repository": {
+                "anyOf": [
+                  {},
+                  {
+                    "type": "string"
+                  }
+                ]
+              },
+              "year": {
+                "anyOf": [
+                  {},
+                  {
+                    "type": "string"
+                  }
+                ],
+                "description": "自由格式的年份或时间范围，如 2024–2026。"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      ],
+      "description": "可选自定义数据（向后兼容；默认读取 src/data/projects.ts）。"
+    },
+    "title": {
+      "anyOf": [
+        {},
+        {
+          "type": "string"
+        }
+      ],
+      "description": "页面标题：字面量（个人化、语言无关），或 \"$t:<i18nKey>\"（本地化；默认即当前词条）"
+    },
+    "description": {
+      "anyOf": [
+        {},
+        {
+          "type": "string"
+        }
+      ],
+      "description": "页面副标题：同上"
+    }
+  },
+  "additionalProperties": false
+}

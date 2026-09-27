@@ -18,5 +18,135 @@
     "quickfix.biome": "always",
     "source.organizeImports.biome": "always"
   },
-  "frontMatter.dashboard.openOnStart": false
+  "frontMatter.dashboard.openOnStart": false,
+  "yaml.schemas": {
+    "./.vscode/schemas/site.schema.json": [
+      "config/site.yaml",
+      "config/site.yml"
+    ],
+    "./.vscode/schemas/permalink.schema.json": [
+      "config/permalink.yaml",
+      "config/permalink.yml"
+    ],
+    "./.vscode/schemas/profile.schema.json": [
+      "config/profile.yaml",
+      "config/profile.yml"
+    ],
+    "./.vscode/schemas/license.schema.json": [
+      "config/license.yaml",
+      "config/license.yml"
+    ],
+    "./.vscode/schemas/expressive-code.schema.json": [
+      "config/expressive-code.yaml",
+      "config/expressive-code.yml"
+    ],
+    "./.vscode/schemas/announcement.schema.json": [
+      "config/announcement.yaml",
+      "config/announcement.yml"
+    ],
+    "./.vscode/schemas/post-list.schema.json": [
+      "config/post-list.yaml",
+      "config/post-list.yml"
+    ],
+    "./.vscode/schemas/article.schema.json": [
+      "config/article.yaml",
+      "config/article.yml"
+    ],
+    "./.vscode/schemas/comment.schema.json": [
+      "config/comment.yaml",
+      "config/comment.yml"
+    ],
+    "./.vscode/schemas/context-menu.schema.json": [
+      "config/context-menu.yaml",
+      "config/context-menu.yml"
+    ],
+    "./.vscode/schemas/fab.schema.json": [
+      "config/fab.yaml",
+      "config/fab.yml"
+    ],
+    "./.vscode/schemas/sidebar.schema.json": [
+      "config/sidebar.yaml",
+      "config/sidebar.yml"
+    ],
+    "./.vscode/schemas/footer.schema.json": [
+      "config/footer.yaml",
+      "config/footer.yml"
+    ],
+    "./.vscode/schemas/image-bloom.schema.json": [
+      "config/image-bloom.yaml",
+      "config/image-bloom.yml"
+    ],
+    "./.vscode/schemas/skills.schema.json": [
+      "config/skills.yaml",
+      "config/skills.yml"
+    ],
+    "./.vscode/schemas/projects.schema.json": [
+      "config/projects.yaml",
+      "config/projects.yml"
+    ],
+    "./.vscode/schemas/timeline.schema.json": [
+      "config/timeline.yaml",
+      "config/timeline.yml"
+    ],
+    "./.vscode/schemas/devices.schema.json": [
+      "config/devices.yaml",
+      "config/devices.yml"
+    ],
+    "./.vscode/schemas/music.schema.json": [
+      "config/music.yaml",
+      "config/music.yml"
+    ],
+    "./.vscode/schemas/anime.schema.json": [
+      "config/anime.yaml",
+      "config/anime.yml"
+    ],
+    "./.vscode/schemas/font.schema.json": [
+      "config/font.yaml",
+      "config/font.yml"
+    ],
+    "./.vscode/schemas/llms.schema.json": [
+      "config/llms.yaml",
+      "config/llms.yml"
+    ],
+    "./.vscode/schemas/umami.schema.json": [
+      "config/umami.yaml",
+      "config/umami.yml"
+    ],
+    "./.vscode/schemas/about.schema.json": [
+      "config/about.yaml",
+      "config/about.yml"
+    ],
+    "./.vscode/schemas/friends.schema.json": [
+      "config/friends.yaml",
+      "config/friends.yml"
+    ],
+    "./.vscode/schemas/moments.schema.json": [
+      "config/moments.yaml",
+      "config/moments.yml"
+    ],
+    "./.vscode/schemas/albums.schema.json": [
+      "config/albums.yaml",
+      "config/albums.yml"
+    ],
+    "./.vscode/schemas/compass.schema.json": [
+      "config/compass.yaml",
+      "config/compass.yml"
+    ],
+    "./.vscode/schemas/i18n.schema.json": [
+      "config/i18n.yaml",
+      "config/i18n.yml"
+    ],
+    "./.vscode/schemas/nav-bar.schema.json": [
+      "config/nav-bar.yaml",
+      "config/nav-bar.yml"
+    ],
+    "./.vscode/schemas/games.schema.json": [
+      "config/games.yaml",
+      "config/games.yml"
+    ],
+    "./.vscode/schemas/series.schema.json": [
+      "config/series.yaml",
+      "config/series.yml"
+    ]
+  }
 }

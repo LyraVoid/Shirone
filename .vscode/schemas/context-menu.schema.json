@@ -1,0 +1,172 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "contextMenu configuration override",
+  "description": "Shirone contextMenu config schema generated from @/types/contextMenuConfig.ContextMenuConfig",
+  "type": "object",
+  "properties": {
+    "enable": {
+      "type": "boolean",
+      "description": "Master switch. False means zero DOM and zero client runtime."
+    },
+    "pages": {
+      "anyOf": [
+        {},
+        {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "notFound"
+                ]
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "home"
+                ]
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "archive"
+                ]
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "friends"
+                ]
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "moments"
+                ]
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "anime"
+                ]
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "compass"
+                ]
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "skills"
+                ]
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "projects"
+                ]
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "devices"
+                ]
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "games"
+                ]
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "timeline"
+                ]
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "albums"
+                ]
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "about"
+                ]
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "categories"
+                ]
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "tags"
+                ]
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "series"
+                ]
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "rss"
+                ]
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "atom"
+                ]
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "post"
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "description": "Pages where the enhancement is allowed. Omit for every page."
+    },
+    "actions": {
+      "type": "array",
+      "items": {
+        "anyOf": [
+          {
+            "type": "string",
+            "enum": [
+              "copySelection"
+            ]
+          },
+          {
+            "type": "string",
+            "enum": [
+              "backToTop"
+            ]
+          },
+          {
+            "type": "string",
+            "enum": [
+              "sharePageLink"
+            ]
+          }
+        ]
+      },
+      "description": "Menu actions in display order."
+    }
+  },
+  "additionalProperties": false
+}

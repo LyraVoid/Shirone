@@ -1,0 +1,260 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "timeline configuration override",
+  "description": "Shirone timeline config schema generated from @/types/timelineConfig.TimelineConfig",
+  "type": "object",
+  "properties": {
+    "enable": {
+      "type": "boolean",
+      "description": "页面总开关；关闭后隐藏导航入口并将 /timeline/ 重定向到 404。"
+    },
+    "categories": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "description": "稳定标识，供时间线条目引用与筛选。"
+          },
+          "label": {
+            "type": "string",
+            "description": "用户可编辑的分类名称。"
+          },
+          "icon": {
+            "anyOf": [
+              {},
+              {
+                "type": "string"
+              }
+            ],
+            "description": "Iconify 图标名。"
+          }
+        },
+        "additionalProperties": false
+      },
+      "description": "筛选分类清单（决定 Chips 顺序）。"
+    },
+    "order": {
+      "anyOf": [
+        {},
+        {
+          "type": "string",
+          "enum": [
+            "desc"
+          ]
+        },
+        {
+          "type": "string",
+          "enum": [
+            "asc"
+          ]
+        }
+      ],
+      "description": "排序方向：默认按时间倒序 \"desc\"；可选 \"asc\"。"
+    },
+    "disabledTitles": {
+      "anyOf": [
+        {},
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      ],
+      "description": "可选被禁用的节点标题列表。"
+    },
+    "disabledKeys": {
+      "anyOf": [
+        {},
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      ],
+      "description": "兼容通用 disabledKeys 别名。"
+    },
+    "items": {
+      "anyOf": [
+        {},
+        {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "enable": {
+                "anyOf": [
+                  {},
+                  {
+                    "type": "boolean",
+                    "enum": [
+                      false
+                    ]
+                  },
+                  {
+                    "type": "boolean",
+                    "enum": [
+                      true
+                    ]
+                  }
+                ],
+                "description": "可选独立开关；关闭后不参与渲染与计数（优先使用 config.disabledTitles）。"
+              },
+              "title": {
+                "type": "string",
+                "description": "节点标题（事件、职位或里程碑名称）。"
+              },
+              "date": {
+                "type": "string",
+                "description": "时间或时间范围（如 \"2026.08\", \"2024.09 – 2026.06\"）。"
+              },
+              "category": {
+                "anyOf": [
+                  {},
+                  {
+                    "type": "string"
+                  }
+                ],
+                "description": "归属分类 key（对应 TimelineCategory.key）。"
+              },
+              "subtitle": {
+                "anyOf": [
+                  {},
+                  {
+                    "type": "string"
+                  }
+                ],
+                "description": "副标题 / 机构 / 学校 / 公司 / 角色。"
+              },
+              "location": {
+                "anyOf": [
+                  {},
+                  {
+                    "type": "string"
+                  }
+                ],
+                "description": "地点信息（如 \"Tokyo, Japan\", \"Hangzhou, China\"）。"
+              },
+              "description": {
+                "anyOf": [
+                  {},
+                  {
+                    "type": "string"
+                  }
+                ],
+                "description": "详细描述或背景说明。"
+              },
+              "highlights": {
+                "anyOf": [
+                  {},
+                  {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                ],
+                "description": "要点 / 关键成就清单。"
+              },
+              "tags": {
+                "anyOf": [
+                  {},
+                  {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                ],
+                "description": "技术栈 / 关联标签。"
+              },
+              "links": {
+                "anyOf": [
+                  {},
+                  {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "label": {
+                          "type": "string",
+                          "description": "链接显示名称。"
+                        },
+                        "url": {
+                          "type": "string",
+                          "description": "目标 URL。"
+                        },
+                        "icon": {
+                          "anyOf": [
+                            {},
+                            {
+                              "type": "string"
+                            }
+                          ],
+                          "description": "可选图标（Iconify 名）。"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  }
+                ],
+                "description": "关联链接列表（项目仓库、演示站、证书、文章等）。"
+              },
+              "icon": {
+                "anyOf": [
+                  {},
+                  {
+                    "type": "string"
+                  }
+                ],
+                "description": "节点自定义图标（Iconify 名），未指定时使用分类图标或默认节点图标。"
+              },
+              "featured": {
+                "anyOf": [
+                  {},
+                  {
+                    "type": "boolean",
+                    "enum": [
+                      false
+                    ]
+                  },
+                  {
+                    "type": "boolean",
+                    "enum": [
+                      true
+                    ]
+                  }
+                ],
+                "description": "是否为重点里程碑节点（带突出徽标与重点渲染）。"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      ],
+      "description": "可选自定义数据（向后兼容；默认读取 src/data/timeline.ts）。"
+    },
+    "title": {
+      "anyOf": [
+        {},
+        {
+          "type": "string"
+        }
+      ],
+      "description": "页面标题：字面量（个人化、语言无关），或 \"$t:<i18nKey>\"（本地化；默认即当前词条）"
+    },
+    "description": {
+      "anyOf": [
+        {},
+        {
+          "type": "string"
+        }
+      ],
+      "description": "页面副标题：同上"
+    }
+  },
+  "additionalProperties": false
+}

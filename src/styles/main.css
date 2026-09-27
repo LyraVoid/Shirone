@@ -13,7 +13,9 @@
 
 @theme {
     --font-sans: var(--m3e-font-sans);
-    --font-mono: var(--m3e-font-mono-family);
+    /* Tailwind's baseline must stay literal; Astro Fonts may override
+       --font-mono with the registered hashed family in custom mode. */
+    --font-mono: var(--m3e-font-mono-fallback);
 }
 
 @import "./transition.css" layer(components);
@@ -28,6 +30,25 @@
 @import "./image-bloom.css" layer(components);
 
 @layer base {
+    /* 常驻预留经典滚动条槽位。文档级布局宽度（`#main-layout` 是 `w-full` 的
+       绝对定位容器，宽度 = 初始包含块宽度）会随滚动条出现/消失相差一个滚动条
+       宽度（Windows Chrome 15px）。Banner 模式因文档恒高于视口而滚动条常驻，
+       所以看不出问题；纯色背景模式下短页（categories/tags/文章页）本来没有
+       滚动条，Swup 切页时的 `#page-height-extend` 又会在切页两端临时开关
+       滚动条，于是每次导航都横移半个滚动条宽度。
+       `scrollbar-gutter` 语义正确：有内容可滚动时滚动条照常出现（Banner 模式
+       与所有长页与今天逐像素一致），没有内容时不显示，而槽位始终预留，因此
+       布局宽度与滚动条状态彻底解耦。
+       不用 `overflow-y: scroll`（滚动条常显）：短页会多出一条无意义的滚动条，
+       实测其轨道色与页面底色差 (2,11,3)。预留槽位方案下顶栏右上角 15×64px 的
+       空槽位显示页面底色，与该处原本的滚动条轨道也只差这一量级（暗色模式下
+       实测 Δ≤0.5，无可见差异）。
+       不支持 `scrollbar-gutter` 的旧版 Safari（< 18.2）忽略该声明，退回原行为；
+       macOS 默认使用覆盖式滚动条，本来就不影响布局宽度。 */
+    html {
+        scrollbar-gutter: stable;
+    }
+
     /* 全局正文色走主题变量：裸内容（未显式设色的文字/按钮）明暗自适应，
        否则默认黑色在暗色模式下不可见 */
     body {

@@ -59,9 +59,9 @@ const fallback = $derived((skill.name.charAt(0) || "?").toUpperCase());
 .skill-card
 	display: flex
 	flex-direction: column
-	gap: 0.875rem
+	gap: var(--m3e-space-3)
 	min-width: 0
-	padding: 1rem
+	padding: var(--m3e-space-4)
 	background: var(--card-bg)
 	border: 1px solid var(--outline-variant)
 	border-radius: var(--shape-corner-l)
@@ -76,7 +76,7 @@ const fallback = $derived((skill.name.charAt(0) || "?").toUpperCase());
 	&__header
 		display: flex
 		align-items: center
-		gap: 0.75rem
+		gap: var(--m3e-space-3)
 		min-width: 0
 
 	&__icon

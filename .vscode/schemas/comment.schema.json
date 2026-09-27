@@ -1,0 +1,182 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "comment configuration override",
+  "description": "Shirone comment config schema generated from @/types/commentConfig.CommentConfig",
+  "type": "object",
+  "properties": {
+    "enable": {
+      "type": "boolean",
+      "description": "是否全局启用评论功能"
+    },
+    "provider": {
+      "anyOf": [
+        {
+          "type": "string",
+          "enum": [
+            "none"
+          ]
+        },
+        {
+          "type": "string",
+          "enum": [
+            "twikoo"
+          ]
+        },
+        {
+          "type": "string",
+          "enum": [
+            "giscus"
+          ]
+        }
+      ],
+      "description": "选用的评论提供商"
+    },
+    "lazy": {
+      "type": "boolean",
+      "description": "是否开启视口懒加载（进入视口前不加载外部脚本）"
+    },
+    "twikoo": {
+      "type": "object",
+      "properties": {
+        "envId": {
+          "type": "string",
+          "description": "Twikoo 环境 ID 或后端服务地址 URL"
+        },
+        "scriptUrl": {
+          "type": "string",
+          "description": "Twikoo 客户端 JS 脚本 CDN 地址"
+        },
+        "lang": {
+          "type": "string",
+          "description": "评论语言，\"auto\" 自动跟随站点语言，也可指定如 \"zh-CN\", \"en\" 等"
+        },
+        "placeholder": {
+          "anyOf": [
+            {},
+            {
+              "type": "string"
+            }
+          ],
+          "description": "评论输入框的灰色说明文字；留空时不显示"
+        }
+      },
+      "additionalProperties": false,
+      "description": "Twikoo 专属配置"
+    },
+    "giscus": {
+      "type": "object",
+      "properties": {
+        "repo": {
+          "type": "string",
+          "description": "公开 GitHub 仓库，格式 \"owner/repo\"（必填，giscus 会在该仓库的 Discussions 中存储评论）"
+        },
+        "repoId": {
+          "type": "string",
+          "description": "仓库 ID，从 giscus.app 配置生成器获取（必填）"
+        },
+        "category": {
+          "type": "string",
+          "description": "Discussion 分类名，如 \"Announcements\"（推荐使用 Announcements 类，仅维护者可开新讨论）；留空表示不限制分类"
+        },
+        "categoryId": {
+          "type": "string",
+          "description": "Discussion 分类 ID，从 giscus.app 配置生成器获取（必填）"
+        },
+        "mapping": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "number"
+              ]
+            },
+            {
+              "type": "string",
+              "enum": [
+                "pathname"
+              ]
+            },
+            {
+              "type": "string",
+              "enum": [
+                "url"
+              ]
+            },
+            {
+              "type": "string",
+              "enum": [
+                "title"
+              ]
+            },
+            {
+              "type": "string",
+              "enum": [
+                "og:title"
+              ]
+            },
+            {
+              "type": "string",
+              "enum": [
+                "specific"
+              ]
+            }
+          ],
+          "description": "页面 ↔ Discussion 映射方式，默认 \"pathname\""
+        },
+        "strict": {
+          "type": "boolean",
+          "description": "是否开启严格标题匹配（SHA-1 哈希校验，避免模糊搜索误配），默认 false"
+        },
+        "reactionsEnabled": {
+          "type": "boolean",
+          "description": "是否显示主贴表情反应，默认 true"
+        },
+        "emitMetadata": {
+          "type": "boolean",
+          "description": "是否向父页面周期性发送 Discussion 元数据，默认 false"
+        },
+        "inputPosition": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "top"
+              ]
+            },
+            {
+              "type": "string",
+              "enum": [
+                "bottom"
+              ]
+            }
+          ],
+          "description": "评论输入框位置，默认 \"bottom\""
+        },
+        "theme": {
+          "type": "object",
+          "properties": {
+            "light": {
+              "type": "string"
+            },
+            "dark": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": false,
+          "description": "明暗两套 giscus 主题（giscus 主题键如 \"light\"/\"dark\"，或自定义主题 CSS 的 URL）"
+        },
+        "lang": {
+          "type": "string",
+          "description": "评论语言：\"auto\"（跟随站点语言）或 giscus 语言码（如 \"zh-CN\"、\"en\"），默认 \"auto\""
+        },
+        "scriptUrl": {
+          "type": "string",
+          "description": "giscus client.js 地址；使用自托管 giscus 时替换为自有地址"
+        }
+      },
+      "additionalProperties": false,
+      "description": "Giscus 专属配置"
+    }
+  },
+  "additionalProperties": false
+}

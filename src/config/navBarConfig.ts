@@ -1,7 +1,15 @@
 import I18nKey from "@i18n/i18nKey";
 import { i18n } from "@i18n/translation";
+import { aboutConfig } from "@/config/aboutConfig";
+import { albumsConfig } from "@/config/albumsConfig";
+import { animeConfig } from "@/config/animeConfig";
+import { compassConfig } from "@/config/compassConfig";
 import { devicesConfig } from "@/config/devicesConfig";
+import { friendsConfig } from "@/config/friendsConfig";
+import { gamesConfig } from "@/config/gamesConfig";
+import { momentsConfig } from "@/config/momentsConfig";
 import { projectsConfig } from "@/config/projectsConfig";
+import { seriesConfig } from "@/config/seriesConfig";
 import { skillsConfig } from "@/config/skillsConfig";
 import { timelineConfig } from "@/config/timelineConfig";
 import type {
@@ -11,6 +19,7 @@ import type {
 	NavBarLinkOverride,
 } from "@/types/navBarConfig";
 import { getUserConfig } from "../utils/config-overlay.ts";
+import { pruneUnavailableNavLinks } from "../utils/nav-utils.ts";
 
 /**
  * 导航栏配置（统一单一来源）。
@@ -20,6 +29,7 @@ import { getUserConfig } from "../utils/config-overlay.ts";
  * 新增入口：先在 LinkPresets 登记预设，再在 navBarConfig.links 按序引用。
  *
  * 内容仓可用 `config/nav-bar.yaml` 整体替换 `links`，写法见 `NavBarLinkOverride`。
+ * 无论哪种来源，指向已关闭功能页面的入口都会在 `navBarConfig` 处被裁掉。
  */
 export const LinkPresets: Record<string, NavBarLink> = {
 	Home: {
@@ -76,6 +86,12 @@ export const LinkPresets: Record<string, NavBarLink> = {
 		icon: "material-symbols:devices-rounded",
 		pageKey: "devices",
 	},
+	Games: {
+		name: i18n(I18nKey.games),
+		url: "/games/",
+		icon: "material-symbols:sports-esports-outline-rounded",
+		pageKey: "games",
+	},
 	Timeline: {
 		name: i18n(I18nKey.timeline),
 		url: "/timeline/",
@@ -99,6 +115,12 @@ export const LinkPresets: Record<string, NavBarLink> = {
 		url: "/tags/",
 		icon: "material-symbols:tag-rounded",
 		pageKey: "tags",
+	},
+	Series: {
+		name: i18n(I18nKey.series),
+		url: "/series/",
+		icon: "material-symbols:auto-stories-outline-rounded",
+		pageKey: "series",
 	},
 	About: {
 		name: i18n(I18nKey.about),
@@ -128,10 +150,11 @@ const defaultNavBarConfig: NavBarConfig = {
 			name: i18n(I18nKey.more),
 			icon: "material-symbols:apps-rounded",
 			children: [
-				...(timelineConfig.enable ? [LinkPresets.Timeline] : []),
-				...(projectsConfig.enable ? [LinkPresets.Projects] : []),
-				...(devicesConfig.enable ? [LinkPresets.Devices] : []),
-				...(skillsConfig.enable ? [LinkPresets.Skills] : []),
+				LinkPresets.Timeline,
+				LinkPresets.Projects,
+				LinkPresets.Devices,
+				LinkPresets.Games,
+				LinkPresets.Skills,
 				// 分类/标签入口不进导航菜单（避免菜单项过多），预设已登记指向独立页面，
 				// 需要时取消注释即可
 				// LinkPresets.Categories,
@@ -143,25 +166,36 @@ const defaultNavBarConfig: NavBarConfig = {
 	],
 };
 
-/** `$t:home` 形式的 i18n 引用前缀；不带前缀的 name 一律按字面量处理。 */
-const I18N_REFERENCE_PREFIX = "$t:";
+import { resolveI18nText } from "../utils/i18n-utils.ts";
 
 function fail(message: string): never {
 	throw new Error(`[config] nav-bar：${message}`);
 }
 
 function resolveName(name: string): string {
-	if (!name.startsWith(I18N_REFERENCE_PREFIX)) return name;
-
-	const key = name.slice(I18N_REFERENCE_PREFIX.length);
-	if (!Object.hasOwn(I18nKey, key)) {
-		fail(
-			`未知的 i18n 词条 "${key}"。可用词条见 src/i18n/i18nKey.ts；` +
-				" 若本意是普通文本，去掉开头的 $t: 即可。",
-		);
-	}
-	return i18n(I18nKey[key as keyof typeof I18nKey]);
+	return resolveI18nText(name);
 }
+
+/**
+ * 已关闭功能对应的站内路由（去尾斜杠），供 `pruneUnavailableNavLinks()` 裁剪导航入口。
+ *
+ * 功能关闭时对应页面会 `Astro.redirect("/404/")`，因此这些路由不得再出现在导航里。
+ * 关闭判定只看配置，与导航结构无关，因此默认结构与内容仓声明式条目共用同一张表。
+ */
+const unavailableFeatureRoutes: ReadonlySet<string> = new Set([
+	...(friendsConfig.enable ? [] : ["/friends"]),
+	...(momentsConfig.enable ? [] : ["/moments"]),
+	...(animeConfig.enable ? [] : ["/anime"]),
+	...(compassConfig.enable ? [] : ["/compass"]),
+	...(albumsConfig.enable ? [] : ["/albums"]),
+	...(skillsConfig.enable ? [] : ["/skills"]),
+	...(projectsConfig.enable ? [] : ["/projects"]),
+	...(devicesConfig.enable ? [] : ["/devices"]),
+	...(gamesConfig.enable ? [] : ["/games"]),
+	...(timelineConfig.enable ? [] : ["/timeline"]),
+	...(aboutConfig.enable ? [] : ["/about"]),
+	...(seriesConfig.enable ? [] : ["/series"]),
+]);
 
 /**
  * 把内容仓的声明式导航条目还原成 `NavBarLink`。
@@ -207,6 +241,18 @@ export function resolveNavBarLinks(
 
 const userNavBar = getUserConfig("navBar") as NavBarConfigOverride | undefined;
 
-export const navBarConfig: NavBarConfig = userNavBar
-	? { links: resolveNavBarLinks(userNavBar.links) }
-	: defaultNavBarConfig;
+/**
+ * 导航栏最终结构。
+ *
+ * 默认结构与内容仓 `config/nav-bar.yaml`（声明式列表，整体替换默认导航，不走任何
+ * enable 分支）在这里汇合后统一裁剪：功能关掉时入口一并消失，两种模式下行为一致，
+ * 不会留下点进去 404 的死链。
+ */
+export const navBarConfig: NavBarConfig = {
+	links: pruneUnavailableNavLinks(
+		resolveNavBarLinks(
+			userNavBar ? userNavBar.links : defaultNavBarConfig.links,
+		),
+		unavailableFeatureRoutes,
+	),
+};

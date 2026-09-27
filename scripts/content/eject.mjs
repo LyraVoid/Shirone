@@ -269,6 +269,9 @@ function writeStarterFiles(outAbsolute, plan) {
 	const postCount = plan.filter(
 		(item) => item.to.startsWith("content/posts/") && item.to.endsWith(".md"),
 	).length;
+	const seriesCount = plan.filter(
+		(item) => item.to.startsWith("content/series/") && item.to.endsWith(".md"),
+	).length;
 
 	writeConfigStarters(outAbsolute);
 
@@ -311,7 +314,7 @@ function writeStarterFiles(outAbsolute, plan) {
 			"",
 			"边写边看时可以另开一个终端运行 `pnpm content:watch`。",
 			"",
-			`当前共 ${postCount} 篇文章。`,
+			`当前共 ${postCount} 篇文章、${seriesCount} 个系列。`,
 			"",
 		].join("\n"),
 	);

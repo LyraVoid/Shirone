@@ -1,0 +1,165 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "skills configuration override",
+  "description": "Shirone skills config schema generated from @/types/skillsConfig.SkillsConfig",
+  "type": "object",
+  "properties": {
+    "enable": {
+      "type": "boolean",
+      "description": "页面总开关；关闭后隐藏导航入口并将 /skills/ 重定向到 404。"
+    },
+    "categories": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "description": "稳定标识，供技能引用与筛选。"
+          },
+          "label": {
+            "type": "string",
+            "description": "用户可编辑的分类名称。"
+          },
+          "icon": {
+            "anyOf": [
+              {},
+              {
+                "type": "string"
+              }
+            ],
+            "description": "Iconify 图标名。"
+          }
+        },
+        "additionalProperties": false
+      },
+      "description": "分类列表（决定 Chips 显示顺序）。"
+    },
+    "disabledNames": {
+      "anyOf": [
+        {},
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      ],
+      "description": "可选被禁用的技能名称列表。"
+    },
+    "disabledKeys": {
+      "anyOf": [
+        {},
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      ],
+      "description": "兼容通用 disabledKeys 别名。"
+    },
+    "items": {
+      "anyOf": [
+        {},
+        {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "enable": {
+                "anyOf": [
+                  {},
+                  {
+                    "type": "boolean",
+                    "enum": [
+                      false
+                    ]
+                  },
+                  {
+                    "type": "boolean",
+                    "enum": [
+                      true
+                    ]
+                  }
+                ],
+                "description": "可选独立开关；关闭后不参与渲染与计数（优先使用 config.disabledNames）。"
+              },
+              "name": {
+                "type": "string"
+              },
+              "description": {
+                "anyOf": [
+                  {},
+                  {
+                    "type": "string"
+                  }
+                ]
+              },
+              "icon": {
+                "anyOf": [
+                  {},
+                  {
+                    "type": "string"
+                  }
+                ]
+              },
+              "category": {
+                "type": "string"
+              },
+              "level": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "beginner"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "enum": [
+                      "intermediate"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "enum": [
+                      "advanced"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "enum": [
+                      "expert"
+                    ]
+                  }
+                ]
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      ],
+      "description": "可选自定义数据（向后兼容；默认读取 src/data/skills.ts）。"
+    },
+    "title": {
+      "anyOf": [
+        {},
+        {
+          "type": "string"
+        }
+      ],
+      "description": "页面标题：字面量（个人化、语言无关），或 \"$t:<i18nKey>\"（本地化；默认即当前词条）"
+    },
+    "description": {
+      "anyOf": [
+        {},
+        {
+          "type": "string"
+        }
+      ],
+      "description": "页面副标题：同上"
+    }
+  },
+  "additionalProperties": false
+}

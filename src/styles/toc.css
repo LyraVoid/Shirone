@@ -7,17 +7,18 @@
 .m3-blog-toc__item {
 	display: flex;
 	align-items: center;
-	gap: 0.5rem;
+	gap: var(--m3e-space-2);
 	min-height: 2.25rem;
-	padding: 0.375rem 0.5rem;
-	border-radius: var(--shape-corner-l);
+	padding: var(--m3e-space-1) var(--m3e-space-2);
+	border-radius: var(--shape-corner-m);
 	text-decoration: none;
+	--m3e-state-color: var(--on-surface);
 	transition: background-color var(--m3e-duration-short)
 		var(--m3e-easing-standard);
 }
 
 .m3-blog-toc__item:hover {
-	background: color-mix(in oklab, var(--on-surface) 6%, transparent);
+	background: color-mix(in oklab, var(--on-surface) 8%, transparent);
 }
 
 .m3-blog-toc__mark {
@@ -34,16 +35,24 @@
 	font-weight: 700;
 }
 
+/* 子级标题仅展示小圆点，mark 背景透明，避免出现色块包裹 */
+.m3-blog-toc__item--sub .m3-blog-toc__mark {
+	background: transparent;
+}
+
 .m3-blog-toc__dot {
-	width: 0.5rem;
-	height: 0.5rem;
-	border-radius: var(--shape-corner-xs);
+	display: block;
+	width: 0.375rem;
+	height: 0.375rem;
+	border-radius: var(--shape-corner-full);
 	background: var(--on-surface-variant);
 	opacity: 0.7;
+	transition: background-color var(--m3e-duration-short) var(--m3e-easing-standard),
+		transform var(--m3e-duration-short) var(--m3e-easing-emphasized-decelerate);
 }
 
 .m3-blog-toc__item[data-toc-depth="2"] {
-	padding-left: var(--m3e-space-2);
+	padding-left: var(--m3e-space-4);
 }
 
 .m3-blog-toc__item[data-toc-depth="3"] {
@@ -85,9 +94,15 @@
 	color: var(--on-primary);
 }
 
+/* 子级激活时 mark 依旧保持透明，仅高亮小圆点 */
+.m3-blog-toc__item--sub.m3-blog-toc__item--active .m3-blog-toc__mark {
+	background: transparent;
+}
+
 .m3-blog-toc__item--active .m3-blog-toc__dot {
-	background: var(--on-primary);
+	background: var(--primary);
 	opacity: 1;
+	transform: scale(1.35);
 }
 
 .m3-blog-toc__item--active .m3-blog-toc__text {

@@ -4,6 +4,7 @@ import IconButton from "@components/atoms/action/IconButton.svelte";
 import Dialog from "@components/atoms/overlay/Dialog.svelte";
 import Tooltip from "@components/atoms/overlay/Tooltip.svelte";
 import Icon from "@iconify/svelte";
+import { lockPageScroll } from "@utils/scroll-lock";
 
 interface MermaidViewerLabels {
 	controls: string;
@@ -79,11 +80,9 @@ $effect(() => {
 
 $effect(() => {
 	if (!fullscreenOpen) return;
-	const previousOverflow = document.body.style.overflow;
-	document.body.style.overflow = "hidden";
-	return () => {
-		document.body.style.overflow = previousOverflow;
-	};
+	// 滚动锁必须补滚动条宽度，否则全屏打开/关闭时页面宽度会抖动
+	// （纯色背景模式下没有常驻滚动条，偏移最明显）。
+	return lockPageScroll();
 });
 </script>
 

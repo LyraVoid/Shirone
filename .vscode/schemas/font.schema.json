@@ -1,0 +1,231 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "font configuration override",
+  "description": "Shirone font config schema generated from @/types/fontConfig.FontConfig",
+  "type": "object",
+  "properties": {
+    "mode": {
+      "anyOf": [
+        {
+          "type": "string",
+          "enum": [
+            "custom"
+          ]
+        },
+        {
+          "type": "string",
+          "enum": [
+            "system"
+          ]
+        }
+      ],
+      "description": "构建模式：\"system\"（纯系统字体）或 \"custom\"（自定义字体）"
+    },
+    "fontFamilies": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "配置唯一标识符（使用小写字母与连字符，如 \"roboto-body\"、\"zen-maru-cjk\"），非 CSS family 名称。"
+          },
+          "family": {
+            "type": "string",
+            "description": "真实的 CSS `font-family` 名称（如 \"Roboto\"、\"Zen Maru Gothic\"、\"JetBrains Mono Variable\"）。"
+          },
+          "role": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "body"
+                ]
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "cjk"
+                ]
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "mono"
+                ]
+              }
+            ],
+            "description": "绑定的角色：\"body\" | \"cjk\" | \"mono\"，每个角色最多定义一个字体族"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "local"
+                ]
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "fontsource"
+                ]
+              }
+            ],
+            "description": "字体来源：\"local\"（本地 .woff2）或 \"fontsource\"（npm 包）"
+          },
+          "variants": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "file": {
+                  "type": "string",
+                  "description": "字体文件路径或导入标识：\n- 若 source 为 \"local\"：填写以 \"src/assets/fonts/\" 开头的 .woff2 路径，例如 \"src/assets/fonts/ZenMaruGothic-Medium.woff2\"。\n- 若 source 为 \"fontsource\"：填写已安装的 npm 包 css 路径，例如 \"@fontsource/roboto/400.css\"。"
+                },
+                "weight": {
+                  "anyOf": [
+                    {
+                      "type": "number"
+                    },
+                    {}
+                  ],
+                  "description": "字体字重（数字或可变字体区间）"
+                },
+                "style": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "enum": [
+                        "normal"
+                      ]
+                    },
+                    {
+                      "type": "string",
+                      "enum": [
+                        "italic"
+                      ]
+                    }
+                  ],
+                  "description": "字体字形风格"
+                },
+                "subset": {
+                  "anyOf": [
+                    {},
+                    {
+                      "type": "string"
+                    }
+                  ],
+                  "description": "稳定子集名称（如 \"latin\", \"chinese-simplified\" 等，供构建与清单检查使用，可选）"
+                },
+                "unicodeRange": {
+                  "anyOf": [
+                    {},
+                    {
+                      "type": "string"
+                    }
+                  ],
+                  "description": "明确的 Unicode 字符范围（如 \"U+0000-00FF, U+0131\"，可选）"
+                }
+              },
+              "additionalProperties": false
+            },
+            "description": "包含的字体变体列表（至少提供一个变体）"
+          },
+          "fallback": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "回退字体列表（必须以通用系统字体结尾），例如：\n- 正文/CJK：`[\"ui-sans-serif\", \"system-ui\", \"sans-serif\"]`\n- 代码等宽：`[\"ui-monospace\", \"SFMono-Regular\", \"Menlo\", \"Monaco\", \"Consolas\", \"monospace\"]`"
+          },
+          "display": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "swap"
+                ]
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "optional"
+                ]
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "block"
+                ]
+              }
+            ],
+            "description": "字体加载 display 策略，默认推荐 \"swap\""
+          },
+          "preload": {
+            "type": "boolean",
+            "description": "是否在 HTML `<head>` 中生成 `<link rel=\"preload\">` 进行关键资源预加载"
+          },
+          "licenseFile": {
+            "anyOf": [
+              {},
+              {
+                "type": "string"
+              }
+            ],
+            "description": "本地自托管字体的开源许可证说明文件路径（可选，推荐随字体一同存放，如 \"src/assets/fonts/LICENSE.txt\"）"
+          }
+        },
+        "additionalProperties": false
+      },
+      "description": "字体族清单列表"
+    },
+    "subsetting": {
+      "type": "object",
+      "properties": {
+        "enable": {
+          "type": "boolean",
+          "description": "是否开启构建期字符子集裁剪"
+        },
+        "includeContent": {
+          "type": "boolean",
+          "description": "是否扫描文章 Markdown/MDX 内容以提取字形"
+        },
+        "includeI18n": {
+          "type": "boolean",
+          "description": "是否包含 i18n 语言词典字符"
+        },
+        "includeConfig": {
+          "type": "boolean",
+          "description": "是否包含站点配置文字字符"
+        },
+        "includeCommon": {
+          "type": "boolean",
+          "description": "是否包含通用标点与基础字符"
+        },
+        "allowRemoteText": {
+          "type": "boolean",
+          "description": "是否允许拉取远端文本进行分析。\n安全限制：在远端数据契约确立前必须保持为 false，禁止构建访问外部网络。"
+        }
+      },
+      "additionalProperties": false,
+      "description": "字体子集化配置"
+    },
+    "budget": {
+      "type": "object",
+      "properties": {
+        "maxTotalBytes": {
+          "type": "number",
+          "description": "全站字体产物总大小上限（单位：字节，默认 4MB = 4 * 1024 * 1024）"
+        },
+        "maxFamilyBytes": {
+          "type": "number",
+          "description": "单个字体族产物大小上限（单位：字节，默认 2MB = 2 * 1024 * 1024）"
+        }
+      },
+      "additionalProperties": false,
+      "description": "字体体积预算限制"
+    }
+  },
+  "additionalProperties": false
+}

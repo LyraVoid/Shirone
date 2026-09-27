@@ -49,6 +49,11 @@ export const DEFAULT_MOUNTS = Object.freeze({
  *
  * 这些路径与内容仓可能拥有的目录共享同一个顶层段（如 `public/assets/`），
  * 若不豁免，会在每次同步时被误删并触发不必要的重新生成。
+ *
+ * 注意：`src/data/anime-snapshots/**` 刻意**不在**本表内——它是「基线 / last-known-good」
+ * 而非纯生成物：内容仓可以提供快照文件（含纯静态 JSON 数据源），同步方向接受并物化，
+ * 命中本表才会报错。导出/清理侧对快照的另行豁免见 export.mjs 与 clean.mjs 的独立清单；
+ * 完整契约见 docs/content-separation/README.md 与 docs/remote-data-system.md。
  */
 export const PROTECTED_PATHS = Object.freeze([
 	"public/assets/anime/covers/**",

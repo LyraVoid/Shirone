@@ -4,6 +4,8 @@
  * 数据放在 src/data/devices.ts，类型放在本文件；页面总开关关闭时 /devices/ 重定向 404 且导航隐藏。
  */
 
+import type { PageMeta } from "./pageMeta.ts";
+
 /** 设备生命周期状态 */
 export type DeviceStatus = "active" | "backup" | "archived" | "wishlist";
 
@@ -59,7 +61,7 @@ export interface DeviceItem {
 }
 
 /** 设备页全局配置（行为层） */
-export interface DevicesConfig {
+export interface DevicesConfig extends PageMeta {
 	/** 页面总开关；关闭后隐藏导航入口并将 /devices/ 重定向到 404。 */
 	enable: boolean;
 	/** 场景分类列表（决定 Chips 渲染顺序）。 */

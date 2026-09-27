@@ -3,6 +3,20 @@ import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
 import { pathToFileURL } from "node:url";
 import type { AstroIntegration } from "astro";
+import {
+	expressiveCodeShared,
+	IMAGE_ENDPOINT_ROUTE,
+	iconInclude,
+	isMusicBundleFile,
+	MUSIC_SIDEBAR_VIRTUAL_ID,
+	mdxOptions,
+	prebundleSpecifiers,
+	svelteCompilerOptions,
+	swupForwardOptions,
+	swupOptions,
+	TRAILING_SLASH,
+	viteBuildShared,
+} from "../config/integrationsConfig.ts";
 import { shironesFallbackResolver } from "./fallback-resolver.ts";
 import { buildFontDeclarations } from "./fonts.ts";
 import {
@@ -12,7 +26,12 @@ import {
 } from "./load-config.ts";
 import { shironesOverlay } from "./overlay.ts";
 import { normalisePath, resolvePaths } from "./paths.ts";
-import { buildOverrideRegistry, createOverlayTargets, type OverrideRegistryRef } from "./registry.ts";
+import {
+	buildOverrideRegistry,
+	createOverlayTargets,
+	findOrphanUserFiles,
+	type OverrideRegistryRef,
+} from "./registry.ts";
 import { collectRoutes, filterRoutes } from "./routes.ts";
 import { shironesSsrNodeShims } from "./ssr-node-shims.ts";
 import type { ResolvedShironesPaths, ShironesOptions } from "./types.ts";
@@ -23,13 +42,13 @@ export type {
 	ShironesPaths,
 } from "./types.ts";
 
-// NOTE: `defineCollections` is deliberately *not* re-exported here. It imports
-// `astro:content`, a virtual module that only exists inside Vite, so pulling it
-// into this Node-side entry would break `astro.config.mjs` loading. Users import
-// it from the dedicated `shirones/collections` entry point instead.
+// NOTE: `defineCollections` function is no longer exported. The schemas
+// (`postSchema`, `momentSchema`, `specSchema`) are exported from
+// `shirones/collections` for users to use inline in their
+// `src/content.config.ts` with \`defineCollection\` from "astro:content".
+// This ensures Astro's typegen works correctly in both source and package modes.
 
-const MUSIC_VIRTUAL_ID = "virtual:shirone-music-sidebar";
-const RESOLVED_MUSIC_VIRTUAL_ID = `\0${MUSIC_VIRTUAL_ID}`;
+const RESOLVED_MUSIC_VIRTUAL_ID = `\0${MUSIC_SIDEBAR_VIRTUAL_ID}`;
 
 /**
  * Vite aliases mapping the theme's TypeScript path aliases onto the installed
@@ -98,7 +117,9 @@ function createMusicSidebarPlugin(
 		name: "shirones:optional-music-sidebar",
 		enforce: "pre" as const,
 		resolveId(source: string) {
-			return source === MUSIC_VIRTUAL_ID ? RESOLVED_MUSIC_VIRTUAL_ID : null;
+			return source === MUSIC_SIDEBAR_VIRTUAL_ID
+				? RESOLVED_MUSIC_VIRTUAL_ID
+				: null;
 		},
 		load(id: string) {
 			if (id !== RESOLVED_MUSIC_VIRTUAL_ID) return null;
@@ -109,11 +130,7 @@ function createMusicSidebarPlugin(
 		generateBundle(_options: unknown, bundle: Record<string, unknown>) {
 			if (enabled) return;
 			for (const fileName of Object.keys(bundle)) {
-				if (
-					fileName.includes("MusicSidebarClient") ||
-					fileName.startsWith("_astro/music.") ||
-					fileName.includes("/music.")
-				) {
+				if (isMusicBundleFile(fileName)) {
 					delete bundle[fileName];
 				}
 			}
@@ -154,29 +171,52 @@ export function shirones(options: ShironesOptions = {}): AstroIntegration {
 				paths = resolvePaths(options, config.root, import.meta.url);
 
 				logger.info(
-					`${paths.isPluginMode ? "plugin" : "source"} mode | content: ${paths.contentDir}`,
+					`${paths.isThemeRepo ? "theme repository" : "installed package"} mode | content: ${paths.contentDir}`,
 				);
 
 				// Scan the package + user project once and register every
 				// override. Resolution becomes a table lookup; in dev the table
 				// is rebuilt when an override file changes (see server:setup).
-				const registry = buildOverrideRegistry(paths);
-				registryRef.overrides = registry.overrides;
-				{
-					const total = Object.values(registry.counts).reduce(
-						(sum, n) => sum + n,
-						0,
-					);
-					if (total > 0) {
-						logger.info(
-							`[overrides] ${total} registered (${Object.entries(registry.counts)
-								.map(([label, n]) => `${label}:${n}`)
-								.join(", ")})`,
+				// Inside the theme's own repository the theme's files *are* the
+				// resolution targets, so the registry stays empty and every lookup
+				// falls through to packageSrc.
+				if (!paths.isThemeRepo) {
+					const registry = buildOverrideRegistry(paths);
+					registryRef.overrides = registry.overrides;
+					{
+						const total = Object.values(registry.counts).reduce(
+							(sum, n) => sum + n,
+							0,
+						);
+						if (total > 0) {
+							logger.info(
+								`[overrides] ${total} registered (${Object.entries(
+									registry.counts,
+								)
+									.map(([label, n]) => `${label}:${n}`)
+									.join(", ")})`,
+							);
+						}
+					}
+
+					// Report config files the theme no longer knows about. An
+					// upgrade that renames a config module leaves exactly this
+					// behind: the integration asks for the new name, finds
+					// neither copy, and silently uses the packaged default while
+					// the user's edits sit unread in their project.
+					const orphans = findOrphanUserFiles(paths);
+					if (orphans.length > 0) {
+						logger.warn(
+							`[overrides] ${orphans.length} config file(s) match no module ` +
+								"the theme loads, so they are never read:\n" +
+								`${orphans.map((file) => `  - ${file}`).join("\n")}\n` +
+								"  This usually means the theme renamed a config module — " +
+								"check the release notes and move your edits across.",
 						);
 					}
 				}
 
-				if (paths.isPluginMode && !existsSync(paths.configDir)) {
+				if (!paths.isThemeRepo && !existsSync(paths.configDir)) {
 					logger.warn(
 						`No configuration found at ${paths.configDir}. ` +
 							"Run `npx shirones init` to scaffold it.",
@@ -184,25 +224,41 @@ export function shirones(options: ShironesOptions = {}): AstroIntegration {
 				}
 
 				// ── 1. Load user configuration (Node side) ──────────────────────
-				const siteModule = await loadConfigModule(paths, "siteConfig", registryRef);
+				const siteModule = await loadConfigModule(
+					paths,
+					"siteConfig",
+					registryRef,
+				);
 				const siteConfig = siteModule.siteConfig as {
 					site?: string;
 					base?: string;
 				};
 
-				const sidebarModule = await loadConfigModule(paths, "sidebarConfig", registryRef);
+				const sidebarModule = await loadConfigModule(
+					paths,
+					"sidebarConfig",
+					registryRef,
+				);
 				const sidebarConfig = sidebarModule.sidebarConfig as {
 					enable?: boolean;
 					components?: { type: string; enable: boolean }[];
 				};
 
-				const musicModule = await loadConfigModule(paths, "musicConfig", registryRef);
+				const musicModule = await loadConfigModule(
+					paths,
+					"musicConfig",
+					registryRef,
+				);
 				const musicConfig = musicModule.musicConfig;
 				const resolveMusicOptions = musicModule.resolveMusicOptions as (
 					c: unknown,
 				) => unknown;
 
-				const umamiModule = await loadConfigModule(paths, "umamiConfig", registryRef);
+				const umamiModule = await loadConfigModule(
+					paths,
+					"umamiConfig",
+					registryRef,
+				);
 				const umamiConfig = umamiModule.umamiConfig as { shareUrl: string };
 				const resolveUmamiOptions = umamiModule.resolveUmamiOptions as (
 					c: unknown,
@@ -227,6 +283,9 @@ export function shirones(options: ShironesOptions = {}): AstroIntegration {
 				const fonts = await buildFontDeclarations(
 					paths,
 					{
+						// Subsetting only on `build` keeps `astro dev` free of the
+						// charset scan; `fonts.ts` additionally requires
+						// `fontConfig.subsetting.enable`, so both must hold.
 						subset: options.fonts?.subset ?? command === "build",
 						extraCharacters: options.fonts?.extraCharacters ?? "",
 					},
@@ -259,21 +318,34 @@ export function shirones(options: ShironesOptions = {}): AstroIntegration {
 							);
 
 				// ── 6. Push everything into the Astro config ────────────────────
+				// TRAILING_SLASH and IMAGE_ENDPOINT_ROUTE are paired, and the pair
+				// has to be spelled out here rather than left to Astro: the
+				// transform that appends the slash to `image.endpoint.route` runs
+				// during resolveConfig, before this hook. See the comment on
+				// IMAGE_ENDPOINT_ROUTE in src/config/integrationsConfig.ts.
 				updateConfig({
 					...(siteConfig?.site ? { site: siteConfig.site } : {}),
 					base: siteConfig?.base ?? "/",
-					trailingSlash: "always",
+					trailingSlash: TRAILING_SLASH,
+					image: { endpoint: { route: IMAGE_ENDPOINT_ROUTE } },
 					fonts: fonts as never,
 					integrations,
 					markdown: { processor: processor as never },
 					vite: {
 						resolve: { alias: createAliases(paths) },
 						plugins: [
-							shironesOverlay({
-								paths,
-								components: options.components,
-								registryRef,
-							}),
+							// The overlay rewriter redirects user files onto package
+							// files; inside the theme's own repository every import already
+							// resolves to the real source, so there is nothing to overlay.
+							...(paths.isThemeRepo
+								? []
+								: [
+										shironesOverlay({
+											paths,
+											components: options.components,
+											registryRef,
+										}),
+									]),
 							shironesFallbackResolver(paths),
 							shironesSsrNodeShims(),
 							createMusicSidebarPlugin(paths, musicEnabled),
@@ -284,40 +356,36 @@ export function shirones(options: ShironesOptions = {}): AstroIntegration {
 							// resolve. Under pnpm's strict layout these are nested
 							// inside the package, and listing an unresolvable id makes
 							// Vite log a warning for every one of them on every build.
-							include: prebundleCandidates(paths, [
-								"mermaid",
-								"@panzoom/panzoom",
-								"overlayscrollbars",
-								"@fancyapps/ui",
-							]),
+							include: prebundleCandidates(paths, prebundleSpecifiers),
 						},
-						build: {
-							minify: "esbuild",
-							cssCodeSplit: true,
-							cssMinify: "esbuild",
-							chunkSizeWarningLimit: 1000,
-							rollupOptions: {
-								onwarn(
-									warning: { message: string },
-									warn: (warning: unknown) => void,
-								) {
-									// Astro legitimately mixes static and dynamic imports for
-									// islands; silence that specific advisory.
-									if (
-										warning.message.includes("is dynamically imported by") &&
-										warning.message.includes("but also statically imported by")
-									) {
-										return;
-									}
-									warn(warning);
-								},
-							},
-						},
+						// `viteBuildShared` deliberately omits any console-stripping
+						// config: stripping console.log from a user's own code in
+						// package mode would be wrong. The in-repo checkout *is* the
+						// source project, so it opts back in below — see
+						// docs/plans/single-source-config.md (Q3, in the shirones
+						// pipeline repository).
+						build: viteBuildShared,
+						// The theme's own repository build re-enables console-stripping
+						// for production builds. Since Astro 7 ships Vite 8 there is no
+						// `build.esbuild` key any more — the old astro.config.mjs
+						// carried one and it was silently ignored — so the
+						// transform options go to Vite's *top-level* `esbuild`,
+						// which the vite:esbuild plugin applies during builds.
+						// Gated to `command === "build"` so the dev server keeps
+						// its console output.
+						...(paths.isThemeRepo && command === "build"
+							? {
+									esbuild: {
+										drop: ["debugger"],
+										pure: ["console.log", "console.debug"],
+									},
+								}
+							: {}),
 					},
 				});
 
 				// ── 7. Inject the theme's routes ────────────────────────────────
-				if (paths.isPluginMode && options.injectRoutes !== false) {
+				if (!paths.isThemeRepo && options.injectRoutes !== false) {
 					const routes = filterRoutes(
 						collectRoutes(join(paths.packageSrc, "pages")),
 						options.excludeRoutes,
@@ -333,6 +401,20 @@ export function shirones(options: ShironesOptions = {}): AstroIntegration {
 			},
 
 			"astro:server:setup": ({ server }) => {
+				// Editing a config file must invalidate the Node-side bundle
+				// cache in every mode.
+				server.watcher.on("all", (_event, file) => {
+					if (typeof file !== "string") return;
+					// Trailing separator so a sibling such as `src/configFoo`
+					// does not also match.
+					if (file.startsWith(`${paths.configDir}/`)) {
+						invalidateConfigCache();
+					}
+				});
+
+				// The theme's own repository has no override registry to rebuild.
+				if (paths.isThemeRepo) return;
+
 				// Rebuild the override registry when an override file changes so
 				// dev picks new/moved/removed overrides up immediately.
 				const overrideDirs = createOverlayTargets(paths).map((t) =>
@@ -340,10 +422,6 @@ export function shirones(options: ShironesOptions = {}): AstroIntegration {
 				);
 				server.watcher.on("all", (_event, file) => {
 					if (typeof file !== "string") return;
-					// Editing a config file invalidates the Node-side bundle cache.
-					if (file.startsWith(paths.configDir)) {
-						invalidateConfigCache();
-					}
 					if (overrideDirs.some((dir) => file.startsWith(`${dir}/`))) {
 						registryRef.overrides = buildOverrideRegistry(paths).overrides;
 					}
@@ -351,7 +429,11 @@ export function shirones(options: ShironesOptions = {}): AstroIntegration {
 			},
 
 			"astro:build:done": async ({ dir, logger }) => {
-				if (options.pagefind === false) return;
+				// The theme's own repository keeps its `pagefind --site dist` CLI
+				// build step, which honours the repository's `pagefind.yml`
+				// (workers, exclusions, ...). Indexing here as well would build
+				// the index twice.
+				if (options.pagefind === false || paths.isThemeRepo) return;
 				const outDir = dir.pathname;
 				try {
 					const pagefind = await import("pagefind");
@@ -372,24 +454,29 @@ export function shirones(options: ShironesOptions = {}): AstroIntegration {
 }
 
 /**
- * Filter a list of bare specifiers down to those Node can resolve from the
- * user's project root.
+ * Decide which bare specifiers to list in `vite.optimizeDeps.include`.
+ * Exported for tests: this is one of the three gates that used to key off
+ * `isPluginMode` and silently misbehaved for a linked install.
  *
  * Vite resolves `optimizeDeps.include` relative to the project root. When the
- * theme is installed with pnpm, its own dependencies live under
- * `node_modules/.pnpm/...` and are invisible from there, so every unresolvable
- * entry produces a "Failed to resolve dependency" warning.
+ * theme is a dependency its own dependencies live under `node_modules/.pnpm/`
+ * (or in a linked checkout's own tree) and are invisible from there, so every
+ * unresolvable entry produces a "Failed to resolve dependency" warning.
  */
-function prebundleCandidates(
+export function prebundleCandidates(
 	paths: ResolvedShironesPaths,
 	specifiers: string[],
 ): string[] {
-	// Pre-bundling is a dev-server nicety. In package mode these libraries live
-	// inside the theme's own `node_modules`, where Vite — which resolves
-	// `optimizeDeps.include` from the *project* root — cannot see them, and it
-	// warns once per entry on every cold start. Node's `require.resolve` is not
-	// a reliable proxy for what Vite can reach, so simply skip the hint there.
-	if (paths.isPluginMode) return [];
+	// Pre-bundling is a dev-server nicety. Once the theme is a dependency its
+	// libraries live in *its* `node_modules` — under `.pnpm/` when installed, or
+	// in a linked checkout's own tree — where Vite, which resolves
+	// `optimizeDeps.include` from the *project* root, cannot see them, and it
+	// warns once per entry on every cold start. Node's `require.resolve` is not a
+	// reliable proxy for what Vite can reach, so simply skip the hint.
+	if (!paths.isThemeRepo) return [];
+	// Inside the theme's own repository the specifiers *are* the project's
+	// dependencies, installed under the root Vite resolves from, so the hint is
+	// both visible and useful.
 	return specifiers;
 }
 
@@ -397,9 +484,18 @@ function prebundleCandidates(
  * Instantiate the integrations the theme depends on. Users get them for free so
  * a fresh project only needs `integrations: [shirones()]`.
  */
+/**
+ * The `command` value `astro:config:setup` hands us, derived from the hook
+ * signature rather than spelled out: Astro has grown values here before
+ * (`sync`, `preview`), and a hand-written union silently goes stale.
+ */
+type ConfigCommand = Parameters<
+	NonNullable<AstroIntegration["hooks"]["astro:config:setup"]>
+>[0]["command"];
+
 async function createBundledIntegrations(
 	paths: ResolvedShironesPaths,
-	command: string,
+	command: ConfigCommand,
 	options: { umamiConfig: { shareUrl: string }; umamiEnabled: boolean },
 	registryRef?: { overrides: Map<string, string> },
 ) {
@@ -430,12 +526,29 @@ async function createBundledIntegrations(
 			})
 		: null;
 
-	const ecModule = await loadConfigModule(paths, "expressiveCodeConfig", registryRef);
+	const ecModule = await loadConfigModule(
+		paths,
+		"expressiveCodeConfig",
+		registryRef,
+	);
 	const expressiveCodeConfig = ecModule.expressiveCodeConfig as {
 		theme: string;
 		lightTheme?: string;
 		darkTheme?: string;
 	};
+
+	// Loaded like the other config modules so a user's own copy wins. It ships
+	// inside the package (`dist/src/config/`), so `loadConfigModule`'s
+	// packageSrc fallback always finds it — users do not need it scaffolded
+	// into their project.
+	const sitemapModule = await loadConfigModule(
+		paths,
+		"sitemapFilter",
+		registryRef,
+	);
+	const sitemapFilter = sitemapModule.isSitemapPageAllowed as (
+		page: string,
+	) => boolean;
 
 	const badge = await loadPackageModule(
 		paths,
@@ -446,111 +559,49 @@ async function createBundledIntegrations(
 		"plugins/expressive-code/custom-copy-button.js",
 	);
 
-	// Forward-compat options the source `astro.config.mjs` declares but that
-	// `@swup/astro` 1.8.0's `Options` type does not know (and silently drops at
-	// runtime). Spread them so the object-literal excess-property check passes
-	// without deleting them from the mirror or changing runtime behaviour.
-	const swupForwardOptions = {
-		animateHistoryBrowsing: false,
-		skipPopStateHandling: (event: { state?: { url?: string } }) =>
-			Boolean(event.state?.url?.includes("#")),
-	};
+	// Forward-compat options live in the shared module next to swupOptions; see
+	// the comment there for why they are a separate object.
 
 	return [
 		...(oddmiscIntegration ? [oddmiscIntegration] : []),
-		swup({
-			theme: false,
-			ignore: ['a[href="#"]'],
-			animationClass: "transition-swup-",
-			containers: ["main", "#toc"],
-			smoothScrolling: true,
-			cache: true,
-			preload: true,
-			accessibility: true,
-			updateHead: {
-				awaitAssets: false,
-				persistTags: "link[rel=stylesheet], style",
-			},
-			updateBodyClass: false,
-			globalInstance: true,
-			...swupForwardOptions,
-		}),
-		icon({
-			// Every collection the theme references. The upstream source config
-			// carried a stray malformed key here and omitted material-symbols and
-			// simple-icons, which only worked because astro-icon fell back to
-			// auto-discovery in a flat node_modules.
-			include: {
-				"material-symbols": ["*"],
-				"simple-icons": ["*"],
-				"fa6-brands": ["*"],
-				"fa6-regular": ["*"],
-				"fa6-solid": ["*"],
-			},
-		}),
+		swup({ ...swupOptions, ...swupForwardOptions }),
+		icon({ include: iconInclude }),
 		expressiveCode({
+			// `themes` is built here rather than shared: it reads
+			// expressiveCodeConfig, which this mode loads through
+			// loadConfigModule() so a user's own copy wins.
 			themes: [
 				expressiveCodeConfig.lightTheme ?? expressiveCodeConfig.theme,
 				expressiveCodeConfig.darkTheme ?? expressiveCodeConfig.theme,
 			] as never,
+			// Same for `plugins`: they come through loadPackageModule() so a
+			// user's overrides apply.
 			plugins: [
 				pluginCollapsibleSections(),
 				pluginLineNumbers(),
 				(badge.pluginLanguageBadge as () => unknown)(),
 				(copyButton.pluginCustomCopyButton as () => unknown)(),
 			] as never,
-			defaultProps: {
-				wrap: true,
-				overridesByLang: {
-					shellsession: { showLineNumbers: false },
-				},
-			},
-			styleOverrides: {
-				codeBackground: "var(--codeblock-bg)",
-				borderRadius: "0.75rem",
-				borderColor: "none",
-				codeFontSize: "0.875rem",
-				codeFontFamily: "var(--m3e-font-mono-family)",
-				codeLineHeight: "1.5rem",
-				frames: {
-					editorBackground: "var(--codeblock-bg)",
-					terminalBackground: "var(--codeblock-bg)",
-					terminalTitlebarBackground: "var(--codeblock-topbar-bg)",
-					editorTabBarBackground: "var(--codeblock-topbar-bg)",
-					editorActiveTabBackground: "none",
-					editorActiveTabIndicatorBottomColor: "var(--primary)",
-					editorActiveTabIndicatorTopColor: "none",
-					editorTabBarBorderBottomColor: "var(--codeblock-topbar-bg)",
-					terminalTitlebarBorderBottomColor: "none",
-				},
-				// Hue values are numbers at runtime (the source config passes the
-				// same), but the published types only accept unresolved CSS strings.
-				textMarkers: { delHue: 0, insHue: 180, markHue: 250 } as never,
-			},
-			frames: { showCopyToClipboardButton: false },
+			// The shared module types textMarkers' hues as numbers, which is what
+			// they are at runtime, but the published types only accept unresolved
+			// CSS strings.
+			...(expressiveCodeShared as object),
 		}),
 		svelte({
 			// The theme's Svelte components use `<style lang="stylus">`, which
-			// needs `vitePreprocess`. In source mode that comes from the repo's
-			// `svelte.config.js`; a user's project has no such file, so the
-			// integration supplies it.
+			// needs `vitePreprocess`. Supplied here for *every* mode: the repo's
+			// own `svelte.config.js` is only read by editor tooling now, and a
+			// user's project has no such file at all.
 			preprocess: [vitePreprocess({ script: true })],
-			compilerOptions: {
-				// CSS-source hashing keeps SSR and client scope hashes stable.
-				cssHash: ({
-					css,
-					hash,
-				}: {
-					css: string;
-					hash: (s: string) => string;
-				}) => `svelte-${hash(css)}`,
-				// Keep repeated Svelte compiler diagnostics out of the dev
-				// terminal; check/build still surface the full warning set.
-				warningFilter: () => command !== "dev",
-			},
+			compilerOptions: svelteCompilerOptions(command === "dev"),
 		}),
-		sitemap(),
-		mdx({ syntaxHighlight: false, optimize: true }),
+		sitemap({
+			// Loaded through the registry rather than imported, so a user's own
+			// sitemapFilter wins. Without it disabled pages leak into
+			// sitemap.xml, which is what the source config has always filtered.
+			filter: (page: string) => sitemapFilter(page),
+		}),
+		mdx(mdxOptions),
 	];
 }
 

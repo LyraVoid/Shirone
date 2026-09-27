@@ -1,0 +1,35 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "umami configuration override",
+  "description": "Shirone umami config schema generated from @/types/umamiConfig.UmamiConfig",
+  "type": "object",
+  "properties": {
+    "enable": {
+      "type": "boolean",
+      "description": "全局 Umami 统计总开关：false 时完全不加载 oddmisc 运行时脚本与 DOM"
+    },
+    "shareUrl": {
+      "type": "string",
+      "description": "Umami 分享链接（必填）"
+    },
+    "websiteId": {
+      "anyOf": [
+        {},
+        {
+          "type": "string"
+        }
+      ],
+      "description": "Umami Website ID；与 scriptUrl 同时配置时启用访问采集。"
+    },
+    "scriptUrl": {
+      "anyOf": [
+        {},
+        {
+          "type": "string"
+        }
+      ],
+      "description": "Umami 采集脚本 URL；与 websiteId 同时配置时启用访问采集。"
+    }
+  },
+  "additionalProperties": false
+}

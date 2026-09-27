@@ -15,7 +15,7 @@ const host = $derived.by(() => {
 </script>
 
 <a
-	class="friend-card"
+	class="friend-card m3-state-layer"
 	href={friend.siteurl}
 	target="_blank"
 	rel="noopener noreferrer"
@@ -84,13 +84,13 @@ const host = $derived.by(() => {
 	&__body
 		flex: 1
 		min-width: 0
-		padding: 1rem 1.25rem
+		padding: var(--m3e-space-4) var(--m3e-space-5)
 
 	&__header
 		display: flex
 		align-items: center
-		gap: 0.75rem
-		margin-bottom: 0.75rem
+		gap: var(--m3e-space-3)
+		margin-bottom: var(--m3e-space-3)
 
 	&__info
 		min-width: 0
@@ -137,7 +137,7 @@ const host = $derived.by(() => {
 			transform: translateX(0.25rem)
 
 	&__desc
-		margin: 0 0 0.625rem
+		margin: 0 0 var(--m3e-space-2)
 		color: var(--on-surface-variant)
 		font: var(--m3e-type-body-small)
 		line-height: 1.5
@@ -149,7 +149,7 @@ const host = $derived.by(() => {
 	&__tags
 		display: flex
 		flex-wrap: wrap
-		gap: 0.25rem
+		gap: var(--m3e-space-1)
 
 	&__tag
 		color: var(--on-surface-variant)

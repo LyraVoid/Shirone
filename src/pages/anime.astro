@@ -5,13 +5,21 @@
  */
 import AnimeSection from "@components/organisms/AnimeSection.svelte";
 import I18nKey from "@i18n/i18nKey";
-import { i18n } from "@i18n/translation";
 import MainGridLayout from "@layouts/MainGridLayout.astro";
+import { animeConfig } from "@/config/animeConfig";
+import { resolveI18nText } from "@utils/i18n-utils";
 import { getAnimeList } from "../utils/anime-data";
+
+if (!animeConfig.enable) {
+	return Astro.redirect("/404/");
+}
+
+const pageTitle = resolveI18nText(animeConfig.title, I18nKey.anime);
+const pageDescription = resolveI18nText(animeConfig.description, I18nKey.animeBanner);
 
 const animes = await getAnimeList();
 ---
 
-<MainGridLayout title={i18n(I18nKey.anime)} description={i18n(I18nKey.animeBanner)} page="anime">
-    <AnimeSection animes={animes} client:visible></AnimeSection>
+<MainGridLayout title={pageTitle} description={pageDescription} page="anime">
+    <AnimeSection animes={animes} title={pageTitle} subtitle={pageDescription} client:visible></AnimeSection>
 </MainGridLayout>

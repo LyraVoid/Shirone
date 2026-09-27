@@ -8,6 +8,12 @@ import type { ResolvedShironesPaths } from "./types.ts";
  * Order matters: the first hit wins.
  */
 export const CONFIG_EXTENSIONS = [".ts", ".mts", ".js", ".mjs"];
+/**
+ * Barrel files, which stay owned by the package at any depth. The pattern used
+ * to be anchored (`/^index\./`), so a nested `atoms/index.ts` would have been
+ * overridable despite the comment claiming otherwise.
+ */
+const BARREL_RE = /(?:^|\/)index\.(ts|js|mts|mjs)$/;
 export const COMPONENT_EXTENSIONS = [".astro", ".svelte", ".ts", ".js"];
 
 /** Strip a known source extension from a path. */
@@ -45,7 +51,9 @@ export interface OverlayTarget {
  * | `src/components/**` | `src/components/**`          |
  * | `src/layouts/**`    | `src/layouts/**`             |
  */
-export function createOverlayTargets(paths: ResolvedShironesPaths): OverlayTarget[] {
+export function createOverlayTargets(
+	paths: ResolvedShironesPaths,
+): OverlayTarget[] {
 	return [
 		{
 			label: "config",
@@ -118,7 +126,7 @@ export function resolveOverride(
 		const rel = relative(target.packageDir, absolutePath);
 		// `index.ts` barrels stay owned by the package: overriding them would
 		// break the named-export contract the theme relies on.
-		if (/^index\.(ts|js|mts|mjs)$/.test(rel)) continue;
+		if (BARREL_RE.test(rel)) continue;
 
 		const hit = probe(join(target.userDir, rel), target.extensions);
 		if (hit) return hit;
@@ -149,7 +157,9 @@ export interface OverrideRegistry {
  * probe per import, and the registry doubles as the single source of truth for
  * "what is overridden and what is not".
  */
-export function buildOverrideRegistry(paths: ResolvedShironesPaths): OverrideRegistry {
+export function buildOverrideRegistry(
+	paths: ResolvedShironesPaths,
+): OverrideRegistry {
 	const targets = createOverlayTargets(paths);
 	const overrides = new Map<string, string>();
 	const counts: Record<string, number> = {};
@@ -163,8 +173,10 @@ export function buildOverrideRegistry(paths: ResolvedShironesPaths): OverrideReg
 
 		for (const abs of walkFiles(target.packageDir)) {
 			const rel = relative(target.packageDir, abs);
-			// `index.ts` barrels stay owned by the package.
-			if (/^index\.(ts|js|mts|mjs)$/.test(rel)) continue;
+			// `index.ts` barrels stay owned by the package: overriding one would
+			// break the named-export contract the theme relies on. Matched at any
+			// depth, not just the directory root.
+			if (BARREL_RE.test(rel)) continue;
 
 			const hit = probe(join(target.userDir, rel), target.extensions);
 			if (hit) {
@@ -176,4 +188,56 @@ export function buildOverrideRegistry(paths: ResolvedShironesPaths): OverrideReg
 	}
 
 	return { overrides, counts };
+}
+
+/**
+ * Files a user left in the theme-owned config/data directories that correspond
+ * to no module the package ships — and therefore to nothing that will ever be
+ * loaded.
+ *
+ * This is the silent half of an upgrade: when the theme renames a config module
+ * (`siteConfig` → `site`), the integration asks for the new name, finds the
+ * user's old file nowhere it looks, and quietly falls back to the packaged
+ * default. The user's edits stop applying with no error and no warning.
+ *
+ * Only `configDir` and `dataDir` are scanned. Those directories belong entirely
+ * to the theme, so a file the package does not know about is inert by
+ * definition. `src/components` and `src/layouts` are deliberately *not*
+ * scanned: they are shared with the user's own components, so every legitimate
+ * file of theirs would be reported as an orphan.
+ */
+export function findOrphanUserFiles(paths: ResolvedShironesPaths): string[] {
+	const targets = createOverlayTargets(paths).filter(
+		(t) => t.label === "config" || t.label === "data",
+	);
+	const orphans: string[] = [];
+
+	for (const target of targets) {
+		if (!existsSync(target.userDir)) continue;
+		const userDir = normalisePath(target.userDir);
+
+		for (const file of walkFiles(target.userDir)) {
+			const rel = relative(target.userDir, file);
+
+			// `dataDir` lives *inside* `configDir` but maps to a different package
+			// directory (`src/data`, not `src/config/data`), so scanning it under
+			// the config target would report every data module as an orphan. The
+			// data target covers it against the right place.
+			if (target.label === "config") {
+				const dataDir = normalisePath(paths.dataDir);
+				if (dataDir !== userDir && dataDir.startsWith(`${userDir}/`)) {
+					const withinData = `${normalisePath(file)}/`.startsWith(
+						`${dataDir}/`,
+					);
+					if (withinData) continue;
+				}
+			}
+
+			// A package module with any of the probed extensions counts as known.
+			if (probe(join(target.packageDir, rel), target.extensions)) continue;
+			orphans.push(file);
+		}
+	}
+
+	return orphans.sort();
 }

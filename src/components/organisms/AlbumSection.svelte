@@ -11,8 +11,15 @@ import Icon from "@iconify/svelte";
 import { onMount } from "svelte";
 import type { AlbumIndexItem } from "@/types/album";
 
-let { albums = [] as AlbumIndexItem[] }: { albums?: AlbumIndexItem[] } =
-	$props();
+let {
+	albums = [] as AlbumIndexItem[],
+	title = i18n(I18nKey.albums),
+	subtitle = i18n(I18nKey.albumsBanner),
+}: {
+	albums?: AlbumIndexItem[];
+	title?: string;
+	subtitle?: string;
+} = $props();
 let query = $state("");
 let selectedTag = $state("");
 let initialized = false;
@@ -74,8 +81,8 @@ onMount(() => {
 <Card color="var(--card-bg)" radius="l" class="album-section px-8 py-6">
 	<PageHeader
 		icon="material-symbols:photo-library-outline-rounded"
-		title={i18n(I18nKey.albums)}
-		subtitle={i18n(I18nKey.albumsBanner)}
+		{title}
+		{subtitle}
 	/>
 
 	{#if albums.length > 0}

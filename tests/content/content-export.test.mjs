@@ -718,13 +718,23 @@ describe("content:export 内容文件导出", () => {
 			"public/assets/moments/thumbnails/a-192.webp",
 			"public/assets/anime/covers/x.webp",
 			"assets/fonts/.subset/x.woff2",
+		]) {
+			assert.equal(
+				existsSync(join(content, path)),
+				false,
+				`${path} 不应被导出——内容仓持有它会让 content:sync 直接报错`,
+			);
+		}
+		// 快照与 .gitkeep 不属于「同步报错」的生成物（同步方向允许内容仓提供），
+		// 导出侧只是永不回写：避免把基线/占位文件倒灌进内容仓。
+		for (const path of [
 			"data/anime-snapshots/bangumi.json",
 			"data/anime-snapshots/.gitkeep",
 		]) {
 			assert.equal(
 				existsSync(join(content, path)),
 				false,
-				`${path} 不应被导出——内容仓持有它会让 content:sync 直接报错`,
+				`${path} 不应被导出（导出侧对基线与代码仓自有文件一律跳过）`,
 			);
 		}
 	});

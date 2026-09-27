@@ -51,15 +51,16 @@ const handleFocus = (): void => {
 
 <div class="hidden lg:block relative w-10 h-10 shrink-0">
     <div
-        class="m3-state-layer absolute right-0 top-0 flex items-center overflow-hidden rounded-full transition-all duration-300 h-10 top-app-bar__search-shell
+        class="m3-state-layer absolute right-0 top-0 flex items-center overflow-hidden rounded-full h-10 top-app-bar__search-shell
                {expanded ? 'top-app-bar__search-shell--expanded w-48 bg-(--surface-container-high)' : 'w-10 bg-transparent'}"
+        style="transition: width var(--m3e-duration-medium) var(--m3e-easing-emphasized-decelerate), background-color var(--m3e-duration-short) var(--m3e-easing-standard);"
         onclick={() => {
             if (!expanded) expand();
         }}
     >
         <Icon
             icon="material-symbols:search"
-            class="pointer-events-none shrink-0 text-[1.25rem] transition-all
+            class="pointer-events-none shrink-0 text-[1.25rem] transition-colors duration-[var(--m3e-duration-short)]
                    {expanded
                        ? 'ml-3 text-[var(--on-surface-variant)]'
                        : 'mx-auto text-[var(--on-surface)]'}"
@@ -72,7 +73,7 @@ const handleFocus = (): void => {
             tabindex={expanded ? 0 : -1}
             onfocus={handleFocus}
             onblur={handleBlur}
-            class="h-full bg-transparent outline-0 text-(--on-surface) caret-(--primary) transition-all
+            class="h-full bg-transparent outline-0 text-(--on-surface) caret-(--primary) transition-opacity duration-[var(--m3e-duration-short)]
                    {expanded ? 'w-32 pl-2 opacity-100' : 'w-0 opacity-0'}"
         />
     </div>

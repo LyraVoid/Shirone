@@ -24,7 +24,7 @@
 
 ## 从这里开始
 
-[在线文档](https://docs.shirone.mysqil.com/)是配置主题、管理内容和部署站点的主要入口。本仓库包含主题源码；如果希望将个人内容独立管理，请使用 [Shirone-Content](https://github.com/LyraVoid/Shirone-Content)。
+[在线文档](https://docs.shirone.mysqil.com/)是配置主题、管理内容和部署站点的主要入口。本仓库包含主题源码。如果不想跟着主题源码一起更新，可以直接安装 [`shirones` npm 包](#使用-npm-包)：博客只占一个小仓库，主题更新用 `pnpm add shirones@latest` 就能拿到。如果希望将个人内容独立管理，请使用 [Shirone-Content](https://github.com/LyraVoid/Shirone-Content)。
 
 ## 实测表现
 
@@ -51,7 +51,7 @@ Shirone 是一个使用 Astro 7、Svelte 5、Tailwind CSS 4 和 Stylus 构建的
 
 柔软的外表之下，是一套由设计令牌驱动的 Material 3 Expressive 组件系统。内容优先通过服务端渲染输出，Swup 则负责流畅的站内导航，并让页面切换时的外围应用框架保持运行。
 
-除了长文写作，Shirone 也适合展示瞬间、相册、追番、友链、项目、技能和时间线等个人内容。
+除了长文写作，Shirone 也适合展示瞬间、相册、追番、友链、项目、技能、设备、游戏、系列连载和时间线等个人内容。
 
 ## ✦ 魔导书里的能力
 
@@ -62,12 +62,14 @@ Shirone 是一个使用 Astro 7、Svelte 5、Tailwind CSS 4 和 Stylus 构建的
 - 支持 Markdown 与 MDX，以及数学公式、Mermaid、提示块、增强代码块和图片画廊
 - Pagefind 全文搜索、RSS 与 Sitemap
 - 文章目录、延伸阅读、分享、加密与可选评论
-- 归档、分类、标签、友链、瞬间、番剧、相册、项目、技能和时间线等独立页面
+- 归档、分类、标签、友链、瞬间、番剧、相册、项目、技能、设备、游戏、系列和时间线等独立页面
 - 内置 10 种界面语言
 - SSR 优先、键盘友好，并配有无障碍测试
 - 可选集成遵循“零额外负担”原则：关闭时不会产生外部请求、DOM、布局偏移或主包代码
 
 ## 快速开始
+
+如果觉得跟着主题更新太麻烦，或者不想单独维护一个主题仓库，直接用 npm 包更省事——见[使用 npm 包](#使用-npm-包)。
 
 ### 环境要求
 
@@ -99,7 +101,7 @@ npx shirones init   # 写入 package.json，安装 astro、主题及其 peer 依
 pnpm dev
 ```
 
-`init` 会生成 `astro.config.mjs`、`shirones/` 下的类型化配置、示例内容与静态资源；你依然可以通过 `src/components/` 和 `src/layouts/` 覆盖主题组件。随时重新运行 `npx shirones init` 检查漂移（只报告、不修改）；运行 `npx shirones init --update` 恢复缺失文件，或 `--force` 从模板重新初始化。详见 [npm 包模式](./docs/npm-package-mode.md) 与 [shirones 仓库](https://github.com/yCENzh/shirones)。
+`init` 会生成 `astro.config.mjs`、`shirones/` 下的类型化配置、示例内容与静态资源；你依然可以通过 `src/components/` 和 `src/layouts/` 覆盖主题组件。随时重新运行 `npx shirones init` 检查漂移（只报告、不修改）；运行 `npx shirones init --update` 恢复缺失文件，或 `--force` 从模板重新初始化。详见 [shirones wiki](https://github.com/yCENzh/shirones/wiki)、[npm 包模式](./docs/npm-package-mode.md) 与 [shirones 仓库](https://github.com/yCENzh/shirones)。
 
 ### 定制站点
 
@@ -171,7 +173,11 @@ draft: false
 
 Shirone 会生成静态的 `dist/` 目录，可部署到 Vercel、Netlify、GitHub Pages 或任意静态托管服务。
 
-部署前，请更新 `src/config/siteConfig.ts` 中的 `site` 和 `base`，然后运行：
+部署前，请更新 `src/config/siteConfig.ts` 中的 `site` 和 `base`（或在内容仓的 `config/site.yaml` 中配置）：
+- 若站点部署在域名根目录（例如 `https://example.com/` 或自定义域名），`base` 保持默认 `"/"` 即可；
+- 若站点部署在带子路径的托管平台（例如 GitHub Pages 默认项目地址 `https://username.github.io/Shirone/`），需将 `base` 设置为项目子路径（如 `"/Shirone"` 或 `"/Shirone/"`），`site` 设置为根域名 `https://username.github.io`。构建系统与站内所有资源引用均会自动适配该前缀。
+
+然后运行：
 
 ```bash
 pnpm install --frozen-lockfile
@@ -185,6 +191,7 @@ pnpm build
 
 ## 项目文档
 
+- [shirones wiki](https://github.com/yCENzh/shirones/wiki) - 面向使用者的指南：安装、配置、内容、组件覆盖、CLI 与故障排查
 - [`src/config/README.md`](./src/config/README.md) - 配置参考
 - [`docs/m3e-standard.md`](./docs/m3e-standard.md) - 设计令牌与组件标准
 - [`docs/atomic-structure.md`](./docs/atomic-structure.md) - 组件分层与依赖规则

@@ -21,12 +21,12 @@ test.describe("文章列表布局模式", () => {
 		await page.goto("/");
 		const firstCard = page.locator(".m3-blog-postcard").first();
 		await expect(firstCard.locator(".m3-blog-postcard__title")).toContainText(
-			"Simple Guides for Fuwari",
+			"Shirone Authoring & Usage Guide",
 		);
 		await expect(firstCard.locator(".m3-blog-postcard__pin svg")).toBeVisible();
 		await expect(firstCard.locator(".m3-blog-postcard__title")).toHaveAttribute(
 			"aria-label",
-			/Simple Guides for Fuwari, Pinned/,
+			/Shirone Authoring & Usage Guide, Pinned/,
 		);
 	});
 

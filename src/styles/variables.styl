@@ -195,6 +195,13 @@ define({
   --m3e-space-8: 32px
   --m3e-space-10: 40px
 
+  /* 间距别名（语义化尺寸） */
+  --m3e-space-compact: var(--m3e-space-2)
+  --m3e-space-control: var(--m3e-space-3)
+  --m3e-space-section: var(--m3e-space-6)
+  --m3e-space-content: var(--m3e-space-8)
+  --m3e-space-page: var(--m3e-space-10)
+
   /* 密度：0 = comfortable（默认）/ -1 = compact。桌面精确指针自动 compact，
      组件高度用 calc(基础 + var(--m3e-density) * 4px) 参与密度变化；不引用者无感 */
   --m3e-density: 0
@@ -233,15 +240,36 @@ define({
   --m3e-elevation-5: unquote("0 6px 12px color-mix(in srgb, var(--mc-shadow, #000) 14%, transparent), 0 12px 28px 6px color-mix(in srgb, var(--mc-shadow, #000) 12%, transparent)")
 
   /* 字体阶梯（font 简写：weight size/line-height family）。"/" 需 unquote 防 Stylus 当除法 */
+  --m3e-type-display-large: unquote("400 3.5rem/1.12 var(--font-sans)")
+  --m3e-type-display-medium: unquote("400 2.8125rem/1.16 var(--font-sans)")
+  --m3e-type-display-small: unquote("400 2.25rem/1.22 var(--font-sans)")
+  --m3e-type-headline-large: unquote("400 2rem/1.25 var(--font-sans)")
+  --m3e-type-headline-medium: unquote("400 1.75rem/2.25rem var(--font-sans)")
+  --m3e-type-headline-small: unquote("400 1.5rem/2rem var(--font-sans)")
+  --m3e-type-title-large: unquote("400 1.375rem/1.75rem var(--font-sans)")
+  --m3e-type-title-medium: unquote("500 1rem/1.5rem var(--font-sans)")
+  --m3e-type-title-small: unquote("500 0.875rem/1.25rem var(--font-sans)")
+  --m3e-type-body-large: unquote("400 1rem/1.5rem var(--font-sans)")
+  --m3e-type-body-medium: unquote("400 0.875rem/1.25rem var(--font-sans)")
+  --m3e-type-body-small: unquote("400 0.75rem/1rem var(--font-sans)")
+  --m3e-type-label-large: unquote("500 0.875rem/1.25rem var(--font-sans)")
   --m3e-type-label-small: unquote("500 0.6875rem/1rem var(--font-sans)")
   --m3e-type-label-medium: unquote("500 0.75rem/1rem var(--font-sans)")
-  --m3e-type-label-large: unquote("500 0.875rem/1.25rem var(--font-sans)")
-  --m3e-type-body-small: unquote("400 0.75rem/1rem var(--font-sans)")
-  --m3e-type-body-medium: unquote("400 0.875rem/1.25rem var(--font-sans)")
   --m3e-type-code: unquote("400 0.875rem/1.25rem var(--m3e-font-mono-family)")
-  --m3e-type-body-large: unquote("400 1rem/1.5rem var(--font-sans)")
-  --m3e-type-title-small: unquote("500 0.875rem/1.25rem var(--font-sans)")
-  --m3e-type-title-medium: unquote("500 1rem/1.5rem var(--font-sans)")
-  --m3e-type-title-large: unquote("400 1.375rem/1.75rem var(--font-sans)")
-  --m3e-type-headline-small: unquote("400 1.5rem/2rem var(--font-sans)")
-  --m3e-type-headline-medium: unquote("400 1.75rem/2.25rem var(--font-sans)")
+
+  /* 字体阶梯简写别名（与 DESIGN.md 对齐） */
+  --m3e-type-display-lg: var(--m3e-type-display-large)
+  --m3e-type-display-md: var(--m3e-type-display-medium)
+  --m3e-type-display-sm: var(--m3e-type-display-small)
+  --m3e-type-headline-lg: var(--m3e-type-headline-large)
+  --m3e-type-headline-md: var(--m3e-type-headline-medium)
+  --m3e-type-headline-sm: var(--m3e-type-headline-small)
+  --m3e-type-title-lg: var(--m3e-type-title-large)
+  --m3e-type-title-md: var(--m3e-type-title-medium)
+  --m3e-type-title-sm: var(--m3e-type-title-small)
+  --m3e-type-body-lg: var(--m3e-type-body-large)
+  --m3e-type-body-md: var(--m3e-type-body-medium)
+  --m3e-type-body-sm: var(--m3e-type-body-small)
+  --m3e-type-label-lg: var(--m3e-type-label-large)
+  --m3e-type-label-md: var(--m3e-type-label-medium)
+  --m3e-type-label-sm: var(--m3e-type-label-small)

@@ -113,7 +113,7 @@ let { album }: { album: AlbumIndexItem } = $props();
 			width: 1.125rem
 			height: 1.125rem
 	&__body
-		padding: 1rem 1.125rem 1.125rem
+		padding: var(--m3e-space-4) var(--m3e-space-4)
 	&__title-row
 		display: flex
 		align-items: flex-start

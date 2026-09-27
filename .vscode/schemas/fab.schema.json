@@ -1,0 +1,883 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "fab configuration override",
+  "description": "Shirone fab config schema generated from @/types/fabConfig.FabConfig",
+  "type": "object",
+  "properties": {
+    "enable": {
+      "type": "boolean",
+      "description": "全局主开关。为 false 时零 DOM、零 JS 脚本输出"
+    },
+    "align": {
+      "anyOf": [
+        {},
+        {
+          "type": "string",
+          "enum": [
+            "end"
+          ]
+        },
+        {
+          "type": "string",
+          "enum": [
+            "start"
+          ]
+        }
+      ],
+      "description": "停靠位置（默认右下角 end）"
+    },
+    "offset": {
+      "anyOf": [
+        {},
+        {
+          "type": "object",
+          "properties": {
+            "bottom": {
+              "anyOf": [
+                {},
+                {
+                  "type": "string"
+                }
+              ]
+            },
+            "right": {
+              "anyOf": [
+                {},
+                {
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "additionalProperties": false
+        }
+      ],
+      "description": "距离视口边距（rem，支持设备自适应）"
+    },
+    "size": {
+      "anyOf": [
+        {},
+        {
+          "type": "string",
+          "enum": [
+            "regular"
+          ]
+        },
+        {
+          "type": "string",
+          "enum": [
+            "small"
+          ]
+        }
+      ],
+      "description": "FAB 按钮尺寸规格：small (40px) / regular (56px)，默认 regular"
+    },
+    "items": {
+      "type": "array",
+      "items": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "top"
+                ]
+              },
+              "scrollThresholdRatio": {
+                "anyOf": [
+                  {},
+                  {
+                    "type": "number"
+                  }
+                ],
+                "description": "滚动触发阈值（占首屏 Banner 高度的百分比，默认跟随 BANNER_HEIGHT）"
+              },
+              "enable": {
+                "type": "boolean",
+                "description": "是否启用该 FAB 组件"
+              },
+              "devices": {
+                "anyOf": [
+                  {},
+                  {
+                    "type": "array",
+                    "items": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "mobile"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "tablet"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "desktop"
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                ],
+                "description": "允许渲染并显示的设备清单。\n省略或传入空数组时默认在所有设备（[\"mobile\", \"tablet\", \"desktop\"]）上生效。"
+              },
+              "pages": {
+                "anyOf": [
+                  {},
+                  {
+                    "type": "array",
+                    "items": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "notFound"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "home"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "archive"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "friends"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "moments"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "anime"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "compass"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "skills"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "projects"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "devices"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "games"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "timeline"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "albums"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "about"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "categories"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "tags"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "series"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "rss"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "atom"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "post"
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                ],
+                "description": "限定生效的页面标识符（对齐 SidebarPage）。\n省略或为空数组表示在所有页面允许显示。"
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "toc"
+                ]
+              },
+              "depth": {
+                "anyOf": [
+                  {},
+                  {
+                    "type": "number",
+                    "enum": [
+                      1
+                    ]
+                  },
+                  {
+                    "type": "number",
+                    "enum": [
+                      2
+                    ]
+                  },
+                  {
+                    "type": "number",
+                    "enum": [
+                      3
+                    ]
+                  }
+                ],
+                "description": "目录抓取深度（默认 3 级）"
+              },
+              "closeOnSelect": {
+                "anyOf": [
+                  {},
+                  {
+                    "type": "boolean",
+                    "enum": [
+                      false
+                    ]
+                  },
+                  {
+                    "type": "boolean",
+                    "enum": [
+                      true
+                    ]
+                  }
+                ],
+                "description": "点击标题链接后是否自动收起面板（默认 true）"
+              },
+              "enable": {
+                "type": "boolean",
+                "description": "是否启用该 FAB 组件"
+              },
+              "devices": {
+                "anyOf": [
+                  {},
+                  {
+                    "type": "array",
+                    "items": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "mobile"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "tablet"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "desktop"
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                ],
+                "description": "允许渲染并显示的设备清单。\n省略或传入空数组时默认在所有设备（[\"mobile\", \"tablet\", \"desktop\"]）上生效。"
+              },
+              "pages": {
+                "anyOf": [
+                  {},
+                  {
+                    "type": "array",
+                    "items": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "notFound"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "home"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "archive"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "friends"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "moments"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "anime"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "compass"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "skills"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "projects"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "devices"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "games"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "timeline"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "albums"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "about"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "categories"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "tags"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "series"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "rss"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "atom"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "post"
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                ],
+                "description": "限定生效的页面标识符（对齐 SidebarPage）。\n省略或为空数组表示在所有页面允许显示。"
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "comment"
+                ]
+              },
+              "targetSelector": {
+                "anyOf": [
+                  {},
+                  {
+                    "type": "string"
+                  }
+                ],
+                "description": "评论容器选择器（默认 \"#comment-container\"）"
+              },
+              "enable": {
+                "type": "boolean",
+                "description": "是否启用该 FAB 组件"
+              },
+              "devices": {
+                "anyOf": [
+                  {},
+                  {
+                    "type": "array",
+                    "items": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "mobile"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "tablet"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "desktop"
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                ],
+                "description": "允许渲染并显示的设备清单。\n省略或传入空数组时默认在所有设备（[\"mobile\", \"tablet\", \"desktop\"]）上生效。"
+              },
+              "pages": {
+                "anyOf": [
+                  {},
+                  {
+                    "type": "array",
+                    "items": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "notFound"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "home"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "archive"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "friends"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "moments"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "anime"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "compass"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "skills"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "projects"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "devices"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "games"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "timeline"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "albums"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "about"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "categories"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "tags"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "series"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "rss"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "atom"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "post"
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                ],
+                "description": "限定生效的页面标识符（对齐 SidebarPage）。\n省略或为空数组表示在所有页面允许显示。"
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "home"
+                ]
+              },
+              "onlySubPages": {
+                "anyOf": [
+                  {},
+                  {
+                    "type": "boolean",
+                    "enum": [
+                      false
+                    ]
+                  },
+                  {
+                    "type": "boolean",
+                    "enum": [
+                      true
+                    ]
+                  }
+                ],
+                "description": "是否仅在非首页路由（!isHomePage）时显示（默认 true）"
+              },
+              "enable": {
+                "type": "boolean",
+                "description": "是否启用该 FAB 组件"
+              },
+              "devices": {
+                "anyOf": [
+                  {},
+                  {
+                    "type": "array",
+                    "items": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "mobile"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "tablet"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "desktop"
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                ],
+                "description": "允许渲染并显示的设备清单。\n省略或传入空数组时默认在所有设备（[\"mobile\", \"tablet\", \"desktop\"]）上生效。"
+              },
+              "pages": {
+                "anyOf": [
+                  {},
+                  {
+                    "type": "array",
+                    "items": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "notFound"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "home"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "archive"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "friends"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "moments"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "anime"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "compass"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "skills"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "projects"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "devices"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "games"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "timeline"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "albums"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "about"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "categories"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "tags"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "series"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "rss"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "atom"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "post"
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                ],
+                "description": "限定生效的页面标识符（对齐 SidebarPage）。\n省略或为空数组表示在所有页面允许显示。"
+              }
+            },
+            "additionalProperties": false
+          }
+        ]
+      },
+      "description": "悬浮按钮组列表（按自下而上顺序堆叠）"
+    }
+  },
+  "additionalProperties": false
+}

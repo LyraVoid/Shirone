@@ -58,7 +58,7 @@ const tagSummary = `${tags.length} ${i18n(I18nKey.tagsCount)} · ${totalPosts} $
 	&__cloud
 		display: flex
 		flex-wrap: wrap
-		gap: 0.625rem
+		gap: var(--m3e-space-2) var(--m3e-space-3)
 
 	/* 计数徽标：chip 内部右侧的小号数字，与站内 badge 语言一致 */
 	&__count
@@ -67,8 +67,8 @@ const tagSummary = `${tags.length} ${i18n(I18nKey.tagsCount)} · ${totalPosts} $
 		justify-content: center
 		min-width: 1.375rem
 		height: 1.125rem
-		margin-left: 0.375rem
-		padding: 0 0.25rem
+		margin-left: var(--m3e-space-1)
+		padding: 0 var(--m3e-space-1)
 		border-radius: var(--shape-corner-full)
 		background: unquote("color-mix(in oklab, var(--primary) 12%, transparent)")
 		color: var(--on-surface)

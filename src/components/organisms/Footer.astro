@@ -16,6 +16,7 @@ const links = [
 	{ label: "Atom", href: url("atom/") },
 	{ label: "Sitemap", href: url("sitemap-index.xml"), external: true },
 ];
+const isShironesPackage = packageMetadata.name === "shirones";
 const poweredBy = [
 	{ label: "Astro", href: "https://astro.build", external: true },
 	{
@@ -23,6 +24,15 @@ const poweredBy = [
 		href: "https://github.com/LyraVoid/Shirone",
 		external: true,
 	},
+	...(isShironesPackage
+		? [
+				{
+					label: "shirones",
+					href: "https://github.com/yCENzh/shirones",
+					external: true,
+				},
+			]
+		: []),
 ];
 
 let customFooterHtml = "";
@@ -53,6 +63,6 @@ if (footerConfig.enable) {
 	links={links}
 	poweredBy={poweredBy}
 	version={packageMetadata.version}
-	versionHref="https://github.com/LyraVoid/Shirone"
+	versionHref={isShironesPackage ? "https://www.npmjs.com/package/shirones" : "https://github.com/LyraVoid/Shirone"}
 	customHtml={customFooterHtml}
 />

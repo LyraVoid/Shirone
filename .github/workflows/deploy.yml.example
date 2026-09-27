@@ -112,15 +112,13 @@ jobs:
       - name: Restore build caches
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
-          # 缩略图按源图内容哈希复用，因此跨 commit 的缓存命中是有效的。
+          # 缩略图按源图内容哈希复用，跨 commit 的缓存命中安全且有效；
+          # 内容层存储（.astro / node_modules/.astro）不跨 commit 缓存，避免集合清空后旧条目残留。
           path: |
-            .astro
-            node_modules/.astro
             public/assets/moments/thumbnails
-          key: ${{ runner.os }}-shirone-${{ hashFiles('pnpm-lock.yaml', 'astro.config.mjs') }}-${{ steps.content.outputs.sha }}
+          key: ${{ runner.os }}-shirone-thumbnails-${{ hashFiles('pnpm-lock.yaml') }}
           restore-keys: |
-            ${{ runner.os }}-shirone-${{ hashFiles('pnpm-lock.yaml', 'astro.config.mjs') }}-
-            ${{ runner.os }}-shirone-
+            ${{ runner.os }}-shirone-thumbnails-
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile --prefer-offline
@@ -130,6 +128,23 @@ jobs:
       # 且 fonts:subset 需要内容与配置都已就位。
       - name: Materialize content and config
         run: pnpm content:sync
+
+      # 番剧数据与封面：缓存 + 按需刷新。
+      # 未配置 provider 时，anime:sync 会自动跳过并 exit 0，对未启用番剧的站点零影响。
+      - name: Restore anime cache
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: |
+            src/data/anime-snapshots
+            public/assets/anime/covers
+          key: ${{ runner.os }}-shirone-anime-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-shirone-anime-
+
+      - name: Sync anime data (best effort)
+        run: pnpm anime:sync --if-stale
+        env:
+          BILI_SESSDATA: ${{ secrets.BILI_SESSDATA }}
 
       - name: Build site
         run: pnpm build

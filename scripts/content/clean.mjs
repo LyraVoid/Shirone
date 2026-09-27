@@ -67,8 +67,8 @@ const ROOT = process.cwd();
  * 既不备份也不删除的路径。
  *
  * `PROTECTED_PATHS` 是与 `sync.mjs` 共享的构建期生成物豁免表；
- * 番剧快照（外部 API 拉取，写入 `src/data/` 挂载点内）与各目录的 `.gitkeep` 一并豁免：
- * 前者重建要打外部接口，后者是代码仓用来占位空目录的自有文件。
+ * 番剧快照与各目录的 `.gitkeep` 一并豁免：前者是基线数据（provider 快照重建要打外部接口，
+ * 自定义 `source.file` 则是使用者数据），后者是代码仓用来占位空目录的自有文件。
  */
 const CLEAN_PROTECTED_PATHS = Object.freeze([
 	...PROTECTED_PATHS,

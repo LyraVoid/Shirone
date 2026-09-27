@@ -10,7 +10,7 @@ description: Configuring a Shirone blog site - site identity, theme colors, navi
 ## 分层原则:配置管行为,数据管内容
 
 - `src/config/*Config.ts`:页面开关 `enable`、分类顺序 `categories`、单项禁用 `disabledKeys`、排序 `order`、数据源与凭据;
-- `src/data/*.ts`:具体内容实体(`projects.ts`、`skills.ts`、`timeline.ts`、`devices.ts`、`friends.ts`、`compass.ts`、`anime.ts`、`music.ts`);
+- `src/data/*.ts`:具体内容实体(`projects.ts`、`skills.ts`、`timeline.ts`、`devices.ts`、`games.ts`、`friends.ts`、`compass.ts`、`anime.ts`、`music.ts`);
 - 消费方统一从 `@/config` barrel 导入(个别循环依赖模块例外,见配置目录 README)。
 
 ## 常用配置速查
@@ -29,7 +29,8 @@ description: Configuring a Shirone blog site - site identity, theme colors, navi
 | `animeConfig.ts` | 追番页数据源:本地 / Bangumi 快照 / Bilibili 快照 |
 | `fontConfig.ts` | 字体(构建期 TTF→WOFF2 子集化) |
 | `llmsConfig.ts` | 生成 AI 友好的 `/llms.txt` 与 `/llms-full.txt` |
-| `skillsConfig.ts` 等页面配置 | 技能/项目/时间线/设备页开关与分类,内容在对应 `src/data/*.ts`；友链、罗盘、番剧和音乐数据也在该目录维护 |
+| `skillsConfig.ts` 等页面配置 | 技能/项目/时间线/设备/游戏页开关与分类,内容在对应 `src/data/*.ts`；友链、罗盘、番剧和音乐数据也在该目录维护 |
+| `seriesConfig.ts` | 系列连载（`/series/` 索引与详情页、文章内系列卡位置 `cardPosition`、默认开启，关闭时入口与页面同步隐藏） |
 | `fabConfig.ts` | 右下角悬浮控制流 |
 | `footerConfig.ts` / `FooterConfig.html` | 可选页脚 HTML 注入(默认关闭) |
 | `licenseConfig.ts` / `expressiveCodeConfig.ts` | 文章版权声明与代码块主题 |
@@ -48,7 +49,7 @@ description: Configuring a Shirone blog site - site identity, theme colors, navi
 1. 在对应 `*Config.ts` 置 `enable: true` 并填写凭据(如 Twikoo `envId`,或 Giscus 的 `giscus.repo` / `repoId` / `categoryId` 三必填——从 giscus.app 获取,缺任一则评论区静默关闭);
 2. 部分功能需同时满足多条件,如侧栏音乐要求:`musicConfig.enable` + 数据源有有效曲目 + `sidebarConfig.components` 中 music 条目 `enable: true`;
 3. 侧栏 widget 的显隐/分栏/页面范围在 `sidebarConfig.ts` 编排;
-4. 页面级开关(如 skills/projects)关闭时导航入口同步隐藏。
+4. 页面级开关(如 skills/projects)关闭时导航入口同步隐藏;系列功能还提供 `LinkPresets.Series`(`/series/`)预设但不在默认导航列表中,需用户自行加入 `src/config/navBarConfig.ts`,其内容仓覆盖文件为 `config/series.yaml`(领域键 `series`)。
 
 ## Umami 数据统计
 

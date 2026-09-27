@@ -1,0 +1,17 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "permalink configuration override",
+  "description": "Shirone permalink config schema generated from @/types/permalinkConfig.PermalinkConfig",
+  "type": "object",
+  "properties": {
+    "enable": {
+      "type": "boolean",
+      "description": "是否启用全局文章固定链接功能，关闭时使用默认的文件名作为链接 (/posts/<slug>/)"
+    },
+    "format": {
+      "type": "string",
+      "description": "固定链接格式模板\n支持的占位符：\n- %year% : 4 位年份 (如 2024)\n- %monthnum% : 2 位月份 (01-12)\n- %day% : 2 位日期 (01-31)\n- %hour% : 2 位小时 (00-23)\n- %minute% : 2 位分钟 (00-59)\n- %second% : 2 位秒数 (00-59)\n- %post_id% : 文章序号（按发布时间升序排列，最早的文章为 1）\n- %postname% : 文章文件名（slug，通常为全小写）\n- %raw_postname% : 文章原始文件名（保留大小写）\n- %category% : 分类名（无分类时为 \"uncategorized\"）\n\n示例：\n- \"%year%-%monthnum%-%postname%\" => \"/2024-12-my-post/\"\n- \"%post_id%-%postname%\" => \"/42-my-post/\"\n- \"%category%-%postname%\" => \"/tech-my-post/\"\n- \"%year%/%monthnum%/%day%/%postname%\" => \"/2024/12/01/my-post/\"\n\n注意：支持使用斜杠 \"/\" 构建嵌套路径。"
+    }
+  },
+  "additionalProperties": false
+}

@@ -28,13 +28,15 @@ test.describe("Site TOC", () => {
 		const active = page.locator("#toc .m3-blog-toc__item--active");
 
 		// 目录渲染 + 旧的虚线框指示器已移除
-		await expect(items).toHaveCount(2);
+		await expect(items).toHaveCount(16);
 		await expect(page.locator("#active-indicator")).toHaveCount(0);
 
 		// 初始高亮第一个标题
-		await expect(active).toHaveText(/Front-matter of Posts/);
+		await expect(active).toHaveText(/1\. Creating a New Post/);
 		const initialBounds = await page.evaluate(() => {
-			const title = document.querySelector(".sidebar-toc .font-bold");
+			const title = document.querySelector(
+				".sidebar-toc .widget-layout__header",
+			);
 			const wrapper = document.getElementById("toc-inner-wrapper");
 			const first = document.querySelector("#toc .m3-blog-toc__item");
 			if (!title || !wrapper || !first) return null;
@@ -56,12 +58,12 @@ test.describe("Site TOC", () => {
 		await page.evaluate(() =>
 			window.scrollTo(0, document.documentElement.scrollHeight),
 		);
-		await expect(active).toHaveText(/Where to Place the Post Files/);
+		await expect(active).toHaveText(/6\. Next Steps & Customization/);
 
 		// 点击目录项 → 锚点定位 + 高亮切回
-		await page.click('#toc a[href="#front-matter-of-posts"]');
-		await expect(page).toHaveURL(/#front-matter-of-posts/);
-		await expect(active).toHaveText(/Front-matter of Posts/);
+		await page.click('#toc a[href="#1-creating-a-new-post"]');
+		await expect(page).toHaveURL(/#1-creating-a-new-post/);
+		await expect(active).toHaveText(/1\. Creating a New Post/);
 	});
 
 	test("keeps a long TOC inside a short viewport with internal smooth scroll", async ({

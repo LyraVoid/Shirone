@@ -16,7 +16,7 @@ const PAGE_EXTENSIONS = [".astro", ".ts", ".js", ".md", ".mdx"];
 
 /**
  * Documentation files that live alongside pages but must never become routes.
- * The theme keeps authoring notes in `src/pages/AGENTS.md`.
+ * The theme keeps authoring notes in `src/pages/_AGENTS.md`.
  */
 const DOC_FILENAMES = new Set([
 	"AGENTS.md",

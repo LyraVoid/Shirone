@@ -681,6 +681,29 @@ test.describe("Comment System - Configuration & Architecture", () => {
 		);
 	});
 
+	test("giscus iframe shell declares both color schemes under a dark browser preference", async ({
+		page,
+	}) => {
+		test.skip(
+			!giscusUiEnabled,
+			"评论未启用或 provider 非 giscus，跳过 giscus UI 测试",
+		);
+		await mockGiscus(page);
+		// 站点亮色 + 浏览器偏好暗色：外壳若只声明 light，Chromium 会给 iframe
+		// 强制铺上不透明深色画布，评论区出现黑底（Shirone#80）。
+		await page.emulateMedia({ colorScheme: "dark" });
+		await page.goto("/posts/guide/");
+		await page.locator("#comments").scrollIntoViewIfNeeded();
+
+		const iframe = page.locator(".shirone-giscus-wrapper iframe.giscus-frame");
+		await expect(iframe).toHaveCount(1);
+		await expect
+			.poll(() =>
+				iframe.evaluate((element) => getComputedStyle(element).colorScheme),
+			)
+			.toBe("light dark");
+	});
+
 	test("giscus iframe theme follows site dark mode toggle", async ({
 		page,
 	}) => {

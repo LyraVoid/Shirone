@@ -65,11 +65,12 @@ description: Operate Shirone content separation and dual-repository workflows af
   `src/user/user-config.ts` 是由 sync 自动编译输出的生成物（放置在 `src/user/` 是为了让图标扫描与 `scripts/fonts/text-collector.mjs` 的字形收集覆盖到用户配置文本），严禁直接手工编辑或迁走。若在代码仓中调整了配置，先运行 `pnpm.cmd content:export --config` 固化回 YAML 再执行清理。
 
 - **受保护路径与生成物豁免**：
-  以下构建期派生产物受系统严格保护，**既不参与同步裁剪，也不允许外部内容仓覆盖**（提供同名文件将报错拦截）：说说缩略图、番剧封面与快照、字体子集产物、各目录 `.gitkeep` 以及 `shirone.content.json` 中配置的 `keep` 白名单。
+  以下构建期派生产物受系统严格保护，**既不参与同步裁剪，也不允许外部内容仓覆盖**（提供同名文件将报错拦截）：说说缩略图、番剧封面、字体子集产物以及 `shirone.content.json` 中配置的 `keep` 白名单。
+  **番剧快照（`src/data/anime-snapshots/**`）是特例**：同步方向允许内容仓提供（基线语义，`anime:sync` 成功抓取后覆盖 `<provider>.json`；自定义 `source.file` 为使用者纯输入，永不回写），导出永不回写、清理不删除；各目录 `.gitkeep` 同样不拦截同步，仅豁免导出与清理。
   > 依据 `docs/asset-pipeline.md`，`src/assets/` 和 `public/images/` 归属内容仓，而 `public/assets/` 下按业务域归档的是可重复构建的派生产物，二者绝不能混淆。
 
 - **顶层目录对等裁剪**：
-  同步裁剪只在内容仓确实拥有的顶层目录内发生。例如内容仓没有 `content/spec/` 时，代码仓原有的 `src/content/spec/` 将完整保留，反向导出亦同理。
+  同步裁剪只在内容仓确实拥有的顶层目录内发生。例如内容仓没有 `content/spec/` 或 `content/series/` 时，代码仓原有的 `src/content/spec/`、`src/content/series/` 将完整保留，反向导出亦同理。
 
 - **反向导出写入规范**：
   导出操作会直接向外部 Git 仓库写盘，因此严格拒绝 `local` 模式、`CI=true` 或浅克隆工作副本；要求内容仓工作区干净且与配置现状一致。默认绝不删除文件，只有附加 `--prune` / `--prune-config` 时才允许清理多余文件（删除前强制备份）。

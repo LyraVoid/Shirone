@@ -130,6 +130,11 @@ const twikooStyles = await new Promise<string>((resolve, reject) => {
   `&:has(> .el-loading-mask:not([style*="none"]))`），**不要**引入
   `MutationObserver` / 轮询 / 额外事件监听；
 - **加载指示器**：复用项目原子组件（如 `LoadingIndicator`），不复制第三方样式。
+- **iframe 的 `color-scheme` 只能放宽，不能收窄**：第三方 iframe 外壳必须声明
+  `color-scheme: light dark`（与 giscus 自带 `default.css` 一致）。收窄成 `normal` /
+  `only light` 后，浏览器偏好为暗色而站点仍是亮色时，Chromium 会给这个 light-only 的
+  iframe 强制铺一层不透明深色画布，评论区出现黑底（见 `rules/pitfalls.md` §2.3）。
+  外壳只负责声明自身支持的配色方案，iframe 内部配色仍由第三方 `data-theme` 自绘。
 
 ---
 

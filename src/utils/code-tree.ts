@@ -1,4 +1,5 @@
 import { prefersReducedMotion } from "./motion";
+import { lockPageScroll } from "./scroll-lock";
 
 let codeTreesInitialized = false;
 let activeModalDialog: HTMLDialogElement | null = null;
@@ -24,27 +25,6 @@ function setExpandButtonState(
 	button
 		.querySelector(".m3-code-tree__icon-collapse")
 		?.classList.toggle("hidden", !expanded);
-}
-
-function lockPageScroll(): void {
-	const root = document.documentElement;
-	const body = document.body;
-	const previousOverflow = body.style.overflow;
-	const previousPaddingInlineEnd = body.style.paddingInlineEnd;
-	const scrollbarWidth = window.innerWidth - root.clientWidth;
-
-	if (scrollbarWidth > 0) {
-		const currentPadding =
-			Number.parseFloat(getComputedStyle(body).paddingInlineEnd) || 0;
-		body.style.paddingInlineEnd = `${currentPadding + scrollbarWidth}px`;
-	}
-	body.style.overflow = "hidden";
-
-	unlockPageScroll = () => {
-		body.style.overflow = previousOverflow;
-		body.style.paddingInlineEnd = previousPaddingInlineEnd;
-		unlockPageScroll = null;
-	};
 }
 
 function createCodeTreePlaceholder(codeTree: HTMLElement): HTMLDivElement {
@@ -147,6 +127,7 @@ function closeCodeTreeModal(): void {
 		activeModalDialog = null;
 
 		unlockPageScroll?.();
+		unlockPageScroll = null;
 
 		if (lastFocusedExpandBtn?.isConnected) {
 			setExpandButtonState(lastFocusedExpandBtn as HTMLButtonElement, false);
@@ -206,7 +187,8 @@ function openCodeTreeModal(
 		closeCodeTreeModal();
 	});
 
-	lockPageScroll();
+	unlockPageScroll?.();
+	unlockPageScroll = lockPageScroll();
 	dialog.showModal();
 
 	const modalExpandBtn = codeTree.querySelector<HTMLButtonElement>(

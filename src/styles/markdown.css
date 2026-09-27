@@ -36,7 +36,9 @@
     box-decoration-break: clone;
     -webkit-box-decoration-break: clone;
     display: inline;
-    overflow-wrap: break-word;
+    /* anywhere 而非 break-word：换行机会参与 min-content 计算，
+       长链接才不会在窄网格/弹性容器（如动态卡片）里撑破轨道 */
+    overflow-wrap: anywhere;
 
     &:hover,
     &:active {

@@ -254,6 +254,32 @@ describe("content sync", () => {
 		}
 	});
 
+	it("内容仓提供的番剧快照被接受并物化（基线语义，不报错）", () => {
+		const fixture = createFixture();
+		try {
+			const snapshot = JSON.stringify({
+				schemaVersion: 1,
+				provider: "bilibili",
+				fetchedAt: "2026-01-01T00:00:00.000Z",
+				accountRef: "42",
+				items: [],
+			});
+			write(fixture.content, "data/anime-snapshots/bilibili.json", snapshot);
+
+			const { status } = runSync(fixture);
+
+			assert.equal(status, 0);
+			// 快照路径刻意不在 PROTECTED_PATHS 内：同步方向允许内容仓提供（基线 / 纯静态数据源），
+			// 导出侧永不回写； anime:sync 成功抓取后才会覆盖 <provider>.json。
+			assert.equal(
+				read(fixture, "src/data/anime-snapshots/bilibili.json"),
+				snapshot,
+			);
+		} finally {
+			rmSync(fixture.base, { recursive: true, force: true });
+		}
+	});
+
 	it("keep 声明与内容仓文件冲突时直接报错", () => {
 		const fixture = createFixture();
 		try {
@@ -306,7 +332,10 @@ describe("content sync", () => {
 					JSON.stringify({ schemaVersion: 1, mounts }),
 				);
 				const { stderr } = runSync(fixture, { expectFailure: true });
-				assert.match(stderr, /relative directory|reserved directory|overlap|duplicate/i);
+				assert.match(
+					stderr,
+					/relative directory|reserved directory|overlap|duplicate/i,
+				);
 			}
 			assert.ok(!exists(fixture, "content.lock.json"));
 		} finally {
@@ -355,7 +384,10 @@ describe("content sync", () => {
 				},
 				expectFailure: true,
 			});
-			assert.match(result.stderr, /matches current URL, ref, and commit exactly/i);
+			assert.match(
+				result.stderr,
+				/matches current URL, ref, and commit exactly/i,
+			);
 		} finally {
 			rmSync(fixture.base, { recursive: true, force: true });
 		}

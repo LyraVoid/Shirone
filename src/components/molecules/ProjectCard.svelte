@@ -241,9 +241,9 @@ const showCover = $derived(Boolean(project.cover) && !coverFailed);
 		display: flex
 		flex-direction: column
 		flex: 1
-		gap: 0.75rem
+		gap: var(--m3e-space-3)
 		min-width: 0
-		padding: 1rem 1.125rem
+		padding: var(--m3e-space-4) var(--m3e-space-4)
 
 	&__header
 		display: flex

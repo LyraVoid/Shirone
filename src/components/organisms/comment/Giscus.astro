@@ -103,7 +103,12 @@ const giscusStylus = `/* =======================================================
 	.giscus-frame
 		width: 100%
 		border: none
-		color-scheme: normal
+		/* 必须声明为 light dark（与 giscus 自带 default.css 一致）。
+		   降级成 normal / only light 时，浏览器偏好为暗色而站点仍是亮色时，
+		   Chromium 会给这个 light-only 的 iframe 强制铺一层不透明深色画布，
+		   评论区出现黑底（giscus#675、Shirone#80 即此现象）。
+		   light dark 让 iframe 画布保持透明，giscus 主题块之外的留白透出卡片底色。 */
+		color-scheme: light dark
 
 	/* 挂载容器收缩到实际内容高度，避免 giscus 挂载后残留多余空白 */
 	.giscus

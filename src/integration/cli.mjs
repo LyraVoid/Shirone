@@ -11,10 +11,11 @@
  * bare project before anything else is installed.
  */
 
-import { existsSync } from "node:fs";
+import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { cp, mkdir, readFile, readdir, rename, writeFile } from "node:fs/promises";
 import { basename, dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { tmpdir } from "node:os";
 import { spawnSync } from "node:child_process";
 
 const PACKAGE_ROOT = resolve(fileURLToPath(import.meta.url), "../..");
@@ -251,7 +252,7 @@ async function ensurePnpmWorkspace() {
 	log.ok("pnpm-workspace.yaml");
 }
 
-async function ensurePackageJson(packageName) {
+async function ensurePackageJson(packageName, { syncPackageManager = false } = {}) {
 	const pkgPath = join(CWD, "package.json");
 	const peers = await themePeers();
 	const packageManager = await readPackageManager();
@@ -342,9 +343,12 @@ async function ensurePackageJson(packageName) {
 		changed = true;
 	}
 
-	// Same package-manager pin as the freshly-created case, but never clobber
-	// a version the user already chose themselves.
-	if (packageManager && !pkg.packageManager) {
+	// A fresh project gets the package pin above. On an explicit `--update`,
+	// advance an older Shirone-generated pin to the current package pin too;
+	// otherwise the project would keep running the previous release's pnpm even
+	// after the user updated the theme. Do not touch a user's package manager
+	// during an ordinary init.
+	if (packageManager && (!pkg.packageManager || (syncPackageManager && pkg.packageManager !== packageManager))) {
 		pkg.packageManager = packageManager;
 		changed = true;
 	}
@@ -465,6 +469,72 @@ function detectPackageManager() {
 	return "pnpm";
 }
 
+/** Detect the installed pnpm outside the user's project metadata. */
+function detectCurrentPnpmVersion() {
+	const probeDir = mkdtempSync(join(tmpdir(), "shirones-pnpm-"));
+	try {
+		const result = spawnSync("pnpm", ["--version"], {
+			cwd: probeDir,
+			encoding: "utf8",
+			stdio: ["ignore", "pipe", "ignore"],
+			shell: process.platform === "win32",
+		});
+		return result.status === 0 ? result.stdout.trim() : null;
+	} finally {
+		rmSync(probeDir, { recursive: true, force: true });
+	}
+}
+
+function parsePnpmPin(packageManager) {
+	const match = packageManager?.match(/^pnpm@(.+)$/);
+	return match ? { spec: match[1], display: packageManager } : null;
+}
+
+/**
+ * Run the package manager selected by the published package.
+ *
+ * A matching local pnpm is used directly. A mismatch is deliberately not
+ * handed back to the old pnpm's self-updater: pnpm 10/11 request the obsolete
+ * `@pnpm/linux-x64` package name when the pin is pnpm 12. Corepack is the
+ * normal bootstrap path; when Corepack is not installed, npx runs the pinned
+ * pnpm package directly.
+ */
+function runPinnedPnpm(args, packageManager) {
+	const pin = parsePnpmPin(packageManager);
+	const current = detectCurrentPnpmVersion();
+	if (!pin || current === pin.spec) {
+		return spawnSync("pnpm", args, {
+			cwd: CWD,
+			stdio: "inherit",
+			shell: process.platform === "win32",
+		});
+	}
+
+	const corepack = process.platform === "win32" ? "corepack.cmd" : "corepack";
+	const corepackAvailable = spawnSync(corepack, ["--version"], {
+		stdio: "ignore",
+		shell: process.platform === "win32",
+	}).status === 0;
+	if (corepackAvailable) {
+		log.step(`pnpm ${current ?? "unknown"} differs from ${pin.display}; using Corepack`);
+		const result = spawnSync(corepack, ["pnpm", ...args], {
+			cwd: CWD,
+			stdio: "inherit",
+			shell: process.platform === "win32",
+		});
+		if (result.status === 0) return result;
+		log.warn(`Corepack was found but failed to run ${pin.display}; trying npx fallback`);
+	}
+
+	const npx = process.platform === "win32" ? "npx.cmd" : "npx";
+	log.step(`Corepack unavailable; using npx ${pin.display}`);
+	return spawnSync(npx, ["--yes", `pnpm@${pin.spec}`, ...args], {
+		cwd: CWD,
+		stdio: "inherit",
+		shell: process.platform === "win32",
+	});
+}
+
 /**
  * Install the project's dependencies so `init` works from a completely empty
  * directory: writing the missing peer dependencies into package.json is only
@@ -474,17 +544,21 @@ function detectPackageManager() {
  */
 async function installDependencies() {
 	const pm = detectPackageManager();
+	const packageManager = await readPackageManager();
 	// pnpm treats a CI environment as `--frozen-lockfile`, and this install
 	// exists precisely because package.json just changed — so opt out.
 	const args = pm === "pnpm" ? ["install", "--no-frozen-lockfile"] : ["install"];
-	log.step(`installing dependencies with ${pm} ${args.slice(1).join(" ")}`);
-	const result = spawnSync(pm, args, {
-		cwd: CWD,
-		stdio: "inherit",
-		shell: process.platform === "win32",
-	});
+	const label = pm === "pnpm" && packageManager ? packageManager : pm;
+	log.step(`installing dependencies with ${label} ${args.slice(1).join(" ")}`);
+	const result = pm === "pnpm"
+		? runPinnedPnpm(args, packageManager)
+		: spawnSync(pm, args, {
+			cwd: CWD,
+			stdio: "inherit",
+			shell: process.platform === "win32",
+		});
 	if (result.status !== 0) {
-		log.err(`${pm} install failed — run it manually and check the output above`);
+		log.err(`${label} install failed — run it manually and check the output above`);
 		process.exitCode = 1;
 		return false;
 	}
@@ -645,8 +719,7 @@ async function clearStarterFiles() {
 			const contents = await readFile(file, "utf8");
 			const isStarter =
 				contents.includes("Welcome") ||
-				contents.includes("astro.build") ||
-				contents.includes("<slot />");
+				contents.includes("astro.build");
 			if (!isStarter) {
 				log.warn(`${relativePath} is yours — left in place, but it overrides the theme`);
 				continue;
@@ -772,6 +845,87 @@ function topKeys(body) {
 	return keys;
 }
 
+/** Top-level field values, normalized only for whitespace, not string content. */
+function topFieldValues(body) {
+	const fields = new Map();
+	let depth = 0;
+	let fieldName = null;
+	let valueStart = -1;
+	let i = 0;
+	const save = (end) => {
+		if (fieldName !== null) {
+			fields.set(fieldName, body.slice(valueStart, end).replace(/\s+/g, " ").trim());
+			fieldName = null;
+		}
+	};
+	while (i < body.length) {
+		const ch = body[i];
+		if (ch === '"' || ch === "'" || ch === "`") {
+			i = skipString(body, i) + 1;
+			continue;
+		}
+		if (ch === "/" && body[i + 1] === "/") {
+			while (i < body.length && body[i] !== "\n") i++;
+			continue;
+		}
+		if (ch === "/" && body[i + 1] === "*") {
+			const end = body.indexOf("*/", i + 2);
+			i = end === -1 ? body.length : end + 2;
+			continue;
+		}
+		if (ch === "{" || ch === "[" || ch === "(") {
+			depth++;
+			i++;
+			continue;
+		}
+		if (ch === "}" || ch === "]" || ch === ")") {
+			depth--;
+			i++;
+			continue;
+		}
+		if (depth === 0 && fieldName === null && ch === ":") {
+			let j = i - 1;
+			while (j >= 0 && /\s/.test(body[j])) j--;
+			let k = j;
+			while (k >= 0 && /[A-Za-z0-9_$]/.test(body[k])) k--;
+			const key = body.slice(k + 1, j + 1);
+			if (key && !/^\d+$/.test(key)) {
+				fieldName = key;
+				valueStart = i + 1;
+			}
+		}
+		if (depth === 0 && ch === ",") save(i);
+		i++;
+	}
+	save(body.length);
+	return fields;
+}
+
+/** Values for every `export const NAME = …{…}` object in a source. */
+function objectFieldValues(src) {
+	const fields = new Map();
+	const re = /export\s+const\s+([A-Za-z0-9_$]+)/g;
+	for (const m of src.matchAll(re)) {
+		let open = -1;
+		for (let i = m.index + m[0].length; i < src.length; i++) {
+			const ch = src[i];
+			if (ch === '"' || ch === "'" || ch === "`") {
+				i = skipString(src, i);
+				continue;
+			}
+			if (ch === "{") {
+				open = i;
+				break;
+			}
+		}
+		if (open !== -1) {
+			const body = balancedBody(src, open);
+			if (body !== null) fields.set(m[1], topFieldValues(body));
+		}
+	}
+	return fields;
+}
+
 /**
  * Top-level keys of every `export const NAME = …{…}` object in a source.
  * The declaration may carry a type annotation and wrap the object in a call
@@ -814,6 +968,8 @@ async function diffConfigFile(tplPath, usrPath) {
 
 	const tplFields = objectFieldKeys(tpl);
 	const usrFields = objectFieldKeys(usr);
+	const tplValues = objectFieldValues(tpl);
+	const usrValues = objectFieldValues(usr);
 	const missingFields = {};
 	for (const [name, keys] of tplFields) {
 		const usr = usrFields.get(name) ?? new Set();
@@ -826,8 +982,16 @@ async function diffConfigFile(tplPath, usrPath) {
 		const extra = [...keys].filter((k) => !tplSet.has(k));
 		if (extra.length) extraFields[name] = extra;
 	}
+	const changedFields = {};
+	for (const [name, values] of tplValues) {
+		const userValues = usrValues.get(name) ?? new Map();
+		const changed = [...values.keys()].filter(
+			(key) => userValues.has(key) && userValues.get(key) !== values.get(key),
+		);
+		if (changed.length) changedFields[name] = changed;
+	}
 
-	return { missingExports, extraExports, missingFields, extraFields };
+	return { missingExports, extraExports, missingFields, extraFields, changedFields };
 }
 
 /** Collect the differences between the template config and the user's copy. */
@@ -853,7 +1017,8 @@ async function checkState() {
 			diff.missingExports.length ||
 			diff.extraExports.length ||
 			Object.keys(diff.missingFields).length ||
-			Object.keys(diff.extraFields).length
+			Object.keys(diff.extraFields).length ||
+			Object.keys(diff.changedFields).length
 		) {
 			fieldDiffs.push({ rel, ...diff });
 		}
@@ -909,6 +1074,8 @@ async function checkAndUpdate(packageName, { apply }) {
 				console.log(`    ${colours.dim}− ${name}: missing field(s): ${keys.join(", ")}${colours.reset}`);
 			for (const [name, keys] of Object.entries(d.extraFields))
 				console.log(`    ${colours.dim}− ${name}: field(s) not in template: ${keys.join(", ")}${colours.reset}`);
+			for (const [name, keys] of Object.entries(d.changedFields))
+				console.log(`    ${colours.dim}− ${name}: value(s) changed: ${keys.join(", ")}${colours.reset}`);
 		}
 
 		if (!apply) {
@@ -943,11 +1110,11 @@ async function checkAndUpdate(packageName, { apply }) {
 	await mkdir(join(CWD, "src/icons"), { recursive: true });
 	await installRootFiles({ force: false });
 	await ensureTsConfig(packageName, { force: false });
-	const addedDeps = await ensurePackageJson(packageName);
+	const addedDeps = await ensurePackageJson(packageName, { syncPackageManager: true });
 	await ensurePnpmWorkspace();
 
 	if (addedDeps.length > 0) {
-		await installDependencies();
+		if (!(await installDependencies())) return;
 	} else {
 		log.skip("dependencies already declared");
 	}
@@ -1031,19 +1198,26 @@ async function init(args) {
 	// 6. If package.json was created or gained dependencies, install them now —
 	//    that is what lets `init` work from a completely empty directory.
 	if (addedDeps.length > 0) {
-		await installDependencies();
+		if (!(await installDependencies())) return;
 	} else {
 		log.skip("dependencies already declared");
 	}
 
 	const postCount = await countFiles(join(CWD, CONTENT_ROOT, "content/posts"));
+	const packageManager = await readPackageManager();
+	const pin = parsePnpmPin(packageManager);
+	const nextCommands = pin
+		? `  ${colours.dim}pnpm dev${colours.reset}
+  ${colours.dim}If that fails: corepack pnpm dev${colours.reset}
+  ${colours.dim}If that also fails: npx --yes pnpm@${pin.spec} dev${colours.reset}`
+		: `  ${colours.dim}pnpm dev${colours.reset}`;
 
 	console.log(`
 ${colours.green}${colours.bold}Done.${colours.reset} ${postCount} example content files installed.
 
 ${colours.bold}Project layout${colours.reset}
   astro.config.mjs          the only Astro config
-  src/content.config.ts     collection definitions
+  src/content.config.ts     inline collection schemas (postSchema, momentSchema, specSchema)
   src/components/           drop a file here to override a theme component
   src/layouts/              …same for layouts
   ${CONTENT_ROOT}/config/            site configuration (TypeScript, fully typed)
@@ -1052,7 +1226,7 @@ ${colours.bold}Project layout${colours.reset}
   public/                   static assets
 
 ${colours.bold}Next${colours.reset}
-  ${colours.dim}pnpm dev${colours.reset}
+${nextCommands}
 `);
 }
 

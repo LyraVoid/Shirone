@@ -7,10 +7,10 @@ import Card from "@components/atoms/display/Card.svelte";
 import Tooltip from "@components/atoms/overlay/Tooltip.svelte";
 import UmamiStats from "@components/organisms/UmamiStats.astro";
 import { resolveImageAsset } from "@utils/asset-utils";
+import { url } from "@utils/url-utils";
 import { Icon } from "astro-icon/components";
 import { profileConfig } from "@/config";
 import type { ProfileWidget } from "@/types/sidebarConfig";
-import { url } from "../../utils/url-utils";
 
 interface Props {
 	class?: string;
@@ -56,15 +56,12 @@ if (typeof avatarAsset !== "string") {
 }
 ---
 <div class={className} style={style}>
-	<Card color="var(--card-bg)" radius="l" class="p-3">
+	<Card color="var(--card-bg)" radius="l" class="m3-profile p-3">
     <a aria-label="Go to About Page" href={url('/about/')}
-       class="group block relative mx-auto mt-1 lg:mx-0 lg:mt-0 mb-3
-       max-w-[12rem] lg:max-w-none overflow-hidden rounded-xl active:scale-95">
-        <div class="absolute transition pointer-events-none group-hover:bg-black/30 group-active:bg-black/50
-        w-full h-full z-50 flex items-center justify-center">
+       class="m3-profile__avatar-link group">
+        <div class="m3-profile__avatar-overlay">
             <Icon name="fa6-regular:address-card"
-                  class="transition opacity-0 scale-90 group-hover:scale-100 group-hover:opacity-100 text-white text-5xl">
-            </Icon>
+                  class="m3-profile__avatar-icon" />
         </div>
         <Avatar
             src={avatarUrl}
@@ -80,11 +77,11 @@ if (typeof avatarAsset !== "string") {
             class="mx-auto lg:!w-full"
         />
     </a>
-    <div class="px-2">
-        <div class="font-bold text-xl text-center mb-1 text-90 transition">{config.name}</div>
-        <div class="h-1 w-5 bg-[var(--primary)] mx-auto rounded-full mb-2 transition"></div>
-        <div class="text-center text-50 mb-2.5 transition">{config.bio}</div>
-        <div class="flex flex-wrap gap-2 justify-center mb-1">
+    <div class="m3-profile__info px-2">
+        <div class="m3-profile__name">{config.name}</div>
+        <div class="m3-profile__accent"></div>
+        <div class="m3-profile__bio">{config.bio}</div>
+        <div class="m3-profile__links flex flex-wrap gap-2 justify-center mb-1">
             {config.links.length > 1 && config.links.map(item =>
                 <Tooltip label={item.name} placement="top" client:load>
                     <IconButton href={item.url} target="_blank" rel="me" label={item.name}>
@@ -103,3 +100,72 @@ if (typeof avatarAsset !== "string") {
 	</Card>
 </div>
 
+<style lang="stylus">
+.m3-profile
+	&__avatar-link
+		display: block
+		position: relative
+		margin: var(--m3e-space-1) auto var(--m3e-space-3)
+		max-width: 12rem
+		border-radius: var(--shape-corner-m)
+		overflow: hidden
+		transition:
+			transform var(--m3e-duration-short) var(--m3e-easing-standard),
+			box-shadow var(--m3e-duration-short) var(--m3e-easing-standard)
+		&:focus-visible
+			outline: 2px solid var(--primary)
+			outline-offset: 2px
+		@media (min-width: 1024px)
+			max-width: none
+			margin-top: 0
+
+	&__avatar-overlay
+		position: absolute
+		inset: 0
+		z-index: 10
+		display: flex
+		align-items: center
+		justify-content: center
+		pointer-events: none
+		transition: background-color var(--m3e-duration-medium) var(--m3e-easing-standard)
+		.group:hover &
+			background-color: rgba(0, 0, 0, 0.3)
+		.group:active &
+			background-color: rgba(0, 0, 0, 0.5)
+
+	&__avatar-icon
+		color: #fff
+		font-size: 3rem
+		opacity: 0
+		transform: scale(0.9)
+		transition:
+			opacity var(--m3e-duration-medium) var(--m3e-easing-emphasized-decelerate),
+			transform var(--m3e-duration-medium) var(--m3e-easing-emphasized-decelerate)
+		.group:hover &
+			opacity: 1
+			transform: scale(1)
+
+	&__name
+		font: var(--m3e-type-title-large)
+		font-weight: 700
+		text-align: center
+		margin: 0 0 var(--m3e-space-1)
+		color: var(--on-surface)
+		transition: color var(--m3e-duration-short) var(--m3e-easing-standard)
+
+	&__accent
+		width: 1.25rem
+		height: 0.25rem
+		background: var(--primary)
+		border-radius: var(--shape-corner-full)
+		margin: 0 auto var(--m3e-space-2)
+		transition: background-color var(--m3e-duration-short) var(--m3e-easing-standard)
+
+	&__bio
+		font: var(--m3e-type-body-medium)
+		color: var(--on-surface-variant)
+		text-align: center
+		margin: 0 0 var(--m3e-space-3)
+		line-height: 1.5
+		transition: color var(--m3e-duration-short) var(--m3e-easing-standard)
+</style>

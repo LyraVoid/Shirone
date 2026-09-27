@@ -23,7 +23,15 @@ import Icon from "@iconify/svelte";
 import { onMount } from "svelte";
 import type { CompassShelf } from "../../data/compass";
 
-let { shelves = [] as CompassShelf[] }: { shelves?: CompassShelf[] } = $props();
+let {
+	shelves = [] as CompassShelf[],
+	title = i18n(I18nKey.compass),
+	subtitle = i18n(I18nKey.compassBanner),
+}: {
+	shelves?: CompassShelf[];
+	title?: string;
+	subtitle?: string;
+} = $props();
 
 let query = $state("");
 let selectedGroup = $state("");
@@ -113,8 +121,8 @@ onMount(() => {
 <Card color="var(--card-bg)" radius="l" class="compass-section px-8 py-6">
 	<PageHeader
 		icon="material-symbols:explore-rounded"
-		title={i18n(I18nKey.compass)}
-		subtitle={i18n(I18nKey.compassBanner)}
+		{title}
+		{subtitle}
 	/>
 
 	{#if shelves.length > 0}

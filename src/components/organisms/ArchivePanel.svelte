@@ -239,7 +239,7 @@ $effect(() => {
 .archive-panel
 	/* 分组切换（SegmentedButton，站内 pill 语言）与下方时间轴之间的节奏 */
 	:global(&__group-switch)
-		margin-bottom: 1rem
+		margin-bottom: var(--m3e-space-4)
 
 	:global(&__empty)
 		display: flex
@@ -251,8 +251,8 @@ $effect(() => {
 
 	:global(&__crumb)
 		min-width: 0
-		padding: 0 0.25rem 0.875rem
-		margin-bottom: 1.25rem
+		padding: 0 var(--m3e-space-1) var(--m3e-space-3)
+		margin-bottom: var(--m3e-space-5)
 		border-bottom: 1px solid var(--outline-variant)
 
 	:global(&__crumb-list)

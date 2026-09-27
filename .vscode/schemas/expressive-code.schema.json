@@ -1,0 +1,28 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "expressiveCode configuration override",
+  "description": "Shirone expressiveCode config schema generated from @/types/config.ExpressiveCodeConfig",
+  "type": "object",
+  "properties": {
+    "theme": {
+      "type": "string"
+    },
+    "lightTheme": {
+      "anyOf": [
+        {},
+        {
+          "type": "string"
+        }
+      ]
+    },
+    "darkTheme": {
+      "anyOf": [
+        {},
+        {
+          "type": "string"
+        }
+      ]
+    }
+  },
+  "additionalProperties": false
+}

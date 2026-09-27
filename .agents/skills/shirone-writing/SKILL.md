@@ -20,6 +20,8 @@ description: 摘要文本
 image: 封面图路径
 tags: [astro, 笔记]
 category: 随笔
+series: 系列 slug        # 可选，留空=不属于任何系列
+seriesOrder: 3          # 可选，系列内顺序；缺省按发布日期
 pinned: false           # 置顶
 draft: false            # 草稿(不发布)
 comment: true           # 文章级评论开关(默认 true,继承全局)
@@ -39,7 +41,17 @@ hideHomeContent: true   # 加密内容在首页隐藏(默认 true)
 - `published` 和 `updated` 是日历日期，使用 `YYYY-MM-DD`；它们决定文章归档与跨日排序。
 - 同一天发布多篇文章时，为每篇补充带时区偏移的 ISO 8601 `publishedAt`，例如 `2026-01-01T09:30:00+08:00`。列表会在置顶状态相同、`published` 相同的文章之间按该时间倒序排列。
 - `publishedAt` 必须落在 `siteConfig.timeZone` 解释后的 `published` 当天；修改日期时，`updatedAt` 也必须落在对应 `updated` 当天，且不能单独存在。
+- 脚手架 `pnpm.cmd new-post` 会按 `siteConfig.timeZone` 同时写入 `published` 与 `publishedAt`（两者必然同一天，与机器时区无关）；之后若改了 `published`，必须同步改 `publishedAt`，否则构建报错。内容分离模式下内容仓若覆盖了 `timeZone`，用 `SHIRONE_TZ=<IANA 时区>` 运行脚手架。
 - 未填写精确时间时保持兼容：同日文章以内容 ID 作稳定兜底排序。不要把 `published` 写成带时间的字符串；站点时区改用 `shirone-config` 配置。
+
+## 系列(series)
+
+- 系列实体放在 `src/content/series/<slug>.md`，frontmatter 为 `title`（必填）、`status: "ongoing" | "completed"`（默认 `ongoing`）、`defaultCategory`（可选）；正文是可选系列总览。实体须平铺在该目录根下，slug 即单个路由段（`/series/<slug>/`），不要用 `a/b` 嵌套目录。
+- 文章用 `series` 填系列 slug、`seriesOrder` 填系列内位置；一篇文章最多属于一个系列，两者都可省略（省略即普通文章）。
+- 分类回退链：`post.category` → `series.defaultCategory` → 未分类，显式 `category` 始终优先；单一解析点为 `resolveSeriesPostCategory`（`src/utils/series-utils.ts`）。
+- 阅读顺序：`seriesOrder` 优先；仅部分文章标注时，未标注项按发布日期排在标注项之后，同序再按 slug 兜底。
+- 未知 slug 静默容忍，不产生死链、不阻断构建，每个未知 slug 仅在构建日志打印一次 `[series] ...` 警告。
+- 站内入口为 `/series/`（每系列一张卡片的索引）与 `/series/<slug>/`（系列总览 + 有序文章列表）。
 
 ## 动态(moments)frontmatter
 
@@ -47,7 +59,7 @@ hideHomeContent: true   # 加密内容在首页隐藏(默认 true)
 
 ## 工作流
 
-1. 脚手架:`pnpm.cmd new-post <filename>` 生成 `src/content/posts/<filename>.md` 骨架;
+1. 脚手架:`pnpm.cmd new-post <filename>` 生成 `src/content/posts/<filename>.md` 骨架(含按站点时区算好的 `published` + `publishedAt`,见「日期与排序」);
 2. 写正文:自定义语法直接使用,无需任何启用开关(见 `shirone-markdown-syntax` 技能);图片可用相对路径引用同目录资源;
 3. 本地预览:`pnpm.cmd dev` 后访问 `http://localhost:4321`。
 

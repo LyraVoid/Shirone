@@ -1,0 +1,146 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "llms configuration override",
+  "description": "Shirone llms config schema generated from @/types/llmsConfig.LlmsConfig",
+  "type": "object",
+  "properties": {
+    "enable": {
+      "type": "boolean",
+      "description": "是否启用 /llms.txt 与 /llms-full.txt 静态端点生成。\n- true: 构建期生成静态文件；\n- false: 彻底禁用，访问返回 404，满足零额外负担。"
+    },
+    "generateFull": {
+      "type": "boolean",
+      "description": "是否同时生成包含全量纯净正文的 /llms-full.txt。\n开启后将聚合全站公开文章供 LLM 全量上下文载入。"
+    },
+    "siteSummary": {
+      "anyOf": [
+        {},
+        {
+          "type": "string"
+        }
+      ],
+      "description": "站点在大模型眼中的自我介绍短语。\n省略或留空时自动回退为 siteConfig.subtitle 或 profileConfig.bio。"
+    },
+    "corePages": {
+      "anyOf": [
+        {},
+        {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "title": {
+                "type": "string",
+                "description": "页面或资源标题（展示在 Markdown 链接文本中）"
+              },
+              "url": {
+                "type": "string",
+                "description": "相对站内路径（如 \"/about/\"）或以 http(s) 开头的完整外链"
+              },
+              "description": {
+                "anyOf": [
+                  {},
+                  {
+                    "type": "string"
+                  }
+                ],
+                "description": "简短说明或摘要（展示在链接冒号之后，帮助大模型理解该页面用途）"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      ],
+      "description": "自定义前置核心页面清单（如 Home, About, Archive 等）。\n省略或为空数组时，系统将使用默认的核心导航页面。"
+    },
+    "customSections": {
+      "anyOf": [
+        {},
+        {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "title": {
+                "type": "string",
+                "description": "章节标题（如 \"Documentation\", \"Open Source Projects\"）"
+              },
+              "description": {
+                "anyOf": [
+                  {},
+                  {
+                    "type": "string"
+                  }
+                ],
+                "description": "章节总体说明文本（可选，展示在章节标题下方）"
+              },
+              "items": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "title": {
+                      "type": "string",
+                      "description": "页面或资源标题（展示在 Markdown 链接文本中）"
+                    },
+                    "url": {
+                      "type": "string",
+                      "description": "相对站内路径（如 \"/about/\"）或以 http(s) 开头的完整外链"
+                    },
+                    "description": {
+                      "anyOf": [
+                        {},
+                        {
+                          "type": "string"
+                        }
+                      ],
+                      "description": "简短说明或摘要（展示在链接冒号之后，帮助大模型理解该页面用途）"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "description": "本章节包含的链接与条目清单"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      ],
+      "description": "自定义扩展章节列表（用于推荐外部项目或文档库，可选）。"
+    },
+    "excludeTags": {
+      "anyOf": [
+        {},
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      ],
+      "description": "敏感/私有标签黑名单（命中该标签的文章不暴露给大模型）。"
+    },
+    "excludeCategories": {
+      "anyOf": [
+        {},
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      ],
+      "description": "敏感分类黑名单（命中该分类的文章不暴露给大模型）。"
+    },
+    "descriptionMaxLength": {
+      "anyOf": [
+        {},
+        {
+          "type": "number"
+        }
+      ],
+      "description": "单篇文章摘要的最大字符截断长度（默认 200 字）。"
+    }
+  },
+  "additionalProperties": false
+}

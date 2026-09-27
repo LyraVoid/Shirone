@@ -47,15 +47,14 @@ const { categories = [], class: className } = Astro.props;
 		flex-shrink: 0
 		min-width: 2rem
 		height: 1.75rem
-		margin-left: 1rem
-		padding: 0 0.5rem
+		margin-left: var(--m3e-space-4)
+		padding: 0 var(--m3e-space-2)
 		border-radius: var(--shape-corner-s)
-		background: var(--surface-container-high)
-		color: var(--on-surface-variant)
+		background: var(--secondary-container)
+		color: var(--on-secondary-container)
 		font: var(--m3e-type-label-medium)
 		font-weight: 700
-		/* 暗色下表面容器与卡片背景同色，徽标会消失；改回原版 primary 实底 */
-		:global(.dark) &
-			background: var(--primary)
-			color: var(--on-primary)
+		transition:
+			background-color var(--m3e-duration-short) var(--m3e-easing-standard),
+			color var(--m3e-duration-short) var(--m3e-easing-standard)
 </style>

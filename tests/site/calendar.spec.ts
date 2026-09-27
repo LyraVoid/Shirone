@@ -14,6 +14,7 @@ test.describe("sidebar calendar widget", () => {
 
 	async function openHome(page: import("@playwright/test").Page) {
 		await page.goto("/", { waitUntil: "networkidle" });
+		await calendar(page).scrollIntoViewIfNeeded();
 		await page.waitForTimeout(800);
 	}
 
@@ -47,8 +48,16 @@ test.describe("sidebar calendar widget", () => {
 		await openHome(page);
 
 		await expect(title(page)).toBeVisible();
-		// 31 个日格（当前月 2026-08）
-		await expect(calendar(page).locator(".m3-calendar__day")).toHaveCount(31);
+		// 日格数量对齐当前月份总天数
+		const today = new Date();
+		const daysInCurrentMonth = new Date(
+			today.getFullYear(),
+			today.getMonth() + 1,
+			0,
+		).getDate();
+		await expect(calendar(page).locator(".m3-calendar__day")).toHaveCount(
+			daysInCurrentMonth,
+		);
 		// 今天：aria-current="date"
 		await expect(
 			calendar(page).locator(".m3-calendar__day--today"),
@@ -73,17 +82,19 @@ test.describe("sidebar calendar widget", () => {
 	}) => {
 		await openHome(page);
 
-		// 当前月（2026-08）无文：一次 prev 直达最近有文月（2024-05）
+		// 当前月（2026-09）无文：一次 prev 直达最近有文月（2026-08）
 		await prevBtn(page).click();
 		await page.waitForTimeout(300);
-		expect((await title(page).textContent())?.trim()).toBe("May 2024");
-		// 2024-05 之后无有文月：next 禁用
+		expect((await title(page).textContent())?.trim()).toBe("August 2026");
+		// 2026-08 之后无有文月：next 禁用
 		await expect(
 			calendar(page).locator('[aria-label="Next month"]'),
 		).toBeDisabled();
 
-		// 继续 prev：2024-04 → 2023-10 → 2023-08 → 2022-07
+		// 继续 prev：2026-07 → 2024-05 → 2024-04 → 2023-10 → 2023-08 → 2022-07
 		for (const expected of [
+			"July 2026",
+			"May 2024",
 			"April 2024",
 			"October 2023",
 			"August 2023",

@@ -1,0 +1,82 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "navBar configuration override",
+  "description": "Shirone navBar config schema generated from @/types/navBarConfig.NavBarConfigOverride",
+  "type": "object",
+  "properties": {
+    "links": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "preset": {
+            "anyOf": [
+              {},
+              {
+                "type": "string"
+              }
+            ],
+            "description": "引用 `LinkPresets` 中的预设名（如 \"Home\"、\"GitHub\"）"
+          },
+          "name": {
+            "anyOf": [
+              {},
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "url": {
+            "anyOf": [
+              {},
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "icon": {
+            "anyOf": [
+              {},
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "pageKey": {
+            "anyOf": [
+              {},
+              {
+                "type": "string"
+              }
+            ]
+          },
+          "external": {
+            "anyOf": [
+              {},
+              {
+                "type": "boolean",
+                "enum": [
+                  false
+                ]
+              },
+              {
+                "type": "boolean",
+                "enum": [
+                  true
+                ]
+              }
+            ]
+          },
+          "children": {
+            "anyOf": [
+              {},
+              {}
+            ]
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

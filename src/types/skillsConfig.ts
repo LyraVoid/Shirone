@@ -1,3 +1,5 @@
+import type { PageMeta } from "./pageMeta.ts";
+
 /** 技能熟练度：用于离散等级展示，不映射为伪精确百分比。 */
 export type SkillLevel = "beginner" | "intermediate" | "advanced" | "expert";
 
@@ -23,7 +25,7 @@ export interface SkillItem {
 }
 
 /** 技能页配置（行为层）。 */
-export interface SkillsConfig {
+export interface SkillsConfig extends PageMeta {
 	/** 页面总开关；关闭后隐藏导航入口并将 /skills/ 重定向到 404。 */
 	enable: boolean;
 	/** 分类列表（决定 Chips 显示顺序）。 */

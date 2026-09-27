@@ -1,0 +1,45 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "moments configuration override",
+  "description": "Shirone moments config schema generated from @/types/momentsConfig.MomentsConfig",
+  "type": "object",
+  "properties": {
+    "enable": {
+      "anyOf": [
+        {},
+        {
+          "type": "boolean",
+          "enum": [
+            false
+          ]
+        },
+        {
+          "type": "boolean",
+          "enum": [
+            true
+          ]
+        }
+      ],
+      "description": "页面总开关；false 时导航隐藏、访问重定向 404（与现有四个页面的语义一致）"
+    },
+    "title": {
+      "anyOf": [
+        {},
+        {
+          "type": "string"
+        }
+      ],
+      "description": "页面标题：字面量（个人化、语言无关），或 \"$t:<i18nKey>\"（本地化；默认即当前词条）"
+    },
+    "description": {
+      "anyOf": [
+        {},
+        {
+          "type": "string"
+        }
+      ],
+      "description": "页面副标题：同上"
+    }
+  },
+  "additionalProperties": false
+}

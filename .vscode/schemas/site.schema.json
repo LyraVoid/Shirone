@@ -1,0 +1,749 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "site configuration override",
+  "description": "Shirone site config schema generated from @/types/config.SiteConfig",
+  "type": "object",
+  "properties": {
+    "site": {
+      "type": "string"
+    },
+    "base": {
+      "anyOf": [
+        {},
+        {
+          "type": "string"
+        }
+      ]
+    },
+    "title": {
+      "type": "string"
+    },
+    "subtitle": {
+      "type": "string"
+    },
+    "ogImage": {
+      "anyOf": [
+        {},
+        {
+          "type": "string"
+        }
+      ],
+      "description": "默认社交媒体分享预览图（og:image / twitter:image），支持本地相对路径或远程绝对链接。未配置时自动回退为第一张桌面版横幅壁纸。"
+    },
+    "topAppBar": {
+      "type": "object",
+      "properties": {
+        "contentAlign": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "left"
+              ]
+            },
+            {
+              "type": "string",
+              "enum": [
+                "center"
+              ]
+            }
+          ],
+          "description": "桌面端标题与导航内容组的对齐方式。"
+        }
+      },
+      "additionalProperties": false
+    },
+    "displaySettings": {
+      "anyOf": [
+        {},
+        {
+          "type": "object",
+          "properties": {
+            "colorStyle": {
+              "anyOf": [
+                {},
+                {
+                  "type": "boolean",
+                  "enum": [
+                    false
+                  ]
+                },
+                {
+                  "type": "boolean",
+                  "enum": [
+                    true
+                  ]
+                }
+              ],
+              "description": "是否在显示设置面板展示配色风格（9 宫格）选择器（默认 true）"
+            },
+            "colorSpec": {
+              "anyOf": [
+                {},
+                {
+                  "type": "boolean",
+                  "enum": [
+                    false
+                  ]
+                },
+                {
+                  "type": "boolean",
+                  "enum": [
+                    true
+                  ]
+                }
+              ],
+              "description": "是否在显示设置面板展示 Color Spec（调色规范 2021 / 2025）切换器（默认 true）"
+            },
+            "wallpaperMode": {
+              "anyOf": [
+                {},
+                {
+                  "type": "boolean",
+                  "enum": [
+                    false
+                  ]
+                },
+                {
+                  "type": "boolean",
+                  "enum": [
+                    true
+                  ]
+                }
+              ],
+              "description": "是否在显示设置面板展示 Page background（页面背景 纯色 / 横幅）切换器（默认 true）"
+            },
+            "layoutMode": {
+              "anyOf": [
+                {},
+                {
+                  "type": "boolean",
+                  "enum": [
+                    false
+                  ]
+                },
+                {
+                  "type": "boolean",
+                  "enum": [
+                    true
+                  ]
+                }
+              ],
+              "description": "是否在显示设置面板展示 Layout（文章列表布局 列表 / 网格）切换器（默认 true）"
+            },
+            "reduceMotion": {
+              "anyOf": [
+                {},
+                {
+                  "type": "boolean",
+                  "enum": [
+                    false
+                  ]
+                },
+                {
+                  "type": "boolean",
+                  "enum": [
+                    true
+                  ]
+                }
+              ],
+              "description": "是否在显示设置面板展示 Reduce motion（减少动效）切换器（默认 true）"
+            },
+            "texture": {
+              "anyOf": [
+                {},
+                {
+                  "type": "boolean",
+                  "enum": [
+                    false
+                  ]
+                },
+                {
+                  "type": "boolean",
+                  "enum": [
+                    true
+                  ]
+                }
+              ],
+              "description": "是否在显示设置面板展示背景纹理选择器（默认 true，且受 texture.enable 控制）"
+            }
+          },
+          "additionalProperties": false
+        }
+      ],
+      "description": "显示设置浮层各切换项的前端可见性控制"
+    },
+    "lang": {
+      "anyOf": [
+        {
+          "type": "string",
+          "enum": [
+            "en"
+          ]
+        },
+        {
+          "type": "string",
+          "enum": [
+            "zh_CN"
+          ]
+        },
+        {
+          "type": "string",
+          "enum": [
+            "zh_TW"
+          ]
+        },
+        {
+          "type": "string",
+          "enum": [
+            "ja"
+          ]
+        },
+        {
+          "type": "string",
+          "enum": [
+            "ko"
+          ]
+        },
+        {
+          "type": "string",
+          "enum": [
+            "es"
+          ]
+        },
+        {
+          "type": "string",
+          "enum": [
+            "th"
+          ]
+        },
+        {
+          "type": "string",
+          "enum": [
+            "vi"
+          ]
+        },
+        {
+          "type": "string",
+          "enum": [
+            "tr"
+          ]
+        },
+        {
+          "type": "string",
+          "enum": [
+            "id"
+          ]
+        }
+      ]
+    },
+    "timeZone": {
+      "type": "string",
+      "description": "IANA time zone used to interpret precise content timestamps."
+    },
+    "themeColor": {
+      "type": "object",
+      "properties": {
+        "hue": {
+          "type": "number"
+        },
+        "fixed": {
+          "type": "boolean"
+        },
+        "style": {
+          "type": "string"
+        },
+        "spec": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false
+    },
+    "wallpaperMode": {
+      "type": "object",
+      "properties": {
+        "defaultMode": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "banner"
+              ]
+            },
+            {
+              "type": "string",
+              "enum": [
+                "none"
+              ]
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "texture": {
+      "anyOf": [
+        {},
+        {
+          "type": "boolean",
+          "enum": [
+            false
+          ]
+        },
+        {
+          "type": "boolean",
+          "enum": [
+            true
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "enable": {
+              "anyOf": [
+                {},
+                {
+                  "type": "boolean",
+                  "enum": [
+                    false
+                  ]
+                },
+                {
+                  "type": "boolean",
+                  "enum": [
+                    true
+                  ]
+                }
+              ],
+              "description": "是否启用纹理系统"
+            },
+            "defaultPreset": {
+              "anyOf": [
+                {},
+                {
+                  "type": "string",
+                  "enum": [
+                    "none"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "enum": [
+                    "starlight"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "enum": [
+                    "cyber-dots"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "enum": [
+                    "topography"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "enum": [
+                    "geometric"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "enum": [
+                    "sakura"
+                  ]
+                }
+              ],
+              "description": "默认生效的纹理预设"
+            },
+            "defaultOpacity": {
+              "anyOf": [
+                {},
+                {
+                  "type": "number"
+                }
+              ],
+              "description": "默认纹理不透明度 (0.05 ~ 0.25, 默认 0.12)"
+            },
+            "allowMotion": {
+              "anyOf": [
+                {},
+                {
+                  "type": "boolean",
+                  "enum": [
+                    false
+                  ]
+                },
+                {
+                  "type": "boolean",
+                  "enum": [
+                    true
+                  ]
+                }
+              ],
+              "description": "是否允许背景微动效 (在开启 reduced-motion 时强制静止)"
+            }
+          },
+          "additionalProperties": false
+        }
+      ],
+      "description": "页面背景纹理系统配置，支持布尔值直接开关或详细配置对象"
+    },
+    "banner": {
+      "type": "object",
+      "properties": {
+        "src": {
+          "type": "object",
+          "properties": {
+            "desktop": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "light": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "dark": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "mobile": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "light": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "dark": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
+        "position": {
+          "anyOf": [
+            {},
+            {
+              "type": "string",
+              "enum": [
+                "center"
+              ]
+            },
+            {
+              "type": "string",
+              "enum": [
+                "top"
+              ]
+            },
+            {
+              "type": "string",
+              "enum": [
+                "bottom"
+              ]
+            }
+          ]
+        },
+        "dim": {
+          "type": "object",
+          "properties": {
+            "enable": {
+              "type": "boolean"
+            },
+            "opacity": {
+              "type": "number"
+            }
+          },
+          "additionalProperties": false
+        },
+        "homeText": {
+          "type": "object",
+          "properties": {
+            "enable": {
+              "type": "boolean"
+            },
+            "title": {
+              "type": "string"
+            },
+            "subtitle": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              ],
+              "description": "首页副标题文本，支持单条字符串或多条交替循环的字符串数组"
+            },
+            "typewriter": {
+              "type": "object",
+              "properties": {
+                "enable": {
+                  "type": "boolean"
+                },
+                "speed": {
+                  "type": "number",
+                  "description": "打字速度（每个字符间隔，毫秒，默认 120）"
+                },
+                "deleteSpeed": {
+                  "anyOf": [
+                    {},
+                    {
+                      "type": "number"
+                    }
+                  ],
+                  "description": "回退反向删除速度（每个字符间隔，毫秒，默认 50）"
+                },
+                "pauseTime": {
+                  "anyOf": [
+                    {},
+                    {
+                      "type": "number"
+                    }
+                  ],
+                  "description": "打字完成后等待停顿时间（毫秒，默认 2000）"
+                },
+                "loop": {
+                  "type": "boolean",
+                  "description": "完成后是否循环播放（默认 true）"
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        },
+        "carousel": {
+          "type": "object",
+          "properties": {
+            "enable": {
+              "type": "boolean"
+            },
+            "interval": {
+              "type": "number"
+            },
+            "fadeDuration": {
+              "anyOf": [
+                {},
+                {
+                  "type": "number"
+                }
+              ],
+              "description": "交叉淡入淡出过渡时长（毫秒，默认 1200）"
+            },
+            "animation": {
+              "anyOf": [
+                {},
+                {
+                  "type": "string",
+                  "enum": [
+                    "none"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "enum": [
+                    "ken-burns"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "enum": [
+                    "zoom-in"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "enum": [
+                    "zoom-out"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "enum": [
+                    "pan-left"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "enum": [
+                    "pan-right"
+                  ]
+                }
+              ],
+              "description": "运镜呼吸动画模式：\"ken-burns\"（默认，序列运镜）| \"zoom-in\" | \"zoom-out\" | \"pan-left\" | \"pan-right\" | \"none\""
+            }
+          },
+          "additionalProperties": false
+        },
+        "waves": {
+          "type": "object",
+          "properties": {
+            "enable": {
+              "type": "boolean"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "imageOptimization": {
+      "anyOf": [
+        {},
+        {
+          "type": "object",
+          "properties": {
+            "noReferrerDomains": {
+              "anyOf": [
+                {},
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              ],
+              "description": "添加 `referrerpolicy=\"no-referrer\"` 的远程图片域名，支持 `*.example.com` 通配符。"
+            }
+          },
+          "additionalProperties": false
+        }
+      ],
+      "description": "Markdown 正文图片处理配置。"
+    },
+    "toc": {
+      "type": "object",
+      "properties": {
+        "enable": {
+          "type": "boolean"
+        },
+        "depth": {
+          "anyOf": [
+            {
+              "type": "number",
+              "enum": [
+                1
+              ]
+            },
+            {
+              "type": "number",
+              "enum": [
+                2
+              ]
+            },
+            {
+              "type": "number",
+              "enum": [
+                3
+              ]
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "progressIndicator": {
+      "type": "object",
+      "properties": {
+        "style": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "dual"
+              ]
+            },
+            {
+              "type": "string",
+              "enum": [
+                "single"
+              ]
+            }
+          ],
+          "description": "dual 双向扫描（官方默认双线）/ single 单向扫描（单线）"
+        }
+      },
+      "additionalProperties": false,
+      "description": "进度条预设样式（页面切换进度条等，仅线性扫描模式）"
+    },
+    "favicon": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "src": {
+            "type": "string"
+          },
+          "theme": {
+            "anyOf": [
+              {},
+              {
+                "type": "string",
+                "enum": [
+                  "light"
+                ]
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "dark"
+                ]
+              }
+            ]
+          },
+          "sizes": {
+            "anyOf": [
+              {},
+              {
+                "type": "string"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

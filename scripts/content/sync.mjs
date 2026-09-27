@@ -474,6 +474,24 @@ function runSync() {
 		0,
 	);
 
+	// 若在同步中有内容被删除裁剪，或某些内容目录为空，主动失效 Astro content layer 存储
+	// 避免 Astro glob loader 命中“空目录提前 return”导致的已删除内容残留或构建报错 (issue #55)
+	if (totalRemoved > 0 || totalFiles === 0) {
+		const astroStores = [
+			join(ROOT, "node_modules/.astro/data-store.json"),
+			join(ROOT, ".astro/data-store.json"),
+		];
+		for (const storePath of astroStores) {
+			if (existsSync(storePath)) {
+				try {
+					rmSync(storePath, { force: true });
+				} catch {
+					// 忽略无权限或已删除异常
+				}
+			}
+		}
+	}
+
 	log(
 		`${options.dryRun ? "[dry-run] " : ""}Materialized ${totalFiles} files` +
 			` (updated ${totalCopied}, pruned ${totalRemoved})` +

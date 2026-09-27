@@ -8,6 +8,10 @@ import {
 	type FancyboxConfig,
 	getDefaultFancyboxConfig,
 } from "./fancybox-config";
+// Keep the custom rules in the same eagerly tracked stylesheet graph as the
+// handler. A dynamic CSS import can make Astro emit a prefetch URL for a
+// below-inlining chunk that is not published, causing a first-open 404.
+import "../styles/fancybox-custom.css";
 
 // Fancybox 模块类型
 // biome-ignore lint/suspicious/noExplicitAny: Fancybox 模块动态加载，无精确类型
@@ -108,7 +112,6 @@ export class FancyboxHandler {
 		const mod = await import("@fancyapps/ui");
 		this.Fancybox = mod.Fancybox;
 		await import("@fancyapps/ui/dist/fancybox/fancybox.css");
-		await import("../styles/fancybox-custom.css");
 	}
 
 	/**

@@ -26,7 +26,7 @@ import {
 	MAIN_PANEL_OVERLAPS_BANNER_HEIGHT,
 } from "../constants/constants";
 import { defaultFavicons } from "../constants/icon";
-import type { Favicon } from "../types/config";
+import type { BannerSourceValue, Favicon } from "../types/config";
 import { createFontRoleStyle } from "../utils/font-options";
 import { resolvePageWidth } from "../utils/responsive-utils";
 import "../styles/main.css";
@@ -56,10 +56,22 @@ const initialPage =
 const canonicalUrl = Astro.site
 	? new URL(Astro.url.pathname + Astro.url.search, Astro.site)
 	: Astro.url;
+function getFirstBannerImage(source: BannerSourceValue | undefined): string {
+	if (!source) return "";
+	if (Array.isArray(source)) return source[0] || "";
+	return source.light[0] || source.dark[0] || "";
+}
+
+function hasBannerImages(source: BannerSourceValue | undefined): boolean {
+	if (!source) return false;
+	if (Array.isArray(source)) return source.length > 0;
+	return source.light.length > 0 || source.dark.length > 0;
+}
+
 const defaultSocialImage =
 	siteConfig.ogImage ||
-	siteConfig.banner.src.desktop[0] ||
-	siteConfig.banner.src.mobile[0] ||
+	getFirstBannerImage(siteConfig.banner.src.desktop) ||
+	getFirstBannerImage(siteConfig.banner.src.mobile) ||
 	"";
 const candidateOgImage = ogImage || banner || defaultSocialImage;
 const resolvedOgImage = await resolveAsset(candidateOgImage);
@@ -76,8 +88,8 @@ const defaultTextureOpacity = textureOptions.defaultOpacity;
 const textureEnabled = textureOptions.enable;
 const umamiOptions = resolveUmamiOptions(umamiConfig);
 
-const hasDesktopBanner = siteConfig.banner.src.desktop.length > 0;
-const hasMobileBanner = siteConfig.banner.src.mobile.length > 0;
+const hasDesktopBanner = hasBannerImages(siteConfig.banner.src.desktop);
+const hasMobileBanner = hasBannerImages(siteConfig.banner.src.mobile);
 
 let pageTitle: string;
 if (title) {
@@ -352,6 +364,7 @@ function scrollFunction() {
 	const overBanner = bannerVisible && scrollTop < Math.max(0, bannerBottom - 64);
 	document.body.dataset.bannerScrolled = String(!overBanner);
 	navbar?.classList.toggle('top-app-bar--transparent', overBanner);
+	navbar?.classList.toggle('top-app-bar--scrolled', scrollTop > 16);
 }
 window.addEventListener('scroll', scrollFunction, { passive: true });
 window.addEventListener('resize', () => {

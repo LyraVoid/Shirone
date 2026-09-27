@@ -21,7 +21,14 @@ import type { DeviceCategory, DeviceItem } from "@/types/devicesConfig";
 let {
 	categories = [] as DeviceCategory[],
 	items = [] as DeviceItem[],
-}: { categories?: DeviceCategory[]; items?: DeviceItem[] } = $props();
+	title = i18n(I18nKey.devices),
+	subtitle = i18n(I18nKey.devicesBanner),
+}: {
+	categories?: DeviceCategory[];
+	items?: DeviceItem[];
+	title?: string;
+	subtitle?: string;
+} = $props();
 
 let query = $state("");
 let selectedCategory = $state("");
@@ -122,8 +129,8 @@ $effect(() => {
 <Card color="var(--card-bg)" radius="l" class="devices-section px-8 py-6">
 	<PageHeader
 		icon="material-symbols:devices-rounded"
-		title={i18n(I18nKey.devices)}
-		subtitle={i18n(I18nKey.devicesBanner)}
+		{title}
+		{subtitle}
 	/>
 
 	{#if enabledItems.length > 0}

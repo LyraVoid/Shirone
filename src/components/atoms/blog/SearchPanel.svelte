@@ -107,13 +107,13 @@ let {
 	/* 结果项：标题（hover primary + 箭头）+ 摘要（<mark> 高亮） */
 	&__item
 		display: block
-		padding: 0.5rem 0.75rem
-		border-radius: var(--shape-corner-l)
+		padding: var(--m3e-space-2) var(--m3e-space-3)
+		border-radius: var(--shape-corner-m)
 		text-decoration: none
 		min-width: 0
 		transition: background-color var(--m3e-duration-short) var(--m3e-easing-standard)
 		&:hover
-			background: unquote("color-mix(in oklab, var(--on-surface) 6%, transparent)")
+			background: unquote("color-mix(in oklab, var(--on-surface) 8%, transparent)")
 	&__item + &__item
 		margin-top: 0.125rem
 

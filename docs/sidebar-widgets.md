@@ -17,6 +17,7 @@ SideBar 通过 `src/config/sidebarConfig.ts` 中的 `components` 数组动态编
 | `profile` | `Profile` | top | 博主资料卡片（头像 + 名字 + 简介 + 社交链接） |
 | `categories` | `Categories` | sticky | 分类列表（按文章数降序，支持 `collapseAfter`） |
 | `tags` | `Tags` | sticky | 标签列表（按文章数降序，支持 `collapseAfter`） |
+| `series` | `Series` | sticky | 系列列表（按最近更新排序，支持 `collapseAfter`；受 `seriesConfig.enable` 控制） |
 | `announcement` | `Announcement` | top | 独立公告卡片（由 `announcementConfig.ts` 驱动） |
 | `stats` | `SiteStats` | top | 站点统计规格表 |
 | `calendar` | `Calendar` | sticky | 月度文章历（SSR 直出 + 水合岛） |
@@ -119,7 +120,16 @@ interface SidebarWidgetBase {
 
 ---
 
-## 11. 新增 widget 的设计约束
+## 11. Series — 系列列表
+
+- **数据源**：`src/utils/content-utils.ts` 的 `getSeriesCatalog()`（系列实体）+ `getSortedPostsList()`（统计每系列篇数与最近更新时间）；
+- **渲染**：`WidgetLayout` 外壳 + 复用数据驱动的 `CategoryList` 原子（名称 + 数量徽标），按最近更新降序；超出 `collapseAfter`（默认 5）时在卡片底部给出「查看全部系列」入口指向 `/series/`；
+- **开关**：受 `src/config/seriesConfig.ts` 的 `enable` 门控——关闭时连取数都跳过，且不产出任何 DOM；站点没有任何系列实体时同样不渲染（零额外负担）；
+- **页面范围**：默认条目 `pages` 覆盖常规内容页，不含 `"series"` 自身页面（避免系列页上重复列出系列）。
+
+---
+
+## 12. 新增 widget 的设计约束
 
 1. **外观语言**：优先复用既有原子——`MetaIcon`（单图标徽标）、`Chip` / `Button` / `Card`、`WidgetLayout`（标题外壳）、`AccentBar`；不要自创新的徽标/容器风格；
 2. **外壳取舍**：短消息类（如公告）不用 `WidgetLayout`；有明确"分组 + 列表"语义的（分类/标签/统计），以及音乐等需要统一侧栏标题的有机体使用；

@@ -1,13 +1,21 @@
 ---
 import AlbumSection from "@components/organisms/AlbumSection.svelte";
 import I18nKey from "@i18n/i18nKey";
-import { i18n } from "@i18n/translation";
 import MainGridLayout from "@layouts/MainGridLayout.astro";
+import { albumsConfig } from "@/config/albumsConfig";
+import { resolveI18nText } from "@utils/i18n-utils";
 import { scanVisibleAlbums, toAlbumIndexItem } from "@utils/album-scanner";
+
+if (!albumsConfig.enable) {
+	return Astro.redirect("/404/");
+}
+
+const pageTitle = resolveI18nText(albumsConfig.title, I18nKey.albums);
+const pageDescription = resolveI18nText(albumsConfig.description, I18nKey.albumsBanner);
 
 const albums = scanVisibleAlbums().map(toAlbumIndexItem);
 ---
 
-<MainGridLayout title={i18n(I18nKey.albums)} description={i18n(I18nKey.albumsBanner)} page="albums">
-	<AlbumSection {albums} client:visible />
+<MainGridLayout title={pageTitle} description={pageDescription} page="albums">
+	<AlbumSection {albums} title={pageTitle} subtitle={pageDescription} client:visible />
 </MainGridLayout>

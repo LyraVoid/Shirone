@@ -2,26 +2,31 @@
 /** 设备页：配置层规则在构建期结合数据层传入交互岛，路由负责开关与编排。 */
 import DeviceSection from "@components/organisms/DeviceSection.svelte";
 import I18nKey from "@i18n/i18nKey";
-import { i18n } from "@i18n/translation";
 import MainGridLayout from "@layouts/MainGridLayout.astro";
 import { devicesConfig } from "@/config/devicesConfig";
+import { resolveI18nText } from "@utils/i18n-utils";
 import { resolveDevicesData } from "@/utils/feature-data";
 
 if (!devicesConfig.enable) {
 	return Astro.redirect("/404/");
 }
 
+const pageTitle = resolveI18nText(devicesConfig.title, I18nKey.devices);
+const pageDescription = resolveI18nText(devicesConfig.description, I18nKey.devicesBanner);
+
 const items = resolveDevicesData(devicesConfig);
 ---
 
 <MainGridLayout
-	title={i18n(I18nKey.devices)}
-	description={i18n(I18nKey.devicesBanner)}
+	title={pageTitle}
+	description={pageDescription}
 	page="devices"
 >
 	<DeviceSection
 		categories={devicesConfig.categories}
 		items={items}
+		title={pageTitle}
+		subtitle={pageDescription}
 		client:visible
 	/>
 </MainGridLayout>

@@ -53,7 +53,7 @@ const tocHeadings = headings.map((h) => ({
 	<div class="m3-floating-toc-panel__header">
 		<div class="flex items-center gap-2">
 			<Icon name="material-symbols:format-list-bulleted-rounded" class="text-xl text-[var(--primary)]" />
-			<h3 class="text-sm font-bold text-[var(--on-surface)] m-0">
+			<h3 class="m3-floating-toc-panel__title">
 				{i18n(I18nKey.tableOfContents)}
 			</h3>
 		</div>
@@ -84,7 +84,7 @@ const tocHeadings = headings.map((h) => ({
 <style lang="stylus">
 .m3-floating-toc-panel
 	position: absolute
-	bottom: calc(100% + 0.75rem)
+	bottom: calc(100% + var(--m3e-space-3))
 	right: 0
 	width: min(85vw, 20rem)
 	max-height: min(65vh, 28rem)
@@ -98,7 +98,7 @@ const tocHeadings = headings.map((h) => ({
 	overflow: hidden
 	opacity: 0
 	visibility: hidden
-	transform: translateY(0.75rem) scale(0.94)
+	transform: translateY(var(--m3e-space-3)) scale(0.94)
 	transform-origin: bottom right
 	transition:
 		transform var(--m3e-duration-medium) var(--m3e-easing-emphasized-decelerate),
@@ -117,12 +117,18 @@ const tocHeadings = headings.map((h) => ({
 		display: flex
 		align-items: center
 		justify-content: space-between
-		padding: 0.75rem 1rem
+		padding: var(--m3e-space-3) var(--m3e-space-4)
 		border-bottom: 1px solid var(--outline-variant)
 		background: var(--surface-container-high)
 
+	&__title
+		font: var(--m3e-type-title-small)
+		font-weight: 600
+		color: var(--on-surface)
+		margin: 0
+
 	&__content
-		padding: 0.5rem
+		padding: var(--m3e-space-2)
 		overflow-y: auto
 		overscroll-behavior: contain
 		scrollbar-width: none

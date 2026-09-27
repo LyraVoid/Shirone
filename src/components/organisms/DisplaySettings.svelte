@@ -238,7 +238,7 @@ const stylePreviews = $derived(
 );
 </script>
 
-<div id="display-setting" class="float-panel float-panel-closed absolute transition-all w-80 {className}">
+<div id="display-setting" class="float-panel float-panel-closed absolute transition-all w-80 max-h-[calc(100dvh-5rem)] overflow-y-auto overscroll-contain m3-scroll-contain {className}">
     <PanelStack>
         <!-- 段一：主题配色（色相 + 风格九宫格 + Color Spec） -->
         <div class="p-4 flex flex-col gap-3">
@@ -294,7 +294,7 @@ const stylePreviews = $derived(
 
             {#if displayConfig.colorSpec}
                 <div class="flex flex-col gap-1.5 pt-1">
-                    <span class="text-sm font-bold text-[var(--on-surface-variant)] ml-1">{i18n(I18nKey.colorSpec)}</span>
+                    <span class="display-settings__section-label">{i18n(I18nKey.colorSpec)}</span>
                     <SegmentedButton
                         options={MC_SPECS.map((s) => ({
                             value: s,
@@ -312,7 +312,7 @@ const stylePreviews = $derived(
             <div class="p-4 flex flex-col gap-3">
                 {#if displayConfig.wallpaperMode}
                     <div class="flex flex-col gap-1.5">
-                        <span class="text-sm font-bold text-[var(--on-surface-variant)] ml-1">{i18n(I18nKey.wallpaperMode)}</span>
+                        <span class="display-settings__section-label">{i18n(I18nKey.wallpaperMode)}</span>
                         <SegmentedButton
                             options={[
                                 { value: "none", label: i18n(I18nKey.wallpaperModeNone) },
@@ -326,7 +326,7 @@ const stylePreviews = $derived(
 
                 {#if displayConfig.layoutMode}
                     <div class="flex flex-col gap-1.5">
-                        <span class="text-sm font-bold text-[var(--on-surface-variant)] ml-1">{i18n(I18nKey.layoutMode)}</span>
+                        <span class="display-settings__section-label">{i18n(I18nKey.layoutMode)}</span>
                         <SegmentedButton
                             options={[
                                 { value: "list", label: i18n(I18nKey.layoutList) },
@@ -340,7 +340,7 @@ const stylePreviews = $derived(
 
                 {#if displayConfig.texture}
                     <div class="flex flex-col gap-2 pt-1">
-                        <span class="text-sm font-bold text-[var(--on-surface-variant)] ml-1">{i18n(I18nKey.texturePreset)}</span>
+                        <span class="display-settings__section-label">{i18n(I18nKey.texturePreset)}</span>
                         <div class="grid grid-cols-3 gap-2" role="radiogroup" aria-label={i18n(I18nKey.texturePreset)}>
                             {#each textureOptions as opt (opt.value)}
                                 <button
@@ -378,25 +378,34 @@ const stylePreviews = $derived(
 
 
 <style lang="stylus">
+    .display-settings__section-label
+        font: var(--m3e-type-label-large)
+        font-weight: 700
+        color: var(--on-surface-variant)
+        margin-left: var(--m3e-space-1)
+
     .m3-style-cell
         display: flex
         flex-direction: column
         align-items: center
         justify-content: center
-        gap: 0.375rem
-        padding: 0.5rem 0.25rem
+        gap: var(--m3e-space-1)
+        padding: var(--m3e-space-2) var(--m3e-space-1)
         border: none
-        border-radius: var(--shape-corner-s)
+        border-radius: var(--shape-corner-m)
         background: transparent
         color: var(--on-surface-variant)
         font: var(--m3e-type-label-small)
         cursor: pointer
         user-select: none
+        --m3e-state-color: var(--on-surface)
         transition: background-color var(--m3e-duration-short) var(--m3e-easing-standard), color var(--m3e-duration-short) var(--m3e-easing-standard)
         &:hover
-            background: unquote("color-mix(in oklab, var(--on-surface) 6%, transparent)")
+            background: unquote("color-mix(in oklab, var(--on-surface) 8%, transparent)")
         &.selected
             background: var(--secondary-container)
+            color: var(--on-secondary-container)
+            font-weight: 600
             color: var(--on-secondary-container)
 
         &__dots
@@ -415,4 +424,19 @@ const stylePreviews = $derived(
             text-overflow: ellipsis
             white-space: nowrap
 
+    :global(#display-setting.m3-scroll-contain)
+        scrollbar-width: thin
+        scrollbar-color: var(--scrollbar-bg) transparent
+        -webkit-overflow-scrolling: touch
+        &::-webkit-scrollbar
+            width: 0.375rem
+        &::-webkit-scrollbar-track
+            background: transparent
+        &::-webkit-scrollbar-thumb
+            background: var(--scrollbar-bg)
+            border-radius: var(--shape-corner-full)
+            &:hover
+                background: var(--scrollbar-bg-hover)
+            &:active
+                background: var(--scrollbar-bg-active)
 </style>

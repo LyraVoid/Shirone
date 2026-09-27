@@ -1,0 +1,139 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "announcement configuration override",
+  "description": "Shirone announcement config schema generated from @/types/announcementConfig.AnnouncementConfig",
+  "type": "object",
+  "properties": {
+    "title": {
+      "anyOf": [
+        {},
+        {
+          "type": "string"
+        }
+      ],
+      "description": "公告栏标题，留空则自动使用 i18n Key.announcement (\"公告\")"
+    },
+    "content": {
+      "type": "string",
+      "description": "公告正文内容"
+    },
+    "text": {
+      "anyOf": [
+        {},
+        {
+          "type": "string"
+        }
+      ],
+      "description": "向后兼容老配置的 text 字段"
+    },
+    "icon": {
+      "anyOf": [
+        {},
+        {
+          "type": "string"
+        }
+      ],
+      "description": "公告栏可选图标"
+    },
+    "type": {
+      "anyOf": [
+        {},
+        {
+          "type": "string",
+          "enum": [
+            "info"
+          ]
+        },
+        {
+          "type": "string",
+          "enum": [
+            "warning"
+          ]
+        },
+        {
+          "type": "string",
+          "enum": [
+            "success"
+          ]
+        },
+        {
+          "type": "string",
+          "enum": [
+            "error"
+          ]
+        }
+      ],
+      "description": "公告类型"
+    },
+    "closable": {
+      "anyOf": [
+        {},
+        {
+          "type": "boolean",
+          "enum": [
+            false
+          ]
+        },
+        {
+          "type": "boolean",
+          "enum": [
+            true
+          ]
+        }
+      ],
+      "description": "是否允许用户关闭公告"
+    },
+    "closeDuration": {
+      "anyOf": [
+        {},
+        {
+          "type": "number"
+        }
+      ],
+      "description": "关闭公告后的有效生命周期（单位：秒）。\n超过此时间后，公告将重新向用户展示。\n0 或未设置表示永久关闭（直到清理浏览器缓存或重置）。\n例如：86400 为 24 小时，604800 为 7 天。"
+    },
+    "link": {
+      "anyOf": [
+        {},
+        {
+          "type": "object",
+          "properties": {
+            "enable": {
+              "type": "boolean",
+              "description": "是否启用链接"
+            },
+            "text": {
+              "type": "string",
+              "description": "链接文本"
+            },
+            "url": {
+              "type": "string",
+              "description": "链接 URL"
+            },
+            "external": {
+              "anyOf": [
+                {},
+                {
+                  "type": "boolean",
+                  "enum": [
+                    false
+                  ]
+                },
+                {
+                  "type": "boolean",
+                  "enum": [
+                    true
+                  ]
+                }
+              ],
+              "description": "是否外部链接（新窗口打开）"
+            }
+          },
+          "additionalProperties": false
+        }
+      ],
+      "description": "可选行动链接配置"
+    }
+  },
+  "additionalProperties": false
+}

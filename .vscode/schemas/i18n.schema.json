@@ -1,0 +1,19 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "i18n configuration override",
+  "description": "Shirone i18n config schema generated from @/types/i18nConfig.I18nConfig",
+  "type": "object",
+  "properties": {},
+  "additionalProperties": {
+    "type": "object",
+    "properties": {},
+    "additionalProperties": {
+      "anyOf": [
+        {},
+        {
+          "type": "string"
+        }
+      ]
+    }
+  }
+}

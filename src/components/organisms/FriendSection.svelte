@@ -11,7 +11,15 @@ import Icon from "@iconify/svelte";
 import { onMount } from "svelte";
 import type { FriendItem } from "../../data/friends";
 
-let { friends = [] as FriendItem[] }: { friends?: FriendItem[] } = $props();
+let {
+	friends = [] as FriendItem[],
+	title = i18n(I18nKey.friends),
+	subtitle = i18n(I18nKey.friendsBanner),
+}: {
+	friends?: FriendItem[];
+	title?: string;
+	subtitle?: string;
+} = $props();
 
 let query = $state("");
 let selectedTag = $state("");
@@ -94,8 +102,8 @@ onMount(() => {
 <Card color="var(--card-bg)" radius="l" class="friend-section px-8 py-6">
 	<PageHeader
 		icon="material-symbols:handshake-outline-rounded"
-		title={i18n(I18nKey.friends)}
-		subtitle={i18n(I18nKey.friendsBanner)}
+		{title}
+		{subtitle}
 	/>
 
 	{#if friends.length > 0}

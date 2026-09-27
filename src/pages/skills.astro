@@ -2,26 +2,31 @@
 /** 技能页：配置层规则在构建期结合数据层传入交互岛，路由负责开关与编排。 */
 import SkillSection from "@components/organisms/SkillSection.svelte";
 import I18nKey from "@i18n/i18nKey";
-import { i18n } from "@i18n/translation";
 import MainGridLayout from "@layouts/MainGridLayout.astro";
 import { skillsConfig } from "@/config/skillsConfig";
+import { resolveI18nText } from "@utils/i18n-utils";
 import { resolveSkillsData } from "@/utils/feature-data";
 
 if (!skillsConfig.enable) {
 	return Astro.redirect("/404/");
 }
 
+const pageTitle = resolveI18nText(skillsConfig.title, I18nKey.skills);
+const pageDescription = resolveI18nText(skillsConfig.description, I18nKey.skillsBanner);
+
 const items = resolveSkillsData(skillsConfig);
 ---
 
 <MainGridLayout
-	title={i18n(I18nKey.skills)}
-	description={i18n(I18nKey.skillsBanner)}
+	title={pageTitle}
+	description={pageDescription}
 	page="skills"
 >
 	<SkillSection
 		categories={skillsConfig.categories}
 		items={items}
+		title={pageTitle}
+		subtitle={pageDescription}
 		client:visible
 	/>
 </MainGridLayout>

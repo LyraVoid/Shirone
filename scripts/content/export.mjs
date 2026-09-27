@@ -113,7 +113,9 @@ const SKIPPED_DIRECTORIES = new Set([
  *
  * `PROTECTED_PATHS` 是构建期生成物：内容仓若持有同名文件，`sync.mjs` 会**直接报错**，
  * 所以导出它们等于亲手把内容仓变成一个同步不了的仓库。
- * 番剧快照来自外部 API，`.gitkeep` 是代码仓用来占位空目录的自有文件，一并豁免。
+ * 番剧快照的豁免理由不同：同步方向允许内容仓提供快照（`sync.mjs` 不会报错，基线语义），
+ * 但快照由 `anime:sync` 在代码仓侧生成/覆盖，导出它只会给内容仓一份将来必被覆盖的假输入。
+ * `.gitkeep` 是代码仓用来占位空目录的自有文件，一并豁免。
  */
 const EXPORT_PROTECTED_PATHS = Object.freeze([
 	...PROTECTED_PATHS,

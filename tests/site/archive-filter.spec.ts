@@ -26,7 +26,7 @@ test.describe("archive filter breadcrumb", () => {
 		await expect(
 			page.getByRole("navigation", { name: "Breadcrumb" }),
 		).toBeVisible();
-		await expect(page.locator(".m3-blog-archive__item")).toHaveCount(5);
+		await expect(page.locator(".m3-blog-archive__item")).toHaveCount(9);
 	});
 
 	test("keeps mobile insets and long values inside the archive card", async ({

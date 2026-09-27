@@ -39,7 +39,11 @@ const softCategory = !isHome && !isArchive && postCategory ? postCategory : "";
 
 <!-- nav landmark：分类栏静态渲染在 Swup 容器外，需要独立 landmark 才能通过
      axe region 规则（内容必须处于某个 landmark 区域内） -->
-<nav id="category-bar-region" aria-label={i18n(I18nKey.categories)}>
+<nav
+	id="category-bar-region"
+	aria-label={i18n(I18nKey.categories)}
+	class:list={{ hidden: Astro.url.pathname.startsWith("/categories") || Astro.url.pathname.startsWith("/tags") }}
+>
 	<Card color="var(--card-bg)" radius="l" class="category-bar onload-animation mb-4 p-2" id="category-bar">
 		<div class="category-bar-inner flex gap-2 items-center">
 			<Chip
@@ -107,6 +111,10 @@ const softCategory = !isHome && !isArchive && postCategory ? postCategory : "";
 		if (!bar) return;
 
 		const swupContainer = document.getElementById("swup-container");
+		const currentPage = swupContainer?.dataset.currentPage;
+		document
+			.getElementById("category-bar-region")
+			?.classList.toggle("hidden", currentPage === "categories" || currentPage === "tags");
 		const postCategory = (swupContainer?.dataset.currentPostCategory || "").trim();
 
 		const pathname = window.location.pathname.replace(/\/+$/, "") || "/";

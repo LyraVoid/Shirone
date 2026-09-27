@@ -1,3 +1,5 @@
+import type { PageMeta } from "./pageMeta.ts";
+
 /** 项目阶段：强调当前交付状态，不映射为百分比进度。 */
 export type ProjectPhase = "shipped" | "building" | "exploring";
 
@@ -37,7 +39,7 @@ export interface ProjectItem {
 }
 
 /** 项目页配置（行为层）。 */
-export interface ProjectsConfig {
+export interface ProjectsConfig extends PageMeta {
 	/** 页面总开关；关闭后隐藏导航入口并将 /projects/ 重定向到 404。 */
 	enable: boolean;
 	/** 分类列表（决定 Chips 显示顺序）。 */

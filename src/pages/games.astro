@@ -1,0 +1,43 @@
+---
+/** 游戏页：配置层规则在构建期结合数据层传入交互岛，路由负责开关与编排。 */
+import GamesSection from "@components/organisms/GamesSection.svelte";
+import I18nKey from "@i18n/i18nKey";
+import MainGridLayout from "@layouts/MainGridLayout.astro";
+import { resolveAsset } from "@utils/asset-utils";
+import { resolveI18nText } from "@utils/i18n-utils";
+import { gamesConfig } from "@/config/gamesConfig";
+import { resolveGamesData } from "@/utils/feature-data";
+
+if (!gamesConfig.enable) {
+	return Astro.redirect("/404/");
+}
+
+const pageTitle = resolveI18nText(gamesConfig.title, I18nKey.games);
+const pageDescription = resolveI18nText(
+	gamesConfig.description,
+	I18nKey.gamesBanner,
+);
+
+// 构建期解析封面：支持 src/assets 相对路径（走 Astro 图片管线）、
+// /public 绝对路径与远程 URL——Svelte 卡片直接拿到可用 URL。
+const items = await Promise.all(
+	resolveGamesData(gamesConfig).map(async (game) => ({
+		...game,
+		cover: game.cover ? await resolveAsset(game.cover) : undefined,
+	})),
+);
+---
+
+<MainGridLayout
+	title={pageTitle}
+	description={pageDescription}
+	page="games"
+>
+	<GamesSection
+		categories={gamesConfig.categories}
+		items={items}
+		title={pageTitle}
+		subtitle={pageDescription}
+		client:visible
+	/>
+</MainGridLayout>

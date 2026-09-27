@@ -45,8 +45,8 @@ test.describe("archive grouping switch", () => {
 
 		// 默认按年分组：年份倒序，首组为最新年份
 		const titles = page.locator(".m3-blog-archive__group-title");
-		await expect(titles.first()).toHaveText("2024");
-		await expect(titles).toHaveText(["2024", "2023", "2022"]);
+		await expect(titles.first()).toHaveText("2026");
+		await expect(titles).toHaveText(["2026", "2024", "2023", "2022"]);
 	});
 
 	test("switches grouping to category with counts", async ({ page }) => {
@@ -58,7 +58,7 @@ test.describe("archive grouping switch", () => {
 			"Guides",
 		]);
 		await expect(page.locator(".m3-blog-archive__count").first()).toHaveText(
-			"5 posts",
+			"9 posts",
 		);
 	});
 
@@ -68,15 +68,14 @@ test.describe("archive grouping switch", () => {
 		await openArchive(page);
 
 		await selectGroup(page, "By Tag");
-		await expect(page.locator(".m3-blog-archive__group-title")).toHaveText([
-			"#Blogging",
-			"#Customization",
-			"#Demo",
-			"#Example",
-			"#Fuwari",
-			"#Markdown",
-			"#Video",
-		]);
+		const tagTitles = await page
+			.locator(".m3-blog-archive__group-title")
+			.allTextContents();
+		expect(tagTitles.length).toBe(27);
+		expect(tagTitles[0]).toBe("#Accessibility");
+		expect(tagTitles).toContain("#Blogging");
+		expect(tagTitles).toContain("#Guide");
+		expect(tagTitles).toContain("#Shirone");
 	});
 
 	test("arrow keys move selection within the radio group", async ({ page }) => {
@@ -109,8 +108,9 @@ test.describe("archive grouping switch", () => {
 			page.getByRole("group", { name: "Group archive by" }),
 		).toHaveCount(0);
 		// 直接呈现筛选后的年份时间轴
-		await expect(page.locator(".m3-blog-archive__item")).toHaveCount(5);
+		await expect(page.locator(".m3-blog-archive__item")).toHaveCount(9);
 		await expect(page.locator(".m3-blog-archive__group-title")).toHaveText([
+			"2026",
 			"2024",
 			"2023",
 			"2022",

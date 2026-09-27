@@ -16,7 +16,14 @@ import type { ProjectCategory, ProjectItem } from "@/types/projectsConfig";
 let {
 	categories = [] as ProjectCategory[],
 	items = [] as ProjectItem[],
-}: { categories?: ProjectCategory[]; items?: ProjectItem[] } = $props();
+	title = i18n(I18nKey.projects),
+	subtitle = i18n(I18nKey.projectsBanner),
+}: {
+	categories?: ProjectCategory[];
+	items?: ProjectItem[];
+	title?: string;
+	subtitle?: string;
+} = $props();
 
 let query = $state("");
 let selectedCategory = $state("");
@@ -115,8 +122,8 @@ $effect(() => {
 <Card color="var(--card-bg)" radius="l" class="projects-section px-8 py-6">
 	<PageHeader
 		icon="material-symbols:deployed-code-outline-rounded"
-		title={i18n(I18nKey.projects)}
-		subtitle={i18n(I18nKey.projectsBanner)}
+		{title}
+		{subtitle}
 	/>
 
 	{#if enabledItems.length > 0}

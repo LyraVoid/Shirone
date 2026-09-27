@@ -1,0 +1,73 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "postList configuration override",
+  "description": "Shirone postList config schema generated from @/types/postListConfig.PostListConfig",
+  "type": "object",
+  "properties": {
+    "pageSize": {
+      "type": "number",
+      "description": "首页每页文章数"
+    },
+    "layout": {
+      "type": "object",
+      "properties": {
+        "mode": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "list"
+              ]
+            },
+            {
+              "type": "string",
+              "enum": [
+                "grid"
+              ]
+            }
+          ]
+        },
+        "cover": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "left"
+              ]
+            },
+            {
+              "type": "string",
+              "enum": [
+                "right"
+              ]
+            }
+          ]
+        },
+        "cardWidth": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "compact"
+              ]
+            },
+            {
+              "type": "string",
+              "enum": [
+                "regular"
+              ]
+            },
+            {
+              "type": "string",
+              "enum": [
+                "relaxed"
+              ]
+            }
+          ]
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

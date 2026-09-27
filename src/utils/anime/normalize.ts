@@ -153,15 +153,18 @@ export function normalizeAnimeItem(raw: unknown): AnimeItem | null {
 	}
 
 	// 4. 进度校验：watched / total
-	let watched = 0;
-	let total = 0;
+	let progress: { watched: number; total: number } | undefined;
 	if (record.progress && typeof record.progress === "object") {
 		const rawProgress = record.progress as Record<string, unknown>;
+		let watched = 0;
+		let total = 0;
+		let hasWatched = false;
 		if (
 			typeof rawProgress.watched === "number" &&
 			Number.isFinite(rawProgress.watched)
 		) {
 			watched = Math.max(0, Math.floor(rawProgress.watched));
+			hasWatched = true;
 		}
 		if (
 			typeof rawProgress.total === "number" &&
@@ -169,15 +172,18 @@ export function normalizeAnimeItem(raw: unknown): AnimeItem | null {
 		) {
 			total = Math.max(0, Math.floor(rawProgress.total));
 		}
+		if (hasWatched || total > 0) {
+			if (total > 0 && watched > total) {
+				watched = total;
+			}
+			progress = { watched, total };
+		}
 	} else if (
 		typeof record.progress === "number" &&
 		Number.isFinite(record.progress)
 	) {
-		watched = Math.max(0, Math.floor(record.progress));
-	}
-
-	if (total > 0 && watched > total) {
-		watched = total;
+		const watched = Math.max(0, Math.floor(record.progress));
+		progress = { watched, total: 0 };
 	}
 
 	// 5. 封面与外链
@@ -229,9 +235,9 @@ export function normalizeAnimeItem(raw: unknown): AnimeItem | null {
 		title,
 		status,
 		rating,
-		progress: { watched, total },
 		year,
 		genres,
+		...(progress ? { progress } : {}),
 		...(cover ? { cover } : {}),
 		...(link ? { link } : {}),
 		...(description ? { description } : {}),

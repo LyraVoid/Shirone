@@ -1,0 +1,255 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "devices configuration override",
+  "description": "Shirone devices config schema generated from @/types/devicesConfig.DevicesConfig",
+  "type": "object",
+  "properties": {
+    "enable": {
+      "type": "boolean",
+      "description": "页面总开关；关闭后隐藏导航入口并将 /devices/ 重定向到 404。"
+    },
+    "categories": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "description": "稳定标识，供设备引用与筛选。"
+          },
+          "label": {
+            "type": "string",
+            "description": "用户可编辑的分类名称。"
+          },
+          "icon": {
+            "anyOf": [
+              {},
+              {
+                "type": "string"
+              }
+            ],
+            "description": "Iconify 图标名（筛选 Chip 前置图标）。"
+          },
+          "description": {
+            "anyOf": [
+              {},
+              {
+                "type": "string"
+              }
+            ],
+            "description": "可选的分类说明。"
+          }
+        },
+        "additionalProperties": false
+      },
+      "description": "场景分类列表（决定 Chips 渲染顺序）。"
+    },
+    "disabledIds": {
+      "anyOf": [
+        {},
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      ],
+      "description": "可选被禁用的设备 ID 列表。"
+    },
+    "disabledKeys": {
+      "anyOf": [
+        {},
+        {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      ],
+      "description": "兼容通用 disabledKeys 别名。"
+    },
+    "items": {
+      "anyOf": [
+        {},
+        {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "enable": {
+                "anyOf": [
+                  {},
+                  {
+                    "type": "boolean",
+                    "enum": [
+                      false
+                    ]
+                  },
+                  {
+                    "type": "boolean",
+                    "enum": [
+                      true
+                    ]
+                  }
+                ],
+                "description": "可选独立开关；关闭后不参与渲染与计数（优先使用 config.disabledIds）。"
+              },
+              "id": {
+                "type": "string",
+                "description": "稳定标识（URL 片段 / 测试选择器）。"
+              },
+              "name": {
+                "type": "string",
+                "description": "设备名称（如 MacBook Pro 16\"）。"
+              },
+              "brand": {
+                "type": "string",
+                "description": "品牌/厂商（如 Apple, Sony）。"
+              },
+              "category": {
+                "type": "string",
+                "description": "所属场景分类（对应 DeviceCategory.key）。"
+              },
+              "status": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "active"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "enum": [
+                      "backup"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "enum": [
+                      "archived"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "enum": [
+                      "wishlist"
+                    ]
+                  }
+                ],
+                "description": "使用状态。"
+              },
+              "specs": {
+                "type": "string",
+                "description": "核心规格简述（卡片醒目位置，如 M3 Max / 64GB / 2TB）。"
+              },
+              "specDetails": {
+                "anyOf": [
+                  {},
+                  {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "key": {
+                          "type": "string"
+                        },
+                        "label": {
+                          "type": "string"
+                        },
+                        "value": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false
+                    }
+                  }
+                ],
+                "description": "可选详细规格列表。"
+              },
+              "description": {
+                "type": "string",
+                "description": "设备使用感受/简评。"
+              },
+              "image": {
+                "anyOf": [
+                  {},
+                  {
+                    "type": "string"
+                  }
+                ],
+                "description": "设备展示图片（站内绝对路径，建议本地 WebP/AVIF）。"
+              },
+              "icon": {
+                "anyOf": [
+                  {},
+                  {
+                    "type": "string"
+                  }
+                ],
+                "description": "无图片时使用的 Iconify 图标。"
+              },
+              "link": {
+                "anyOf": [
+                  {},
+                  {
+                    "type": "string"
+                  }
+                ],
+                "description": "官方主页、测评或购买链接。"
+              },
+              "featured": {
+                "anyOf": [
+                  {},
+                  {
+                    "type": "boolean",
+                    "enum": [
+                      false
+                    ]
+                  },
+                  {
+                    "type": "boolean",
+                    "enum": [
+                      true
+                    ]
+                  }
+                ],
+                "description": "主力/特别推荐标记（渲染 Featured 徽章）。"
+              },
+              "year": {
+                "anyOf": [
+                  {},
+                  {
+                    "type": "string"
+                  }
+                ],
+                "description": "购入或开始使用年份（自由格式，如 \"2024\"）。"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      ],
+      "description": "可选自定义数据（向后兼容；默认读取 src/data/devices.ts）。"
+    },
+    "title": {
+      "anyOf": [
+        {},
+        {
+          "type": "string"
+        }
+      ],
+      "description": "页面标题：字面量（个人化、语言无关），或 \"$t:<i18nKey>\"（本地化；默认即当前词条）"
+    },
+    "description": {
+      "anyOf": [
+        {},
+        {
+          "type": "string"
+        }
+      ],
+      "description": "页面副标题：同上"
+    }
+  },
+  "additionalProperties": false
+}

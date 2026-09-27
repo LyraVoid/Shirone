@@ -1,0 +1,331 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "anime configuration override",
+  "description": "Shirone anime config schema generated from @/types/animeConfig.AnimeConfig",
+  "type": "object",
+  "properties": {
+    "enable": {
+      "type": "boolean",
+      "description": "是否启用番剧页面。关闭后隐藏导航入口并将 /anime/ 重定向到 404。"
+    },
+    "source": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "local"
+              ]
+            },
+            {
+              "type": "string",
+              "enum": [
+                "snapshot"
+              ]
+            }
+          ],
+          "description": "数据源类别"
+        },
+        "provider": {
+          "anyOf": [
+            {},
+            {
+              "type": "string",
+              "enum": [
+                "bangumi"
+              ]
+            },
+            {
+              "type": "string",
+              "enum": [
+                "bilibili"
+              ]
+            }
+          ],
+          "description": "指定 provider（当 kind 为 \"snapshot\" 时建议指定）"
+        },
+        "file": {
+          "anyOf": [
+            {},
+            {
+              "type": "string"
+            }
+          ],
+          "description": "指定快照文件名（必须限定在快照目录内，仅允许安全文件名字符）。\n- 省略或使用 `<provider>.json`：文件由 `anime:sync` 生成与覆盖（基线 / last-known-good）；\n- 自定义文件名（如 \"manual.json\"）：使用者的纯静态 JSON 输入，`anime:sync` 永不写入；\n  不填 provider 仅填 file 即为纯静态数据源，不发起任何外部请求。"
+        },
+        "fetchOnDev": {
+          "anyOf": [
+            {},
+            {
+              "type": "boolean",
+              "enum": [
+                false
+              ]
+            },
+            {
+              "type": "boolean",
+              "enum": [
+                true
+              ]
+            }
+          ],
+          "description": "是否在开发环境 (pnpm dev) 下允许热重载并读取最新快照数据（默认 true）"
+        }
+      },
+      "additionalProperties": false,
+      "description": "主数据源配置"
+    },
+    "fallback": {
+      "type": "object",
+      "properties": {
+        "kind": {
+          "anyOf": [
+            {
+              "type": "string",
+              "enum": [
+                "local"
+              ]
+            },
+            {
+              "type": "string",
+              "enum": [
+                "empty"
+              ]
+            }
+          ],
+          "description": "降级策略"
+        }
+      },
+      "additionalProperties": false,
+      "description": "失败降级配置"
+    },
+    "providers": {
+      "type": "object",
+      "properties": {
+        "bangumi": {
+          "type": "object",
+          "properties": {
+            "enable": {
+              "type": "boolean",
+              "description": "是否启用 Bangumi 同步能力"
+            },
+            "userId": {
+              "type": "string",
+              "description": "Bangumi 用户 ID 或公开个性域名（必填，未填时自动禁用）"
+            },
+            "request": {
+              "anyOf": [
+                {},
+                {
+                  "type": "object",
+                  "properties": {
+                    "pageSize": {
+                      "anyOf": [
+                        {},
+                        {
+                          "type": "number"
+                        }
+                      ],
+                      "description": "单页拉取大小（默认由各 provider 适配器安全上限约束）"
+                    },
+                    "maxItems": {
+                      "anyOf": [
+                        {},
+                        {
+                          "type": "number"
+                        }
+                      ],
+                      "description": "最大拉取条目数上限（防止过度抓取，默认 300）"
+                    },
+                    "minDelayMs": {
+                      "anyOf": [
+                        {},
+                        {
+                          "type": "number"
+                        }
+                      ],
+                      "description": "请求节流延迟毫秒数（防止触发 API 限流，默认 300ms）"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              ],
+              "description": "可选网络请求参数"
+            }
+          },
+          "additionalProperties": false
+        },
+        "bilibili": {
+          "type": "object",
+          "properties": {
+            "enable": {
+              "type": "boolean",
+              "description": "是否启用 Bilibili 同步能力"
+            },
+            "vmid": {
+              "type": "string",
+              "description": "Bilibili 用户 UID / vmid（必填，未填时自动禁用）"
+            },
+            "sessdataEnv": {
+              "anyOf": [
+                {},
+                {
+                  "type": "string"
+                }
+              ],
+              "description": "保存 SESSDATA 的环境变量名称（默认为 \"BILI_SESSDATA\"）。\n注意：此处仅配置环境变量键名，私密 Token 严禁硬编码进本文件或 Git。"
+            },
+            "cover": {
+              "anyOf": [
+                {},
+                {
+                  "type": "object",
+                  "properties": {
+                    "mode": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "none"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "local"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "remote"
+                          ]
+                        }
+                      ]
+                    },
+                    "mirror": {
+                      "anyOf": [
+                        {},
+                        {
+                          "type": "string"
+                        }
+                      ],
+                      "description": "可选封面镜像前缀（如加速 CDN 或反代前缀）"
+                    },
+                    "useWebp": {
+                      "anyOf": [
+                        {},
+                        {
+                          "type": "boolean",
+                          "enum": [
+                            false
+                          ]
+                        },
+                        {
+                          "type": "boolean",
+                          "enum": [
+                            true
+                          ]
+                        }
+                      ],
+                      "description": "是否使用 WebP 图片优化参数（默认 true）"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              ],
+              "description": "封面处理策略"
+            },
+            "request": {
+              "anyOf": [
+                {},
+                {
+                  "type": "object",
+                  "properties": {
+                    "pageSize": {
+                      "anyOf": [
+                        {},
+                        {
+                          "type": "number"
+                        }
+                      ],
+                      "description": "单页拉取大小（默认由各 provider 适配器安全上限约束）"
+                    },
+                    "maxItems": {
+                      "anyOf": [
+                        {},
+                        {
+                          "type": "number"
+                        }
+                      ],
+                      "description": "最大拉取条目数上限（防止过度抓取，默认 300）"
+                    },
+                    "minDelayMs": {
+                      "anyOf": [
+                        {},
+                        {
+                          "type": "number"
+                        }
+                      ],
+                      "description": "请求节流延迟毫秒数（防止触发 API 限流，默认 300ms）"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              ],
+              "description": "可选网络请求参数"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "description": "各数据源提供方设置"
+    },
+    "snapshot": {
+      "type": "object",
+      "properties": {
+        "directory": {
+          "type": "string",
+          "description": "快照保存目录（相对于项目根目录，默认 \"src/data/anime-snapshots\"）"
+        },
+        "staleAfterDays": {
+          "anyOf": [
+            {},
+            {
+              "type": "number"
+            }
+          ],
+          "description": "快照过期告警天数（仅构建日志提示，不触发运行期自动请求，默认 30 天）"
+        },
+        "keepLastValid": {
+          "type": "boolean",
+          "description": "当外部同步失败或返回空列表时，是否保留上一次成功的有效快照（默认 true）。\n开启时 `anime:sync` 跳过覆盖、打印警告并以退出码 0 结束；设为 false 则空结果照常落盘。"
+        }
+      },
+      "additionalProperties": false,
+      "description": "快照策略"
+    },
+    "title": {
+      "anyOf": [
+        {},
+        {
+          "type": "string"
+        }
+      ],
+      "description": "页面标题：字面量（个人化、语言无关），或 \"$t:<i18nKey>\"（本地化；默认即当前词条）"
+    },
+    "description": {
+      "anyOf": [
+        {},
+        {
+          "type": "string"
+        }
+      ],
+      "description": "页面副标题：同上"
+    }
+  },
+  "additionalProperties": false
+}

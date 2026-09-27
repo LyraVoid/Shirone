@@ -1,0 +1,40 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "imageBloom configuration override",
+  "description": "Shirone imageBloom config schema generated from @/types/imageBloomConfig.ImageBloomConfig",
+  "type": "object",
+  "properties": {
+    "enable": {
+      "type": "boolean",
+      "description": "是否开启 Tonal Bloom 占位（设为 false 时零额外 DOM、零额外网络请求）"
+    },
+    "blurRadius": {
+      "anyOf": [
+        {},
+        {
+          "type": "number"
+        }
+      ],
+      "description": "辉光模糊半径（单位 px，默认 20）"
+    },
+    "opacity": {
+      "anyOf": [
+        {},
+        {
+          "type": "number"
+        }
+      ],
+      "description": "辉光图层不透明度（默认 0.7）"
+    },
+    "transitionDuration": {
+      "anyOf": [
+        {},
+        {
+          "type": "number"
+        }
+      ],
+      "description": "图片就绪后的淡入淡出过渡时长（单位 ms，默认 300）"
+    }
+  },
+  "additionalProperties": false
+}

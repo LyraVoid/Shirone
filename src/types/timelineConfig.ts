@@ -1,3 +1,5 @@
+import type { PageMeta } from "./pageMeta.ts";
+
 /** 时间线筛选分类。 */
 export interface TimelineCategory {
 	/** 稳定标识，供时间线条目引用与筛选。 */
@@ -47,7 +49,7 @@ export interface TimelineItem {
 }
 
 /** 时间线页配置（行为层）。 */
-export interface TimelineConfig {
+export interface TimelineConfig extends PageMeta {
 	/** 页面总开关；关闭后隐藏导航入口并将 /timeline/ 重定向到 404。 */
 	enable: boolean;
 	/** 筛选分类清单（决定 Chips 顺序）。 */

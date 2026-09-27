@@ -23,13 +23,17 @@ const pages = [
 	{ name: "技能", path: "/skills/" },
 	{ name: "项目", path: "/projects/" },
 	{ name: "设备展示", path: "/devices/" },
+	{ name: "游戏", path: "/games/" },
 	{ name: "时间线", path: "/timeline/" },
 	{ name: "受保护相册", path: "/albums/EncryptedExample/" },
 	{ name: "关于", path: "/about/" },
 	{ name: "文章页", path: "/posts/guide/" },
 	{ name: "MDX文章页", path: "/posts/mdx-showcase/" },
+	{ name: "系列文章页", path: "/posts/markdown-extended/" },
 	{ name: "分类索引", path: "/categories/" },
 	{ name: "标签索引", path: "/tags/" },
+	{ name: "系列索引", path: "/series/" },
+	{ name: "系列详情", path: "/series/markdown-syntax-guide/" },
 ];
 
 const DISABLED_RULES = ["page-has-heading-one"];

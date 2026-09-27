@@ -1,14 +1,21 @@
-import { existsSync, mkdirSync, statSync, writeFileSync } from "node:fs";
 import { createHash } from "node:crypto";
+import {
+	existsSync,
+	mkdirSync,
+	readdirSync,
+	statSync,
+	unlinkSync,
+	writeFileSync,
+} from "node:fs";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
-import type { ResolvedShironesPaths } from "./types.ts";
 import {
 	createOverlayTargets,
+	type OverrideRegistryRef,
 	overrideKey,
 	resolveOverride,
-	type OverrideRegistryRef,
 } from "./registry.ts";
+import type { ResolvedShironesPaths } from "./types.ts";
 
 /**
  * The integration needs values from user-authored TypeScript *before* Vite
@@ -90,12 +97,19 @@ function overlayEsbuildPlugin(
 		setup(build: any) {
 			// Theme path aliases (`@/config/...`, `@utils/...`, ...).
 			build.onResolve(
-				{ filter: /^@(\/|components\/|utils\/|layouts\/|i18n\/|constants\/|assets\/)/ },
+				{
+					filter:
+						/^@(\/|components\/|utils\/|layouts\/|i18n\/|constants\/|assets\/)/,
+				},
 				// biome-ignore lint/suspicious/noExplicitAny: see above.
 				(args: any) => {
 					for (const [prefix, sub] of Object.entries(ALIAS_MAP)) {
 						if (!args.path.startsWith(prefix)) continue;
-						const target = join(paths.packageSrc, sub, args.path.slice(prefix.length));
+						const target = join(
+							paths.packageSrc,
+							sub,
+							args.path.slice(prefix.length),
+						);
 						const file = probeFile(target);
 						if (file) return { path: redirect(file) };
 					}
@@ -159,37 +173,83 @@ export async function loadModuleFile(
 	if (cached) return cached;
 
 	const { build } = await import("esbuild");
-	const result = await build({
-		entryPoints: [entry],
-		bundle: true,
-		write: false,
-		format: "esm",
-		platform: "node",
-		target: "node20",
-		absWorkingDir: paths.projectRoot,
-		logLevel: "silent",
-		// Keep JSON/asset imports inert: config modules only need plain values.
-		loader: { ".json": "json" },
-		// Some transitive dependencies are CommonJS and call `require()` for
-		// Node builtins. esbuild's ESM output shims that with a `__require`
-		// helper which prefers a real `require` when one is in scope, so we
-		// provide one.
-		banner: {
-			js:
-				"import { createRequire as __shironesCreateRequire } from 'node:module';\n" +
-				"const require = __shironesCreateRequire(import.meta.url);",
-		},
-		plugins: [overlayEsbuildPlugin(paths, registryRef)],
-	});
+	let result: Awaited<ReturnType<typeof build>>;
+	try {
+		result = await build({
+			entryPoints: [entry],
+			bundle: true,
+			write: false,
+			format: "esm",
+			platform: "node",
+			target: "node20",
+			absWorkingDir: paths.projectRoot,
+			logLevel: "silent",
+			// Keep JSON/asset imports inert: config modules only need plain values.
+			loader: { ".json": "json" },
+			// Some transitive dependencies are CommonJS and call `require()` for
+			// Node builtins. esbuild's ESM output shims that with a `__require`
+			// helper which prefers a real `require` when one is in scope, so we
+			// provide one.
+			banner: {
+				js:
+					"import { createRequire as __shironesCreateRequire } from 'node:module';\n" +
+					"const require = __shironesCreateRequire(import.meta.url);",
+			},
+			plugins: [overlayEsbuildPlugin(paths, registryRef)],
+		});
+	} catch (error) {
+		// esbuild already reports `file:line:col`. Name the module as well, so a
+		// typo in a user's own config reads as *their* file failing rather than
+		// as something breaking inside the theme.
+		throw new Error(
+			`[shirones] Failed to bundle "${cacheKey}" from ${entry}:\n` +
+				`  ${(error as Error).message}`,
+			{ cause: error },
+		);
+	}
 
 	const code = result.outputFiles?.[0]?.text ?? "";
 	const hash = createHash("sha1").update(code).digest("hex").slice(0, 12);
-	const file = join(outputDir(paths), `${sanitise(cacheKey)}.${hash}.mjs`);
+	const prefix = `${sanitise(cacheKey)}.`;
+	const file = join(outputDir(paths), `${prefix}${hash}.mjs`);
 	if (!existsSync(file)) writeFileSync(file, code, "utf8");
+	pruneStaleBundles(paths, prefix, file);
 
 	const module = (await import(pathToFileURL(file).href)) as LoadedModule;
 	cache.set(cacheKey, module);
 	return module;
+}
+
+/**
+ * Drop the superseded bundles for one cache key.
+ *
+ * Every distinct bundle gets its own content-hashed filename so Node's ESM
+ * cache can never hand back a stale module — but nothing removed the ones it
+ * replaced, so a dev session with frequent config edits left one file per edit
+ * in `<projectRoot>/.shirones/loaded/` indefinitely.
+ */
+function pruneStaleBundles(
+	paths: ResolvedShironesPaths,
+	prefix: string,
+	keep: string,
+): void {
+	const dir = outputDir(paths);
+	let entries: string[];
+	try {
+		entries = readdirSync(dir);
+	} catch {
+		return;
+	}
+	for (const name of entries) {
+		if (!name.startsWith(prefix) || !name.endsWith(".mjs")) continue;
+		const candidate = join(dir, name);
+		if (candidate === keep) continue;
+		try {
+			unlinkSync(candidate);
+		} catch {
+			// A concurrent process may already have removed it.
+		}
+	}
 }
 
 function sanitise(value: string): string {
@@ -231,21 +291,6 @@ export async function loadPackageModule(
 		throw new Error(`[shirones] Package module not found: src/${relativePath}`);
 	}
 	return loadModuleFile(paths, entry, `pkg:${relativePath}`);
-}
-
-/** Convenience helper returning a single named export. */
-export async function loadConfigValue<T>(
-	paths: ResolvedShironesPaths,
-	moduleName: string,
-	exportName: string,
-): Promise<T> {
-	const module = await loadConfigModule(paths, moduleName);
-	if (!(exportName in module)) {
-		throw new Error(
-			`[shirones] Config module "${moduleName}" does not export "${exportName}".`,
-		);
-	}
-	return module[exportName] as T;
 }
 
 /** Clear the in-process cache (used by the dev server when config changes). */

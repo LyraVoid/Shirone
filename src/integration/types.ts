@@ -36,9 +36,14 @@ export interface ShironesPaths {
 
 export interface ShironesFontOptions {
 	/**
-	 * Run the build-time font subsetting pipeline.
-	 * When enabled, subset `.woff2` files are emitted into `<root>/.shirones/fonts/`.
-	 * Falls back to the value of `fontConfig.subsetting.enable` when omitted.
+	 * Run the build-time font subsetting pipeline. When enabled, subset
+	 * `.woff2` files are emitted into `<root>/.shirones/fonts/`.
+	 *
+	 * Defaults to `command === "build"`, so `astro dev` serves the full font
+	 * files and only `astro build` pays for the charset scan and the
+	 * `subset-font` run. This is *combined* with
+	 * `fontConfig.subsetting.enable`, not a fallback for it: both must hold, so
+	 * setting `enable: true` on its own still leaves dev unsubsetted.
 	 */
 	subset?: boolean;
 	/**
@@ -106,6 +111,15 @@ export interface ResolvedShironesPaths {
 	contentDir: string;
 	/** Absolute path to the package-managed cache dir (`<root>/.shirones`). */
 	cacheDir: string;
-	/** True when running from `node_modules` (npm package mode). */
-	isPluginMode: boolean;
+	/**
+	 * True when the integration runs from the theme's own repository checkout
+	 * (the `git clone` workflow). The repo build then relies on the integration
+	 * for everything `astro.config.mjs` used to spell out.
+	 *
+	 * False means the theme is being consumed as a dependency — whether it was
+	 * installed from npm or linked from a neighbouring checkout — and therefore
+	 * owns route injection, expects a scaffolded `shirones/config`, and cannot
+	 * assume its own `node_modules` is visible from the project root.
+	 */
+	isThemeRepo: boolean;
 }

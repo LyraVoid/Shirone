@@ -177,7 +177,7 @@ const showImage = $derived(Boolean(device.image) && !coverFailed);
 			width: auto
 			height: auto
 			object-fit: contain
-			padding: 0.75rem
+			padding: var(--m3e-space-3)
 			transition: transform var(--m3e-duration-long) var(--m3e-easing-emphasized-decelerate)
 
 			.device-card:hover &
@@ -187,14 +187,14 @@ const showImage = $derived(Boolean(device.image) && !coverFailed);
 		display: flex
 		flex-direction: column
 		flex: 1
-		gap: 0.75rem
+		gap: var(--m3e-space-3)
 		min-width: 0
-		padding: 1rem 1.125rem
+		padding: var(--m3e-space-4) var(--m3e-space-4)
 
 	&__header
 		display: flex
 		align-items: flex-start
-		gap: 0.75rem
+		gap: var(--m3e-space-3)
 		min-width: 0
 
 	/* 图标瓷砖：无图片设备的视觉锚点 */

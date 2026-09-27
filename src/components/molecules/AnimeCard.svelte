@@ -23,9 +23,11 @@ let {
 }: { anime: AnimeItem; delay?: number } = $props();
 
 const statusMeta = $derived(ANIME_STATUS_META[anime.status]);
-const isWatching = $derived(anime.status === "watching");
+const isWatching = $derived(
+	anime.status === "watching" && anime.progress !== undefined,
+);
 const progressRatio = $derived(
-	anime.progress.total > 0
+	anime.progress && anime.progress.total > 0
 		? Math.min(anime.progress.watched / anime.progress.total, 1)
 		: 0,
 );
@@ -94,7 +96,7 @@ const metaLine = $derived(
 
 		<span class="anime-card__title" title={anime.title}>{anime.title}</span>
 
-		{#if isWatching}
+		{#if isWatching && anime.progress}
 			<div class="anime-card__progress">
 				<span class="anime-card__progress-track">
 					<ProgressIndicator
@@ -237,8 +239,8 @@ const metaLine = $derived(
 		flex-direction: column
 		flex: 1
 		min-width: 0
-		gap: 0.375rem
-		padding: 0.75rem 0.875rem 0.875rem
+		gap: var(--m3e-space-1)
+		padding: var(--m3e-space-3) var(--m3e-space-4) var(--m3e-space-4)
 
 	&__header-row
 		display: flex

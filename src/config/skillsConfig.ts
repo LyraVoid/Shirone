@@ -13,6 +13,8 @@ import { withUserConfig } from "../utils/config-overlay.ts";
  */
 export const skillsConfig: SkillsConfig = withUserConfig("skills", {
 	enable: true,
+	title: "$t:skills",
+	description: "$t:skillsBanner",
 	categories: [
 		{
 			key: "frontend",

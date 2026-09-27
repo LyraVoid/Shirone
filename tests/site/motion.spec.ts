@@ -50,7 +50,7 @@ test.describe("Site motion", () => {
 			page.locator(
 				".m3-blog-archive__group:nth-child(2) .m3-blog-archive__item",
 			),
-		).toHaveCount(4);
+		).toHaveCount(3);
 	});
 
 	test("does not collapse animate on initial render or grouping changes", async ({
@@ -174,7 +174,7 @@ test.describe("Site motion", () => {
 			page.locator(
 				".m3-blog-archive__group:nth-child(2) .m3-blog-archive__item",
 			),
-		).toHaveCount(4);
+		).toHaveCount(3);
 	});
 
 	test("toggles aria-expanded and hides content when collapsed", async ({

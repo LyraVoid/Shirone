@@ -1,0 +1,1725 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "sidebar configuration override",
+  "description": "Shirone sidebar config schema generated from @/types/sidebarConfig.SidebarConfig",
+  "type": "object",
+  "properties": {
+    "enable": {
+      "type": "boolean"
+    },
+    "arrangement": {
+      "anyOf": [
+        {
+          "type": "string",
+          "enum": [
+            "dual"
+          ]
+        },
+        {
+          "type": "string",
+          "enum": [
+            "single"
+          ]
+        }
+      ]
+    },
+    "side": {
+      "anyOf": [
+        {
+          "type": "string",
+          "enum": [
+            "left"
+          ]
+        },
+        {
+          "type": "string",
+          "enum": [
+            "right"
+          ]
+        }
+      ],
+      "description": "主栏物理侧，默认 left"
+    },
+    "components": {
+      "type": "array",
+      "items": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "profile"
+                ]
+              },
+              "enable": {
+                "type": "boolean"
+              },
+              "slot": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "top"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "enum": [
+                      "sticky"
+                    ]
+                  }
+                ]
+              },
+              "column": {
+                "anyOf": [
+                  {},
+                  {
+                    "type": "string",
+                    "enum": [
+                      "primary"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "enum": [
+                      "secondary"
+                    ]
+                  }
+                ]
+              },
+              "pages": {
+                "anyOf": [
+                  {},
+                  {
+                    "type": "array",
+                    "items": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "notFound"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "home"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "archive"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "friends"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "moments"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "anime"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "compass"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "skills"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "projects"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "devices"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "games"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "timeline"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "albums"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "about"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "categories"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "tags"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "series"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "rss"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "atom"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "post"
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                ],
+                "description": "限定显示的页面，省略或空数组表示所有页面"
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "categories"
+                ]
+              },
+              "enable": {
+                "type": "boolean"
+              },
+              "slot": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "top"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "enum": [
+                      "sticky"
+                    ]
+                  }
+                ]
+              },
+              "column": {
+                "anyOf": [
+                  {},
+                  {
+                    "type": "string",
+                    "enum": [
+                      "primary"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "enum": [
+                      "secondary"
+                    ]
+                  }
+                ]
+              },
+              "collapseAfter": {
+                "anyOf": [
+                  {},
+                  {
+                    "type": "number"
+                  }
+                ],
+                "description": "侧栏直接展示上限，默认 5"
+              },
+              "pages": {
+                "anyOf": [
+                  {},
+                  {
+                    "type": "array",
+                    "items": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "notFound"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "home"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "archive"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "friends"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "moments"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "anime"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "compass"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "skills"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "projects"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "devices"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "games"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "timeline"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "albums"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "about"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "categories"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "tags"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "series"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "rss"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "atom"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "post"
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                ],
+                "description": "限定显示的页面，省略或空数组表示所有页面"
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "tags"
+                ]
+              },
+              "enable": {
+                "type": "boolean"
+              },
+              "slot": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "top"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "enum": [
+                      "sticky"
+                    ]
+                  }
+                ]
+              },
+              "column": {
+                "anyOf": [
+                  {},
+                  {
+                    "type": "string",
+                    "enum": [
+                      "primary"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "enum": [
+                      "secondary"
+                    ]
+                  }
+                ]
+              },
+              "collapseAfter": {
+                "anyOf": [
+                  {},
+                  {
+                    "type": "number"
+                  }
+                ],
+                "description": "侧栏直接展示上限，默认 20"
+              },
+              "pages": {
+                "anyOf": [
+                  {},
+                  {
+                    "type": "array",
+                    "items": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "notFound"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "home"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "archive"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "friends"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "moments"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "anime"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "compass"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "skills"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "projects"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "devices"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "games"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "timeline"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "albums"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "about"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "categories"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "tags"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "series"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "rss"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "atom"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "post"
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                ],
+                "description": "限定显示的页面，省略或空数组表示所有页面"
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "series"
+                ]
+              },
+              "enable": {
+                "type": "boolean"
+              },
+              "slot": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "top"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "enum": [
+                      "sticky"
+                    ]
+                  }
+                ]
+              },
+              "column": {
+                "anyOf": [
+                  {},
+                  {
+                    "type": "string",
+                    "enum": [
+                      "primary"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "enum": [
+                      "secondary"
+                    ]
+                  }
+                ]
+              },
+              "collapseAfter": {
+                "anyOf": [
+                  {},
+                  {
+                    "type": "number"
+                  }
+                ],
+                "description": "侧栏直接展示上限，默认 5"
+              },
+              "pages": {
+                "anyOf": [
+                  {},
+                  {
+                    "type": "array",
+                    "items": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "notFound"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "home"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "archive"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "friends"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "moments"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "anime"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "compass"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "skills"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "projects"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "devices"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "games"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "timeline"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "albums"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "about"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "categories"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "tags"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "series"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "rss"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "atom"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "post"
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                ],
+                "description": "限定显示的页面，省略或空数组表示所有页面"
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "announcement"
+                ]
+              },
+              "enable": {
+                "type": "boolean"
+              },
+              "slot": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "top"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "enum": [
+                      "sticky"
+                    ]
+                  }
+                ]
+              },
+              "column": {
+                "anyOf": [
+                  {},
+                  {
+                    "type": "string",
+                    "enum": [
+                      "primary"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "enum": [
+                      "secondary"
+                    ]
+                  }
+                ]
+              },
+              "pages": {
+                "anyOf": [
+                  {},
+                  {
+                    "type": "array",
+                    "items": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "notFound"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "home"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "archive"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "friends"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "moments"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "anime"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "compass"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "skills"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "projects"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "devices"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "games"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "timeline"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "albums"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "about"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "categories"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "tags"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "series"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "rss"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "atom"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "post"
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                ],
+                "description": "限定显示的页面，省略或空数组表示所有页面"
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "stats"
+                ]
+              },
+              "enable": {
+                "type": "boolean"
+              },
+              "slot": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "top"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "enum": [
+                      "sticky"
+                    ]
+                  }
+                ]
+              },
+              "column": {
+                "anyOf": [
+                  {},
+                  {
+                    "type": "string",
+                    "enum": [
+                      "primary"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "enum": [
+                      "secondary"
+                    ]
+                  }
+                ]
+              },
+              "pages": {
+                "anyOf": [
+                  {},
+                  {
+                    "type": "array",
+                    "items": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "notFound"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "home"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "archive"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "friends"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "moments"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "anime"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "compass"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "skills"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "projects"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "devices"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "games"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "timeline"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "albums"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "about"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "categories"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "tags"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "series"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "rss"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "atom"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "post"
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                ],
+                "description": "限定显示的页面，省略或空数组表示所有页面"
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "calendar"
+                ]
+              },
+              "enable": {
+                "type": "boolean"
+              },
+              "slot": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "top"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "enum": [
+                      "sticky"
+                    ]
+                  }
+                ]
+              },
+              "column": {
+                "anyOf": [
+                  {},
+                  {
+                    "type": "string",
+                    "enum": [
+                      "primary"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "enum": [
+                      "secondary"
+                    ]
+                  }
+                ]
+              },
+              "pages": {
+                "anyOf": [
+                  {},
+                  {
+                    "type": "array",
+                    "items": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "notFound"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "home"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "archive"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "friends"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "moments"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "anime"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "compass"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "skills"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "projects"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "devices"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "games"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "timeline"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "albums"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "about"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "categories"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "tags"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "series"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "rss"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "atom"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "post"
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                ],
+                "description": "限定显示的页面，省略或空数组表示所有页面"
+              },
+              "startOfWeek": {
+                "anyOf": [
+                  {},
+                  {
+                    "type": "string",
+                    "enum": [
+                      "mon"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "enum": [
+                      "sun"
+                    ]
+                  }
+                ],
+                "description": "周起始日，默认 mon（周一）"
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "toc"
+                ]
+              },
+              "enable": {
+                "type": "boolean"
+              },
+              "slot": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "top"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "enum": [
+                      "sticky"
+                    ]
+                  }
+                ]
+              },
+              "column": {
+                "anyOf": [
+                  {},
+                  {
+                    "type": "string",
+                    "enum": [
+                      "primary"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "enum": [
+                      "secondary"
+                    ]
+                  }
+                ]
+              },
+              "pages": {
+                "anyOf": [
+                  {},
+                  {
+                    "type": "array",
+                    "items": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "notFound"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "home"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "archive"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "friends"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "moments"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "anime"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "compass"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "skills"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "projects"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "devices"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "games"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "timeline"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "albums"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "about"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "categories"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "tags"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "series"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "rss"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "atom"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "post"
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            },
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "type": {
+                "type": "string",
+                "enum": [
+                  "music"
+                ]
+              },
+              "enable": {
+                "type": "boolean"
+              },
+              "slot": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "top"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "enum": [
+                      "sticky"
+                    ]
+                  }
+                ]
+              },
+              "column": {
+                "anyOf": [
+                  {},
+                  {
+                    "type": "string",
+                    "enum": [
+                      "primary"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "enum": [
+                      "secondary"
+                    ]
+                  }
+                ]
+              },
+              "pages": {
+                "anyOf": [
+                  {},
+                  {
+                    "type": "array",
+                    "items": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "notFound"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "home"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "archive"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "friends"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "moments"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "anime"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "compass"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "skills"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "projects"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "devices"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "games"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "timeline"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "albums"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "about"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "categories"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "tags"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "series"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "rss"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "atom"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "post"
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                ],
+                "description": "限定显示的页面，省略或空数组表示所有页面"
+              }
+            },
+            "additionalProperties": false
+          }
+        ]
+      }
+    }
+  },
+  "additionalProperties": false
+}

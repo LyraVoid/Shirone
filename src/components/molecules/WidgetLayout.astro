@@ -2,9 +2,9 @@
 import Button from "@components/atoms/action/Button.svelte";
 import AccentBar from "@components/atoms/display/AccentBar.svelte";
 import Card from "@components/atoms/display/Card.svelte";
+import I18nKey from "@i18n/i18nKey";
+import { i18n } from "@i18n/translation";
 import { Icon } from "astro-icon/components";
-import I18nKey from "../../i18n/i18nKey";
-import { i18n } from "../../i18n/translation";
 
 interface Props {
 	id: string;
@@ -31,17 +31,18 @@ const className = Astro.props.class;
 ---
 <widget-layout data-id={id} data-is-collapsed={String(isCollapsed)} class={className} style={style}>
     <Card color="var(--card-bg)" radius="l" class="pb-4">
-    <div class="font-bold transition text-lg text-90 relative ml-8 mt-4 mb-2">
-        <AccentBar size="small" class="absolute -left-4 top-[5.5px]" />
-        {name}
+    <div class="widget-layout__header">
+        <AccentBar size="small" />
+        <span>{name}</span>
     </div>
     <div id={id} class:list={["collapse-wrapper px-4 overflow-hidden", {"collapsed": isCollapsed, "widget-layout__scroll-content": scrollContent, "widget-layout__flex-scroll": flexScroll}]}>
         <slot></slot>
     </div>
-    {isCollapsed && <div class="expand-btn px-4 -mb-2">
-        <Button variant="text" class="!rounded-lg w-full !h-9">
-            <div class="text-[var(--primary)] flex items-center justify-center gap-2">
-                <Icon name="material-symbols:more-horiz" class="text-[1.75rem]"></Icon> {i18n(I18nKey.more)}
+    {isCollapsed && <div class="expand-btn px-4 mt-2">
+        <Button variant="text" full radius="m" class="!h-9">
+            <div class="flex items-center justify-center gap-2">
+                <Icon name="material-symbols:more-horiz" class="text-[1.75rem]" />
+                <span>{i18n(I18nKey.more)}</span>
             </div>
         </Button>
     </div>}
@@ -57,6 +58,16 @@ const className = Astro.props.class;
 </style>
 
 <style lang="stylus">
+.widget-layout__header
+	display: flex
+	align-items: center
+	gap: var(--m3e-space-2)
+	margin: var(--m3e-space-4) var(--m3e-space-4) var(--m3e-space-2)
+	font: var(--m3e-type-title-medium)
+	font-weight: 600
+	color: var(--on-surface)
+	transition: color var(--m3e-duration-short) var(--m3e-easing-standard)
+
 .widget-layout__scroll-content
 	max-height: calc(100dvh - 11rem)
 	overflow-y: auto

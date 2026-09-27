@@ -1,0 +1,75 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "article configuration override",
+  "description": "Shirone article config schema generated from @/types/articleConfig.ArticleConfig",
+  "type": "object",
+  "properties": {
+    "lastUpdated": {
+      "type": "object",
+      "properties": {
+        "enable": {
+          "type": "boolean",
+          "description": "是否显示文章最后更新提示。"
+        },
+        "minimumAgeDays": {
+          "type": "number",
+          "description": "距最后更新达到该日历天数时显示；0 表示立即显示。"
+        }
+      },
+      "additionalProperties": false
+    },
+    "discovery": {
+      "type": "object",
+      "properties": {
+        "enable": {
+          "type": "boolean",
+          "description": "是否启用文章尾部的延伸阅读区域。"
+        },
+        "related": {
+          "type": "object",
+          "properties": {
+            "enable": {
+              "type": "boolean"
+            },
+            "count": {
+              "type": "number",
+              "description": "最多显示的相关文章数量。"
+            }
+          },
+          "additionalProperties": false,
+          "description": "按标签与分类证据筛选的相关文章。"
+        },
+        "random": {
+          "type": "object",
+          "properties": {
+            "enable": {
+              "type": "boolean"
+            },
+            "count": {
+              "type": "number",
+              "description": "最多显示的随机文章数量。"
+            }
+          },
+          "additionalProperties": false,
+          "description": "从剩余候选中按当前文章稳定抽样的随机文章。"
+        }
+      },
+      "additionalProperties": false
+    },
+    "share": {
+      "type": "object",
+      "properties": {
+        "enable": {
+          "type": "boolean",
+          "description": "是否启用文章分享与海报生成。"
+        },
+        "includeCover": {
+          "type": "boolean",
+          "description": "分享海报是否默认包含文章封面（封面不可用时自动降级为无封面排版）。"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

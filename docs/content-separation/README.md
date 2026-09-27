@@ -57,11 +57,13 @@ shirone-content/
 ├── content/                    # 核心内容区（映射至 src/content/）
 │   ├── posts/                  # 博客文章与配图
 │   ├── moments/                # 说说动态
+│   ├── series/                 # 系列实体（每个 <slug>.md = 一个系列；须平铺，slug 即路由段）
 │   └── spec/                   # 特殊页面
 ├── data/                       # 结构化数据（映射至 src/data/）
 │   ├── projects.ts  skills.ts  timeline.ts  devices.ts
 │   ├── friends.ts   compass.ts music.ts     anime.ts
-│   └── anime-snapshots/        # 番剧数据快照
+│   ├── games.ts
+│   └── anime-snapshots/        # 番剧数据快照基线（可选；anime:sync 会覆盖 <provider>.json）
 ├── assets/                     # 高清原始图片（映射至 src/assets/，参与构建期压缩转码）
 │   └── images/
 └── public/                     # 原样静态资源（映射至 public/，原样发布不转码）
@@ -92,6 +94,11 @@ shirone-content/
 - `public/assets/moments/thumbnails/**`（说说动态生成的缩略图缓存）
 - `public/assets/anime/covers/**`（追番页面自动下载的番剧封面）
 - `src/assets/fonts/.subset/**`（中文字体子集抽取产物）
+
+**特例——番剧快照（`src/data/anime-snapshots/**`）**：它刻意不在上方「禁止覆盖」清单内，同步方向**允许**内容仓提供并物化。快照的语义是「基线（last-known-good）」：
+- `<provider>.json`（如 `bilibili.json`）由 `anime:sync` 生成与覆盖；抓取失败或返回空列表时默认保留上一次有效快照（`snapshot.keepLastValid`，默认 `true`；跳过覆盖时打印警告且命令以退出码 0 结束）；
+- 自定义 `source.file`（如 `manual.json`）是使用者的纯静态 JSON 输入（不填 provider 即完全不发起外部请求），`anime:sync` 永不写入；
+- 反向导出永不回写快照，`content:clean` 也不备份、不删除它。
 
 ### 3. 代码仓自有文件白名单 (`keep`)
 

@@ -11,7 +11,14 @@ import type { SkillCategory, SkillItem } from "@/types/skillsConfig";
 let {
 	categories = [] as SkillCategory[],
 	items = [] as SkillItem[],
-}: { categories?: SkillCategory[]; items?: SkillItem[] } = $props();
+	title = i18n(I18nKey.skills),
+	subtitle = i18n(I18nKey.skillsBanner),
+}: {
+	categories?: SkillCategory[];
+	items?: SkillItem[];
+	title?: string;
+	subtitle?: string;
+} = $props();
 
 let selectedCategory = $state("");
 const enabledItems = $derived(items.filter((item) => item.enable !== false));
@@ -37,8 +44,8 @@ const filteredItems = $derived(
 <Card color="var(--card-bg)" radius="l" class="skills-section px-8 py-6">
 	<PageHeader
 		icon="material-symbols:workspaces-outline-rounded"
-		title={i18n(I18nKey.skills)}
-		subtitle={i18n(I18nKey.skillsBanner)}
+		{title}
+		{subtitle}
 	/>
 
 	{#if categoryItems.length > 1}

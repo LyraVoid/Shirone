@@ -2,6 +2,8 @@ import { readdir, readFile, stat } from "node:fs/promises";
 import { basename, extname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { resolvedFontOptions } from "../../src/config/fontConfig.ts";
+import { siteConfig } from "../../src/config/siteConfig.ts";
+import { resolveFontAssetPath } from "./asset-path.mjs";
 
 const projectRoot = fileURLToPath(new URL("../../", import.meta.url));
 const dist = join(projectRoot, "dist");
@@ -28,8 +30,7 @@ async function walk(directory) {
 }
 
 function resolveAssetPath(reference) {
-	const clean = reference.split(/[?#]/, 1)[0].replace(/^["']|["']$/g, "");
-	const relative = clean.replace(/^\.?\/?_astro\//, "_astro/");
+	const relative = resolveFontAssetPath(reference, siteConfig.base ?? "/");
 	return join(dist, ...relative.split("/"));
 }
 

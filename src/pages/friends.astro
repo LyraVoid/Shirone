@@ -1,11 +1,19 @@
 ---
 import FriendSection from "@components/organisms/FriendSection.svelte";
 import I18nKey from "@i18n/i18nKey";
-import { i18n } from "@i18n/translation";
 import MainGridLayout from "@layouts/MainGridLayout.astro";
+import { friendsConfig } from "@/config/friendsConfig";
+import { resolveI18nText } from "@utils/i18n-utils";
 import { getFriendsList } from "../data/friends";
+
+if (!friendsConfig.enable) {
+	return Astro.redirect("/404/");
+}
+
+const pageTitle = resolveI18nText(friendsConfig.title, I18nKey.friends);
+const pageDescription = resolveI18nText(friendsConfig.description, I18nKey.friendsBanner);
 ---
 
-<MainGridLayout title={i18n(I18nKey.friends)} description={i18n(I18nKey.friendsBanner)} page="friends">
-    <FriendSection friends={getFriendsList()} client:visible></FriendSection>
+<MainGridLayout title={pageTitle} description={pageDescription} page="friends">
+    <FriendSection friends={getFriendsList()} title={pageTitle} subtitle={pageDescription} client:visible></FriendSection>
 </MainGridLayout>

@@ -9,6 +9,7 @@ import ImageWrapper from "@components/molecules/ImageWrapper.astro";
 import LastUpdatedNotice from "@components/molecules/LastUpdatedNotice.astro";
 import License from "@components/molecules/License.astro";
 import PostMetadata from "@components/molecules/PostMeta.astro";
+import SeriesCard from "@components/molecules/SeriesCard.astro";
 import ArticleDiscovery from "@components/organisms/ArticleDiscovery.astro";
 import ArticleShare from "@components/organisms/ArticleShare.svelte";
 import CommentSection from "@components/organisms/comment/CommentSection.astro";
@@ -20,7 +21,11 @@ import MainGridLayout from "@layouts/MainGridLayout.astro";
 import { discoverArticles } from "@utils/article-discovery";
 import { resolveAsset } from "@utils/asset-utils";
 import { getPublishedInstant, getUpdatedInstant } from "@utils/content-date";
-import { getSortedPosts, type PostForList } from "@utils/content-utils";
+import {
+	getSeriesCatalog,
+	getSortedPosts,
+	type PostForList,
+} from "@utils/content-utils";
 import { formatDateToYYYYMMDD } from "@utils/date-utils";
 import { getMarkdownStylesheetAssets } from "@utils/markdown-assets";
 import { getSourceMarkdownSyntaxSnapshot } from "@utils/markdown-source-syntaxes.mjs";
@@ -33,6 +38,10 @@ import {
 	hasCustomPermalink,
 	initPostIdMap,
 } from "@utils/permalink-utils";
+import {
+	buildSeriesContexts,
+	type SeriesPostContext,
+} from "@utils/series-utils";
 import { getDir, getPostUrl, getPostUrlBySlug } from "@utils/url-utils";
 import { Icon } from "astro-icon/components";
 import katexStylesheet from "katex/dist/katex.css?url";
@@ -48,6 +57,7 @@ import {
 	resolveCommentOptions,
 	resolveLastUpdatedNoticeOptions,
 	resolveUmamiOptions,
+	seriesConfig,
 	siteConfig,
 	umamiConfig,
 } from "@/config";
@@ -62,11 +72,27 @@ export async function getStaticPaths() {
 	}));
 	const discoveryOptions = resolveArticleDiscoveryOptions(articleConfig);
 
+	// 与 posts/[...slug].astro 保持一致：permalink 路由同样承载文章内系列卡；
+	// 功能关闭时不查集合、不构建上下文（零额外负担）
+	const seriesContexts = seriesConfig.enable
+		? buildSeriesContexts({
+				catalog: await getSeriesCatalog(),
+				posts: blogEntries.map((entry) => ({
+					slug: entry.id,
+					title: entry.data.title,
+					published: entry.data.published,
+					series: entry.data.series,
+					seriesOrder: entry.data.seriesOrder,
+				})),
+			})
+		: new Map<string, SeriesPostContext>();
+
 	const paths: {
 		params: { permalink: string };
 		props: {
 			entry: CollectionEntry<"posts">;
 			discovery: { related: PostForList[]; random: PostForList[] };
+			series: SeriesPostContext | null;
 		};
 	}[] = [];
 
@@ -96,7 +122,11 @@ export async function getStaticPaths() {
 
 			paths.push({
 				params: { permalink },
-				props: { entry, discovery },
+				props: {
+					entry,
+					discovery,
+					series: seriesContexts.get(entry.id) ?? null,
+				},
 			});
 		}
 	}
@@ -104,10 +134,17 @@ export async function getStaticPaths() {
 	return paths;
 }
 
-const { entry, discovery } = Astro.props;
+const { entry, discovery, series } = Astro.props;
+const seriesCardAtTop = seriesConfig.cardPosition !== "bottom";
 const isEncrypted = Boolean(
 	entry.data.password && entry.data.password.trim().length > 0,
 );
+// 加密且隐藏首页内容的文章：元信息区已被加密徽标替代，系列卡同样不渲染；
+// 功能关闭时同样不渲染（与 posts/[...slug].astro 一致）
+const seriesCardVisible =
+	seriesConfig.enable &&
+	series !== null &&
+	!(isEncrypted && entry.data.hideHomeContent);
 const scope = `post:${entry.id}`;
 
 const { Content, headings, remarkPluginFrontmatter } = await render(entry);
@@ -184,13 +221,13 @@ const jsonLd = {
 			<!-- word count and reading time -->
 			<div class="flex flex-row text-[var(--on-surface-variant)] gap-5 mb-3 transition onload-animation">
 				<div class="flex flex-row items-center">
-					<div class="transition h-6 w-6 rounded-md bg-[var(--surface-container-high)] text-[var(--on-surface-variant)] flex items-center justify-center mr-2">
+					<div class="transition h-6 w-6 rounded-[var(--shape-corner-xs)] bg-[var(--surface-container-high)] text-[var(--on-surface-variant)] flex items-center justify-center mr-2">
 						<Icon name="material-symbols:notes-rounded"></Icon>
 					</div>
 					<div class="text-sm">{remarkPluginFrontmatter.words} {" " + i18n(remarkPluginFrontmatter.words === 1 ? I18nKey.wordCount : I18nKey.wordsCount)}</div>
 				</div>
 				<div class="flex flex-row items-center">
-					<div class="transition h-6 w-6 rounded-md bg-[var(--surface-container-high)] text-[var(--on-surface-variant)] flex items-center justify-center mr-2">
+					<div class="transition h-6 w-6 rounded-[var(--shape-corner-xs)] bg-[var(--surface-container-high)] text-[var(--on-surface-variant)] flex items-center justify-center mr-2">
 						<Icon name="material-symbols:schedule-outline-rounded"></Icon>
 					</div>
 					<div class="text-sm">{remarkPluginFrontmatter.minutes} {" " + i18n(remarkPluginFrontmatter.minutes === 1 ? I18nKey.minuteCount : I18nKey.minutesCount)}</div>
@@ -243,7 +280,10 @@ const jsonLd = {
 						category={entry.data.category}
 					></PostMetadata>
 				)}
-				{!entry.data.image && <div class="border-[var(--line-divider)] border-dashed border-b-[1px] mb-5"></div>}
+				{seriesCardVisible && seriesCardAtTop && series && (
+					<SeriesCard context={series} class="mb-5 onload-animation" />
+				)}
+				{!entry.data.image && <div class="border-[var(--outline-variant)] border-dashed border-b-[1px] mb-5"></div>}
 			</div>
 
             <!-- always show cover as long as it has one -->
@@ -276,6 +316,13 @@ const jsonLd = {
                     <Content />
                 </Markdown>
             )}
+
+			{/* 系列块（cardPosition: bottom）紧贴正文之后：与 top 变体对称（元信息之后 / 正文之后），
+			    并排在版权、分享与 Continue reading 这些收尾区块之前——系列导航是「继续读」，
+			    应先于署名/分发/相关推荐（页面实际顺序：系列 → 版权 → 分享 → 延伸阅读 → 评论 → 更新提示 → 全局 post-nav） */}
+			{seriesCardVisible && !seriesCardAtTop && series && (
+				<SeriesCard context={series} class="mb-6 onload-animation" />
+			)}
 
 			{licenseConfig.enable && <License title={entry.data.title} slug={entry.id} pubDate={entry.data.published} class="mb-6 rounded-xl license-container onload-animation"></License>}
 
@@ -329,10 +376,10 @@ const jsonLd = {
                 href={entry.data.nextUrl || getPostUrlBySlug(entry.data.nextSlug)}
                 color="var(--card-bg)"
                 radius="l"
-                class="post-nav post-nav--prev w-full font-bold active:scale-95 h-[3.75rem] max-w-full px-4 !flex items-center !justify-start gap-4"
+                class="post-nav post-nav--prev w-full font-bold h-[3.75rem] max-w-full px-4 !flex items-center !justify-start gap-4"
             >
                 <Icon name="material-symbols:chevron-left-rounded" class="post-nav__arrow text-[2rem] text-[var(--primary)]" />
-                <div class="post-nav__title overflow-hidden transition overflow-ellipsis whitespace-nowrap max-w-[calc(100%_-_3rem)] text-75">
+                <div class="post-nav__title overflow-hidden transition overflow-ellipsis whitespace-nowrap max-w-[calc(100%_-_3rem)]">
                     {entry.data.nextTitle}
                 </div>
             </Card>
@@ -345,9 +392,9 @@ const jsonLd = {
                 href={entry.data.prevUrl || getPostUrlBySlug(entry.data.prevSlug)}
                 color="var(--card-bg)"
                 radius="l"
-                class="post-nav post-nav--next w-full font-bold active:scale-95 h-[3.75rem] max-w-full px-4 !flex items-center !justify-end gap-4"
+                class="post-nav post-nav--next w-full font-bold h-[3.75rem] max-w-full px-4 !flex items-center !justify-end gap-4"
             >
-                <div class="post-nav__title overflow-hidden transition overflow-ellipsis whitespace-nowrap max-w-[calc(100%_-_3rem)] text-75">
+                <div class="post-nav__title overflow-hidden transition overflow-ellipsis whitespace-nowrap max-w-[calc(100%_-_3rem)]">
                     {entry.data.prevTitle}
                 </div>
                 <Icon name="material-symbols:chevron-right-rounded" class="post-nav__arrow text-[2rem] text-[var(--primary)]" />
@@ -367,6 +414,9 @@ const jsonLd = {
 			transition: transform var(--m3e-duration-medium) var(--m3e-easing-emphasized-decelerate)
 
 		.post-nav__title
+			font: var(--m3e-type-title-medium)
+			font-weight: 600
+			color: var(--on-surface-variant)
 			transition: color var(--m3e-duration-short) var(--m3e-easing-standard)
 
 		&:hover .post-nav__title

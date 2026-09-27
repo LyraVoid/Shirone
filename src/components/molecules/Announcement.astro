@@ -33,26 +33,26 @@ const closeDuration = Number(config.closeDuration ?? 86400);
 	>
 		<div class="announcement-wrapper flex flex-col" data-close-duration={String(closeDuration)}>
 			<!-- 公告栏内容 -->
-			<div class="text-75 leading-relaxed mb-3 break-words whitespace-pre-line text-sm">
+			<div class="announcement-content">
 				{contentText}
 			</div>
 
 			<!-- 可选链接和关闭按钮 -->
 			{(hasLink || config.closable) && (
-				<div class="flex items-center justify-between gap-3">
+				<div class="announcement-actions">
 					<div>
 						{hasLink && (
 							<a
 								href={link.url}
 								target={isExternal ? "_blank" : "_self"}
 								rel={isExternal ? "noopener noreferrer" : undefined}
-								class="announcement-btn inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg bg-[var(--btn-regular-bg)] text-[var(--primary)] hover:bg-[var(--btn-regular-bg-hover)] active:bg-[var(--btn-regular-bg-active)] active:scale-95 transition-all shadow-sm"
+								class="announcement-btn m3-state-layer"
 							>
 								<span>{link.text}</span>
 								{isExternal && (
 									<Icon
 										name="material-symbols:arrow-outward-rounded"
-										class="text-sm opacity-80"
+										class="announcement-btn__icon"
 									/>
 								)}
 							</a>
@@ -62,12 +62,12 @@ const closeDuration = Number(config.closeDuration ?? 86400);
 					{config.closable && (
 						<button
 							type="button"
-							class="announcement-close-btn h-7 w-7 flex items-center justify-center rounded-lg bg-[var(--btn-regular-bg)] text-50 hover:text-[var(--error)] hover:bg-[var(--error-container)]/30 active:scale-95 transition-all cursor-pointer shadow-sm"
+							class="announcement-close-btn m3-state-layer"
 							onclick="closeAnnouncement()"
 							aria-label={i18n(I18nKey.announcementClose)}
 							title={i18n(I18nKey.announcementClose)}
 						>
-							<Icon name="material-symbols:close-rounded" class="text-base" />
+							<Icon name="material-symbols:close-rounded" class="announcement-close-btn__icon" />
 						</button>
 					)}
 				</div>
@@ -75,6 +75,66 @@ const closeDuration = Number(config.closeDuration ?? 86400);
 		</div>
 	</WidgetLayout>
 )}
+
+<style lang="stylus">
+.announcement-content
+	font: var(--m3e-type-body-medium)
+	color: var(--on-surface-variant)
+	line-height: 1.6
+	margin-bottom: var(--m3e-space-3)
+	word-break: break-word
+	white-space: pre-line
+
+.announcement-actions
+	display: flex
+	align-items: center
+	justify-content: space-between
+	gap: var(--m3e-space-3)
+
+.announcement-btn
+	display: inline-flex
+	align-items: center
+	gap: var(--m3e-space-1)
+	height: 2rem
+	padding: 0 var(--m3e-space-3)
+	border-radius: var(--shape-corner-m)
+	background: var(--secondary-container)
+	color: var(--on-secondary-container)
+	font: var(--m3e-type-label-medium)
+	font-weight: 500
+	text-decoration: none
+	--m3e-state-color: var(--on-secondary-container)
+	transition: background-color var(--m3e-duration-short) var(--m3e-easing-standard)
+
+	&__icon
+		width: 1rem
+		height: 1rem
+		opacity: 0.8
+
+.announcement-close-btn
+	display: flex
+	align-items: center
+	justify-content: center
+	width: 2rem
+	height: 2rem
+	border-radius: var(--shape-corner-full)
+	background: var(--btn-regular-bg)
+	color: var(--on-surface-variant)
+	cursor: pointer
+	border: none
+	--m3e-state-color: var(--error)
+	transition:
+		color var(--m3e-duration-short) var(--m3e-easing-standard),
+		background-color var(--m3e-duration-short) var(--m3e-easing-standard)
+
+	&:hover
+		color: var(--error)
+		background: var(--error-container)
+
+	&__icon
+		width: 1.125rem
+		height: 1.125rem
+</style>
 
 <script>
 	const STORAGE_KEY_CLOSED = "announcementClosed";

@@ -32,6 +32,7 @@ const musicKeys = [
 	I18nKey.musicHidePlaylist,
 	I18nKey.musicEmpty,
 	I18nKey.musicLoading,
+	I18nKey.musicNotRequested,
 	I18nKey.musicNowPlaying,
 	I18nKey.musicErrorEmptyPlaylist,
 	I18nKey.musicErrorSourceUnavailable,
@@ -345,6 +346,10 @@ test.describe("music sidebar client", () => {
 		});
 
 		expect(metingRequests).toBe(0);
+		// 未交互前：不谎报「正在加载」，显示「尚未请求」占位（issue #58）。
+		await expect(
+			page.locator("#music-client-test-host .music-player__metadata strong"),
+		).toHaveText("Not requested yet");
 		const toggle = page.locator(".music-player__playlist-toggle");
 		await toggle.click();
 		await expect(
@@ -359,6 +364,55 @@ test.describe("music sidebar client", () => {
 		await expect(
 			page.getByRole("button", { name: /Second Remote Song/ }),
 		).toBeVisible();
+	});
+
+	test("meting preload=metadata fetches when the widget enters the viewport, without interaction", async ({
+		page,
+	}) => {
+		let metingRequests = 0;
+		await page.route("**/meting/**", async (route) => {
+			metingRequests += 1;
+			await route.fulfill({
+				status: 200,
+				contentType: "application/json",
+				body: JSON.stringify([
+					{
+						id: 9901,
+						name: "Remote Anime Song",
+						artist: "Remote Singer",
+						url: "https://example.com/remote.mp3",
+						pic: "https://example.com/remote.jpg",
+						duration: 195000,
+					},
+				]),
+			});
+		});
+
+		await remountMusicClient(page, {
+			provider: "meting",
+			playlist: [],
+			meting: {
+				id: "test-meting-id",
+				server: "netease",
+				type: "playlist",
+				preload: "metadata",
+			},
+			defaultVolume: 0.7,
+			defaultMode: "sequence",
+		});
+
+		// 无任何交互：进入视口即预取元数据（仅元信息，音频不预取），卡片直接显示第一首曲目
+		await expect(
+			page.locator("#music-client-test-host .music-player__metadata strong"),
+		).toHaveText("Remote Anime Song", { timeout: 5000 });
+		await expect(
+			page.locator("#music-client-test-host .music-player__metadata > span"),
+		).toHaveText("Remote Singer");
+		expect(metingRequests).toBe(1);
+
+		// 预取后展开播放列表不重复请求（initialize 幂等）
+		await page.locator(".music-player__playlist-toggle").click();
+		await expect.poll(() => metingRequests).toBe(1);
 	});
 
 	test("custom mode renders user defined tracks directly without network delay", async ({

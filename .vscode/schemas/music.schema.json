@@ -1,0 +1,265 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "music configuration override",
+  "description": "Shirone music config schema generated from @/types/musicConfig.MusicConfig",
+  "type": "object",
+  "properties": {
+    "enable": {
+      "type": "boolean",
+      "description": "是否全局启用音乐功能"
+    },
+    "provider": {
+      "anyOf": [
+        {},
+        {
+          "type": "string",
+          "enum": [
+            "local"
+          ]
+        },
+        {
+          "type": "string",
+          "enum": [
+            "meting"
+          ]
+        },
+        {
+          "type": "string",
+          "enum": [
+            "custom"
+          ]
+        },
+        {
+          "type": "string",
+          "enum": [
+            "mixed"
+          ]
+        }
+      ],
+      "description": "音频数据源模式：local（本地曲目） | meting（Meting 远端歌单） | custom（显式传入 tracks） | mixed（本地与远端歌单合并）"
+    },
+    "tracks": {
+      "anyOf": [
+        {},
+        {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "title": {
+                "type": "string"
+              },
+              "artist": {
+                "anyOf": [
+                  {},
+                  {
+                    "type": "string"
+                  }
+                ]
+              },
+              "source": {
+                "type": "string"
+              },
+              "cover": {
+                "anyOf": [
+                  {},
+                  {
+                    "type": "string"
+                  }
+                ]
+              },
+              "coverSrcset": {
+                "anyOf": [
+                  {},
+                  {
+                    "type": "string"
+                  }
+                ],
+                "description": "构建期生成的封面候选；远程 Meting 曲目保持为空。"
+              },
+              "coverSizes": {
+                "anyOf": [
+                  {},
+                  {
+                    "type": "string"
+                  }
+                ]
+              },
+              "coverWidth": {
+                "anyOf": [
+                  {},
+                  {
+                    "type": "number"
+                  }
+                ]
+              },
+              "coverHeight": {
+                "anyOf": [
+                  {},
+                  {
+                    "type": "number"
+                  }
+                ]
+              },
+              "duration": {
+                "anyOf": [
+                  {},
+                  {
+                    "type": "number"
+                  }
+                ]
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      ],
+      "description": "本地播放列表（provider 为 local, custom, mixed 时生效；未填时默认读取 src/data/music.ts）"
+    },
+    "meting": {
+      "anyOf": [
+        {},
+        {
+          "type": "object",
+          "properties": {
+            "server": {
+              "anyOf": [
+                {},
+                {
+                  "type": "string",
+                  "enum": [
+                    "netease"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "enum": [
+                    "tencent"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "enum": [
+                    "kugou"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "enum": [
+                    "xiami"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "enum": [
+                    "baidu"
+                  ]
+                }
+              ],
+              "description": "音乐平台，默认 netease（网易云音乐）"
+            },
+            "type": {
+              "anyOf": [
+                {},
+                {
+                  "type": "string",
+                  "enum": [
+                    "playlist"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "enum": [
+                    "song"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "enum": [
+                    "album"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "enum": [
+                    "artist"
+                  ]
+                }
+              ],
+              "description": "资源类型，默认 playlist（歌单）"
+            },
+            "id": {
+              "anyOf": [
+                {},
+                {
+                  "type": "string"
+                }
+              ],
+              "description": "歌单 / 单曲 / 专辑 ID"
+            },
+            "api": {
+              "anyOf": [
+                {},
+                {
+                  "type": "string"
+                }
+              ],
+              "description": "Meting API 地址模板，默认使用公开 API"
+            },
+            "preload": {
+              "anyOf": [
+                {},
+                {
+                  "type": "string",
+                  "enum": [
+                    "none"
+                  ]
+                },
+                {
+                  "type": "string",
+                  "enum": [
+                    "metadata"
+                  ]
+                }
+              ],
+              "description": "是否在音乐组件进入视口时预取歌单元数据：\n- \"metadata\"：进入视口即请求一次歌单，**仅取元信息**（曲名/歌手/封面，不预取音频流），\n  返回后卡片直接显示第一首曲目；\n- \"none\"（默认）：不预取，等用户播放/展开播放列表时才请求（卡片显示「尚未请求」占位）。"
+            }
+          },
+          "additionalProperties": false
+        }
+      ],
+      "description": "Meting API 配置（provider 为 meting 或 mixed 时生效）"
+    },
+    "defaultVolume": {
+      "type": "number",
+      "description": "初始音量，范围 0–1"
+    },
+    "defaultMode": {
+      "anyOf": [
+        {
+          "type": "string",
+          "enum": [
+            "sequence"
+          ]
+        },
+        {
+          "type": "string",
+          "enum": [
+            "repeat-one"
+          ]
+        },
+        {
+          "type": "string",
+          "enum": [
+            "shuffle"
+          ]
+        }
+      ],
+      "description": "初始播放模式"
+    }
+  },
+  "additionalProperties": false
+}

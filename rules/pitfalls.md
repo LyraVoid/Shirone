@@ -147,6 +147,18 @@ svelte({
 
 ---
 
+### 2.3 iframe 的 color-scheme 收窄会让 Chromium 强制铺深色画布
+
+**现象**：站点处于亮色模式、浏览器/系统偏好为暗色时，giscus 评论区的 iframe 区域整块变黑（评论卡片本身仍是亮色），与亮色卡片背景割裂（Shirone#80）。
+
+**根因**：`Giscus.astro` 外壳曾经写 `.giscus-frame { color-scheme: normal }`。giscus 自带的 `default.css` 声明的是 `color-scheme: light dark`，主题样式内联在页面后面，`normal` 覆盖掉了它，等于把 iframe 收窄成 light-only。Chromium 对「只声明 light、但用户偏好暗色」的 iframe 会强制绘制不透明深色画布（保护性背景，giscus#675 同类问题），而 iframe 内部画布本来是透明的。
+
+**解法**：外壳声明 `color-scheme: light dark`（与第三方默认一致），iframe 画布保持透明，留白透出卡片底色，内部配色仍由 `data-theme` 自绘。验证方式：亮色站点 + `emulateMedia({ colorScheme: "dark" })`，`.giscus-frame` 的计算值必须是 `light dark`。
+
+**通用教训**：给第三方 iframe 加 `color-scheme` 只能放宽不能收窄；`normal` 不是「不表态」，而是「只支持 light」。
+
+---
+
 ## 3. 组件结构
 
 ### 3.1 不要用整个 `<a>` 包卡片
@@ -165,6 +177,18 @@ svelte({
 - 数据获取（pagefind、`getSortedPosts`）、持久化（localStorage）属于有机体；原子/分子不做。
 
 详见 `docs/atomic-structure.md`。
+
+---
+
+### 3.3 整体替换型配置（`nav-bar.yaml`）不会继承功能开关
+
+**现象**：双仓模式下把 `config/moments.yaml` 改成 `enable: false` 后，顶栏与移动端抽屉仍然显示「动态」，点进去跳 `/404/`。
+
+**根因**：关闭的功能靠页面里的 `Astro.redirect("/404/")` 拦住，而入口的隐藏原先只写在默认导航结构的 `...(momentsConfig.enable ? [...] : [])` 分支里；内容仓的 `config/nav-bar.yaml` 是**整体替换**，条目根本不经过那些分支，于是「功能关了、入口还在」。
+
+**解法**：把「功能关闭 = 入口消失」收敛到解析层统一执行 —— 默认结构与内容仓声明式条目汇合后过一遍 `pruneUnavailableNavLinks()`（`src/utils/nav-utils.ts`，路由表在 `src/config/navBarConfig.ts`），按站内路由裁掉死链，空掉的下拉分组一并隐藏。回归见 `tests/nav-utils.test.mjs` 与 `tests/site/top-app-bar.spec.ts`。
+
+**通用教训**：新增「整体替换」型配置领域时，默认结构里按 `xxx.enable` 写的条件分支无法自动继承；关闭状态影响面覆盖的所有消费方（导航、侧栏 `pages`、FAB、页脚）都要在解析层或渲染层显式尊重开关。
 
 ---
 
@@ -508,4 +532,28 @@ snapshotPathTemplate: "{snapshotDir}/{testFileDir}/{testFileName}-snapshots/{arg
 - 通用输入原子组件根元素与内部原生输入框必须声明 `width: 100%` 与 `min-width: 0`，切断原生内在尺寸对外部布局的干扰。
 
 **防回归**：在 `tests/site/post-encryption.spec.ts` 等测试中对移动端窄屏视口进行断言，验证输入框与按钮计算宽度与表单容器完全一致，且页面整体无任何水平滚动。
+
+---
+
+## 10. 页面切换与文档布局宽度
+
+### 10.1 滚动条有无会改变整页宽度：纯色背景切页横移
+
+**现象**：纯色背景（`wallpaperMode: "none"`）下站内切换页面时整页会左右抖一下（Windows Chrome 约 15px）；Banner 模式下完全正常。
+
+**根因**：
+1. `#main-layout` 是 `w-full` 的绝对定位容器，宽度取自初始包含块，因此经典滚动条出现/消失时整页宽度整体变化一个滚动条宽度；
+2. Banner 模式下 `#top-row` 的 `calc(var(--banner-stage-height) - 4.5rem)` 加上 `#main-layout` 的 `top: var(--banner-content-top)` 让文档恒高于视口，滚动条常驻，所以看不出问题；
+3. 纯色模式隐藏 Banner 后文档高度只剩内容，`/categories/`、`/tags/`、文章页等短页没有滚动条；
+4. `#page-height-extend`（`h-[300vh]`）在 `visit:start` 显示、`visit:end` + 200ms 隐藏，用来防止切页时滚动位置跳变，副作用是在切页边界强制开关滚动条，于是每次导航都横移一次（短→长在点击瞬间，长→短在到达后）。
+
+**解法**：`html { scrollbar-gutter: stable }`（`src/styles/main.css` base 层）常驻预留滚动条槽位，布局宽度与滚动条状态解耦。语义上正好是「有内容可滚动才显示滚动条」：Banner 模式与所有长页与今天逐像素一致，短页不显示滚动条、只留 15px 空槽位。`#page-height-extend` 不用动——它只决定抖动发生的时刻，不是根因。
+
+**为什么不用 `overflow-y: scroll`（滚动条常显）**：短页会多出一条无意义的滚动条，实测其轨道色与页面底色差 (2,11,3)——而空槽位本就显示页面底色，顶栏右上角 15×64px 的差异也只有这一量级（暗色实测 Δ≤0.5，无可见差异）。常显滚动条还会让所有页面永远损失一条滚动条的宽度感。代价：旧版 Safari（< 18.2）忽略 `scrollbar-gutter`，退回原行为（无回归）；macOS 默认覆盖式滚动条，本来就不受影响。
+
+**不要顺手把满宽图层往槽位里撑**：顶栏、纹理画布这些满宽 fixed 图层的盒子宽度就是初始包含块宽度，槽位在盒子之外。直接加负 `margin-inline-end` 会连内容一起推出去（顶栏右侧图标组会横移 15px，反而是新的抖动）。真要像素级对齐，得改成「伪元素画 surface 并单独延伸」，收益只有上述 Δ≈2 的色阶，不值得。
+
+**延伸**：以 `body.style.overflow = "hidden"` 锁定页面滚动的代码（代码树全屏、Mermaid 全屏）必须走 `src/utils/scroll-lock.ts`，不得内联直接改。该工具**不能**用 `window.innerWidth - documentElement.clientWidth` 判断是否需要补偿：槽位预留生效时该差值在锁定后会变成 0，但布局宽度根本没变，补偿会把 `#top-row` 白窄 15px（1265 → 1250）。正确做法是用 `body` 的 border box 宽度锁定前后各测一次，只在真的变宽时补等量内边距。补偿只覆盖 `body` 内容盒内的常规流元素（`#top-row`、顶部栏），绝对定位的 `#main-layout` 只能靠槽位预留兜底。
+
+**防回归**：`tests/site/layout-stability.spec.ts`（覆盖槽位预留、长短页宽度一致、长/短页双向导航、壁纸模式切换、页面滚动锁、无槽位时的补偿）。注意 Playwright 默认带 `--hide-scrollbars`，滚动条宽度为 0 时该契约完全不可观测，spec 必须显式关掉该默认参数。
 

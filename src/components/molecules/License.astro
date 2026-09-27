@@ -1,19 +1,19 @@
 ---
+import I18nKey from "@i18n/i18nKey";
+import { i18n } from "@i18n/translation";
+import { formatDateToYYYYMMDD } from "@utils/date-utils";
 import { Icon } from "astro-icon/components";
 import { licenseConfig, profileConfig } from "@/config";
-import I18nKey from "../../i18n/i18nKey";
-import { i18n } from "../../i18n/translation";
-import { formatDateToYYYYMMDD } from "../../utils/date-utils";
 
 interface Props {
 	title: string;
 	slug: string;
 	pubDate: Date;
-	class: string;
+	class?: string;
 }
 
 const { title, pubDate } = Astro.props;
-const className = Astro.props.class;
+const className = Astro.props.class ?? "";
 const profileConf = profileConfig;
 const licenseConf = licenseConfig;
 // `Astro.url` in a static build does not inherit an integration-set `site`
@@ -26,26 +26,87 @@ const postUrl = decodeURIComponent(
 	).toString(),
 );
 ---
-<div class={`relative transition overflow-hidden bg-[var(--license-block-bg)] py-5 px-6 ${className}`}>
-    <div class="transition font-bold text-[var(--on-surface)]">
-        {title}
-    </div>
-    <a href={postUrl} class="link text-[var(--primary)]">
-        {postUrl}
-    </a>
-    <div class="flex gap-6 mt-2">
-        <div>
-            <div class="transition text-[var(--on-surface-variant)] text-sm">{i18n(I18nKey.author)}</div>
-            <div class="transition text-[var(--on-surface)] line-clamp-2">{profileConf.name}</div>
-        </div>
-        <div>
-            <div class="transition text-[var(--on-surface-variant)] text-sm">{i18n(I18nKey.publishedAt)}</div>
-            <div class="transition text-[var(--on-surface)] line-clamp-2">{formatDateToYYYYMMDD(pubDate)}</div>
-        </div>
-        <div>
-            <div class="transition text-[var(--on-surface-variant)] text-sm">{i18n(I18nKey.license)}</div>
-            <a href={licenseConf.url} target="_blank" class="link text-[var(--primary)] line-clamp-2">{licenseConf.name}</a>
-        </div>
-    </div>
-    <Icon name="fa6-brands:creative-commons" class="transition text-[15rem] absolute pointer-events-none right-6 top-1/2 -translate-y-1/2 text-[var(--outline-variant)] opacity-50"></Icon>
+<div class:list={["m3-license-card", className]}>
+	<div class="m3-license-card__title">
+		{title}
+	</div>
+	<a href={postUrl} class="m3-license-card__link">
+		{postUrl}
+	</a>
+	<div class="m3-license-card__meta">
+		<div class="m3-license-card__meta-item">
+			<div class="m3-license-card__meta-label">{i18n(I18nKey.author)}</div>
+			<div class="m3-license-card__meta-value">{profileConf.name}</div>
+		</div>
+		<div class="m3-license-card__meta-item">
+			<div class="m3-license-card__meta-label">{i18n(I18nKey.publishedAt)}</div>
+			<div class="m3-license-card__meta-value">{formatDateToYYYYMMDD(pubDate)}</div>
+		</div>
+		<div class="m3-license-card__meta-item">
+			<div class="m3-license-card__meta-label">{i18n(I18nKey.license)}</div>
+			<a href={licenseConf.url} target="_blank" rel="noopener noreferrer" class="m3-license-card__meta-link">{licenseConf.name}</a>
+		</div>
+	</div>
+	<Icon name="fa6-brands:creative-commons" class="m3-license-card__watermark" aria-hidden="true" />
 </div>
+
+<style lang="stylus">
+.m3-license-card
+	position: relative
+	overflow: hidden
+	border-radius: var(--shape-corner-m)
+	background: var(--surface-container-low)
+	padding: var(--m3e-space-5) var(--m3e-space-6)
+	transition: background-color var(--m3e-duration-short) var(--m3e-easing-standard)
+
+	&__title
+		font: var(--m3e-type-title-medium)
+		font-weight: 600
+		color: var(--on-surface)
+
+	&__link
+		display: inline-block
+		font: var(--m3e-type-body-small)
+		color: var(--primary)
+		text-decoration: none
+		word-break: break-all
+		margin-top: var(--m3e-space-1)
+		&:hover
+			text-decoration: underline
+
+	&__meta
+		display: flex
+		flex-wrap: wrap
+		gap: var(--m3e-space-6)
+		margin-top: var(--m3e-space-3)
+
+	&__meta-item
+		display: flex
+		flex-direction: column
+		gap: var(--m3e-space-1)
+
+	&__meta-label
+		font: var(--m3e-type-label-medium)
+		color: var(--on-surface-variant)
+
+	&__meta-value
+		font: var(--m3e-type-body-medium)
+		color: var(--on-surface)
+
+	&__meta-link
+		font: var(--m3e-type-body-medium)
+		color: var(--primary)
+		text-decoration: none
+		&:hover
+			text-decoration: underline
+
+	&__watermark
+		position: absolute
+		right: var(--m3e-space-6)
+		top: 50%
+		transform: translateY(-50%)
+		font-size: 15rem
+		pointer-events: none
+		color: var(--outline-variant)
+		opacity: 0.25
+</style>

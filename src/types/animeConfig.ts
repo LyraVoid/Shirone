@@ -1,4 +1,5 @@
 import type { AnimeItem } from "../data/anime.ts";
+import type { PageMeta } from "./pageMeta.ts";
 
 /**
  * 支持的番剧外部数据服务提供方
@@ -8,7 +9,8 @@ export type AnimeProvider = "bangumi" | "bilibili";
 /**
  * 番剧页面消费的主数据源类型：
  * - `"local"`：使用 `src/data/anime.ts` 本地手写数据（默认，零外部依赖，稳定可控）；
- * - `"snapshot"`：读取由同步命令生成的本地脱敏 JSON 快照（`src/data/anime-snapshots/`）。
+ * - `"snapshot"`：读取本地脱敏 JSON 快照（`src/data/anime-snapshots/`；由同步命令生成，
+ *   或由使用者直接提供静态 JSON——不填 provider 仅填 file 即为纯静态数据源，零外部请求）。
  */
 export type AnimeSourceKind = "local" | "snapshot";
 
@@ -35,7 +37,12 @@ export interface AnimeSourceConfig {
 	kind: AnimeSourceKind;
 	/** 指定 provider（当 kind 为 "snapshot" 时建议指定） */
 	provider?: AnimeProvider;
-	/** 指定快照文件名（必须限定在快照目录内，如 "bangumi.json" 或 "bilibili.json"） */
+	/**
+	 * 指定快照文件名（必须限定在快照目录内，仅允许安全文件名字符）。
+	 * - 省略或使用 `<provider>.json`：文件由 `anime:sync` 生成与覆盖（基线 / last-known-good）；
+	 * - 自定义文件名（如 "manual.json"）：使用者的纯静态 JSON 输入，`anime:sync` 永不写入；
+	 *   不填 provider 仅填 file 即为纯静态数据源，不发起任何外部请求。
+	 */
 	file?: string;
 	/** 是否在开发环境 (pnpm dev) 下允许热重载并读取最新快照数据（默认 true） */
 	fetchOnDev?: boolean;
@@ -106,17 +113,19 @@ export interface AnimeSnapshotConfig {
 	directory: string;
 	/** 快照过期告警天数（仅构建日志提示，不触发运行期自动请求，默认 30 天） */
 	staleAfterDays?: number;
-	/** 当外部同步失败时，是否保留上一次成功的有效快照（默认 true） */
+	/**
+	 * 当外部同步失败或返回空列表时，是否保留上一次成功的有效快照（默认 true）。
+	 * 开启时 `anime:sync` 跳过覆盖、打印警告并以退出码 0 结束；设为 false 则空结果照常落盘。
+	 */
 	keepLastValid: boolean;
 }
 
 /**
  * 番剧模块全局完整配置契约
  */
-export interface AnimeConfig {
+export interface AnimeConfig extends PageMeta {
 	/**
-	 * 是否启用番剧页面。
-	 * 注：设置为 true 仅表示开启 `/anime/` 路由与本地数据渲染，不代表发起任何网络请求。
+	 * 是否启用番剧页面。关闭后隐藏导航入口并将 /anime/ 重定向到 404。
 	 */
 	enable: boolean;
 	/** 主数据源配置 */

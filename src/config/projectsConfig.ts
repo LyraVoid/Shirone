@@ -13,6 +13,8 @@ import { withUserConfig } from "../utils/config-overlay.ts";
  */
 export const projectsConfig: ProjectsConfig = withUserConfig("projects", {
 	enable: true,
+	title: "$t:projects",
+	description: "$t:projectsBanner",
 	categories: [
 		{
 			key: "theme",

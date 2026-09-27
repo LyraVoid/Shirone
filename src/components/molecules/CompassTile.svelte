@@ -50,7 +50,7 @@ const host = $derived.by(() => {
 });
 </script>
 
-<article class="compass-tile" use:reveal={{ delay }}>
+<article class="compass-tile m3-state-layer" use:reveal={{ delay }}>
 	<a
 		class="compass-tile__link"
 		href={entry.href}
@@ -84,7 +84,8 @@ const host = $derived.by(() => {
 	background: var(--card-bg)
 	border: 1px solid var(--outline-variant)
 	border-radius: var(--shape-corner-l)
-	padding: 0.875rem
+	padding: var(--m3e-space-3) var(--m3e-space-4)
+	--m3e-state-color: var(--on-surface)
 	transition:
 		border-color var(--m3e-duration-medium) var(--m3e-easing-emphasized-decelerate),
 		box-shadow var(--m3e-duration-medium) var(--m3e-easing-emphasized-decelerate),
@@ -98,7 +99,7 @@ const host = $derived.by(() => {
 	&__link
 		display: flex
 		flex-direction: column
-		gap: 0.625rem
+		gap: var(--m3e-space-2)
 		min-width: 0
 		text-decoration: none
 

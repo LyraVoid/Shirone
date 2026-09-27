@@ -56,7 +56,28 @@ describe("Feature Data & Resolver Tests", () => {
 		};
 		const resolved = resolveTimelineData(config);
 		assert.ok(!resolved.some((t) => t.title === "Senior Frontend Engineer"));
-		assert.equal(resolved[0].title, "Started Personal Blog & Tech Notes");
+		// timelineData 中最旧的条目是 2020.09 – 2024.06 (Computer Science & Engineering Degree)
+		assert.equal(resolved[0].title, "Computer Science & Engineering Degree");
+	});
+
+	it("resolveTimelineData sorts correctly by date in desc and asc order", () => {
+		const customItems = [
+			{ title: "Old", date: "2021.05" },
+			{ title: "Recent", date: "2024.10" },
+			{ title: "Present", date: "2025.01 - Present" },
+			{ title: "Middle", date: "2023.01" },
+		];
+		const descRes = resolveTimelineData({ order: "desc" }, customItems);
+		assert.deepEqual(
+			descRes.map((i) => i.title),
+			["Present", "Recent", "Middle", "Old"],
+		);
+
+		const ascRes = resolveTimelineData({ order: "asc" }, customItems);
+		assert.deepEqual(
+			ascRes.map((i) => i.title),
+			["Old", "Middle", "Recent", "Present"],
+		);
 	});
 
 	it("resolveDevicesData applies disabledIds correctly", () => {

@@ -34,7 +34,7 @@ function isActive(link: (typeof links)[number]): boolean {
 <div
 	id="navbar"
 	class:list={[
-		"top-app-bar fixed top-0 left-0 right-0 z-50 onload-animation bg-[color-mix(in_oklab,var(--surface-container-low)_94%,transparent)] shadow-[var(--m3e-elevation-1)] backdrop-blur-md transition",
+		"top-app-bar fixed top-0 left-0 right-0 z-50 onload-animation backdrop-blur-md transition",
 		className,
 	]}
 >
@@ -230,10 +230,17 @@ document.addEventListener('swup:content:replace', bindSearchTriggers);
 
 <style>
 	.top-app-bar {
+		background: color-mix(in oklab, var(--surface) 92%, transparent);
+		box-shadow: var(--m3e-elevation-1);
 		transition:
 			background-color var(--m3e-duration-medium) var(--m3e-easing-standard),
 			box-shadow var(--m3e-duration-medium) var(--m3e-easing-standard),
 			color var(--m3e-duration-short) var(--m3e-easing-standard);
+	}
+
+	.top-app-bar--scrolled:not(.top-app-bar--transparent) {
+		background: color-mix(in oklab, var(--surface-container) 95%, transparent);
+		box-shadow: var(--m3e-elevation-2);
 	}
 
 		.top-app-bar--transparent {

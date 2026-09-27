@@ -1,6 +1,9 @@
 # build output
 dist/
 
+# integration cache (esbuild config bundles, plugin-mode font subsets)
+.shirones/
+
 # content repository working copy, provenance, and safe cleanup backups
 .content-src/
 .content-backup/
@@ -78,3 +81,12 @@ src/assets/images/
 public/images/
 public/assets/
 src/config/FooterConfig.html
+public/_redirects
+
+# public/favicon/ 同为内容仓拥有的顶层段：sync 会裁剪主题自带图标，并物化内容仓的站点图标
+public/favicon/favicon-dark-*.png
+public/favicon/favicon-light-*.png
+public/favicon/favicon-32.png
+public/favicon/favicon-128.png
+public/favicon/favicon-180.png
+public/favicon/favicon-192.png
