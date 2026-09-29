@@ -184,7 +184,10 @@
 	transition: transform var(--m3e-duration-medium) var(--m3e-easing-standard);
 }
 
-.expressive-code.auto-collapsible.collapsed .collapse-toggle-btn svg {
+/* The arrow points at the action the click performs: the base keyboard-arrow-down
+   shape already reads as "expand" while collapsed, so the rotation belongs to the
+   expanded state. Matches the `--open` convention in ArchiveList.svelte. */
+.expressive-code.auto-collapsible.expanded .collapse-toggle-btn svg {
 	transform: rotate(180deg);
 }
 
