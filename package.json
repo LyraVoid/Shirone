@@ -78,7 +78,7 @@
     "@iconify-json/fa6-brands": "^1.2.6",
     "@iconify-json/fa6-regular": "^1.2.4",
     "@iconify-json/fa6-solid": "^1.2.4",
-    "@iconify-json/material-symbols": "^1.2.93",
+    "@iconify-json/material-symbols": "^1.2.94",
     "@iconify/svelte": "^5.2.2",
     "@material/material-color-utilities": "^0.4.0",
     "@panzoom/panzoom": "4.6.2",
@@ -92,7 +92,7 @@
     "hastscript": "^9.0.1",
     "katex": "^0.16.47",
     "lxgw-wenkai-screen-webfont": "^1.7.0",
-    "markdown-it": "^14.3.1",
+    "markdown-it": "^14.3.2",
     "mdast-util-to-string": "^4.0.0",
     "mermaid": "^11.17.2",
     "oddmisc": "^1.2.11",
@@ -111,7 +111,7 @@
     "remark-parse": "11.0.0",
     "remark-sectionize": "^2.1.0",
     "sanitize-html": "^2.17.6",
-    "sharp": "^0.35.4",
+    "sharp": "^0.35.5",
     "stylus": "^0.64.0",
     "subset-font": "2.7.0",
     "svelte": "^5.57.1",
@@ -124,8 +124,8 @@
   "devDependencies": {
     "@astrojs/ts-plugin": "^1.10.12",
     "@axe-core/playwright": "^4.13.0",
-    "@biomejs/biome": "2.5.14",
-    "@iconify-json/simple-icons": "^1.2.97",
+    "@biomejs/biome": "2.5.15",
+    "@iconify-json/simple-icons": "^1.2.98",
     "@lhci/cli": "0.15.1",
     "@playwright/test": "^1.63.0",
     "@rollup/plugin-yaml": "^4.1.2",
@@ -136,7 +136,7 @@
     "@types/qrcode": "^1.5.6",
     "@types/sanitize-html": "^2.16.1",
     "esbuild": "^0.28.2",
-    "vite": "^8.3.1"
+    "vite": "^8.3.2"
   },
   "packageManager": "pnpm@9.14.4",
   "pnpm": {
