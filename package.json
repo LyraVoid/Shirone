@@ -74,7 +74,7 @@
 		"@fontsource-variable/jetbrains-mono": "^5.3.0",
 		"@fontsource/outfit": "^5.3.0",
 		"@fontsource/roboto": "^5.3.0",
-		"@iconify-json/material-symbols": "^1.2.93",
+		"@iconify-json/material-symbols": "^1.2.94",
 		"@iconify/svelte": "^5.2.2",
 		"@material/material-color-utilities": "^0.4.0",
 		"@panzoom/panzoom": "4.6.2",
@@ -120,10 +120,10 @@
 	"devDependencies": {
 		"@astrojs/ts-plugin": "^1.10.12",
 		"@axe-core/playwright": "^4.13.0",
-		"@biomejs/biome": "2.5.14",
+		"@biomejs/biome": "2.5.15",
 		"@iconify-json/fa7-brands": "^1.2.4",
 		"@iconify-json/fa7-solid": "^1.2.5",
-		"@iconify-json/simple-icons": "^1.2.98",
+		"@iconify-json/simple-icons": "^1.2.99",
 		"@swup/scroll-plugin": "4.0.0",
 		"@lhci/cli": "0.15.1",
 		"@playwright/test": "^1.63.0",
@@ -135,7 +135,7 @@
 		"@types/qrcode": "^1.5.6",
 		"@types/sanitize-html": "^2.16.2",
 		"esbuild": "^0.28.2",
-		"vite": "^8.3.2"
+		"vite": "^8.3.3"
 	},
 	"packageManager": "pnpm@11.28.2"
 }
