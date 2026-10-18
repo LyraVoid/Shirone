@@ -1,0 +1,171 @@
+---
+import Button from "@components/atoms/action/Button.svelte";
+import LoadingIndicator from "@components/atoms/feedback/LoadingIndicator.svelte";
+import I18nKey from "@i18n/i18nKey";
+import { i18n } from "@i18n/translation";
+import stylus from "stylus";
+import type { CommentContext, WalineConfig } from "@/types/commentConfig";
+
+interface Props {
+	context: CommentContext;
+	config: WalineConfig;
+	lazy?: boolean;
+}
+
+const { context, config, lazy = true } = Astro.props;
+const { scriptUrl, styleUrl, lang, ...clientOptions } = config;
+
+// Waline 使用 jp 表示日语；未内置的站点语言显式回退英语，避免落到中文默认值。
+const languages: Record<string, string> = {
+	zh: "zh-CN",
+	"zh-cn": "zh-CN",
+	"zh-tw": "zh-TW",
+	"zh-hk": "zh-TW",
+	"zh-hans": "zh-CN",
+	"zh-hant": "zh-TW",
+	jp: "jp",
+	ja: "jp",
+	en: "en",
+	es: "es",
+	ko: "ko",
+	vi: "vi",
+};
+const siteLanguage = context.language.toLowerCase().replaceAll("_", "-");
+const resolvedLang =
+	lang === "auto"
+		? (languages[siteLanguage] ?? languages[siteLanguage.split("-")[0]] ?? "en")
+		: lang;
+const options = {
+	...clientOptions,
+	path: context.path,
+	lang: resolvedLang,
+	// 颜色由下方局部语义 token 跟随站点切换，无需 SDK 注入全局暗色样式。
+	dark: false,
+	comment: false,
+	pageview: false,
+};
+
+// 内嵌编译，避免 Astro 将未启用 provider 的样式提升进共享 CSS。
+const walineStylus = `
+.shirone-waline-wrapper
+	display: block
+	min-width: 0
+	font: var(--m3e-type-body-medium)
+	--waline-font-size: 1em
+	--waline-white: var(--on-primary)
+	--waline-light-grey: var(--on-surface-variant)
+	--waline-dark-grey: var(--on-surface-variant)
+	--waline-theme-color: var(--primary)
+	--waline-active-color: var(--primary)
+	--waline-color: var(--on-surface)
+	--waline-bg-color: var(--card-bg)
+	--waline-bg-color-light: var(--surface-container-low)
+	--waline-bg-color-hover: var(--surface-container-high)
+	--waline-border-color: var(--outline-variant)
+	--waline-disable-bg-color: var(--surface-container-highest)
+	--waline-disable-color: var(--on-surface-variant)
+	--waline-code-bg-color: var(--codeblock-bg)
+	--waline-warning-color: var(--on-tertiary-container)
+	--waline-warning-bg-color: var(--tertiary-container)
+	--waline-bq-color: var(--surface-container-high)
+	--waline-badge-color: var(--primary)
+	--waline-info-bg-color: var(--surface-container-high)
+	--waline-info-color: var(--on-surface-variant)
+	--waline-avatar-radius: var(--shape-corner-full)
+	--waline-box-shadow: none
+
+	.waline-loading:not([hidden])
+		display: flex
+		flex-direction: column
+		align-items: center
+		justify-content: center
+		gap: var(--m3e-space-3)
+		min-height: 10rem
+		padding-block: var(--m3e-space-6)
+		color: var(--on-surface-variant)
+
+	.waline-error
+		padding: var(--m3e-space-4)
+		border-radius: var(--shape-corner-m)
+		background: var(--error-container)
+		color: var(--on-error-container)
+		text-align: center
+
+	.waline-error p
+		margin-bottom: var(--m3e-space-3)
+
+	.waline-noscript
+		padding: var(--m3e-space-4)
+		color: var(--on-surface-variant)
+		text-align: center
+
+	.waline-upload-label
+		display: none
+
+	.waline-upload
+		border: none
+		background: transparent
+
+	.wl-panel, .wl-btn, .wl-input, .wl-editor
+		border-radius: var(--shape-corner-m)
+
+	.wl-input, .wl-editor
+		min-width: 0
+		font: var(--m3e-type-body-medium)
+
+	.wl-header label, .wl-power, .wl-word
+		font: var(--m3e-type-body-small)
+
+	.wl-btn
+		font: var(--m3e-type-label-large)
+
+	.wl-btn, .wl-input, .wl-editor, .wl-sort li
+		transition-duration: var(--m3e-duration-short)
+		transition-timing-function: var(--m3e-easing-standard)
+
+/* !important boundary: Waline owns its generated animations/transitions;
+   this integration enforces both Shirone and OS reduced-motion preferences. */
+html.motion-reduced .shirone-waline-wrapper [data-waline] *
+	animation: none !important
+	transition: none !important
+
+@media (prefers-reduced-motion: reduce)
+	.shirone-waline-wrapper [data-waline] *
+		animation: none !important
+		transition: none !important
+`;
+const walineStyles = await new Promise<string>((resolve, reject) => {
+	stylus.render(walineStylus, (error, css) => {
+		if (error) reject(error);
+		else resolve(css);
+	});
+});
+---
+
+<shirone-waline
+	class="shirone-waline-wrapper"
+	data-waline-script-url={scriptUrl}
+	data-waline-style-url={styleUrl}
+	data-waline-options={JSON.stringify(options)}
+	data-waline-lazy={lazy ? "true" : "false"}
+	data-waline-state="loading"
+>
+	<div class="waline-loading" role="status" hidden>
+		<span aria-hidden="true"><LoadingIndicator client:visible /></span>
+		<span>{i18n(I18nKey.commentsLoading)}</span>
+	</div>
+	<div class="waline-container" data-waline hidden></div>
+	<div class="waline-error" hidden>
+		<p role="alert">{i18n(I18nKey.commentsLoadFailed)}</p>
+		<Button class="waline-retry" variant="tonal" label={i18n(I18nKey.retry)} />
+	</div>
+	<noscript>
+		<p class="waline-noscript">{i18n(I18nKey.commentsRequiresJavaScript)}</p>
+	</noscript>
+</shirone-waline>
+
+<style is:inline set:html={walineStyles}></style>
+
+<script>
+	import "@utils/waline-runtime";
+</script>

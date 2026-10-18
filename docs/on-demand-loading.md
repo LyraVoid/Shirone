@@ -29,8 +29,10 @@
 | `src/components/organisms/comment/CommentSection.astro` | 消费方：短路 + 动态导入 |
 | `src/components/organisms/comment/Twikoo.astro` | 特性组件：样式内嵌 + 运行时懒加载 |
 | `src/components/organisms/comment/Giscus.astro` | 第二个 Provider 参考实现：一次性脚本注入 + 主题事件同步 |
+| `src/components/organisms/comment/Waline.astro` | 第三个 Provider 参考实现：局部内联样式 + M3E token 适配 + 本地化加载/错误/无 JavaScript 提示 |
+| `src/utils/waline-runtime.ts` | Waline 自定义元素：JS/CSS 按需加载、超时重试、Swup 实例销毁与异步竞态防护 |
 | `src/types/stylus.d.ts` | `stylus` 包最小类型声明（构建期编译样式用） |
-| `src/utils/script-loader.ts` | `loadScriptOnce()` 动态加载第三方 SDK 并去重 |
+| `src/utils/script-loader.ts` | `loadScriptOnce(url, timeoutMs?)` 动态加载第三方 SDK 并去重；失败或超时后清理缓存以允许重试 |
 
 ---
 
@@ -60,9 +62,11 @@ if (!options || !postCommentEnabled) {
 ```
 
 - 规则：可选特性默认 `enable: false`；校验逻辑收敛在 config 的 `resolve*Options()` 里，组件只消费解析结果。
-- 多 Provider 特性（如评论的 twikoo / giscus）：`resolve*Options()` 返回判别联合，
+- 多 Provider 特性（如评论的 twikoo / giscus / waline）：`resolve*Options()` 返回判别联合，
   每个分支校验各自的必填字段——Giscus 的 `repo` / `repoId` / `categoryId`
-  任一缺失同样返回 `null`，与未启用完全等价。
+  任一缺失同样返回 `null`，与未启用完全等价。Waline 配置块可省略以兼容旧配置；
+  选中 Waline 后，`serverURL` 必须是有效 HTTP(S) 地址，`scriptUrl` / `styleUrl`
+  必须非空，否则同样不渲染评论区。
 
 ### L2 动态导入组件，避免进主 bundle
 
@@ -123,6 +127,14 @@ const twikooStyles = await new Promise<string>((resolve, reject) => {
 - **视口懒加载**：`IntersectionObserver` 进入视口（预留 `rootMargin`）才执行初始化，
   进入视口前不加载外部脚本；
 - **SDK 去重**：`loadScriptOnce(scriptUrl)` 保证同一脚本只注入一次（Swup 多次换页安全）；
+- **Waline 的独立 JS/CSS**：`lazy: true` 时，两者都在评论区接近视口后加载；
+  `lazy: false` 时立即加载。JS 使用 `loadScriptOnce(scriptUrl, 8000)` 去重，
+  CSS 通过评论容器内的 `<link>` 加载，二者均成功后才初始化实例。资源加载超过
+  8 秒或失败时显示本地化错误与重试按钮；自托管或升级客户端时，JS/CSS 必须保持同版本。
+- **Waline 的页面生命周期**：`<shirone-waline>` 通过 `connectedCallback()` /
+  `disconnectedCallback()` 覆盖直接加载与 Swup 容器替换；离开页面时销毁实例、
+  断开观察器、取消页面监听及样式等待，并移除该实例的 CSS。共享 SDK 脚本保留复用，
+  异步结果用页面代际和连接状态校验，避免脚本晚到时初始化已离开的页面。
 - **一次性脚本的例外**：giscus 的 `client.js` 是绑定 `document.currentScript` 的一次性
   IIFE，复用 `loadScriptOnce()` 会让 Swup 换页后无法重新挂载；此时每次挂载注入新的
   `<script>` 元素（HTTP 缓存下成本极低），旧元素随容器替换自然丢弃，见 `Giscus.astro`；
@@ -149,7 +161,9 @@ pnpm.cmd build
 ```
 
 确认：所有 HTML 页面无该特性的 DOM、无 `<style>`、无 `<link>`/`<script>` 引用；
-dist 中无对应 CSS 资产、无对应 JS chunk。验证后恢复配置。
+无特性样式进入共享 CSS，第三方 SDK 与特性运行时不进入主 bundle。Astro 可能仍生成
+未被引用的独立 Provider JS chunk；应检查页面和共享入口的依赖及浏览器请求，
+不能仅凭该文件存在判定发生了加载。验证后恢复配置。
 
 ### 4.2 构建产物扫描（开启状态）
 
@@ -159,6 +173,10 @@ dist 中无对应 CSS 资产、无对应 JS chunk。验证后恢复配置。
 
 - **零足迹测试**：访问不含该特性的页面（如首页），断言无 `#comments` / 特性容器 DOM、
   无特性 CSS 资产请求；
+- **Waline 回归入口**：`tests/waline-config.test.mjs` 验证配置解析与旧配置兼容；
+  `tests/site/waline.spec.ts` 覆盖关闭状态、JS/CSS 懒加载、失败重试、Swup 切页与晚到响应、
+  主题/移动端/减少动态效果、上传按钮键盘操作和无 JavaScript 回退。开启 Waline 并配置
+  有效 `serverURL` 后运行该分片及 `tests/site/a11y.spec.ts`，再恢复原配置。
 - **UI 测试跳过守卫**：特性默认关闭，UI 测试依赖真实渲染，因此在每个 UI 测试开头：
 
 ```ts
