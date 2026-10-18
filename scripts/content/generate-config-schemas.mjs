@@ -91,6 +91,9 @@ function generateSchemaForDomain(program, domain) {
 		if (type.isNumberLiteral()) {
 			return { type: "number", enum: [type.value] };
 		}
+		if (flags & ts.TypeFlags.TemplateLiteral) {
+			return { type: "string" };
+		}
 		if (flags & ts.TypeFlags.BooleanLiteral) {
 			// ts 内部布尔字面量
 			const intrinsic = type.intrinsicName;
@@ -111,6 +114,15 @@ function generateSchemaForDomain(program, domain) {
 		}
 
 		// 数组类型
+		if (checker.isTupleType(type)) {
+			const typeArgs = checker.getTypeArguments(type);
+			return {
+				type: "array",
+				items: typeArgs.map((itemType) => typeToJsonSchema(itemType, new Set(visited))),
+				minItems: typeArgs.length,
+				maxItems: typeArgs.length,
+			};
+		}
 		if (checker.isArrayType(type)) {
 			const typeArgs = checker.getTypeArguments(type);
 			const itemType = typeArgs[0] ? typeToJsonSchema(typeArgs[0], new Set(visited)) : {};

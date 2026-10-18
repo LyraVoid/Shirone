@@ -97,22 +97,36 @@ export const commentConfig: CommentConfig = withUserConfig("comment", {
 			/** 评论输入框提示；空字符串不显示提示 */
 			placeholder: "",
 		},
-		/** 每页条数 */
-		pageSize: 10,
+		/** false 关闭表情，true 使用默认表情；也可混合填写预设 URL 与自定义表情对象 */
+		emoji: true,
 		/** 排序：latest / oldest / hottest */
 		commentSorting: "latest",
-		/** 登录模式：enable / disable / force */
-		login: "enable",
 		/** 展示的身份信息字段 */
 		meta: ["nick", "mail", "link"],
 		/** 必填字段；空数组允许匿名评论 */
 		requiredMeta: [],
-		/** false 关闭表情，true 使用默认表情；也可混合填写预设 URL 与自定义表情对象 */
-		emoji: true,
+		/** 登录模式：enable / disable / force */
+		login: "enable",
+		/** 评论字数限制，设置为 0 时无限制 */
+		wordLimit: 0,
+		/** 每页条数 */
+		pageSize: 10,
 		/** 是否允许上传图片 */
 		imageUploader: true,
+		/** 代码高亮 */
+		highlighter: true,
+		/** TeX 渲染 */
+		texRenderer: false,
+		/** 是否隐藏页脚版权信息 */
+		noCopyright: false,
+		/** 是否隐藏 RSS 订阅链接 */
+		noRss: false,
+		/** reCAPTCHA v3 密钥 */
+		recaptchaV3Key: "",
+		/** Cloudflare Turnstile 密钥 */
+		turnstileKey: "",
 		/** 是否显示文章表情反应 */
-		reaction: false,
+		reaction: true,
 	},
 });
 

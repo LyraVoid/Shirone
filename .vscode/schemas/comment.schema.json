@@ -192,11 +192,11 @@
         },
         "scriptUrl": {
           "type": "string",
-          "description": "包含依赖的 UMD 客户端地址；须与 styleUrl 使用相同版本"
+          "description": "包含依赖的 UMD 客户端地址"
         },
         "styleUrl": {
           "type": "string",
-          "description": "Waline CSS 地址，随评论区进入视口加载"
+          "description": "Waline CSS 地址，随评论区进入视口加载；须与 scriptUrl 使用相同版本"
         },
         "lang": {
           "type": "string",
@@ -229,125 +229,6 @@
             }
           ],
           "description": "自定义语言文案；输入框提示使用 locale.placeholder，省略时沿用当前语言默认值"
-        },
-        "pageSize": {
-          "anyOf": [
-            {},
-            {
-              "type": "number"
-            }
-          ],
-          "description": "每页评论条数，默认 10"
-        },
-        "commentSorting": {
-          "anyOf": [
-            {},
-            {
-              "type": "string",
-              "enum": [
-                "latest"
-              ]
-            },
-            {
-              "type": "string",
-              "enum": [
-                "oldest"
-              ]
-            },
-            {
-              "type": "string",
-              "enum": [
-                "hottest"
-              ]
-            }
-          ],
-          "description": "评论排序，默认 latest"
-        },
-        "login": {
-          "anyOf": [
-            {},
-            {
-              "type": "string",
-              "enum": [
-                "enable"
-              ]
-            },
-            {
-              "type": "string",
-              "enum": [
-                "disable"
-              ]
-            },
-            {
-              "type": "string",
-              "enum": [
-                "force"
-              ]
-            }
-          ],
-          "description": "登录模式：enable（默认）/ disable / force"
-        },
-        "meta": {
-          "anyOf": [
-            {},
-            {
-              "type": "array",
-              "items": {
-                "anyOf": [
-                  {
-                    "type": "string",
-                    "enum": [
-                      "nick"
-                    ]
-                  },
-                  {
-                    "type": "string",
-                    "enum": [
-                      "mail"
-                    ]
-                  },
-                  {
-                    "type": "string",
-                    "enum": [
-                      "link"
-                    ]
-                  }
-                ]
-              }
-            }
-          ],
-          "description": "评论者信息字段，默认 nick、mail、link"
-        },
-        "requiredMeta": {
-          "anyOf": [
-            {},
-            {
-              "type": "array",
-              "items": {
-                "anyOf": [
-                  {
-                    "type": "string",
-                    "enum": [
-                      "nick"
-                    ]
-                  },
-                  {
-                    "type": "string",
-                    "enum": [
-                      "mail"
-                    ]
-                  },
-                  {
-                    "type": "string",
-                    "enum": [
-                      "link"
-                    ]
-                  }
-                ]
-              }
-            }
-          ],
-          "description": "必填信息字段，默认空数组（允许匿名）"
         },
         "emoji": {
           "anyOf": [
@@ -416,14 +297,161 @@
                     },
                     "additionalProperties": false
                   },
-                  {},
-                  {},
-                  {}
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "string"
+                  }
                 ]
               }
             }
           ],
           "description": "表情预设地址与自定义配置的混合数组；false 关闭，true 使用 Waline 默认表情包"
+        },
+        "commentSorting": {
+          "anyOf": [
+            {},
+            {
+              "type": "string",
+              "enum": [
+                "latest"
+              ]
+            },
+            {
+              "type": "string",
+              "enum": [
+                "oldest"
+              ]
+            },
+            {
+              "type": "string",
+              "enum": [
+                "hottest"
+              ]
+            }
+          ],
+          "description": "评论排序，默认 latest"
+        },
+        "meta": {
+          "anyOf": [
+            {},
+            {
+              "type": "array",
+              "items": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "nick"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "enum": [
+                      "mail"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "enum": [
+                      "link"
+                    ]
+                  }
+                ]
+              }
+            }
+          ],
+          "description": "评论者信息字段，默认 nick、mail、link"
+        },
+        "requiredMeta": {
+          "anyOf": [
+            {},
+            {
+              "type": "array",
+              "items": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "nick"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "enum": [
+                      "mail"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "enum": [
+                      "link"
+                    ]
+                  }
+                ]
+              }
+            }
+          ],
+          "description": "必填信息字段，默认空数组（允许匿名）"
+        },
+        "login": {
+          "anyOf": [
+            {},
+            {
+              "type": "string",
+              "enum": [
+                "enable"
+              ]
+            },
+            {
+              "type": "string",
+              "enum": [
+                "disable"
+              ]
+            },
+            {
+              "type": "string",
+              "enum": [
+                "force"
+              ]
+            }
+          ],
+          "description": "登录模式：enable（默认）/ disable / force"
+        },
+        "wordLimit": {
+          "anyOf": [
+            {},
+            {
+              "type": "number"
+            },
+            {
+              "type": "array",
+              "items": [
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "number"
+                }
+              ],
+              "minItems": 2,
+              "maxItems": 2
+            }
+          ],
+          "description": "评论字数限制，设置为 0 时无限制"
+        },
+        "pageSize": {
+          "anyOf": [
+            {},
+            {
+              "type": "number"
+            }
+          ],
+          "description": "每页评论条数，默认 10"
         },
         "imageUploader": {
           "anyOf": [
@@ -439,9 +467,114 @@
               "enum": [
                 true
               ]
+            },
+            {
+              "type": "object",
+              "properties": {},
+              "additionalProperties": false
             }
           ],
           "description": "图片上传开关，默认 true（Waline 将图片编码为 Base64）"
+        },
+        "highlighter": {
+          "anyOf": [
+            {},
+            {
+              "type": "boolean",
+              "enum": [
+                false
+              ]
+            },
+            {
+              "type": "boolean",
+              "enum": [
+                true
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {},
+              "additionalProperties": false
+            }
+          ],
+          "description": "代码高亮，默认 true（使用一个 <1kB 的简单高亮器）"
+        },
+        "texRenderer": {
+          "anyOf": [
+            {},
+            {
+              "type": "boolean",
+              "enum": [
+                false
+              ]
+            },
+            {
+              "type": "boolean",
+              "enum": [
+                true
+              ]
+            },
+            {
+              "type": "object",
+              "properties": {},
+              "additionalProperties": false
+            }
+          ],
+          "description": "TeX 渲染"
+        },
+        "noCopyright": {
+          "anyOf": [
+            {},
+            {
+              "type": "boolean",
+              "enum": [
+                false
+              ]
+            },
+            {
+              "type": "boolean",
+              "enum": [
+                true
+              ]
+            }
+          ],
+          "description": "是否隐藏页脚版权信息"
+        },
+        "noRss": {
+          "anyOf": [
+            {},
+            {
+              "type": "boolean",
+              "enum": [
+                false
+              ]
+            },
+            {
+              "type": "boolean",
+              "enum": [
+                true
+              ]
+            }
+          ],
+          "description": "是否隐藏 RSS 订阅链接"
+        },
+        "recaptchaV3Key": {
+          "anyOf": [
+            {},
+            {
+              "type": "string"
+            }
+          ],
+          "description": "reCAPTCHA v3 密钥"
+        },
+        "turnstileKey": {
+          "anyOf": [
+            {},
+            {
+              "type": "string"
+            }
+          ],
+          "description": "Cloudflare Turnstile 密钥"
         },
         "reaction": {
           "anyOf": [

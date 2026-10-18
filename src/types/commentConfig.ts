@@ -83,31 +83,54 @@ export interface WalineEmojiInfo {
 	items: string[];
 }
 
+/** 自定义图片上传方法 */
+export type WalineImageUploader = (image: File) => Promise<string>;
+
+/** 自定义代码高亮方法 */
+export type WalineHighlighter = (code: string, lang: string) => string;
+
+/** 自定义 TeX 渲染方法 */
+export type WalineTeXRenderer = (blockMode: boolean, tex: string) => string;
+
 export interface WalineConfig {
 	/** Waline 服务端 HTTP(S) 地址（必填），如 https://comments.example.com */
 	serverURL: string;
-	/** 包含依赖的 UMD 客户端地址；须与 styleUrl 使用相同版本 */
+	/** 包含依赖的 UMD 客户端地址 */
 	scriptUrl: string;
-	/** Waline CSS 地址，随评论区进入视口加载 */
+	/** Waline CSS 地址，随评论区进入视口加载；须与 scriptUrl 使用相同版本 */
 	styleUrl: string;
 	/** auto 跟随文章/站点语言；不支持的站点语言回退 en */
 	lang: "auto" | string;
 	/** 自定义语言文案；输入框提示使用 locale.placeholder，省略时沿用当前语言默认值 */
 	locale?: WalineLocaleConfig;
-	/** 每页评论条数，默认 10 */
-	pageSize?: number;
+	/** 表情预设地址与自定义配置的混合数组；false 关闭，true 使用 Waline 默认表情包 */
+	emoji?: (WalineEmojiInfo | WalineEmojiPresets)[] | boolean;
 	/** 评论排序，默认 latest */
 	commentSorting?: "latest" | "oldest" | "hottest";
-	/** 登录模式：enable（默认）/ disable / force */
-	login?: "enable" | "disable" | "force";
 	/** 评论者信息字段，默认 nick、mail、link */
 	meta?: ("nick" | "mail" | "link")[];
 	/** 必填信息字段，默认空数组（允许匿名） */
 	requiredMeta?: ("nick" | "mail" | "link")[];
-	/** 表情预设地址与自定义配置的混合数组；false 关闭，true 使用 Waline 默认表情包 */
-	emoji?: (WalineEmojiInfo | WalineEmojiPresets)[] | boolean;
+	/** 登录模式：enable（默认）/ disable / force */
+	login?: "enable" | "disable" | "force";
+	/** 评论字数限制，设置为 0 时无限制 */
+	wordLimit?: number | [number, number];
+	/** 每页评论条数，默认 10 */
+	pageSize?: number;
 	/** 图片上传开关，默认 true（Waline 将图片编码为 Base64） */
-	imageUploader?: boolean;
+	imageUploader?: WalineImageUploader | boolean;
+	/** 代码高亮，默认 true（使用一个 <1kB 的简单高亮器） */
+	highlighter?: WalineHighlighter | boolean;
+	/** TeX 渲染 */
+	texRenderer?: WalineTeXRenderer | boolean;
+	/** 是否隐藏页脚版权信息 */
+	noCopyright?: boolean;
+	/** 是否隐藏 RSS 订阅链接 */
+	noRss?: boolean;
+	/** reCAPTCHA v3 密钥 */
+	recaptchaV3Key?: string;
+	/** Cloudflare Turnstile 密钥 */
+	turnstileKey?: string;
 	/** 文章表情反应；默认 false，也可提供表情图片 URL 数组 */
 	reaction?: boolean | string[];
 }
