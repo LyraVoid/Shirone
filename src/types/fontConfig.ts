@@ -5,16 +5,19 @@
  */
 export type FontMode = "system" | "custom";
 
+/** 全部字体角色，数组顺序即字体栈的组合顺序 */
+export const FONT_ROLES = ["body", "cjk", "mono", "mono-cjk"] as const;
+
 /**
  * 字体在设计系统中的角色划分：
  * - `"body"`：正文字体（主要用于西文、数字及默认文本，对应 CSS 变量 `--font-body`）。
  * - `"cjk"`：中日韩文本字体（用于汉字、假名等 CJK 字符展示，对应 CSS 变量 `--font-cjk`）。
  * - `"mono"`：等宽代码字体（用于代码块、行内代码、终端、图表标签，对应 CSS 变量 `--font-mono` / `--m3e-font-mono-family`）。
  * - `"mono-cjk"`：可选的代码 CJK 补充字体（用于代码/终端中的汉字等，对应 CSS 变量
- *   `--font-mono-cjk`）。配置后与 `mono` 组成 `mono → mono-cjk → 系统等宽` 的栈；
+ *   `--font-mono-cjk`）。配置后与 `mono` 组成 `mono → mono-cjk` 的栈；
  *   未配置时行为与只有 `mono` 时完全一致。
  */
-export type FontRole = "body" | "cjk" | "mono" | "mono-cjk";
+export type FontRole = (typeof FONT_ROLES)[number];
 
 /**
  * 字体资源来源：

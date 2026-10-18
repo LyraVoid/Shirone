@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import { getFontFallbackOptions } from "../src/integration/font-fallback.ts";
+import { FONT_ROLES } from "../src/types/fontConfig.ts";
 import {
 	createFontRoleStyle,
+	getConfiguredFontRoles,
 	getFontsourceImports,
 	getLocalFontVariants,
 	resolveFontOptions,
@@ -274,8 +277,18 @@ describe("Font Configuration & Resolver Tests", () => {
 			/--m3e-font-mono-stack:\s*var\(--font-mono-base\),\s*var\(--font-mono-cjk\);/,
 		);
 		assert.match(style, /--font-mono:\s*var\(--m3e-font-mono-stack\);/);
+		assert.match(
+			style,
+			/--m3e-font-mono-family:\s*var\(--m3e-font-mono-stack\);/,
+		);
+		assert.doesNotMatch(style, /--m3e-font-mono-family:\s*"Mono";/);
 		// The hashed --font-mono-cjk is emitted by Astro's <Font>, not here.
 		assert.doesNotMatch(style, /--font-mono-cjk:\s*"Mono CJK";/);
+		assert.deepEqual(getConfiguredFontRoles(resolved), [
+			"body",
+			"mono",
+			"mono-cjk",
+		]);
 	});
 
 	it("allows mono-cjk without a mono role and falls back for the Latin link", () => {
@@ -334,6 +347,33 @@ describe("Font Configuration & Resolver Tests", () => {
 			style,
 			/--m3e-font-mono-stack:\s*var\(--m3e-font-mono-fallback\),\s*var\(--font-mono-cjk\);/,
 		);
+	});
+
+	it("keeps one canonical role list and derives Astro fallback options from it", () => {
+		assert.deepEqual([...FONT_ROLES], ["body", "cjk", "mono", "mono-cjk"]);
+
+		const system = resolveFontOptions({
+			mode: "system",
+			fontFamilies: [],
+			subsetting: {
+				enable: false,
+				includeContent: false,
+				includeI18n: false,
+				includeConfig: false,
+				includeCommon: true,
+				allowRemoteText: false,
+			},
+			budget: { maxTotalBytes: 4194304, maxFamilyBytes: 2097152 },
+		});
+		assert.deepEqual(Object.keys(system.roles), [...FONT_ROLES]);
+		assert.deepEqual(getConfiguredFontRoles(system), []);
+
+		const composite = { fallbacks: [], optimizedFallbacks: false };
+		assert.deepEqual(getFontFallbackOptions("body", false), composite);
+		assert.deepEqual(getFontFallbackOptions("cjk", false), composite);
+		assert.deepEqual(getFontFallbackOptions("mono", false), {});
+		assert.deepEqual(getFontFallbackOptions("mono", true), composite);
+		assert.deepEqual(getFontFallbackOptions("mono-cjk", true), {});
 	});
 
 	it("rejects invalid font paths, remote URLs and duplicate roles", () => {

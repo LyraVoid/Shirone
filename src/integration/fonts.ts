@@ -9,8 +9,10 @@ import {
 	writeFile,
 } from "node:fs/promises";
 import { basename, extname, join } from "node:path";
+import { FONT_ROLES } from "../types/fontConfig.ts";
 import type { MetingMusicConfig, MusicProvider } from "../types/musicConfig.ts";
 import { buildMetingUrl } from "../utils/music/meting.ts";
+import { getFontFallbackOptions } from "./font-fallback.ts";
 import { loadConfigModule } from "./resolve/load-config.ts";
 import type { ResolvedShironesPaths } from "./types.ts";
 
@@ -420,20 +422,16 @@ export async function buildFontDeclarations(
 	const declarations: unknown[] = [];
 	const hasMonoCjk = Boolean(resolvedFontOptions.roles["mono-cjk"]?.family);
 
-	for (const role of ["body", "cjk", "mono", "mono-cjk"]) {
+	for (const role of FONT_ROLES) {
 		const resolvedRole = resolvedFontOptions.roles[role];
 		if (!resolvedRole?.family) continue;
 
 		// `body` and `cjk` compose one sans stack, and `mono` joins them when a
 		// `mono-cjk` supplement exists. In all three cases Astro's automatic
 		// fallback metrics must stay off: the theme composes the language order
-		// itself (`mono → mono-cjk → system mono`) and a second fallback family
-		// inside the variable would sit before the supplement.
-		const isCompositeSans =
-			role === "body" || role === "cjk" || (role === "mono" && hasMonoCjk);
-		const fallbackOpts = isCompositeSans
-			? { fallbacks: [], optimizedFallbacks: false }
-			: {};
+		// itself and a second fallback family inside the variable would sit
+		// before the supplement.
+		const fallbackOpts = getFontFallbackOptions(role, hasMonoCjk);
 
 		const localVariants = resolvedRole.variants.filter(
 			(v) => v.source === "local",

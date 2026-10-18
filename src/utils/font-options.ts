@@ -1,11 +1,12 @@
-import type {
-	FontConfig,
-	FontFamilyDefinition,
-	FontRole,
-	FontVariant,
-	ResolvedFontOptions,
-	ResolvedFontRole,
-} from "../types/fontConfig";
+import {
+	FONT_ROLES,
+	type FontConfig,
+	type FontFamilyDefinition,
+	type FontRole,
+	type FontVariant,
+	type ResolvedFontOptions,
+	type ResolvedFontRole,
+} from "../types/fontConfig.ts";
 
 /** 字体角色对应的 CSS 变量映射 */
 const ROLE_VARIABLES: Record<FontRole, ResolvedFontRole["cssVariable"]> = {
@@ -120,8 +121,8 @@ function validateFamily(definition: FontFamilyDefinition, index: number): void {
 		fail(`${path}.id`, "must be a stable kebab-case identifier");
 	if (!FAMILY_NAME.test(definition.family))
 		fail(`${path}.family`, "contains unsupported CSS family characters");
-	if (!["body", "cjk", "mono", "mono-cjk"].includes(definition.role))
-		fail(`${path}.role`, "must be body, cjk, mono, or mono-cjk");
+	if (!(FONT_ROLES as readonly string[]).includes(definition.role))
+		fail(`${path}.role`, `must be ${FONT_ROLES.join(", ")}`);
 	if (!["local", "fontsource"].includes(definition.source))
 		fail(`${path}.source`, "must be local or fontsource");
 	if (definition.variants.length === 0)
@@ -174,12 +175,9 @@ export function resolveFontOptions(config: FontConfig): ResolvedFontOptions {
 		fail("budget.maxFamilyBytes", "cannot exceed budget.maxTotalBytes");
 	}
 
-	const roles: Record<FontRole, ResolvedFontRole> = {
-		body: emptyRole("body"),
-		cjk: emptyRole("cjk"),
-		mono: emptyRole("mono"),
-		"mono-cjk": emptyRole("mono-cjk"),
-	};
+	const roles = Object.fromEntries(
+		FONT_ROLES.map((role) => [role, emptyRole(role)]),
+	) as Record<FontRole, ResolvedFontRole>;
 	const seenRoles = new Set<FontRole>();
 
 	config.fontFamilies.forEach((definition, index) => {
@@ -218,7 +216,8 @@ export function resolveFontOptions(config: FontConfig): ResolvedFontOptions {
 
 	// A `mono-cjk` supplement turns `mono` into the family-only first link of a
 	// composed stack. Astro emits it as `--font-mono-base`; the theme then composes
-	// `--font-mono` / `--m3e-font-mono-family` as `mono → mono-cjk → system mono`.
+	// `--font-mono` / `--m3e-font-mono-family` as `mono → mono-cjk (plus its
+	// fallbacks) → system mono`.
 	if (
 		config.mode === "custom" &&
 		roles["mono-cjk"].family &&
@@ -231,9 +230,7 @@ export function resolveFontOptions(config: FontConfig): ResolvedFontOptions {
 		schemaVersion: 1,
 		mode: config.mode,
 		roles,
-		preloadRoles: (Object.keys(roles) as FontRole[]).filter(
-			(role) => roles[role].preload,
-		),
+		preloadRoles: FONT_ROLES.filter((role) => roles[role].preload),
 		subsetting: { ...config.subsetting },
 		budget: { ...config.budget },
 	};
@@ -248,30 +245,41 @@ export function quoteFontFamily(family: string): string {
  * 根据解析后的字体选项生成注入到 HTML `<head>` 的 CSS 变量定义
  */
 export function createFontRoleStyle(options: ResolvedFontOptions): string {
-	const declarations = (Object.keys(options.roles) as FontRole[])
-		.map((role) => {
-			const resolved = options.roles[role];
-			if (!resolved.family) return "";
-			// Astro's <Font> owns the hashed `--font-mono-cjk`; the inline style only
-			// composes it into the mono stack below.
-			if (role === "mono-cjk") return "";
-			return `\t--${role === "mono" ? "m3e-font-mono-family" : `font-${role}`}: ${quoteFontFamily(resolved.family)};`;
-		})
-		.filter(Boolean);
+	const hasMonoCjk = Boolean(options.roles["mono-cjk"].family);
+	const declarations = FONT_ROLES.map((role) => {
+		const resolved = options.roles[role];
+		if (!resolved.family) return "";
+		// Astro's <Font> owns the hashed `--font-mono-cjk`; the inline style only
+		// composes it into the mono stack below.
+		if (role === "mono-cjk") return "";
+		// With a supplement the mono family is the first stack link, not the
+		// complete value. Emit the composed alias below so this rule does not
+		// depend on stylesheet order.
+		if (role === "mono" && hasMonoCjk) return "";
+		return `\t--${role === "mono" ? "m3e-font-mono-family" : `font-${role}`}: ${quoteFontFamily(resolved.family)};`;
+	}).filter(Boolean);
 
-	const monoCjk = options.roles["mono-cjk"];
-	if (monoCjk.family) {
+	if (hasMonoCjk) {
 		const monoBase = options.roles.mono.family
 			? "var(--font-mono-base)"
 			: "var(--m3e-font-mono-fallback)";
 		declarations.push(
 			`\t--m3e-font-mono-stack: ${monoBase}, var(--font-mono-cjk);`,
+			"\t--m3e-font-mono-family: var(--m3e-font-mono-stack);",
 			"\t--font-mono: var(--m3e-font-mono-stack);",
 		);
 	}
 
 	const body = declarations.join("\n");
 	return body ? `:root {\n${body}\n}` : "";
+}
+
+/** 返回当前模式下实际配置了 family 的字体角色，顺序与 FONT_ROLES 一致 */
+export function getConfiguredFontRoles(
+	options: ResolvedFontOptions,
+): FontRole[] {
+	if (options.mode !== "custom") return [];
+	return FONT_ROLES.filter((role) => Boolean(options.roles[role].family));
 }
 
 /**
