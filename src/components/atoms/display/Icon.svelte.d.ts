@@ -18,11 +18,9 @@ export interface IconProps {
 	width?: number | string;
 	/** Rendered height. */
 	height?: number | string;
-	/** Sizing shorthand; `width`/`height` win when both are present. */
-	size?: number | string;
 	/** Flip/rotate transforms, as `@iconify/svelte` spells them. */
 	flip?: string;
-	rotate?: number | string;
+	rotate?: number;
 	/** Marks the icon decorative for assistive technology. */
 	"aria-hidden"?: boolean | "true" | "false";
 	/** Classes for the rendered `<svg>`, forwarded with the other props. */

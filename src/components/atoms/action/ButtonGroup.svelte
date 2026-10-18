@@ -111,9 +111,9 @@ $effect(() => {
 				// 全部项先恢复可见以便测量
 				containerEl
 					.querySelectorAll(".m3-button-group__item--hidden")
-					.forEach((el) =>
-						el.classList.remove("m3-button-group__item--hidden"),
-					);
+					.forEach((el) => {
+						el.classList.remove("m3-button-group__item--hidden");
+					});
 				measure();
 			}
 		});
@@ -151,14 +151,18 @@ function onItemPointerDown(i: number) {
 		compressed += share;
 	});
 	ws[i] = active + growth - (compressed - growth); // 修正舍入，总宽不变
-	itemEls.forEach((el, j) => (el.style.width = `${ws[j]}px`));
+	itemEls.forEach((el, j) => {
+		el.style.width = `${ws[j]}px`;
+	});
 }
 
 function resetWidths() {
 	if (!containerEl) return;
 	containerEl
-		.querySelectorAll(".m3-button-group__item")
-		.forEach((el) => (el.style.width = ""));
+		.querySelectorAll<HTMLElement>(".m3-button-group__item")
+		.forEach((el) => {
+			el.style.width = "";
+		});
 }
 
 function onItemPointerUp() {

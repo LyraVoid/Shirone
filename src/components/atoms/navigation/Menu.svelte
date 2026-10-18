@@ -59,9 +59,11 @@ $effect(() => {
 		if (e.key === "Escape") open = false;
 	};
 	const onClick = (e: MouseEvent) => {
-		if (menuEl && !menuEl.contains(e.target as Node)) {
+		const target = e.target;
+		if (!(target instanceof Node)) return;
+		if (menuEl && !menuEl.contains(target)) {
 			// 点击落在其他菜单（role="menu"）内时不关闭，支持多菜单共存
-			if ((e.target as Node).closest?.('[role="menu"]')) return;
+			if (target instanceof Element && target.closest('[role="menu"]')) return;
 			open = false;
 		}
 	};

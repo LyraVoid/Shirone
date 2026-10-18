@@ -111,9 +111,8 @@ const resolvedWidth = $derived(
 
 // 响应式派生：progress 变化时实时重算（const 只算一次会导致滑块拖动不更新）
 const determinate = $derived(progress !== undefined && progress >= 0);
-const pct = $derived(
-	determinate ? Math.max(0, Math.min(100, progress * 100)) : 0,
-);
+const p = $derived(progress ?? 0);
+const pct = $derived(determinate ? Math.max(0, Math.min(100, p * 100)) : 0);
 // circular：动态尺寸（size 直径 / strokeWidth 厚度），wavy 默认 48（官方 WaveSize）
 const resolvedSize = $derived(size ?? (wavy ? 48 : 40));
 const circCenter = $derived(resolvedSize / 2);
@@ -147,7 +146,7 @@ const wavyLinearHeadPx = $derived(
 				0,
 				Math.min(
 					resolvedWidth - wavyCapW,
-					Math.max(wavyCapW, progress * resolvedWidth),
+					Math.max(wavyCapW, p * resolvedWidth),
 				),
 			)
 		: 0,
@@ -207,8 +206,8 @@ const wavyAmpTarget = $derived(
 	wavy
 		? determinate
 			? typeof amplitude === "function"
-				? amplitude(progress)
-				: (amplitude ?? officialIndicatorAmplitude(progress))
+				? amplitude(p)
+				: (amplitude ?? officialIndicatorAmplitude(p))
 			: typeof amplitude === "number"
 				? amplitude
 				: 1
@@ -315,7 +314,7 @@ const wavyStarD = $derived(
 	                {#if wavyLinearTrackX2 > wavyLinearTrackX1}
 	                    <line x1={wavyLinearTrackX1} x2={wavyLinearTrackX2} y1="5" y2="5" stroke={trackColor} stroke-width={strokeWidth} stroke-linecap={strokeCap}></line>
 	                {/if}
-	                {#if progress > 0}
+	                {#if p > 0}
 	                    <g class="m3-progress__wavy-group" clip-path={`url(#${clipId})`}>
 	                        <path class:m3-progress__wavy-flow={wavyAmp > 0} d={wavyLinearPathD}
 	                              fill="none" stroke={color} stroke-width={strokeWidth} stroke-linecap={strokeCap}></path>
@@ -372,8 +371,8 @@ const wavyStarD = $derived(
                 fill="none"
                 stroke-width={strokeWidth}
                 stroke-linecap={strokeCap}
-                stroke-dasharray={`${Math.max(CIRC * (1 - progress) - gapPx * 2, 0)} ${CIRC}`}
-                stroke-dashoffset={`${-(CIRC * progress + gapPx)}`}
+                stroke-dasharray={`${Math.max(CIRC * (1 - p) - gapPx * 2, 0)} ${CIRC}`}
+                stroke-dashoffset={`${-(CIRC * p + gapPx)}`}
             ></circle>
             <path
                 class="m3-progress__wavy-circ-star"
@@ -384,7 +383,7 @@ const wavyStarD = $derived(
                 stroke={color}
                 stroke-width={strokeWidth}
                 stroke-linecap={strokeCap}
-                stroke-dasharray={`${progress * 100} ${100 - progress * 100}`}
+                stroke-dasharray={`${p * 100} ${100 - p * 100}`}
             ></path>
         {:else}
             <g class="m3-progress__wavy-circ-rotator">
@@ -458,8 +457,8 @@ const wavyStarD = $derived(
                 fill="none"
                 stroke-width={strokeWidth}
                 stroke-linecap="round"
-                stroke-dasharray={`${Math.max(CIRC * (1 - progress) - gapPx * 2, 0)} ${CIRC}`}
-                stroke-dashoffset={`${-(CIRC * progress + gapPx)}`}
+                stroke-dasharray={`${Math.max(CIRC * (1 - p) - gapPx * 2, 0)} ${CIRC}`}
+                stroke-dashoffset={`${-(CIRC * p + gapPx)}`}
             ></circle>
             <circle
                 class="m3-progress__active"
@@ -469,7 +468,7 @@ const wavyStarD = $derived(
                 fill="none"
                 stroke-width={strokeWidth}
                 stroke-linecap="round"
-                stroke-dasharray={`${CIRC * progress} ${CIRC}`}
+                stroke-dasharray={`${CIRC * p} ${CIRC}`}
                 stroke-dashoffset="0"
             ></circle>
         {:else}

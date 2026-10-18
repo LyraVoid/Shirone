@@ -80,6 +80,9 @@ jobs:
       - name: Check Astro diagnostics
         run: pnpm exec astro check
 
+      - name: Check Svelte diagnostics
+        run: pnpm dlx svelte-check@4.7.6 --tsconfig ./tsconfig.json --threshold error
+
       - name: Validate atom manifest
         run: pnpm check:manifest
 

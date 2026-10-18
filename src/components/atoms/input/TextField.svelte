@@ -1,4 +1,6 @@
 <script lang="ts">
+import type { FullAutoFill } from "svelte/elements";
+
 /**
  * M3E TextField — M3 文本输入原子（官方 TextField 移植）。
  * variant: filled（默认，surface-container-high + 底部下划线 focus 亮起）/
@@ -64,7 +66,7 @@ let focused = $state(false);
             aria-invalid={error ? "true" : undefined}
             aria-describedby={error && id ? `${id}-error` : undefined}
             {disabled}
-            autocomplete={autocomplete || undefined}
+            autocomplete={(autocomplete || undefined) as FullAutoFill | undefined}
             onfocus={() => {
                 focused = true;
                 onfocus();

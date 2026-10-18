@@ -110,8 +110,9 @@ onMount(() => {
 	initialized = true;
 
 	if (!gridEl) return;
-	setupMasonry(gridEl);
-	document.fonts?.ready.then(() => packMasonry(gridEl)).catch(() => {});
+	const grid = gridEl;
+	setupMasonry(grid);
+	document.fonts?.ready.then(() => packMasonry(grid)).catch(() => {});
 	return () => {
 		phaseTimers.forEach(clearTimeout);
 	};
@@ -121,7 +122,8 @@ $effect(() => {
 	// 依赖 filteredItems 与 phase：过滤完成回到 idle 状态后重新打包
 	filteredItems;
 	if (phase === "idle" && gridEl) {
-		requestAnimationFrame(() => packMasonry(gridEl));
+		const grid = gridEl;
+		requestAnimationFrame(() => packMasonry(grid));
 	}
 });
 </script>
