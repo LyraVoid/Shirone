@@ -113,9 +113,12 @@ export function resolveSkillsData(
  * 排序主要基于起始时间（若起始时间相同则比较结束时间）。
  * 无法识别的格式返回负无穷（desc排在末尾）。
  */
-export function parseTimelineDateKey(dateStr: string): { start: number; end: number } {
+export function parseTimelineDateKey(dateStr: string): {
+	start: number;
+	end: number;
+} {
 	if (!dateStr || typeof dateStr !== "string") {
-		return { start: -Infinity, end: -Infinity };
+		return { start: Number.NEGATIVE_INFINITY, end: Number.NEGATIVE_INFINITY };
 	}
 
 	const parts = dateStr.split(/\s*(?:–|-|—|~|to)\s*/i);
@@ -123,7 +126,8 @@ export function parseTimelineDateKey(dateStr: string): { start: number; end: num
 	const endPart = parts[1]?.trim();
 
 	const parseSingleDate = (str: string | undefined, isEnd = false): number => {
-		if (!str) return isEnd ? -Infinity : -Infinity;
+		if (!str)
+			return isEnd ? Number.NEGATIVE_INFINITY : Number.NEGATIVE_INFINITY;
 		const normalized = str.toLowerCase();
 		if (
 			normalized === "present" ||
@@ -131,19 +135,19 @@ export function parseTimelineDateKey(dateStr: string): { start: number; end: num
 			normalized === "current" ||
 			str.includes("今")
 		) {
-			return Infinity;
+			return Number.POSITIVE_INFINITY;
 		}
 
 		// 匹配形如 2026.08, 2026-08, 2026/08, 2026.08.12
 		const match = str.match(/(\d{4})(?:[.\-/](\d{1,2}))?(?:[.\-/](\d{1,2}))?/);
-		if (!match) return -Infinity;
+		if (!match) return Number.NEGATIVE_INFINITY;
 
 		const year = Number.parseInt(match[1], 10);
-		const month = match[2] ? Number.parseInt(match[2], 10) - 1 : (isEnd ? 11 : 0);
-		const day = match[3] ? Number.parseInt(match[3], 10) : (isEnd ? 28 : 1);
+		const month = match[2] ? Number.parseInt(match[2], 10) - 1 : isEnd ? 11 : 0;
+		const day = match[3] ? Number.parseInt(match[3], 10) : isEnd ? 28 : 1;
 
 		const d = new Date(Date.UTC(year, month, day));
-		return Number.isNaN(d.getTime()) ? -Infinity : d.getTime();
+		return Number.isNaN(d.getTime()) ? Number.NEGATIVE_INFINITY : d.getTime();
 	};
 
 	const start = parseSingleDate(startPart, false);

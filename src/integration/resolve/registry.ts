@@ -14,7 +14,12 @@ export const CONFIG_EXTENSIONS: string[] = [".ts", ".mts", ".js", ".mjs"];
  * overridable despite the comment claiming otherwise.
  */
 const BARREL_RE = /(?:^|\/)index\.(ts|js|mts|mjs)$/;
-export const COMPONENT_EXTENSIONS: string[] = [".astro", ".svelte", ".ts", ".js"];
+export const COMPONENT_EXTENSIONS: string[] = [
+	".astro",
+	".svelte",
+	".ts",
+	".js",
+];
 
 /** Strip a known source extension from a path. */
 function stripExtension(path: string): string {

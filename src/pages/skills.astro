@@ -3,8 +3,8 @@
 import SkillSection from "@components/organisms/SkillSection.svelte";
 import I18nKey from "@i18n/i18nKey";
 import MainGridLayout from "@layouts/MainGridLayout.astro";
-import { skillsConfig } from "@/config/skillsConfig";
 import { resolveI18nText } from "@utils/i18n-utils";
+import { skillsConfig } from "@/config/skillsConfig";
 import { resolveSkillsData } from "@/utils/feature-data";
 
 if (!skillsConfig.enable) {
@@ -12,7 +12,10 @@ if (!skillsConfig.enable) {
 }
 
 const pageTitle = resolveI18nText(skillsConfig.title, I18nKey.skills);
-const pageDescription = resolveI18nText(skillsConfig.description, I18nKey.skillsBanner);
+const pageDescription = resolveI18nText(
+	skillsConfig.description,
+	I18nKey.skillsBanner,
+);
 
 const items = resolveSkillsData(skillsConfig);
 ---

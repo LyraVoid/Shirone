@@ -5,16 +5,19 @@ import I18nKey from "@i18n/i18nKey";
 import MainGridLayout from "@layouts/MainGridLayout.astro";
 import { resolveImageAsset } from "@utils/asset-utils";
 import { getSortedMoments } from "@utils/content-utils";
+import { resolveI18nText } from "@utils/i18n-utils";
 import { url } from "@utils/url-utils";
 import { momentsConfig, profileConfig } from "@/config";
-import { resolveI18nText } from "@utils/i18n-utils";
 
 if (!momentsConfig.enable) {
 	return Astro.redirect("/404/");
 }
 
 const pageTitle = resolveI18nText(momentsConfig.title, I18nKey.moments);
-const pageDescription = resolveI18nText(momentsConfig.description, I18nKey.momentsBanner);
+const pageDescription = resolveI18nText(
+	momentsConfig.description,
+	I18nKey.momentsBanner,
+);
 
 const moments = await getSortedMoments();
 const avatarAsset = await resolveImageAsset(profileConfig.avatar ?? "");
