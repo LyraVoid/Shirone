@@ -23,7 +23,7 @@
 ## 2. 参考实现文件
 
 | 文件 | 职责 |
-|---|---|
+| --- | --- |
 | `src/config/commentConfig.ts` | 配置单一真源 + `resolveCommentOptions()` 校验 |
 | `src/types/commentConfig.ts` | 配置类型（字段带中文注释） |
 | `src/components/organisms/comment/CommentSection.astro` | 消费方：短路 + 动态导入 |
@@ -62,9 +62,9 @@ if (!options || !postCommentEnabled) {
 ```
 
 - 规则：可选特性默认 `enable: false`；校验逻辑收敛在 config 的 `resolve*Options()` 里，组件只消费解析结果。
-- 多 Provider 特性（如评论的 twikoo / giscus / waline）：`resolve*Options()` 返回判别联合，
+- 多 Provider 特性（如评论的 Twikoo / Giscus / Waline）：`resolve*Options()` 返回判别联合，
   每个分支校验各自的必填字段——Giscus 的 `repo` / `repoId` / `categoryId`
-  任一缺失同样返回 `null`，与未启用完全等价。Waline 配置块可省略以兼容旧配置；
+  任一缺失同样返回 `null`，与未启用完全等价。
   选中 Waline 后，`serverURL` 必须是有效 HTTP(S) 地址，`scriptUrl` / `styleUrl`
   必须非空，否则同样不渲染评论区。
 
@@ -198,7 +198,7 @@ test("...", async ({ page }) => {
 ## 5. 常见陷阱小结
 
 | 陷阱 | 说明 | 解法 |
-|---|---|---|
+| --- | --- | --- |
 | Astro CSS 提升 | 组件内 `<style>` / `?url` / `?inline` 导入会被收集进共享 CSS，所有页面加载 | `<style is:inline>` + 构建期编译（§3 L3） |
 | `import.meta.env` 开关 | 非 Vite 上下文（Node 配置加载）下为 `undefined`，直接崩溃 | 开关走 config 字面量，不用 env |
 | 测试依赖默认开启 | 默认关闭后 UI 测试失败 | `test.skip` 守卫（§4.3） |

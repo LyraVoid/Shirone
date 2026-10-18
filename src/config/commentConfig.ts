@@ -95,7 +95,7 @@ export const commentConfig: CommentConfig = withUserConfig("comment", {
 		/** 可选文案覆盖；省略的字段使用 Waline 当前语言默认值 */
 		locale: {
 			/** 评论输入框提示；空字符串不显示提示 */
-			placeholder: "",
+			placeholder: "Share your thoughts...",
 		},
 		/** false 关闭表情，true 使用默认表情；也可混合填写预设 URL 与自定义表情对象 */
 		emoji: true,

@@ -46,7 +46,7 @@ description: Configuring a Shirone blog site - site identity, theme colors, navi
 
 可选功能在关闭或未配置时必须**零开销**(零请求/零 DOM/零 bundle)；是否默认启用由现有产品配置决定，不得在修改 skill 时擅自改变。启用时:
 
-1. 在对应 `*Config.ts` 置 `enable: true` 并填写凭据（如 Twikoo 的 `envId`、Giscus 的 `repo` / `repoId` / `categoryId` 三必填，或 Waline 的 `ServerURL`）;
+1. 在对应 `*Config.ts` 置 `enable: true` 并填写凭据（如 Twikoo 的 `envId`、Giscus 的 `repo` / `repoId` / `categoryId` 三必填，或 Waline 的 `serverURL`）;
 2. 部分功能需同时满足多条件,如侧栏音乐要求:`musicConfig.enable` + 数据源有有效曲目 + `sidebarConfig.components` 中 music 条目 `enable: true`;
 3. 侧栏 widget 的显隐/分栏/页面范围在 `sidebarConfig.ts` 编排;
 4. 页面级开关(如 skills/projects)关闭时导航入口同步隐藏;系列功能还提供 `LinkPresets.Series`(`/series/`)预设但不在默认导航列表中,需用户自行加入 `src/config/navBarConfig.ts`,其内容仓覆盖文件为 `config/series.yaml`(领域键 `series`)。
