@@ -1,5 +1,6 @@
 ---
 import Button from "@components/atoms/action/Button.svelte";
+import Icon from "@components/atoms/display/Icon.svelte";
 import LoadingIndicator from "@components/atoms/feedback/LoadingIndicator.svelte";
 import I18nKey from "@i18n/i18nKey";
 import { i18n } from "@i18n/translation";
@@ -73,6 +74,7 @@ const walineStylus = `
 	--waline-info-color: var(--on-surface-variant)
 	--waline-avatar-radius: var(--shape-corner-full)
 	--waline-box-shadow: none
+	--shirone-waline-control-size: var(--m3e-space-10)
 
 	.waline-loading:not([hidden])
 		display: flex
@@ -102,26 +104,185 @@ const walineStylus = `
 	.waline-upload-label
 		display: none
 
-	.waline-upload
+	.wl-comment
+		gap: var(--m3e-space-3)
+
+	.wl-panel
+		box-sizing: border-box
+		min-width: 0
+		margin: 0
+		border: 1px solid var(--outline-variant)
+		border-radius: var(--shape-corner-l)
+
+	.wl-header
+		display: grid
+		grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr))
+		gap: var(--m3e-space-2)
+		overflow: visible
+		padding: var(--m3e-space-3)
 		border: none
+		border-radius: inherit
+
+	.wl-header .wl-header-item
+		display: flex
+		flex-direction: column
+		min-width: 0
+		width: auto
+		padding: var(--m3e-space-2) var(--m3e-space-3)
+		border: 1px solid var(--outline-variant)
+		border-radius: var(--shape-corner-m)
+		background: var(--surface-container-low)
+		transition: border-color var(--m3e-duration-short) var(--m3e-easing-standard), box-shadow var(--m3e-duration-short) var(--m3e-easing-standard)
+
+	.wl-header .wl-header-item:focus-within
+		border-color: var(--primary)
+		box-shadow: inset 0 0 0 1px var(--primary)
+
+	.wl-header label
+		min-width: 0
+		padding: 0
+		color: var(--on-surface-variant)
+		font: var(--m3e-type-body-small)
+		text-align: start
+
+	.wl-header-item:focus-within label
+		color: var(--primary)
+
+	.wl-header input.wl-input
+		flex: auto
+		min-width: 0
+		width: 100%
+		min-height: var(--m3e-space-6)
+		padding: 0
+		border: none
+		border-radius: 0
+		background: transparent
+		font: var(--m3e-type-body-large)
+
+	.wl-header input.wl-input:focus
 		background: transparent
 
-	.wl-panel, .wl-btn, .wl-input, .wl-editor
-		border-radius: var(--shape-corner-m)
-
-	.wl-input, .wl-editor
+	.wl-editor
 		min-width: 0
-		font: var(--m3e-type-body-medium)
+		width: calc(100% - var(--m3e-space-3) * 2)
+		margin: 0 var(--m3e-space-3) var(--m3e-space-2)
+		padding: var(--m3e-space-3)
+		border: 1px solid var(--outline-variant)
+		border-radius: var(--shape-corner-m)
+		background: var(--surface-container-low)
+		font: var(--m3e-type-body-large)
 
-	.wl-header label, .wl-power, .wl-word
+	// Logged-in and metadata-free editors have no header to provide top spacing.
+	.wl-panel > .wl-editor:first-child
+		margin-block-start: var(--m3e-space-3)
+
+	.wl-editor:focus
+		border-color: var(--primary)
+		box-shadow: inset 0 0 0 1px var(--primary)
+		background: var(--surface-container-low)
+
+	.wl-footer
+		align-items: center
+		gap: var(--m3e-space-2)
+		margin: var(--m3e-space-2) var(--m3e-space-3) var(--m3e-space-3)
+
+	.wl-actions
+		flex: 1 1 auto
+		flex-wrap: wrap
+		gap: var(--m3e-space-1)
+
+	button.wl-action, a.wl-action, .wl-close
+		display: inline-flex
+		align-items: center
+		justify-content: center
+		flex-shrink: 0
+		width: var(--shirone-waline-control-size)
+		height: var(--shirone-waline-control-size)
+		margin: 0
+		padding: 0
+		border: none
+		border-radius: var(--shape-corner-m)
+		background: transparent
+		color: var(--on-surface-variant)
+
+	.wl-action.active
+		background: var(--secondary-container)
+		color: var(--on-secondary-container)
+		--m3e-state-color: var(--on-secondary-container)
+
+	.waline-icon-button > svg:not(.waline-icon)
+		display: none
+
+	.waline-icon
+		width: var(--m3e-space-6)
+		height: var(--m3e-space-6)
+		pointer-events: none
+
+	// Keep the reply action in its own row, outside the fields and their focus rings.
+	.wl-comment:has(> .wl-close)
+		padding-block-start: calc(var(--shirone-waline-control-size) + var(--m3e-space-2))
+
+	.wl-close
+		inset-inline-end: 0
+		top: 0
+		background: var(--secondary-container)
+		color: var(--on-secondary-container)
+		--m3e-state-color: var(--on-secondary-container)
+
+	.wl-meta-foot
+		flex-wrap: wrap
+		gap: var(--m3e-space-2)
+
+	.wl-meta-foot > .wl-rss
+		flex-wrap: wrap
+		gap: var(--m3e-space-2)
+		min-width: 0
+		max-width: none
+		overflow: visible
+		transition: none
+
+	.wl-meta-foot .wl-rss > a
+		box-sizing: border-box
+		display: inline-flex
+		align-items: center
+		gap: var(--m3e-space-2)
+		flex-shrink: 1
+		min-height: var(--shirone-waline-control-size)
+		max-width: 100%
+		padding: var(--m3e-space-2)
+		border-radius: var(--shape-corner-m)
+		color: var(--primary)
+		font: var(--m3e-type-body-small)
+		text-decoration: none
+
+	.wl-meta-foot .wl-rss span
+		color: inherit
+		font: inherit
+		text-align: start
+		overflow-wrap: anywhere
+
+	.wl-meta-foot .wl-rss .waline-icon
+		order: -1
+		flex-shrink: 0
+
+	.wl-power, .wl-word
 		font: var(--m3e-type-body-small)
 
 	.wl-btn
+		border-radius: var(--shape-corner-m)
 		font: var(--m3e-type-label-large)
 
 	.wl-btn, .wl-input, .wl-editor, .wl-sort li
 		transition-duration: var(--m3e-duration-short)
 		transition-timing-function: var(--m3e-easing-standard)
+
+@media (max-width: 600px)
+	.shirone-waline-wrapper .wl-header
+		grid-template-columns: minmax(0, 1fr)
+
+@media (pointer: coarse)
+	.shirone-waline-wrapper
+		--shirone-waline-control-size: calc(var(--m3e-space-6) * 2)
 
 /* !important boundary: Waline owns its generated animations/transitions;
    this integration enforces both Shirone and OS reduced-motion preferences. */
@@ -150,6 +311,22 @@ const walineStyles = await new Promise<string>((resolve, reject) => {
 	data-waline-lazy={lazy ? "true" : "false"}
 	data-waline-state="loading"
 >
+	<!-- SSR icon templates stay inert until the enabled SDK renders its controls. -->
+	<template data-waline-icon="emoji">
+		<Icon icon="material-symbols:sentiment-satisfied-outline-rounded" class="waline-icon" aria-hidden="true" />
+	</template>
+	<template data-waline-icon="image">
+		<Icon icon="material-symbols:image-outline-rounded" class="waline-icon" aria-hidden="true" />
+	</template>
+	<template data-waline-icon="preview">
+		<Icon icon="material-symbols:visibility-outline-rounded" class="waline-icon" aria-hidden="true" />
+	</template>
+	<template data-waline-icon="close">
+		<Icon icon="material-symbols:close-rounded" class="waline-icon" aria-hidden="true" />
+	</template>
+	<template data-waline-icon="rss">
+		<Icon icon="material-symbols:rss-feed-rounded" class="waline-icon" aria-hidden="true" />
+	</template>
 	<div class="waline-loading" role="status" hidden>
 		<span aria-hidden="true"><LoadingIndicator client:visible /></span>
 		<span>{i18n(I18nKey.commentsLoading)}</span>

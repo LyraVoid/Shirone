@@ -120,7 +120,7 @@ export const commentConfig: CommentConfig = withUserConfig("comment", {
 		/** 是否隐藏页脚版权信息 */
 		noCopyright: false,
 		/** 是否隐藏 RSS 订阅链接 */
-		noRss: false,
+		noRss: true,
 		/** reCAPTCHA v3 密钥 */
 		recaptchaV3Key: "",
 		/** Cloudflare Turnstile 密钥 */

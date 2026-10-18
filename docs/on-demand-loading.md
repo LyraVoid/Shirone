@@ -30,9 +30,11 @@
 | `src/components/organisms/comment/Twikoo.astro` | 特性组件：样式内嵌 + 运行时懒加载 |
 | `src/components/organisms/comment/Giscus.astro` | 第二个 Provider 参考实现：一次性脚本注入 + 主题事件同步 |
 | `src/components/organisms/comment/Waline.astro` | 第三个 Provider 参考实现：局部内联样式 + M3E token 适配 + 本地化加载/错误/无 JavaScript 提示 |
-| `src/utils/waline-runtime.ts` | Waline 自定义元素：JS/CSS 按需加载、超时重试、Swup 实例销毁与异步竞态防护 |
+| `src/utils/waline-runtime.ts` | Waline 自定义元素：JS/CSS 按需加载、超时重试、控件增强、Swup 实例销毁与异步竞态防护 |
 | `src/types/stylus.d.ts` | `stylus` 包最小类型声明（构建期编译样式用） |
 | `src/utils/script-loader.ts` | `loadScriptOnce(url, timeoutMs?)` 动态加载第三方 SDK 并去重；失败或超时后清理缓存以允许重试 |
+
+Waline 的工具栏、取消回复与 RSS 图标由 `Icon.svelte` 在启用的评论组件内 SSR 输出到惰性模板，不增加图标网络请求。运行时保留 SDK 的节点与事件，通过局部 `MutationObserver` 为后续回复表单和切换状态补齐图标、状态层与上传按钮键盘入口；页面断开时同时销毁观察器。RSS 页脚保留 SDK 的本地化文字和订阅链接，两个入口始终可见并按空间换行。输入框聚焦使用完整字段的 token 描边，样式仍只在 Waline 启用时输出。
 
 ---
 

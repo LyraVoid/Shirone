@@ -33,6 +33,7 @@ const RESOURCE_TIMEOUT_MS = 8_000;
 class ShironeWaline extends HTMLElement {
 	private instance?: WalineInstance;
 	private observer?: IntersectionObserver;
+	private controlsObserver?: MutationObserver;
 	private lifecycle?: AbortController;
 	private request?: AbortController;
 	private stylesheet?: HTMLLinkElement;
@@ -71,6 +72,7 @@ class ShironeWaline extends HTMLElement {
 		this.lifecycle?.abort();
 		this.request?.abort();
 		this.observer?.disconnect();
+		this.controlsObserver?.disconnect();
 		this.instance?.destroy();
 		this.instance = undefined;
 		this.stylesheet?.remove();
@@ -117,31 +119,102 @@ class ShironeWaline extends HTMLElement {
 		});
 	}
 
-	private setupUploadControl(container: HTMLElement): void {
-		// Waline 3.x 把带 aria-label 的 label 当上传按钮，缺少合法按钮语义与键盘入口。
-		// 保留 Vue 拥有的节点，用原生按钮代理同一个 file input；名称仍来自 SDK 本地化。
-		const label = container.querySelector<HTMLLabelElement>(
-			'label[for="wl-image-upload"][aria-label]',
-		);
-		const input = label?.control;
-		if (!label || !(input instanceof HTMLInputElement)) return;
-		const button = document.createElement("button");
-		button.type = "button";
-		button.className = "wl-action m3-state-layer waline-upload";
-		button.title = label.title;
-		button.setAttribute(
-			"aria-label",
-			label.getAttribute("aria-label") || label.title,
-		);
-		button.append(
-			...Array.from(label.childNodes, (node) => node.cloneNode(true)),
-		);
-		button.addEventListener("click", () => input.click(), {
-			signal: this.lifecycle?.signal,
+	private decorateControl(control: HTMLElement, icon: string): void {
+		for (const name of ["m3-state-layer", "waline-icon-button"]) {
+			if (!control.classList.contains(name)) control.classList.add(name);
+		}
+		if (!control.querySelector(":scope > .waline-icon")) {
+			const template = this.querySelector<HTMLTemplateElement>(
+				`template[data-waline-icon="${icon}"]`,
+			);
+			const glyph = template?.content.querySelector("svg");
+			if (glyph) control.append(glyph.cloneNode(true));
+		}
+		if (!control.hasAttribute("aria-label") && control.title) {
+			control.setAttribute("aria-label", control.title);
+		}
+		if (icon === "emoji" || icon === "preview") {
+			const pressed = String(control.classList.contains("active"));
+			if (control.getAttribute("aria-pressed") !== pressed)
+				control.setAttribute("aria-pressed", pressed);
+		}
+	}
+
+	private setupControls(container: HTMLElement): void {
+		const enhance = () => {
+			for (const actions of container.querySelectorAll<HTMLElement>(
+				".wl-actions",
+			)) {
+				// Waline 3.x keeps the emoji toggle first and the preview toggle last;
+				// optional GIF/upload controls are between them. Titles are localized.
+				const emoji = actions.querySelector<HTMLElement>(
+					":scope > button:first-of-type",
+				);
+				const preview = actions.querySelector<HTMLElement>(
+					":scope > button:last-child",
+				);
+				if (emoji) this.decorateControl(emoji, "emoji");
+				if (preview && preview !== emoji)
+					this.decorateControl(preview, "preview");
+
+				// Keep Vue's upload label, but proxy the adjacent input with a keyboard button.
+				// Query within this toolbar: reply forms reuse the SDK's input IDs.
+				const label = actions.querySelector<HTMLLabelElement>(
+					'label[for="wl-image-upload"][aria-label]',
+				);
+				const input =
+					actions.querySelector<HTMLInputElement>('input[type="file"]');
+				let upload = actions.querySelector<HTMLButtonElement>(".waline-upload");
+				if (label && input) {
+					if (!upload) {
+						upload = document.createElement("button");
+						upload.type = "button";
+						upload.className = "wl-action waline-upload";
+						upload.title = label.title;
+						upload.setAttribute(
+							"aria-label",
+							label.getAttribute("aria-label") || label.title,
+						);
+						upload.addEventListener("click", () => input.click(), {
+							signal: this.lifecycle?.signal,
+						});
+						label.before(upload);
+					}
+					if (!label.classList.contains("waline-upload-label"))
+						label.classList.add("waline-upload-label");
+					label.hidden = true;
+					this.decorateControl(upload, "image");
+				} else {
+					upload?.remove();
+				}
+				for (const control of actions.querySelectorAll(
+					"a.wl-action, button.wl-action",
+				)) {
+					if (!control.classList.contains("m3-state-layer"))
+						control.classList.add("m3-state-layer");
+				}
+			}
+			for (const link of container.querySelectorAll<HTMLAnchorElement>(
+				".wl-meta-foot .wl-rss > a",
+			)) {
+				this.decorateControl(link, "rss");
+			}
+			for (const close of container.querySelectorAll<HTMLElement>(
+				".wl-close",
+			)) {
+				this.decorateControl(close, "close");
+			}
+		};
+		enhance();
+		// Replies render later, and Vue rewrites toggle classes. Reapply only missing
+		// decoration; leave SDK-owned nodes and event handlers intact.
+		this.controlsObserver = new MutationObserver(enhance);
+		this.controlsObserver.observe(container, {
+			subtree: true,
+			childList: true,
+			attributes: true,
+			attributeFilter: ["class"],
 		});
-		label.classList.add("waline-upload-label");
-		label.hidden = true;
-		label.before(button);
 	}
 
 	private async mount(): Promise<void> {
@@ -171,11 +244,12 @@ class ShironeWaline extends HTMLElement {
 				throw new Error("Waline SDK unavailable");
 			container.hidden = false;
 			this.instance = sdk.init({ ...JSON.parse(walineOptions), el: container });
-			this.setupUploadControl(container);
+			this.setupControls(container);
 			this.setState("ready");
 		} catch (error) {
 			if (!this.isConnected || generation !== this.generation) return;
 			this.request.abort();
+			this.controlsObserver?.disconnect();
 			this.stylesheet?.remove();
 			container.replaceChildren();
 			this.setState("error");

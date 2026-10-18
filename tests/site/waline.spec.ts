@@ -1,5 +1,5 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, type Page, test } from "@playwright/test";
+import { expect, type Locator, type Page, test } from "@playwright/test";
 import {
 	commentConfig,
 	resolveCommentOptions,
@@ -21,7 +21,42 @@ window.__walineDestroyed = window.__walineDestroyed || [];
 window.Waline = {
 	init(options) {
 		window.__walineMounts.push({ ...options, el: undefined });
-		options.el.innerHTML = '<div class="wl-panel"><label>Comment<textarea class="wl-editor"></textarea></label><button class="wl-btn primary">Submit</button><label for="wl-image-upload" aria-label="Upload image"><span aria-hidden="true">Upload</span></label><input id="wl-image-upload" type="file" hidden></div>';
+		const legacyIcon = '<svg viewBox="0 0 1024 1024" width="24" height="24" aria-hidden="true"><path d="M0 0h1024v1024H0z" fill="currentColor" /></svg>';
+		const host = document.createElement('div');
+		function renderForm(reply = false) {
+			const form = document.createElement('div');
+			form.className = 'wl-comment';
+			form.innerHTML = '<form class="wl-panel"><div class="wl-header">'
+				+ ['NickName', 'E-Mail', 'Website'].map((label, index) => '<div class="wl-header-item"><label for="waline-field-' + index + '">' + label + '</label><input class="wl-input" id="waline-field-' + index + '" /></div>').join('')
+				+ '</div><textarea class="wl-editor" aria-label="Comment"></textarea><div class="wl-preview" hidden>Preview</div><div class="wl-footer"><div class="wl-actions">'
+				+ '<a class="wl-action" href="#comments" title="Markdown Guide">MD</a><button class="wl-action" type="button" title="Emoji">' + legacyIcon + '</button>'
+				+ '<input id="wl-image-upload" type="file" hidden /><label class="wl-action" for="wl-image-upload" title="Upload image" aria-label="Upload image">' + legacyIcon + '</label>'
+				+ '<button class="wl-action" type="button" title="Preview">' + legacyIcon + '</button></div><button class="wl-btn primary" type="button">Submit</button></div></form>'
+				+ (reply ? '<button class="wl-close" type="button" title="Cancel reply">' + legacyIcon + '</button>' : '');
+			for (const control of form.querySelectorAll('button.wl-action')) {
+				control.addEventListener('click', () => {
+					// Vue rewrites the SDK class binding when the toggle changes.
+					control.className = control.classList.contains('active') ? 'wl-action' : 'wl-action active';
+					if (control.title === 'Preview') form.querySelector('.wl-preview').hidden = !control.classList.contains('active');
+				});
+			}
+			form.querySelector('.wl-close')?.addEventListener('click', () => renderForm());
+			host.replaceChildren(form);
+		}
+		const reply = document.createElement('button');
+		reply.type = 'button';
+		reply.textContent = 'Reply';
+		reply.addEventListener('click', () => renderForm(true));
+		renderForm();
+		const footer = document.createElement('div');
+		footer.className = 'wl-meta-foot';
+		if (!options.noRss) {
+			footer.innerHTML = '<div class="wl-rss">'
+				+ [['?path=' + encodeURIComponent(options.path), 'Subscribe to comments on this page'], ['', 'Subscribe to comments on this site']]
+					.map(([query, label]) => '<a href="' + options.serverURL + '/api/comment/rss' + query + '" target="_blank" rel="noopener noreferrer" alt="' + label + '">' + legacyIcon + '<span>' + label + '</span></a>').join('')
+				+ '</div>';
+		}
+		options.el.replaceChildren(reply, host, footer);
 		return {
 			destroy() {
 				window.__walineDestroyed.push(options.path);
@@ -40,12 +75,85 @@ async function mockWaline(page: Page) {
 		route.fulfill({
 			contentType: "text/css",
 			body: `
-			.wl-panel { background: var(--waline-bg-color); color: var(--waline-color); }
+			/* Waline 3.16.x selectors that this adapter overrides; resources load after theme CSS. */
+			.wl-comment { position: relative; display: flex; }
+			.wl-panel { width: 100%; background: var(--waline-bg-color); color: var(--waline-color); }
+			.wl-header { display: flex; border-bottom: 2px dashed var(--waline-border-color); }
+			.wl-header-item { display: flex; flex: 1; }
+			.wl-header input { width: 0; flex: 1; }
+			.wl-input:focus, .wl-editor:focus { background: var(--waline-bg-color-light); }
+			@media (max-width: 580px) {
+				.wl-header { display: block; }
+				.wl-header-item:not(:last-child) { border-bottom: 2px dashed var(--waline-border-color); }
+			}
 			.wl-editor { display: block; background: var(--waline-bg-color); color: var(--waline-color); }
+			.wl-footer, .wl-actions { display: flex; flex-wrap: wrap; }
+			.wl-action { display: inline-flex; width: 1.5em; height: 1.5em; }
+			.wl-close { position: absolute; top: -4px; inset-inline-end: -4px; }
 			.wl-btn { background: var(--waline-theme-color); color: var(--waline-white); transition: color .4s; }
+			.wl-meta-foot { display: flex; align-items: center; justify-content: space-between; }
+			.wl-rss { display: flex; flex-wrap: nowrap; gap: 5px; overflow: hidden; max-width: 16px; transition: all .2s ease-in-out; }
+			.wl-rss:hover { max-width: 100%; }
+			.wl-rss > a { display: flex; flex-shrink: 0; gap: 2px; }
+			.wl-rss span { color: var(--waline-light-grey); font-size: var(--waline-info-font-size); text-align: end; }
 			`,
 		}),
 	);
+}
+
+async function setRssEnabled(page: Page, enabled: boolean) {
+	await page.route("**/posts/**", async (route) => {
+		// Include Swup's fetch/XHR response as well as direct navigation documents.
+		if (
+			!["document", "fetch", "xhr"].includes(route.request().resourceType())
+		) {
+			await route.fallback();
+			return;
+		}
+		const response = await route.fetch();
+		const html = (await response.text()).replace(
+			/(&quot;noRss&quot;:)(true|false)/,
+			`$1${!enabled}`,
+		);
+		await route.fulfill({ response, body: html });
+	});
+}
+
+async function settleTheme(page: Page) {
+	await page.waitForFunction(() =>
+		document.documentElement.style
+			.getPropertyValue("--mc-primary")
+			.startsWith("#"),
+	);
+	await page.waitForFunction(() =>
+		[...document.querySelectorAll<HTMLElement>(".onload-animation")].every(
+			(el) => el.offsetParent === null || getComputedStyle(el).opacity === "1",
+		),
+	);
+}
+
+async function expectTokenColor(
+	locator: Locator,
+	property: "color" | "borderTopColor" | "backgroundColor",
+	token: string,
+) {
+	await expect
+		.poll(() =>
+			locator.evaluate(
+				(el, { property, token }) => {
+					const reference = document.createElement("span");
+					reference.style.color = `var(${token})`;
+					el.parentElement?.append(reference);
+					const matches =
+						getComputedStyle(el)[property] ===
+						getComputedStyle(reference).color;
+					reference.remove();
+					return matches;
+				},
+				{ property, token },
+			),
+		)
+		.toBe(true);
 }
 
 async function mount(page: Page) {
@@ -178,6 +286,13 @@ test.describe("Waline enabled", () => {
 		expect((await snapshot(page)).mounts).toHaveLength(1);
 	});
 
+	test("RSS disabled leaves no subscription controls", async ({ page }) => {
+		await setRssEnabled(page, false);
+		await page.goto(ARTICLE);
+		await mount(page);
+		await expect(page.locator(".wl-rss")).toHaveCount(0);
+	});
+
 	test("upload control is keyboard accessible", async ({ page }) => {
 		await page.goto(ARTICLE);
 		await mount(page);
@@ -185,6 +300,217 @@ test.describe("Waline enabled", () => {
 		await page.getByRole("button", { name: "Upload image" }).press("Enter");
 		expect(await (await chooser).element().getAttribute("type")).toBe("file");
 	});
+
+	for (const width of [390, 1280]) {
+		test.describe(`editor controls at ${width}px`, () => {
+			test.use({ viewport: { width, height: 900 }, hasTouch: width === 390 });
+
+			test("RSS subscriptions are visible, themed and keyboard accessible", async ({
+				page,
+			}) => {
+				await setRssEnabled(page, true);
+				await page.addInitScript(() => localStorage.setItem("theme", "auto"));
+				await page.goto(ARTICLE);
+				await mount(page);
+				await settleTheme(page);
+				const links = page.locator(".wl-meta-foot .wl-rss > a");
+				await expect(links).toHaveCount(2);
+				for (const dark of [false, true]) {
+					await page.emulateMedia({ colorScheme: dark ? "dark" : "light" });
+					await expect(page.locator("html")).toHaveClass(
+						dark ? /dark/ : /^(?!.*\bdark\b)/,
+					);
+					for (const link of await links.all()) {
+						await expect(
+							link.locator("svg").filter({ visible: true }),
+						).toHaveCount(1);
+						await expect(link.locator(".waline-icon")).toHaveAttribute(
+							"viewBox",
+							"0 0 24 24",
+						);
+						await expectTokenColor(link, "color", "--primary");
+						const box = await link.boundingBox();
+						expect(box?.height).toBeGreaterThanOrEqual(width === 390 ? 48 : 40);
+						expect(box?.x).toBeGreaterThanOrEqual(0);
+						expect((box?.x ?? 0) + (box?.width ?? 0)).toBeLessThanOrEqual(
+							width,
+						);
+					}
+					const result = await new AxeBuilder({ page })
+						.include("#comments")
+						.analyze();
+					expect(result.violations).toEqual([]);
+				}
+				const destinations = [
+					`${waline.serverURL}/api/comment/rss?path=${encodeURIComponent(ARTICLE)}`,
+					`${waline.serverURL}/api/comment/rss`,
+				];
+				await page
+					.context()
+					.route("**/api/comment/rss*", (route) =>
+						route.fulfill({ contentType: "text/plain", body: "RSS fixture" }),
+					);
+				await links.first().focus();
+				for (const [index, destination] of destinations.entries()) {
+					await expect(links.nth(index)).toBeFocused();
+					await expect(links.nth(index)).toHaveCSS("outline-style", "solid");
+					const popup = page.waitForEvent("popup");
+					await links.nth(index).press("Enter");
+					const feed = await popup;
+					await expect(feed).toHaveURL(destination);
+					await feed.close();
+					if (index === 0) await page.keyboard.press("Tab");
+				}
+				await navigate(page, "/");
+				await navigate(page, ARTICLE);
+				await mount(page);
+				await expect(links.locator(".waline-icon")).toHaveCount(2);
+			});
+
+			test("focus outlines cover complete fields without moving the layout in either theme", async ({
+				page,
+			}) => {
+				await page.addInitScript(() => localStorage.setItem("theme", "auto"));
+				await page.goto(ARTICLE);
+				await mount(page);
+				await settleTheme(page);
+				const input = page.getByRole("textbox", {
+					name: "NickName",
+					exact: true,
+				});
+				const field = page.locator(".wl-header-item").filter({ has: input });
+				for (const dark of [false, true]) {
+					await page.emulateMedia({ colorScheme: dark ? "dark" : "light" });
+					await expect(page.locator("html")).toHaveClass(
+						dark ? /dark/ : /^(?!.*\bdark\b)/,
+					);
+					await input.blur();
+					const before = await field.boundingBox();
+					await input.focus();
+					await expectTokenColor(field, "borderTopColor", "--primary");
+					await expect(input).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+					await expect(field).toHaveCSS("border-bottom-style", "solid");
+					await expect(page.locator(".wl-header")).toHaveCSS(
+						"border-bottom-width",
+						"0px",
+					);
+					expect(await field.boundingBox()).toEqual(before);
+					const editor = page.getByRole("textbox", {
+						name: "Comment",
+						exact: true,
+					});
+					await editor.focus();
+					await expectTokenColor(editor, "borderTopColor", "--primary");
+					await expectTokenColor(
+						editor,
+						"backgroundColor",
+						"--surface-container-low",
+					);
+					const result = await new AxeBuilder({ page })
+						.include("#comments")
+						.analyze();
+					expect(result.violations).toEqual([]);
+				}
+				const rows = await page
+					.locator(".wl-header-item")
+					.evaluateAll((fields) =>
+						fields.map((field) => field.getBoundingClientRect().top),
+					);
+				if (width === 390) {
+					expect(rows[1]).toBeGreaterThan(rows[0]);
+					expect(rows[2]).toBeGreaterThan(rows[1]);
+				} else {
+					expect(rows).toEqual([rows[0], rows[0], rows[0]]);
+				}
+				const box = await page.locator(".wl-panel").boundingBox();
+				expect(box).not.toBeNull();
+				expect(box?.x).toBeGreaterThanOrEqual(0);
+				expect((box?.x ?? 0) + (box?.width ?? 0)).toBeLessThanOrEqual(width);
+			});
+
+			test("toolbar icons and reply controls retain styling, semantics and keyboard actions after rerenders", async ({
+				page,
+			}) => {
+				const iconRequests: string[] = [];
+				page.on("request", (request) => {
+					if (request.url().includes("api.iconify.design"))
+						iconRequests.push(request.url());
+				});
+				await page.goto(ARTICLE);
+				await mount(page);
+				await settleTheme(page);
+				for (const name of ["Emoji", "Upload image", "Preview"]) {
+					const button = page.getByRole("button", { name, exact: true });
+					await expect(
+						button.locator("svg").filter({ visible: true }),
+					).toHaveCount(1);
+					await expect(button.locator(".waline-icon")).toHaveAttribute(
+						"viewBox",
+						"0 0 24 24",
+					);
+					const box = await button.boundingBox();
+					expect(box?.width).toBeGreaterThanOrEqual(width === 390 ? 48 : 40);
+					expect(box?.height).toBeGreaterThanOrEqual(width === 390 ? 48 : 40);
+				}
+				const emoji = page.getByRole("button", { name: "Emoji", exact: true });
+				await emoji.press("Enter");
+				await expect(emoji).toHaveAttribute("aria-pressed", "true");
+				await expect(emoji).toHaveClass(/m3-state-layer/);
+				await expectTokenColor(
+					emoji,
+					"backgroundColor",
+					"--secondary-container",
+				);
+				await emoji.press("Space");
+				await expect(emoji).toHaveAttribute("aria-pressed", "false");
+				const preview = page.getByRole("button", {
+					name: "Preview",
+					exact: true,
+				});
+				await preview.press("Enter");
+				await expect(page.locator(".wl-preview")).toBeVisible();
+				await expect(preview).toHaveAttribute("aria-pressed", "true");
+				await expect(preview).toHaveClass(/m3-state-layer/);
+
+				for (let round = 0; round < 2; round++) {
+					await page
+						.getByRole("button", { name: "Reply", exact: true })
+						.click();
+					const close = page.getByRole("button", {
+						name: "Cancel reply",
+						exact: true,
+					});
+					await expect(close.locator(".waline-icon")).toBeVisible();
+					await expect(
+						close.locator("svg").filter({ visible: true }),
+					).toHaveCount(1);
+					await expect(page.locator(".waline-upload")).toHaveCount(1);
+					await expectTokenColor(
+						close,
+						"backgroundColor",
+						"--secondary-container",
+					);
+					await expectTokenColor(close, "color", "--on-secondary-container");
+					const buttonBox = await close.boundingBox();
+					const panelBox = await page.locator(".wl-panel").boundingBox();
+					expect(
+						(buttonBox?.y ?? 0) + (buttonBox?.height ?? 0),
+					).toBeLessThanOrEqual(panelBox?.y ?? 0);
+					const chooser = page.waitForEvent("filechooser");
+					await page
+						.getByRole("button", { name: "Upload image" })
+						.press("Enter");
+					expect(await (await chooser).element().getAttribute("type")).toBe(
+						"file",
+					);
+					await close.press("Enter");
+					await expect(close).toHaveCount(0);
+					await expect(page.locator(".waline-upload")).toHaveCount(1);
+				}
+				expect(iconRequests).toEqual([]);
+			});
+		});
+	}
 
 	for (const resource of ["scriptUrl", "styleUrl"] as const) {
 		test(`recovers from ${resource} failure through the retry button`, async ({
@@ -228,6 +554,8 @@ test.describe("Waline enabled", () => {
 		await expect(page.locator("[data-waline-style]")).toHaveCount(0);
 		await navigate(page, ARTICLE);
 		await mount(page);
+		await expect(page.locator(".waline-upload")).toHaveCount(1);
+		await expect(page.locator(".wl-actions .waline-icon")).toHaveCount(3);
 		const state = await snapshot(page);
 		expect(state.loads).toBe(1);
 		expect(state.mounts.map((item) => item.path)).toEqual([
