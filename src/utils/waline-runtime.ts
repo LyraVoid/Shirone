@@ -142,6 +142,17 @@ class ShironeWaline extends HTMLElement {
 
 	private setupControls(container: HTMLElement): void {
 		const enhance = () => {
+			for (const field of container.querySelectorAll<HTMLElement>(
+				".wl-header-item",
+			)) {
+				const input = field.querySelector<HTMLInputElement>("input");
+				// Native :placeholder-shown tracks restored values, autofill and edits
+				// without maintaining another copy of the SDK's form state.
+				if (input && !input.hasAttribute("placeholder"))
+					input.placeholder = " ";
+				if (!field.classList.contains("m3-state-layer"))
+					field.classList.add("m3-state-layer");
+			}
 			for (const actions of container.querySelectorAll<HTMLElement>(
 				".wl-actions",
 			)) {

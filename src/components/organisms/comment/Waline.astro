@@ -111,7 +111,7 @@ const walineStylus = `
 		box-sizing: border-box
 		min-width: 0
 		margin: 0
-		border: 1px solid var(--outline-variant)
+		border: none
 		border-radius: var(--shape-corner-l)
 
 	.wl-header
@@ -123,63 +123,107 @@ const walineStylus = `
 		border: none
 		border-radius: inherit
 
+	// Match TextField's filled variant: centered empty label, floating active label.
 	.wl-header .wl-header-item
-		display: flex
-		flex-direction: column
+		position: relative
+		display: block
+		box-sizing: border-box
 		min-width: 0
 		width: auto
-		padding: var(--m3e-space-2) var(--m3e-space-3)
-		border: 1px solid var(--outline-variant)
+		height: calc(var(--m3e-space-6) * 2)
+		padding: 0 var(--m3e-space-4)
+		border: none
 		border-radius: var(--shape-corner-m)
-		background: var(--surface-container-low)
-		transition: border-color var(--m3e-duration-short) var(--m3e-easing-standard), box-shadow var(--m3e-duration-short) var(--m3e-easing-standard)
-
-	.wl-header .wl-header-item:focus-within
-		border-color: var(--primary)
-		box-shadow: inset 0 0 0 1px var(--primary)
+		background: var(--surface-container-high)
+		--m3e-state-hover-alpha: 12%
+		--m3e-state-focus-alpha: 16%
 
 	.wl-header label
+		position: absolute
+		inset-inline: var(--m3e-space-4)
+		top: 50%
+		transform: translateY(-50%)
 		min-width: 0
 		padding: 0
+		overflow: hidden
 		color: var(--on-surface-variant)
-		font: var(--m3e-type-body-small)
+		font: var(--m3e-type-body-large)
 		text-align: start
+		text-overflow: ellipsis
+		white-space: nowrap
+		pointer-events: none
+		transition: top var(--m3e-duration-short) var(--m3e-easing-standard), transform var(--m3e-duration-short) var(--m3e-easing-standard), font-size var(--m3e-duration-short) var(--m3e-easing-standard), color var(--m3e-duration-short) var(--m3e-easing-standard)
 
-	.wl-header-item:focus-within label
+	.wl-header-item:focus-within label, .wl-header-item:has(input:not(:placeholder-shown)) label
+		top: var(--m3e-space-1)
+		transform: none
 		color: var(--primary)
+		font: var(--m3e-type-body-small)
 
 	.wl-header input.wl-input
-		flex: auto
+		display: block
+		box-sizing: border-box
 		min-width: 0
 		width: 100%
-		min-height: var(--m3e-space-6)
-		padding: 0
+		height: 100%
+		padding: var(--m3e-space-5) 0 var(--m3e-space-1)
 		border: none
 		border-radius: 0
 		background: transparent
+		color: var(--on-surface)
+		caret-color: var(--primary)
 		font: var(--m3e-type-body-large)
 
 	.wl-header input.wl-input:focus
 		background: transparent
 
-	.wl-editor
+	// TextField's inset focus indicator, rather than a perimeter around each field.
+	.wl-header-item::after
+		content: ''
+		position: absolute
+		inset-inline: var(--m3e-space-2)
+		bottom: var(--m3e-space-1)
+		height: 2px
+		border-radius: var(--shape-corner-full)
+		background: var(--primary)
+		opacity: 0
+		transform: scaleX(0.5)
+		pointer-events: none
+		transition: opacity var(--m3e-duration-short) var(--m3e-easing-standard), transform var(--m3e-duration-short) var(--m3e-easing-emphasized-decelerate)
+
+	.wl-header-item:focus-within::after
+		opacity: 1
+		transform: scaleX(1)
+
+	.wl-panel > .wl-editor
 		min-width: 0
 		width: calc(100% - var(--m3e-space-3) * 2)
 		margin: 0 var(--m3e-space-3) var(--m3e-space-2)
 		padding: var(--m3e-space-3)
-		border: 1px solid var(--outline-variant)
+		border: none
 		border-radius: var(--shape-corner-m)
-		background: var(--surface-container-low)
+		box-shadow: none
+		background-color: var(--surface-container-high)
+		// Textareas cannot host a pseudo-element; paint the same 2px inset indicator.
+		background-image: linear-gradient(var(--primary), var(--primary))
+		background-repeat: no-repeat
+		background-position: center calc(100% - var(--m3e-space-1))
+		background-size: 0 2px
+		caret-color: var(--primary)
 		font: var(--m3e-type-body-large)
+		transition-property: background-color, background-size
 
 	// Logged-in and metadata-free editors have no header to provide top spacing.
 	.wl-panel > .wl-editor:first-child
 		margin-block-start: var(--m3e-space-3)
 
-	.wl-editor:focus
-		border-color: var(--primary)
-		box-shadow: inset 0 0 0 1px var(--primary)
-		background: var(--surface-container-low)
+	// Keep the filled TextField's 12% hover / 16% focus surface state on the textarea.
+	.wl-panel > .wl-editor:hover
+		background-color: unquote("color-mix(in oklab, var(--on-surface) 12%, var(--surface-container-high))")
+
+	.wl-panel > .wl-editor:focus
+		background-color: unquote("color-mix(in oklab, var(--on-surface) 16%, var(--surface-container-high))")
+		background-size: calc(100% - var(--m3e-space-2) * 2) 2px
 
 	.wl-footer
 		align-items: center
@@ -228,6 +272,30 @@ const walineStylus = `
 		background: var(--secondary-container)
 		color: var(--on-secondary-container)
 		--m3e-state-color: var(--on-secondary-container)
+
+	// Both SDK nodes share the image corner as their center, including wide counts.
+	.wl-reaction-votes, .wl-reaction-loading
+		position: absolute
+		box-sizing: border-box
+		top: 0
+		inset-inline-end: 0
+		min-width: var(--m3e-space-5)
+		height: var(--m3e-space-5)
+		margin: 0
+		transform: translate(50%, -50%)
+
+	.wl-reaction-votes:dir(rtl), .wl-reaction-loading:dir(rtl)
+		transform: translate(-50%, -50%)
+
+	.wl-reaction-votes
+		display: grid
+		place-items: center
+		padding: 0 var(--m3e-space-1)
+		border-radius: var(--shape-corner-full)
+		font: var(--m3e-type-label-small)
+
+	.wl-reaction-loading
+		width: var(--m3e-space-5)
 
 	.wl-meta-foot
 		flex-wrap: wrap

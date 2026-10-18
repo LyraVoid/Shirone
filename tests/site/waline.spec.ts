@@ -27,7 +27,7 @@ window.Waline = {
 			const form = document.createElement('div');
 			form.className = 'wl-comment';
 			form.innerHTML = '<form class="wl-panel"><div class="wl-header">'
-				+ ['NickName', 'E-Mail', 'Website'].map((label, index) => '<div class="wl-header-item"><label for="waline-field-' + index + '">' + label + '</label><input class="wl-input" id="waline-field-' + index + '" /></div>').join('')
+				+ ['NickName', 'E-Mail', 'Website'].map((label, index) => '<div class="wl-header-item"><label for="waline-field-' + index + '">' + label + '</label><input type="' + (index === 1 ? 'email' : 'text') + '" class="wl-input" id="waline-field-' + index + '" /></div>').join('')
 				+ '</div><textarea class="wl-editor" aria-label="Comment"></textarea><div class="wl-preview" hidden>Preview</div><div class="wl-footer"><div class="wl-actions">'
 				+ '<a class="wl-action" href="#comments" title="Markdown Guide">MD</a><button class="wl-action" type="button" title="Emoji">' + legacyIcon + '</button>'
 				+ '<input id="wl-image-upload" type="file" hidden /><label class="wl-action" for="wl-image-upload" title="Upload image" aria-label="Upload image">' + legacyIcon + '</label>'
@@ -56,7 +56,25 @@ window.Waline = {
 					.map(([query, label]) => '<a href="' + options.serverURL + '/api/comment/rss' + query + '" target="_blank" rel="noopener noreferrer" alt="' + label + '">' + legacyIcon + '<span>' + label + '</span></a>').join('')
 				+ '</div>';
 		}
-		options.el.replaceChildren(reply, host, footer);
+		const reaction = document.createElement('div');
+		if (options.reaction) {
+			reaction.className = 'wl-reaction';
+			reaction.innerHTML = '<ul class="wl-reaction-list">' + [9, 999].map(count => '<li class="wl-reaction-item"><div class="wl-reaction-img"><div class="wl-reaction-votes">' + count + '</div></div></li>').join('') + '</ul>';
+			for (const item of reaction.querySelectorAll('.wl-reaction-item')) {
+				item.addEventListener('click', async () => {
+					const votes = item.querySelector('.wl-reaction-votes');
+					if (!votes) return;
+					const loading = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+					loading.setAttribute('class', 'wl-reaction-loading');
+					loading.setAttribute('viewBox', '0 0 100 100');
+					votes.replaceWith(loading);
+					await fetch(options.serverURL.replace(/\\/$/, '') + '/api/article', { method: 'POST' });
+					votes.textContent = Number(votes.textContent) + 1;
+					loading.replaceWith(votes);
+				});
+			}
+		}
+		options.el.replaceChildren(reaction, reply, host, footer);
 		return {
 			destroy() {
 				window.__walineDestroyed.push(options.path);
@@ -96,6 +114,11 @@ async function mockWaline(page: Page) {
 			.wl-rss:hover { max-width: 100%; }
 			.wl-rss > a { display: flex; flex-shrink: 0; gap: 2px; }
 			.wl-rss span { color: var(--waline-light-grey); font-size: var(--waline-info-font-size); text-align: end; }
+			.wl-reaction-list { display: flex; justify-content: center; gap: 16px; padding: 8px; list-style: none; }
+			.wl-reaction-img { position: relative; width: 42px; height: 42px; }
+			.wl-reaction-loading { position: absolute; inset-inline-end: -5px; top: -4px; width: 18px; height: 18px; }
+			.wl-reaction-votes { position: absolute; inset-inline-end: -9px; top: -9px; min-width: 1em; padding: 2px; border: 1px solid var(--waline-theme-color); border-radius: 1em; font-size: .75em; line-height: 1; }
+
 			`,
 		}),
 	);
@@ -367,45 +390,109 @@ test.describe("Waline enabled", () => {
 				await expect(links.locator(".waline-icon")).toHaveCount(2);
 			});
 
-			test("focus outlines cover complete fields without moving the layout in either theme", async ({
+			test("filled fields float labels only when focused or populated and keep the editor borderless", async ({
 				page,
 			}) => {
 				await page.addInitScript(() => localStorage.setItem("theme", "auto"));
 				await page.goto(ARTICLE);
 				await mount(page);
 				await settleTheme(page);
-				const input = page.getByRole("textbox", {
-					name: "NickName",
-					exact: true,
-				});
-				const field = page.locator(".wl-header-item").filter({ has: input });
 				for (const dark of [false, true]) {
 					await page.emulateMedia({ colorScheme: dark ? "dark" : "light" });
 					await expect(page.locator("html")).toHaveClass(
 						dark ? /dark/ : /^(?!.*\bdark\b)/,
 					);
-					await input.blur();
-					const before = await field.boundingBox();
-					await input.focus();
-					await expectTokenColor(field, "borderTopColor", "--primary");
-					await expect(input).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
-					await expect(field).toHaveCSS("border-bottom-style", "solid");
-					await expect(page.locator(".wl-header")).toHaveCSS(
-						"border-bottom-width",
-						"0px",
-					);
-					expect(await field.boundingBox()).toEqual(before);
+					for (const field of await page.locator(".wl-header-item").all()) {
+						const input = field.locator("input");
+						const label = field.locator("label");
+						await input.fill("");
+						await input.blur();
+						await expect
+							.poll(() =>
+								label.evaluate((el) => {
+									const label = el.getBoundingClientRect();
+									const parent = el.parentElement;
+									if (!parent)
+										throw new Error("The field label must have a parent");
+									const field = parent.getBoundingClientRect();
+									return Math.abs(
+										label.y + label.height / 2 - field.y - field.height / 2,
+									);
+								}),
+							)
+							.toBeLessThan(1);
+						const emptyFont = await label.evaluate((el) =>
+							Number.parseFloat(getComputedStyle(el).fontSize),
+						);
+						const before = await field.boundingBox();
+						await input.focus();
+						await expect
+							.poll(() =>
+								label.evaluate((el) =>
+									Number.parseFloat(getComputedStyle(el).fontSize),
+								),
+							)
+							.toBeLessThan(emptyFont);
+						await expectTokenColor(label, "color", "--primary");
+						await expect
+							.poll(() =>
+								field.evaluate((el) => getComputedStyle(el, "::after").opacity),
+							)
+							.toBe("1");
+						await expect(input).toHaveCSS(
+							"background-color",
+							"rgba(0, 0, 0, 0)",
+						);
+						await expect(field).toHaveCSS("border-top-width", "0px");
+						expect(await field.boundingBox()).toEqual(before);
+						// Invalid email and direct SDK value restoration must still float the label.
+						await input.fill("saved-value");
+						await input.blur();
+						await expect
+							.poll(() =>
+								label.evaluate((el) =>
+									Number.parseFloat(getComputedStyle(el).fontSize),
+								),
+							)
+							.toBeLessThan(emptyFont);
+						await input.evaluate((el: HTMLInputElement) => {
+							el.value = "";
+						});
+						await expect
+							.poll(() =>
+								label.evaluate((el) =>
+									Number.parseFloat(getComputedStyle(el).fontSize),
+								),
+							)
+							.toBe(emptyFont);
+						await input.evaluate((el: HTMLInputElement) => {
+							el.value = "restored";
+						});
+						await expect
+							.poll(() =>
+								label.evaluate((el) =>
+									Number.parseFloat(getComputedStyle(el).fontSize),
+								),
+							)
+							.toBeLessThan(emptyFont);
+						await input.fill("");
+						await input.blur();
+					}
 					const editor = page.getByRole("textbox", {
 						name: "Comment",
 						exact: true,
 					});
-					await editor.focus();
-					await expectTokenColor(editor, "borderTopColor", "--primary");
+					await expect(editor).toHaveCSS("border-top-width", "0px");
+					await expect(editor).toHaveCSS("box-shadow", "none");
+					await expect(editor).toHaveCSS("background-size", "0px 2px");
 					await expectTokenColor(
 						editor,
 						"backgroundColor",
-						"--surface-container-low",
+						"--surface-container-high",
 					);
+					await editor.focus();
+					await expect(editor).not.toHaveCSS("background-size", "0px 2px");
+					await expect(editor).toHaveCSS("border-top-width", "0px");
 					const result = await new AxeBuilder({ page })
 						.include("#comments")
 						.analyze();
@@ -426,6 +513,57 @@ test.describe("Waline enabled", () => {
 				expect(box).not.toBeNull();
 				expect(box?.x).toBeGreaterThanOrEqual(0);
 				expect((box?.x ?? 0) + (box?.width ?? 0)).toBeLessThanOrEqual(width);
+			});
+
+			test("reaction badge and spinner keep their center through count changes in both directions", async ({
+				page,
+			}) => {
+				test.skip(
+					!waline.reaction,
+					"Enable reactions to verify their loading state",
+				);
+				let release = () => {};
+				let gate = Promise.resolve();
+				await page.route("**/api/article", async (route) => {
+					await gate;
+					await route.fulfill({
+						contentType: "application/json",
+						body: '{"errno":0,"data":[]}',
+					});
+				});
+				await page.goto(ARTICLE);
+				await mount(page);
+				await settleTheme(page);
+				const center = (locator: Locator) =>
+					locator.evaluate((el) => {
+						const box = el.getBoundingClientRect();
+						return { x: box.x + box.width / 2, y: box.y + box.height / 2 };
+					});
+				try {
+					for (const direction of ["ltr", "rtl"]) {
+						await page.evaluate((dir) => {
+							document.documentElement.dir = dir;
+						}, direction);
+						for (const item of await page.locator(".wl-reaction-item").all()) {
+							await item.scrollIntoViewIfNeeded();
+							const badge = item.locator(".wl-reaction-votes");
+							const count = Number(await badge.textContent());
+							const before = await center(badge);
+							gate = new Promise((resolve) => {
+								release = resolve;
+							});
+							await item.click();
+							const spinner = item.locator(".wl-reaction-loading");
+							await expect(spinner).toBeVisible();
+							expect(await center(spinner)).toEqual(before);
+							release();
+							await expect(badge).toHaveText(String(count + 1));
+							expect(await center(badge)).toEqual(before);
+						}
+					}
+				} finally {
+					release();
+				}
 			});
 
 			test("toolbar icons and reply controls retain styling, semantics and keyboard actions after rerenders", async ({

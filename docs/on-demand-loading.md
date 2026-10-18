@@ -34,7 +34,7 @@
 | `src/types/stylus.d.ts` | `stylus` 包最小类型声明（构建期编译样式用） |
 | `src/utils/script-loader.ts` | `loadScriptOnce(url, timeoutMs?)` 动态加载第三方 SDK 并去重；失败或超时后清理缓存以允许重试 |
 
-Waline 的工具栏、取消回复与 RSS 图标由 `Icon.svelte` 在启用的评论组件内 SSR 输出到惰性模板，不增加图标网络请求。运行时保留 SDK 的节点与事件，通过局部 `MutationObserver` 为后续回复表单和切换状态补齐图标、状态层与上传按钮键盘入口；页面断开时同时销毁观察器。RSS 页脚保留 SDK 的本地化文字和订阅链接，两个入口始终可见并按空间换行。输入框聚焦使用完整字段的 token 描边，样式仍只在 Waline 启用时输出。
+Waline 的工具栏、取消回复与 RSS 图标由 `Icon.svelte` 在启用的评论组件内 SSR 输出到惰性模板，不增加图标网络请求。运行时保留 SDK 的节点与事件，通过局部 `MutationObserver` 为后续回复表单和切换状态补齐图标、状态层与上传按钮键盘入口；页面断开时同时销毁观察器。RSS 页脚保留 SDK 的本地化文字和订阅链接，两个入口始终可见并按空间换行。资料字段对齐 `TextField` 的 filled 浮动标签：空值失焦时居中，聚焦或有值时上浮；通过原生 `:placeholder-shown` 同步恢复值、自动填充和清空，无额外表单状态。编辑框使用填充表面与底部焦点指示；reaction 数量和加载图标共享同一中心锚点。样式仍只在 Waline 启用时输出。
 
 ---
 
