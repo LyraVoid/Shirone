@@ -195,7 +195,9 @@ const walineStylus = `
 		opacity: 1
 		transform: scaleX(1)
 
-	.wl-panel > .wl-editor
+	// The emoji input (utils/emoji-input) edits in place of the SDK textarea, which
+	// stays hidden as Waline's model; both wear the same filled field.
+	.wl-panel > .wl-editor, .wl-panel > .emoji-input
 		min-width: 0
 		width: calc(100% - var(--m3e-space-3) * 2)
 		margin: 0 var(--m3e-space-3) var(--m3e-space-2)
@@ -213,15 +215,45 @@ const walineStylus = `
 		font: var(--m3e-type-body-large)
 		transition-property: background-color, background-size
 
+	.wl-panel > .wl-editor[hidden]
+		display: none
+
+	// Grows with its content like the autosized textarea, from the same minimum.
+	.wl-panel > .emoji-input
+		position: relative
+		box-sizing: border-box
+		min-height: 8.75em
+		color: var(--on-surface)
+		white-space: pre-wrap
+		overflow-wrap: anywhere
+		cursor: text
+		outline: none
+
+	.emoji-input[data-empty]::before
+		content: attr(data-placeholder)
+		position: absolute
+		inset-inline: var(--m3e-space-3)
+		top: var(--m3e-space-3)
+		color: var(--on-surface-variant)
+		pointer-events: none
+
+	// Same height as the published .wl-emoji, centred on the line it sits in.
+	.emoji-input__glyph
+		display: inline-block
+		width: auto
+		height: 1.25em
+		margin-inline: 0.0625em
+		vertical-align: -0.25em
+
 	// Logged-in and metadata-free editors have no header to provide top spacing.
-	.wl-panel > .wl-editor:first-child
+	.wl-panel > .wl-editor:first-child, .wl-panel > .wl-editor:first-child + .emoji-input
 		margin-block-start: var(--m3e-space-3)
 
-	// Keep the filled TextField's 12% hover / 16% focus surface state on the textarea.
-	.wl-panel > .wl-editor:hover
+	// Keep the filled TextField's 12% hover / 16% focus surface state on the editor.
+	.wl-panel > .wl-editor:hover, .wl-panel > .emoji-input:hover
 		background-color: unquote("color-mix(in oklab, var(--on-surface) 12%, var(--field-filled-bg))")
 
-	.wl-panel > .wl-editor:focus
+	.wl-panel > .wl-editor:focus, .wl-panel > .emoji-input:focus
 		background-color: unquote("color-mix(in oklab, var(--on-surface) 16%, var(--field-filled-bg))")
 		background-size: calc(100% - var(--m3e-space-2) * 2) 2px
 
@@ -340,7 +372,7 @@ const walineStylus = `
 		border-radius: var(--shape-corner-m)
 		font: var(--m3e-type-label-large)
 
-	.wl-btn, .wl-input, .wl-editor, .wl-sort li
+	.wl-btn, .wl-input, .wl-editor, .emoji-input, .wl-sort li
 		transition-duration: var(--m3e-duration-short)
 		transition-timing-function: var(--m3e-easing-standard)
 
@@ -376,6 +408,7 @@ const walineStyles = await new Promise<string>((resolve, reject) => {
 	data-waline-script-url={scriptUrl}
 	data-waline-style-url={styleUrl}
 	data-waline-options={JSON.stringify(options)}
+	data-waline-editor-label={i18n(I18nKey.commentsEditor)}
 	data-waline-lazy={lazy ? "true" : "false"}
 	data-waline-state="loading"
 >

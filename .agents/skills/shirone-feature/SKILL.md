@@ -32,7 +32,7 @@ Shirone 的可选能力(评论、统计、音乐、追番、页脚注入等)遵�
 - `docs/performance-guidelines.md` — 性能架构指南
 - `src/config/README.md` — 配置契约、config/data 判别表、新增配置项流程
 - `docs/umami-guide.md` — Umami share URL、访问采集、客户端 API 与零负担说明
-- 参考实现:`src/config/commentConfig.ts`、`src/components/organisms/comment/CommentSection.astro`、`src/components/organisms/comment/Twikoo.astro`、`src/components/organisms/comment/Giscus.astro`(第二 Provider:一次性 IIFE 脚本注入与主题事件同步的例外模式)、`src/components/organisms/comment/Waline.astro`(第三 Provider:局部内联样式与 M3E token 适配)、`src/utils/waline-runtime.ts`(JS/CSS 按需加载、自定义元素生命周期与 Swup 实例清理)、`src/utils/script-loader.ts`(SDK 去重与可选超时)
+- 参考实现:`src/config/commentConfig.ts`、`src/components/organisms/comment/CommentSection.astro`、`src/components/organisms/comment/Twikoo.astro`、`src/components/organisms/comment/Giscus.astro`(第二 Provider:一次性 IIFE 脚本注入与主题事件同步的例外模式)、`src/components/organisms/comment/Waline.astro`(第三 Provider:局部内联样式与 M3E token 适配)、`src/utils/waline-runtime.ts`(JS/CSS 按需加载、自定义元素生命周期与 Swup 实例清理)、`src/utils/emoji-tokens.ts` + `src/utils/emoji-input.ts`(表情统一处理 API:按第三方实际渲染规则解析/回写表情,并以其 `<textarea>` 为隐藏模型显示图标)、`src/utils/script-loader.ts`(SDK 去重与可选超时)
 
 ## 验证命令
 

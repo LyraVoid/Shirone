@@ -177,6 +177,7 @@ export const en: Translation = {
 	[Key.announcementClose]: "Close Announcement",
 
 	[Key.comments]: "Comments",
+	[Key.commentsEditor]: "Comment content",
 	[Key.commentsLoading]: "Loading comments...",
 	[Key.commentsLoadFailed]: "Failed to load comments.",
 	[Key.commentsRequiresJavaScript]:

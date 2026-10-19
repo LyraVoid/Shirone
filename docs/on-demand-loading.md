@@ -31,10 +31,17 @@
 | `src/components/organisms/comment/Giscus.astro` | 第二个 Provider 参考实现：一次性脚本注入 + 主题事件同步 |
 | `src/components/organisms/comment/Waline.astro` | 第三个 Provider 参考实现：局部内联样式 + M3E token 适配 + 本地化加载/错误/无 JavaScript 提示 |
 | `src/utils/waline-runtime.ts` | Waline 自定义元素：JS/CSS 按需加载、超时重试、控件增强、Swup 实例销毁与异步竞态防护 |
+| `src/utils/emoji-tokens.ts` | 表情统一处理 API（纯函数）：表情包 → 键/图片/语义标签目录，按 Waline 实际渲染规则解析与回写 `:key:` 和 `<img class="wl-emoji">` |
+| `src/utils/emoji-input.ts` | 表情输入框：以 SDK 的 `<textarea>` 为隐藏模型，在其后渲染可编辑表面，把表情显示为图标 |
+| `src/utils/waline-emoji.ts` | Waline 表情接线：预取表情包 `info.json` 作为内联表情包交给 Waline，并导出输入框挂载函数；仅在启用表情时动态加载 |
 | `src/types/stylus.d.ts` | `stylus` 包最小类型声明（构建期编译样式用） |
 | `src/utils/script-loader.ts` | `loadScriptOnce(url, timeoutMs?)` 动态加载第三方 SDK 并去重；失败或超时后清理缓存以允许重试 |
 
 Waline 的工具栏、取消回复与 RSS 图标由 `Icon.svelte` 在启用的评论组件内 SSR 输出到惰性模板，不增加图标网络请求。运行时保留 SDK 的节点与事件，通过局部 `MutationObserver` 为后续回复表单和切换状态补齐图标、状态层与上传按钮键盘入口；页面断开时同时销毁观察器。RSS 页脚保留 SDK 的本地化文字和订阅链接，两个入口始终可见并按空间换行。资料字段对齐 `TextField` 的 filled 浮动标签：空值失焦时居中，聚焦或有值时上浮；通过原生 `:placeholder-shown` 同步恢复值、自动填充和清空，无额外表单状态。编辑框使用填充表面与底部焦点指示；reaction 数量和加载图标共享同一中心锚点。样式仍只在 Waline 启用时输出。
+
+表情启用时，评论框直接显示表情图标而不是 `:weibo_longing:` 这类短代码。所有表情的识别与回写都经过 `emoji-tokens`：它与 Waline 的 `parseEmoji` 使用同一扫描规则（`/:(.+?):/gu`，不跨行），只把 Waline 真正会渲染成图片的片段显示为图标；编辑模式和草稿里的 `<img class="wl-emoji">` 同样显示为图标并原样回写。图标的 `alt` 取表情的语义标签：词语名去掉分隔符（`laugh_and_cry` → `laugh and cry`），twemoji 这类码点名直接还原为对应的 Emoji 字符。同一行中较早的未配对冒号（如 `Note:`、`https:`）会吞掉短代码的开头冒号，此时选择器插入的表情改存为 Waline 自己的 `<img class="wl-emoji">`，保证评论框里的每个图标发布后仍是图片；手动输入的短代码则如实保持文字，与 Waline 预览一致。
+
+`emoji-input` 不替换 Waline 的状态：SDK 的 `<textarea>` 保留为隐藏模型，用户编辑经原生 value setter 加 `input` 事件写回（与键盘输入同一路径，Vue 的 `v-model`、字数统计、预览和草稿存储照常工作）；SDK 自己的写入（上传占位、提交后清空、编辑模式、回复框共享草稿）经实例级 `value` 访问器观察后重新渲染；`selectionStart` / `selectionEnd` 与 `focus()` 由编辑表面应答，因此 SDK 在光标处插入的逻辑不变。选择器按钮在捕获阶段改由编辑表面插入，保留光标与撤销历史，按钮的 `mousedown` 不夺走焦点；粘贴、拖放的图片仍交给 Waline 的上传处理，文字只按纯文本插入；复制与剪切导出的是存储文本。Ctrl/Cmd+Enter 等快捷键转发给原 `<textarea>`。表情关闭（`emoji: false`）、表情包全部获取失败或模块加载失败时不挂载编辑表面，Waline 保留原生 `<textarea>`，表情模块也不会被下载。
 
 ---
 
@@ -133,6 +140,9 @@ const twikooStyles = await new Promise<string>((resolve, reject) => {
   `lazy: false` 时立即加载。JS 使用 `loadScriptOnce(scriptUrl, 8000)` 去重，
   CSS 通过评论容器内的 `<link>` 加载，二者均成功后才初始化实例。资源加载超过
   8 秒或失败时显示本地化错误与重试按钮；自托管或升级客户端时，JS/CSS 必须保持同版本。
+  表情启用时，表情模块与表情包 `info.json` 和 JS/CSS 并行加载，同受 8 秒超时约束；
+  取得的表情包以内联对象交给 Waline，Waline 不再重复请求。单个表情包失败时保留其 URL
+  交给 Waline 自行重试，不阻断评论区初始化。`emoji: false` 时既不加载模块也不请求表情包。
 - **Waline 的页面生命周期**：`<shirone-waline>` 通过 `connectedCallback()` /
   `disconnectedCallback()` 覆盖直接加载与 Swup 容器替换；离开页面时销毁实例、
   断开观察器、取消页面监听及样式等待，并移除该实例的 CSS。共享 SDK 脚本保留复用，
@@ -176,8 +186,10 @@ pnpm.cmd build
 - **零足迹测试**：访问不含该特性的页面（如首页），断言无 `#comments` / 特性容器 DOM、
   无特性 CSS 资产请求；
 - **Waline 回归入口**：`tests/waline-config.test.mjs` 验证配置解析与旧配置兼容；
+  `tests/utils/emoji-tokens.test.mjs` 以 Waline 的 `parseEmoji` 为基准校验表情解析与回写；
   `tests/site/waline.spec.ts` 覆盖关闭状态、JS/CSS 懒加载、失败重试、Swup 切页与晚到响应、
-  主题/移动端/减少动态效果、上传按钮键盘操作和无 JavaScript 回退。开启 Waline 并配置
+  主题/移动端/减少动态效果、上传按钮键盘操作、表情输入框（选择、输入、粘贴、撤销、复制、
+  SDK 写入、键盘与 axe、`emoji: false` 与表情包失败回退）和无 JavaScript 回退。开启 Waline 并配置
   有效 `serverURL` 后运行该分片及 `tests/site/a11y.spec.ts`，再恢复原配置。
 - **UI 测试跳过守卫**：特性默认关闭，UI 测试依赖真实渲染，因此在每个 UI 测试开头：
 

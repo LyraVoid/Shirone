@@ -1,5 +1,8 @@
 import type { WalineConfig } from "@/types/commentConfig";
+import type { EmojiInput } from "./emoji-input";
+import type { EmojiCatalog } from "./emoji-tokens";
 import { loadScriptOnce } from "./script-loader";
+import type { attachEmojiInput } from "./waline-emoji";
 
 interface WalineInstance {
 	destroy: () => void;
@@ -24,6 +27,13 @@ declare global {
 }
 
 const RESOURCE_TIMEOUT_MS = 8_000;
+// Waline 3.x renders one button per emoji, titled with its key, in the open tab.
+const EMOJI_BUTTON = ".wl-emoji-popup .wl-tab-wrapper > button";
+
+interface EmojiSupport {
+	readonly catalog: EmojiCatalog;
+	readonly attach: typeof attachEmojiInput;
+}
 
 /**
  * 每个页面拥有自己的实例、样式和观察器。
@@ -37,16 +47,37 @@ class ShironeWaline extends HTMLElement {
 	private lifecycle?: AbortController;
 	private request?: AbortController;
 	private stylesheet?: HTMLLinkElement;
+	private emoji?: EmojiSupport;
+	private readonly inputs = new Map<HTMLTextAreaElement, EmojiInput>();
 	private generation = 0;
 	private loading = false;
 
 	connectedCallback(): void {
 		this.lifecycle = new AbortController();
+		const { signal } = this.lifecycle;
 		this.setState("loading");
 		this.querySelector(".waline-retry")?.addEventListener(
 			"click",
 			() => void this.mount(),
-			{ signal: this.lifecycle.signal },
+			{ signal },
+		);
+		// Picker buttons insert through the emoji input, which owns the caret and
+		// undo history; holding focus on mousedown keeps the caret (and a phone's
+		// keyboard) in place while several emoji are picked in a row.
+		this.addEventListener(
+			"mousedown",
+			(event) => {
+				if (this.emojiPick(event)) event.preventDefault();
+			},
+			{ capture: true, signal },
+		);
+		this.addEventListener(
+			"click",
+			(event) => {
+				const pick = this.emojiPick(event);
+				if (pick?.input.insert(pick.key)) event.stopPropagation();
+			},
+			{ capture: true, signal },
 		);
 
 		if (
@@ -73,10 +104,31 @@ class ShironeWaline extends HTMLElement {
 		this.request?.abort();
 		this.observer?.disconnect();
 		this.controlsObserver?.disconnect();
+		this.releaseInputs();
 		this.instance?.destroy();
 		this.instance = undefined;
 		this.stylesheet?.remove();
 		this.loading = false;
+	}
+
+	private releaseInputs(): void {
+		for (const input of this.inputs.values()) input.destroy();
+		this.inputs.clear();
+		this.emoji = undefined;
+	}
+
+	private emojiPick(
+		event: Event,
+	): { input: EmojiInput; key: string } | undefined {
+		const button =
+			event.target instanceof Element
+				? event.target.closest<HTMLElement>(EMOJI_BUTTON)
+				: null;
+		const textarea = button
+			?.closest(".wl-panel")
+			?.querySelector<HTMLTextAreaElement>(":scope > textarea.wl-editor");
+		const input = textarea ? this.inputs.get(textarea) : undefined;
+		return button && input ? { input, key: button.title } : undefined;
 	}
 
 	private setState(state: "loading" | "ready" | "error"): void {
@@ -215,17 +267,76 @@ class ShironeWaline extends HTMLElement {
 			)) {
 				this.decorateControl(close, "close");
 			}
+			this.attachInputs(container);
 		};
 		enhance();
 		// Replies render later, and Vue rewrites toggle classes. Reapply only missing
-		// decoration; leave SDK-owned nodes and event handlers intact.
-		this.controlsObserver = new MutationObserver(enhance);
+		// decoration; leave SDK-owned nodes and event handlers intact. Typing only
+		// mutates the emoji inputs themselves, which need no decoration.
+		this.controlsObserver = new MutationObserver((records) => {
+			if (
+				records.every((record) =>
+					(record.target instanceof Element
+						? record.target
+						: record.target.parentElement
+					)?.closest(".emoji-input"),
+				)
+			)
+				return;
+			enhance();
+		});
 		this.controlsObserver.observe(container, {
 			subtree: true,
 			childList: true,
 			attributes: true,
 			attributeFilter: ["class"],
 		});
+	}
+
+	// Wraps each SDK textarea (main, reply and edit forms) in an emoji input once,
+	// and drops inputs whose form Vue has unmounted.
+	private attachInputs(container: HTMLElement): void {
+		for (const [textarea, input] of this.inputs) {
+			if (textarea.isConnected) continue;
+			input.destroy();
+			this.inputs.delete(textarea);
+		}
+		const emoji = this.emoji;
+		if (!emoji) return;
+		const label = this.dataset.walineEditorLabel ?? "";
+		for (const textarea of container.querySelectorAll<HTMLTextAreaElement>(
+			"textarea.wl-editor",
+		)) {
+			if (!this.inputs.has(textarea))
+				this.inputs.set(
+					textarea,
+					emoji.attach(textarea, { catalog: emoji.catalog, label }),
+				);
+		}
+	}
+
+	// Never rejects: without its packs or module, Waline keeps its plain textarea.
+	private async loadEmoji(
+		option: unknown,
+		signal: AbortSignal,
+	): Promise<{ option: unknown; support?: EmojiSupport }> {
+		if (option === false) return { option };
+		try {
+			const { attachEmojiInput, resolveWalineEmoji } = await import(
+				"./waline-emoji"
+			);
+			const emoji = await resolveWalineEmoji(option, signal);
+			if (!emoji) return { option };
+			return {
+				option: emoji.option,
+				support: emoji.catalog.size
+					? { catalog: emoji.catalog, attach: attachEmojiInput }
+					: undefined,
+			};
+		} catch (error) {
+			console.warn("[Shirone Comments] Waline emoji input unavailable:", error);
+			return { option };
+		}
 	}
 
 	private async mount(): Promise<void> {
@@ -244,9 +355,11 @@ class ShironeWaline extends HTMLElement {
 			AbortSignal.timeout(RESOURCE_TIMEOUT_MS),
 		]);
 		try {
-			await Promise.all([
+			const options = JSON.parse(walineOptions);
+			const [, , emoji] = await Promise.all([
 				loadScriptOnce(walineScriptUrl, RESOURCE_TIMEOUT_MS),
 				this.loadStylesheet(walineStyleUrl, signal),
+				this.loadEmoji(options.emoji, signal),
 			]);
 			// script 标签不能可靠取消底层加载；离开页面后绝不再初始化旧容器。
 			if (!this.isConnected || generation !== this.generation) return;
@@ -254,13 +367,19 @@ class ShironeWaline extends HTMLElement {
 			if (typeof sdk?.init !== "function")
 				throw new Error("Waline SDK unavailable");
 			container.hidden = false;
-			this.instance = sdk.init({ ...JSON.parse(walineOptions), el: container });
+			this.emoji = emoji.support;
+			this.instance = sdk.init({
+				...options,
+				emoji: emoji.option,
+				el: container,
+			});
 			this.setupControls(container);
 			this.setState("ready");
 		} catch (error) {
 			if (!this.isConnected || generation !== this.generation) return;
 			this.request.abort();
 			this.controlsObserver?.disconnect();
+			this.releaseInputs();
 			this.stylesheet?.remove();
 			container.replaceChildren();
 			this.setState("error");

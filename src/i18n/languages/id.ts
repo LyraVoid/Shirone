@@ -180,6 +180,7 @@ export const id: Translation = {
 	[Key.announcementClose]: "Tutup pengumuman",
 
 	[Key.comments]: "Komentar",
+	[Key.commentsEditor]: "Isi komentar",
 	[Key.commentsLoading]: "Memuat komentar...",
 	[Key.commentsLoadFailed]: "Gagal memuat komentar",
 	[Key.commentsRequiresJavaScript]:

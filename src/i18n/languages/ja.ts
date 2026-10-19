@@ -175,6 +175,7 @@ export const ja: Translation = {
 	[Key.announcementClose]: "告知を閉じる",
 
 	[Key.comments]: "コメント",
+	[Key.commentsEditor]: "コメント本文",
 	[Key.commentsLoading]: "コメントを読み込み中...",
 	[Key.commentsLoadFailed]: "コメントの読み込みに失敗しました",
 	[Key.commentsRequiresJavaScript]:

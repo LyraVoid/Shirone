@@ -24,6 +24,7 @@ import { customWalineOptions } from "../fixtures/waline-options";
 const translations = [en, es, id, ja, ko, th, tr, vi, zh_CN, zh_TW];
 const commentKeys = [
 	I18nKey.comments,
+	I18nKey.commentsEditor,
 	I18nKey.commentsLoading,
 	I18nKey.commentsLoadFailed,
 	I18nKey.commentsRequiresJavaScript,
@@ -159,6 +160,13 @@ async function mockWaline(page: Page, config: WalineConfig) {
 	);
 	await page.route(config.styleUrl, (route) =>
 		route.fulfill({ contentType: "text/css", body: "" }),
+	);
+	// Emoji presets are fetched by the theme before Waline mounts.
+	await page.route("**/info.json", (route) =>
+		route.fulfill({
+			contentType: "application/json",
+			body: JSON.stringify({ name: "Fixture", icon: "a", items: ["a"] }),
+		}),
 	);
 }
 
@@ -605,7 +613,14 @@ test.describe("Comment System - Configuration & Architecture", () => {
 		const mounted = await wrapper
 			.locator("[data-waline]")
 			.getAttribute("data-waline-mock-options");
-		expect(JSON.parse(mounted ?? "null")).toEqual(serialized);
+		const { emoji: mountedEmoji, ...mountedRest } = JSON.parse(
+			mounted ?? "null",
+		);
+		const { emoji: serializedEmoji, ...serializedRest } = serialized;
+		expect(mountedRest).toEqual(serializedRest);
+		// Presets reach Waline as the inline packs the theme already fetched.
+		if (serializedEmoji === false) expect(mountedEmoji).toBe(false);
+		else expect(Array.isArray(mountedEmoji)).toBe(true);
 		await expect(
 			wrapper.getByRole("textbox", { name: "Comment", exact: true }),
 		).toHaveAttribute("placeholder", options.waline.locale?.placeholder ?? "");

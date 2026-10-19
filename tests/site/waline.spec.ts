@@ -10,6 +10,8 @@ const enabled = options?.provider === "waline";
 const waline = commentConfig.waline;
 if (!waline)
 	throw new Error("The theme's default Waline configuration is missing");
+// The emoji fixtures below stand in for the pack `emoji: true` resolves to.
+const defaultEmoji = waline.emoji === true || waline.emoji === undefined;
 const ARTICLE = "/posts/guide/";
 const OTHER_ARTICLE = "/posts/markdown-extended/";
 const WRAPPER = "shirone-waline";
@@ -18,28 +20,78 @@ const SDK = `
 window.__walineLoads = (window.__walineLoads || 0) + 1;
 window.__walineMounts = window.__walineMounts || [];
 window.__walineDestroyed = window.__walineDestroyed || [];
+window.__walineSubmissions = window.__walineSubmissions || [];
+window.__walineUploads = window.__walineUploads || [];
 window.Waline = {
 	init(options) {
 		window.__walineMounts.push({ ...options, el: undefined });
 		const legacyIcon = '<svg viewBox="0 0 1024 1024" width="24" height="24" aria-hidden="true"><path d="M0 0h1024v1024H0z" fill="currentColor" /></svg>';
+		// Waline 3.16's emoji map (getEmojisInfo) and parseEmoji, for inline packs.
+		const emojiMap = {};
+		for (const pack of Array.isArray(options.emoji) ? options.emoji : []) {
+			if (typeof pack !== 'object') continue;
+			for (const item of pack.items) emojiMap[(pack.prefix || '') + item] = (pack.folder ? pack.folder + '/' : '') + (pack.prefix || '') + item + (pack.type ? '.' + pack.type : '');
+		}
+		const parseEmoji = (text) => text.replace(/:(.+?):/gu, (placeholder, key) => emojiMap[key] ? '<img class="wl-emoji" src="' + emojiMap[key] + '" alt="' + key + '">' : placeholder);
+		// The shared draft (useEditor) behind a v-model textarea that Vue patches a
+		// microtask later, and only when the DOM value differs.
+		let draft = localStorage.getItem('WALINE_COMMENT_BOX_EDITOR') || '';
+		let textarea;
+		const setDraft = (value) => {
+			draft = value;
+			localStorage.setItem('WALINE_COMMENT_BOX_EDITOR', value);
+			queueMicrotask(() => {
+				if (textarea && textarea.value !== draft) textarea.value = draft;
+			});
+		};
+		window.__walineSetDraft = setDraft;
+		const insert = (text) => {
+			const start = textarea.selectionStart;
+			const end = textarea.selectionEnd || 0;
+			setDraft(textarea.value.slice(0, start) + text + textarea.value.slice(end));
+			textarea.focus();
+			textarea.selectionStart = start + text.length;
+			textarea.selectionEnd = start + text.length;
+		};
 		const host = document.createElement('div');
 		function renderForm(reply = false) {
 			const form = document.createElement('div');
 			form.className = 'wl-comment';
 			form.innerHTML = '<form class="wl-panel"><div class="wl-header">'
 				+ ['NickName', 'E-Mail', 'Website'].map((label, index) => '<div class="wl-header-item"><label for="waline-field-' + index + '">' + label + '</label><input type="' + (index === 1 ? 'email' : 'text') + '" class="wl-input" id="waline-field-' + index + '" /></div>').join('')
-				+ '</div><textarea class="wl-editor" aria-label="Comment"></textarea><div class="wl-preview" hidden>Preview</div><div class="wl-footer"><div class="wl-actions">'
+				+ '</div><textarea class="wl-editor" aria-label="Comment" placeholder="' + (reply ? '@Alice' : 'Share your thoughts...') + '"></textarea><div class="wl-preview" hidden>Preview</div><div class="wl-footer"><div class="wl-actions">'
 				+ '<a class="wl-action" href="#comments" title="Markdown Guide">MD</a><button class="wl-action" type="button" title="Emoji">' + legacyIcon + '</button>'
 				+ '<input id="wl-image-upload" type="file" hidden /><label class="wl-action" for="wl-image-upload" title="Upload image" aria-label="Upload image">' + legacyIcon + '</label>'
-				+ '<button class="wl-action" type="button" title="Preview">' + legacyIcon + '</button></div><button class="wl-btn primary" type="button">Submit</button></div></form>'
+				+ '<button class="wl-action" type="button" title="Preview">' + legacyIcon + '</button></div><button class="wl-btn primary" type="button">Submit</button>'
+				+ '<div class="wl-emoji-popup"><div class="wl-tab-wrapper">'
+				+ Object.keys(emojiMap).map((key) => '<button type="button" title="' + key + '"><img class="wl-emoji" src="' + emojiMap[key] + '" alt="' + key + '" /></button>').join('')
+				+ '</div></div></div></form>'
 				+ (reply ? '<button class="wl-close" type="button" title="Cancel reply">' + legacyIcon + '</button>' : '');
 			for (const control of form.querySelectorAll('button.wl-action')) {
 				control.addEventListener('click', () => {
 					// Vue rewrites the SDK class binding when the toggle changes.
 					control.className = control.classList.contains('active') ? 'wl-action' : 'wl-action active';
 					if (control.title === 'Preview') form.querySelector('.wl-preview').hidden = !control.classList.contains('active');
+					if (control.title === 'Emoji') form.querySelector('.wl-emoji-popup').classList.toggle('display', control.classList.contains('active'));
 				});
 			}
+			for (const button of form.querySelectorAll('.wl-tab-wrapper > button')) {
+				button.addEventListener('click', () => insert(':' + button.title + ':'));
+			}
+			textarea = form.querySelector('textarea');
+			textarea.value = draft;
+			textarea.addEventListener('input', () => setDraft(textarea.value));
+			textarea.addEventListener('keydown', (event) => {
+				if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') window.__walineSubmissions.push(parseEmoji(draft));
+			});
+			textarea.addEventListener('paste', (event) => {
+				const file = [...(event.clipboardData?.items || [])].find((item) => item.kind === 'file')?.getAsFile();
+				if (!file) return;
+				window.__walineUploads.push(file.name);
+				const pending = '![Uploading ' + file.name + ']()';
+				insert(pending);
+				setTimeout(() => setDraft(draft.replace(pending, '\\r\\n![' + file.name + '](https://img.example/' + file.name + ')')), 50);
+			});
 			form.querySelector('.wl-close')?.addEventListener('click', () => renderForm());
 			host.replaceChildren(form);
 		}
@@ -85,9 +137,32 @@ window.Waline = {
 };
 `;
 
+// Waline's default `emoji: true` pack, served locally with a 1×1 image per item.
+const EMOJI_PACK = "**/@waline/emojis@1.1.0/weibo/";
+const EMOJI_INFO = {
+	name: "Weibo",
+	prefix: "weibo_",
+	type: "png",
+	icon: "smile",
+	items: ["smile", "longing", "no_idea"],
+};
+const PIXEL = Buffer.from(
+	"iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+	"base64",
+);
+
 async function mockWaline(page: Page) {
 	await page.route(waline.scriptUrl, (route) =>
 		route.fulfill({ contentType: "application/javascript", body: SDK }),
+	);
+	await page.route(`${EMOJI_PACK}info.json`, (route) =>
+		route.fulfill({
+			contentType: "application/json",
+			body: JSON.stringify(EMOJI_INFO),
+		}),
+	);
+	await page.route(`${EMOJI_PACK}*.png`, (route) =>
+		route.fulfill({ contentType: "image/png", body: PIXEL }),
 	);
 	await page.route(waline.styleUrl, (route) =>
 		route.fulfill({
@@ -118,6 +193,10 @@ async function mockWaline(page: Page) {
 			.wl-reaction-img { position: relative; width: 42px; height: 42px; }
 			.wl-reaction-loading { position: absolute; inset-inline-end: -5px; top: -4px; width: 18px; height: 18px; }
 			.wl-reaction-votes { position: absolute; inset-inline-end: -9px; top: -9px; min-width: 1em; padding: 2px; border: 1px solid var(--waline-theme-color); border-radius: 1em; font-size: .75em; line-height: 1; }
+			.wl-editor { min-height: 8.75em; }
+			.wl-emoji-popup { display: none; }
+			.wl-emoji-popup.display { display: block; }
+			.wl-emoji-popup .wl-emoji { width: 1.5em; height: 1.5em; }
 
 			`,
 		}),
@@ -210,13 +289,22 @@ async function snapshot(page: Page) {
 	return page.evaluate(() => {
 		const state = window as Window & {
 			__walineLoads?: number;
-			__walineMounts?: { path: string; lang: string; pageview: boolean }[];
+			__walineMounts?: {
+				path: string;
+				lang: string;
+				pageview: boolean;
+				emoji?: unknown;
+			}[];
 			__walineDestroyed?: string[];
+			__walineSubmissions?: string[];
+			__walineUploads?: string[];
 		};
 		return {
 			loads: state.__walineLoads ?? 0,
 			mounts: state.__walineMounts ?? [],
 			destroyed: state.__walineDestroyed ?? [],
+			submissions: state.__walineSubmissions ?? [],
+			uploads: state.__walineUploads ?? [],
 		};
 	});
 }
@@ -261,12 +349,17 @@ test.describe("Waline enabled", () => {
 		page,
 	}) => {
 		const resources: string[] = [];
+		const packs: string[] = [];
 		page.on("request", (request) => {
 			if ([waline.scriptUrl, waline.styleUrl].includes(request.url()))
 				resources.push(request.url());
+			if (request.url().endsWith("/info.json")) packs.push(request.url());
 		});
 		await page.goto(ARTICLE);
-		if (commentConfig.lazy) expect(resources).toEqual([]);
+		if (commentConfig.lazy) {
+			expect(resources).toEqual([]);
+			expect(packs).toEqual([]);
+		}
 		await mount(page);
 		await page.evaluate(() => {
 			document.dispatchEvent(new Event("swup:content:replace"));
@@ -282,8 +375,16 @@ test.describe("Waline enabled", () => {
 			path: ARTICLE,
 			pageview: false,
 			...(waline.locale ? { locale: waline.locale } : {}),
-			...(waline.emoji !== undefined ? { emoji: waline.emoji } : {}),
 		});
+		// Presets are fetched once by the theme and handed over as inline packs.
+		if (defaultEmoji) {
+			expect(packs).toHaveLength(1);
+			expect(state.mounts[0].emoji).toEqual([
+				{ folder: "//unpkg.com/@waline/emojis@1.1.0/weibo", ...EMOJI_INFO },
+			]);
+		} else if (waline.emoji === false) {
+			expect(state.mounts[0].emoji).toBe(false);
+		}
 		expect(state.mounts[0]).not.toHaveProperty("placeholder");
 		await expect(page.locator(".waline-loading")).toBeHidden();
 	});
@@ -629,6 +730,12 @@ test.describe("Waline enabled", () => {
 						"--secondary-container",
 					);
 					await expectTokenColor(close, "color", "--on-secondary-container");
+					// The reply form's textarea gets its own emoji input; the old one is gone.
+					if (defaultEmoji)
+						await expect(page.locator(".emoji-input")).toHaveAttribute(
+							"aria-placeholder",
+							"@Alice",
+						);
 					const buttonBox = await close.boundingBox();
 					const panelBox = await page.locator(".wl-panel").boundingBox();
 					expect(
@@ -644,11 +751,319 @@ test.describe("Waline enabled", () => {
 					await close.press("Enter");
 					await expect(close).toHaveCount(0);
 					await expect(page.locator(".waline-upload")).toHaveCount(1);
+					if (defaultEmoji)
+						await expect(page.locator(".emoji-input")).toHaveAttribute(
+							"aria-placeholder",
+							"Share your thoughts...",
+						);
 				}
 				expect(iconRequests).toEqual([]);
 			});
 		});
 	}
+
+	test.describe("emoji input", () => {
+		test.skip(!defaultEmoji, "The emoji fixtures mirror Waline's default pack");
+
+		const editor = (page: Page) =>
+			page.getByRole("textbox", { name: "Comment", exact: true });
+		const stored = (page: Page) =>
+			page
+				.locator("textarea.wl-editor")
+				.evaluate((element: HTMLTextAreaElement) => element.value);
+		// Icons read as [label], so assertions show what a sighted reader sees; a
+		// last newline is the browser's placeholder for an empty final line.
+		const shown = (page: Page) =>
+			editor(page).evaluate((element) =>
+				[...element.childNodes]
+					.map((node) =>
+						node instanceof HTMLImageElement
+							? `[${node.alt}]`
+							: (node.textContent ?? ""),
+					)
+					.join("")
+					.replace(/\n$/u, ""),
+			);
+		const pick = async (page: Page, key: string) => {
+			const popup = page.locator(".wl-emoji-popup");
+			if (!(await popup.isVisible()))
+				await page.getByRole("button", { name: "Emoji", exact: true }).click();
+			await popup.locator(`button[title="${key}"]`).click();
+		};
+		const paste = (page: Page, text: string) =>
+			editor(page).evaluate((element, text) => {
+				const data = new DataTransfer();
+				data.setData("text/plain", text);
+				element.dispatchEvent(
+					new ClipboardEvent("paste", {
+						clipboardData: data,
+						bubbles: true,
+						cancelable: true,
+					}),
+				);
+			}, text);
+
+		test("picker inserts icons at the caret while Waline keeps shortcodes", async ({
+			page,
+		}) => {
+			await page.goto(ARTICLE);
+			await mount(page);
+			const input = editor(page);
+			await expect(input).toBeVisible();
+			await expect(input).toHaveAttribute("aria-multiline", "true");
+			await expect(page.locator("textarea.wl-editor")).toBeHidden();
+			// Events bridged to the hidden textarea must not reach the page twice.
+			await page.evaluate(() => {
+				const state = window as Window & { __bridged?: number };
+				state.__bridged = 0;
+				for (const type of ["input", "keydown"])
+					document.addEventListener(type, (event) => {
+						if (event.target instanceof HTMLTextAreaElement)
+							state.__bridged = (state.__bridged ?? 0) + 1;
+					});
+			});
+			await input.click();
+			await page.keyboard.type("Hi ");
+			await pick(page, "weibo_longing");
+			await pick(page, "weibo_longing");
+			await expect(input).toBeFocused();
+			await page.keyboard.type(" there");
+			expect(await shown(page)).toBe("Hi [longing][longing] there");
+			expect(await stored(page)).toBe(
+				"Hi :weibo_longing::weibo_longing: there",
+			);
+			expect(
+				await page.evaluate(() =>
+					localStorage.getItem("WALINE_COMMENT_BOX_EDITOR"),
+				),
+			).toBe("Hi :weibo_longing::weibo_longing: there");
+			expect(
+				await page.evaluate(
+					() => (window as Window & { __bridged?: number }).__bridged,
+				),
+			).toBe(0);
+			await expect(input.locator("img").first()).toHaveAttribute(
+				"referrerpolicy",
+				"no-referrer",
+			);
+			// An icon is one caret step, Backspace removes it whole, and undo restores it.
+			for (const _ of " there") await page.keyboard.press("ArrowLeft");
+			await page.keyboard.press("Backspace");
+			expect(await stored(page)).toBe("Hi :weibo_longing: there");
+			await page.keyboard.press("ControlOrMeta+z");
+			expect(await stored(page)).toBe(
+				"Hi :weibo_longing::weibo_longing: there",
+			);
+			// Copying hands out the stored text rather than image markup.
+			const copied = await input.evaluate((element) => {
+				getSelection()?.selectAllChildren(element);
+				const data = new DataTransfer();
+				element.dispatchEvent(
+					new ClipboardEvent("copy", {
+						clipboardData: data,
+						bubbles: true,
+						cancelable: true,
+					}),
+				);
+				return data.getData("text/plain");
+			});
+			expect(copied).toBe("Hi :weibo_longing::weibo_longing: there");
+		});
+
+		test("restored, typed and pasted text shows icons exactly where Waline renders them", async ({
+			page,
+		}) => {
+			const edited =
+				'<img class="wl-emoji" src="//unpkg.com/@waline/emojis@1.1.0/weibo/weibo_no_idea.png" alt="weibo_no_idea">';
+			await page.addInitScript((draft) => {
+				if (sessionStorage.getItem("waline-draft")) return;
+				sessionStorage.setItem("waline-draft", "seeded");
+				localStorage.setItem("WALINE_COMMENT_BOX_EDITOR", draft);
+			}, `Saved :weibo_smile:\n${edited}`);
+			await page.goto(ARTICLE);
+			await mount(page);
+			const input = editor(page);
+			// Edit mode and drafts carry both the shortcode and Waline's element.
+			expect(await shown(page)).toBe("Saved [smile]\n[no idea]");
+			await input.click();
+			await page.keyboard.press("ControlOrMeta+End");
+			await page.keyboard.press("Enter");
+			await page.keyboard.type("typed :weibo_longing: ok");
+			await paste(page, " <b>raw</b> :weibo_smile:\n");
+			expect(await shown(page)).toBe(
+				"Saved [smile]\n[no idea]\ntyped [longing] ok <b>raw</b> [smile]\n",
+			);
+			// Waline pairs the colon in "Note:" with the shortcode's own, so a typed
+			// shortcode stays text there, while a picked emoji is stored as the element.
+			await page.keyboard.type("Note: :weibo_smile: ");
+			await pick(page, "weibo_longing");
+			expect(await shown(page)).toBe(
+				"Saved [smile]\n[no idea]\ntyped [longing] ok <b>raw</b> [smile]\nNote: :weibo_smile: [longing]",
+			);
+			expect(await stored(page)).toBe(
+				`Saved :weibo_smile:\n${edited}\ntyped :weibo_longing: ok <b>raw</b> :weibo_smile:\nNote: :weibo_smile: <img class="wl-emoji" src="//unpkg.com/@waline/emojis@1.1.0/weibo/weibo_longing.png" alt="weibo_longing">`,
+			);
+			await input.press("ControlOrMeta+Enter");
+			const [submitted] = (await snapshot(page)).submissions;
+			expect(submitted.match(/<img class="wl-emoji"/gu)).toHaveLength(5);
+			expect(submitted).toContain("Note: :weibo_smile: <img");
+			expect(await stored(page)).not.toContain("\n\n");
+			await page.reload();
+			await mount(page);
+			expect(await shown(page)).toBe(
+				"Saved [smile]\n[no idea]\ntyped [longing] ok <b>raw</b> [smile]\nNote: :weibo_smile: [longing]",
+			);
+		});
+
+		test("Waline's own writes re-render the editor and keep the caret", async ({
+			page,
+		}) => {
+			await page.goto(ARTICLE);
+			await mount(page);
+			const input = editor(page);
+			await page.evaluate(() =>
+				(
+					window as Window & { __walineSetDraft?: (value: string) => void }
+				).__walineSetDraft?.(":weibo_smile: edit"),
+			);
+			await expect.poll(() => shown(page)).toBe("[smile] edit");
+			// Clearing after submit brings back the localized hint.
+			await page.evaluate(() =>
+				(
+					window as Window & { __walineSetDraft?: (value: string) => void }
+				).__walineSetDraft?.(""),
+			);
+			await expect.poll(() => shown(page)).toBe("");
+			await expect(input).toHaveAttribute(
+				"aria-placeholder",
+				"Share your thoughts...",
+			);
+			expect(
+				await input.evaluate((element) =>
+					getComputedStyle(element, "::before").getPropertyValue("content"),
+				),
+			).toBe('"Share your thoughts..."');
+			// Pasted images go to Waline's uploader, which swaps its placeholder.
+			await input.click();
+			await page.keyboard.type("pic ");
+			await input.evaluate(
+				(element, bytes) => {
+					const data = new DataTransfer();
+					data.items.add(
+						new File([new Uint8Array(bytes)], "dot.png", { type: "image/png" }),
+					);
+					element.dispatchEvent(
+						new ClipboardEvent("paste", {
+							clipboardData: data,
+							bubbles: true,
+							cancelable: true,
+						}),
+					);
+				},
+				[...PIXEL],
+			);
+			await expect
+				.poll(() => stored(page))
+				.toBe("pic \n![dot.png](https://img.example/dot.png)");
+			expect((await snapshot(page)).uploads).toEqual(["dot.png"]);
+			await expect(input).toBeFocused();
+			await page.keyboard.type("!");
+			expect(await stored(page)).toBe(
+				"pic \n![dot.png](https://img.example/dot.png)!",
+			);
+		});
+
+		test("keyboard picks return to the editor, icons keep the line height, and axe passes", async ({
+			page,
+		}) => {
+			await page.addInitScript(() => localStorage.setItem("theme", "auto"));
+			await page.goto(ARTICLE);
+			await mount(page);
+			await settleTheme(page);
+			const input = editor(page);
+			await input.focus();
+			await page.keyboard.type("k ");
+			await page.getByRole("button", { name: "Emoji", exact: true }).focus();
+			await page.keyboard.press("Enter");
+			await page.locator('.wl-emoji-popup button[title="weibo_smile"]').focus();
+			await page.keyboard.press("Enter");
+			await expect(input).toBeFocused();
+			expect(await stored(page)).toBe("k :weibo_smile:");
+			await page.keyboard.type("\nnext");
+			const lineTops = (text: string) =>
+				input.evaluate((element, text) => {
+					const node = [...element.childNodes].find((child) =>
+						child.textContent?.includes(text),
+					);
+					const range = document.createRange();
+					range.selectNodeContents(node ?? element);
+					const rects = [...range.getClientRects()];
+					return (rects.at(-1)?.top ?? 0) - element.getBoundingClientRect().top;
+				}, text);
+			const withIcon = await lineTops("next");
+			const glyph = input.locator("img");
+			await expect(glyph).toHaveCSS("height", "20px");
+			await page.keyboard.press("ArrowUp");
+			await page.keyboard.press("End");
+			await page.keyboard.press("Backspace");
+			expect(await stored(page)).toBe("k \nnext");
+			expect(await lineTops("next")).toBe(withIcon);
+			for (const dark of [false, true]) {
+				await page.emulateMedia({ colorScheme: dark ? "dark" : "light" });
+				await expect(page.locator("html")).toHaveClass(
+					dark ? /dark/ : /^(?!.*\bdark\b)/,
+				);
+				await expectTokenColor(input, "color", "--on-surface");
+				const result = await new AxeBuilder({ page })
+					.include("#comments")
+					.analyze();
+				expect(result.violations).toEqual([]);
+			}
+		});
+
+		test("emoji: false keeps Waline's textarea and fetches no pack", async ({
+			page,
+		}) => {
+			const packs: string[] = [];
+			page.on("request", (request) => {
+				if (request.url().endsWith("/info.json")) packs.push(request.url());
+			});
+			// Only the document: Swup prefetches must not outlive the test in a handler.
+			await page.route("**/posts/guide/", async (route) => {
+				if (!route.request().isNavigationRequest()) {
+					await route.fallback();
+					return;
+				}
+				const response = await route.fetch();
+				const html = (await response.text()).replace(
+					/(&quot;emoji&quot;:)true/u,
+					"$1false",
+				);
+				await route.fulfill({ response, body: html });
+			});
+			await page.goto(ARTICLE);
+			await mount(page);
+			await expect(page.locator(".emoji-input")).toHaveCount(0);
+			await expect(page.locator("textarea.wl-editor")).toBeVisible();
+			expect((await snapshot(page)).mounts[0].emoji).toBe(false);
+			expect(packs).toEqual([]);
+		});
+
+		test("a failing pack leaves Waline its preset and the plain textarea", async ({
+			page,
+		}) => {
+			await page.route(`${EMOJI_PACK}info.json`, (route) =>
+				route.fulfill({ status: 503, body: "" }),
+			);
+			await page.goto(ARTICLE);
+			await mount(page);
+			await expect(page.locator(".emoji-input")).toHaveCount(0);
+			await expect(page.locator("textarea.wl-editor")).toBeVisible();
+			expect((await snapshot(page)).mounts[0].emoji).toEqual([
+				"//unpkg.com/@waline/emojis@1.1.0/weibo",
+			]);
+		});
+	});
 
 	for (const resource of ["scriptUrl", "styleUrl"] as const) {
 		test(`recovers from ${resource} failure through the retry button`, async ({
@@ -694,6 +1109,7 @@ test.describe("Waline enabled", () => {
 		await mount(page);
 		await expect(page.locator(".waline-upload")).toHaveCount(1);
 		await expect(page.locator(".wl-actions .waline-icon")).toHaveCount(3);
+		if (defaultEmoji) await expect(page.locator(".emoji-input")).toHaveCount(1);
 		const state = await snapshot(page);
 		expect(state.loads).toBe(1);
 		expect(state.mounts.map((item) => item.path)).toEqual([
