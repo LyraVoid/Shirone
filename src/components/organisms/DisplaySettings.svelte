@@ -64,6 +64,8 @@ let dark = $state(
 );
 
 let motionReduced = $state(false);
+// 九宫格色卡在面板首次打开前不计算（9 次配色解算只在用户真正查看时发生）
+let panelOpened = $state(false);
 
 // 文章列表布局（list/grid）：初始值取访客偏好，变化时存储 + FLIP 重排
 const defaultLayoutMode = defaultMode();
@@ -127,7 +129,21 @@ onMount(() => {
 		attributeFilter: ["class"],
 	});
 	motionReduced = getMotionPreference();
-	return () => observer.disconnect();
+	const panel = document.getElementById("display-setting");
+	const panelObserver = new MutationObserver(() => {
+		if (panel?.classList.contains("float-panel-closed")) return;
+		panelOpened = true;
+		panelObserver.disconnect();
+	});
+	if (panel)
+		panelObserver.observe(panel, {
+			attributes: true,
+			attributeFilter: ["class"],
+		});
+	return () => {
+		observer.disconnect();
+		panelObserver.disconnect();
+	};
 });
 
 /** 完整重置：色相 / 配色风格 / Color Spec / 列表布局 / 背景纹理 全部还原为站点默认（点击即生效，无确认弹窗） */
@@ -233,7 +249,7 @@ const stylePreviews = $derived(
 	MC_STYLES.map((s) => ({
 		style: s,
 		label: i18n(styleKey(s)),
-		colors: styleColors(s, hue, dark, spec),
+		colors: panelOpened ? styleColors(s, hue, dark, spec) : null,
 	})),
 );
 </script>
@@ -281,9 +297,9 @@ const stylePreviews = $derived(
                                 onclick={() => (style = p.style)}
                             >
                                 <span class="m3-style-cell__dots">
-                                    <span class="m3-style-cell__dot" style={`background: ${p.colors.primary}`}></span>
-                                    <span class="m3-style-cell__dot" style={`background: ${p.colors.secondary}`}></span>
-                                    <span class="m3-style-cell__dot" style={`background: ${p.colors.tertiary}`}></span>
+                                    <span class="m3-style-cell__dot" style={p.colors && `background: ${p.colors.primary}`}></span>
+                                    <span class="m3-style-cell__dot" style={p.colors && `background: ${p.colors.secondary}`}></span>
+                                    <span class="m3-style-cell__dot" style={p.colors && `background: ${p.colors.tertiary}`}></span>
                                 </span>
                                 <span class="m3-style-cell__name">{p.label}</span>
                             </button>

@@ -353,7 +353,13 @@ export function shirones(options: ShironesOptions = {}): AstroIntegration {
 					integrations,
 					markdown: { processor: processor as never },
 					vite: {
-						resolve: { alias: createAliases(paths) },
+						resolve: {
+							alias: createAliases(paths),
+							// Layout.astro resolves the default color scheme at build
+							// time; this package ships extensionless ESM imports that
+							// Node cannot load when externalized, so Vite bundles it.
+							noExternal: ["@material/material-color-utilities"],
+						},
 						plugins: [
 							// The overlay rewriter redirects user files onto package
 							// files; inside the theme's own repository every import already

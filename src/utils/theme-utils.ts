@@ -1,11 +1,12 @@
 import {
 	MC_SPECS,
 	MC_STYLES,
+	type McScheme,
 	type McSpec,
 	type McStyle,
 	resolveScheme,
 } from "@utils/mc-utils";
-import { getDefaultSpec, getDefaultStyle } from "@/config";
+import { getDefaultSpec, getDefaultStyle, siteConfig } from "@/config";
 
 const STYLE_KEY = "mc-style";
 const SPEC_KEY = "mc-spec";
@@ -94,9 +95,29 @@ export function setSpec(spec: McSpec): void {
 }
 
 /**
+ * Serialize the site-default light and dark schemes as static CSS so the first
+ * paint already carries them and visitors on the defaults never run the engine.
+ */
+export function createDefaultSchemeStyle(): string {
+	const { hue, style, spec } = siteConfig.themeColor;
+	const block = (isDark: boolean) => {
+		const scheme = resolveScheme(hue, isDark, style as McStyle, spec as McSpec);
+		return Object.entries(ROLE_TO_CSS)
+			.filter(([role]) => scheme[role])
+			.map(([role, cssVar]) => `${cssVar}:${scheme[role]}`)
+			.join(";");
+	};
+	return `:root{${block(false)}}:root.dark{${block(true)}}`;
+}
+
+let appliedSchemeKey = "";
+
+/**
  * Recompute and apply the dynamic M3/M3E scheme for the current hue, style,
  * spec and light/dark mode, writing concrete hex values onto CSS custom
- * properties on `:root`.
+ * properties on `:root`. The site-default scheme is shipped as static CSS by
+ * `createDefaultSchemeStyle()`, so for it the inline overrides are cleared
+ * instead; unchanged inputs are skipped to avoid redundant style recalcs.
  */
 export function applyCurrentScheme(): void {
 	const root = document.querySelector(":root") as HTMLElement | null;
@@ -109,7 +130,17 @@ export function applyCurrentScheme(): void {
 	const isDark = root.classList.contains("dark");
 	const style = getStyle();
 	const spec = getSpec();
-	const scheme = resolveScheme(hue, isDark, style, spec);
+	const key = `${hue}|${isDark}|${style}|${spec}`;
+	if (key === appliedSchemeKey) return;
+	appliedSchemeKey = key;
+
+	const isDefault =
+		hue === siteConfig.themeColor.hue &&
+		style === getDefaultStyle() &&
+		spec === getDefaultSpec();
+	const scheme: McScheme = isDefault
+		? {}
+		: resolveScheme(hue, isDark, style, spec);
 
 	for (const [role, cssVar] of Object.entries(ROLE_TO_CSS)) {
 		const value = scheme[role];

@@ -4,6 +4,7 @@ import Snackbar from "@components/atoms/overlay/Snackbar.svelte";
 import ConfigCarrier from "@components/system/ConfigCarrier.astro";
 import UmamiRuntime from "@components/system/UmamiRuntime.astro";
 import { resolveAsset } from "@utils/asset-utils";
+import { createDefaultSchemeStyle } from "@utils/theme-utils";
 import { pathsEqual, toAbsoluteUrl, url } from "@utils/url-utils";
 import {
 	expressiveCodeConfig,
@@ -110,6 +111,7 @@ if (!lang) {
 const siteLang = lang.replace("_", "-");
 const fontRoleStyle = createFontRoleStyle(resolvedFontOptions);
 const configuredFontRoles = getConfiguredFontRoles(resolvedFontOptions);
+const defaultSchemeStyle = createDefaultSchemeStyle();
 ---
 
 <!DOCTYPE html>
@@ -142,6 +144,7 @@ const configuredFontRoles = getConfiguredFontRoles(resolvedFontOptions);
 
 		<meta name="viewport" content="width=device-width" />
 		<meta name="generator" content={Astro.generator} />
+		<style is:inline set:html={defaultSchemeStyle}></style>
 		{fontRoleStyle && <style is:inline set:html={fontRoleStyle}></style>}
 		{textureEnabled && <style is:inline set:html={textureStyles}></style>}
 		{configuredFontRoles.map((role) => (
