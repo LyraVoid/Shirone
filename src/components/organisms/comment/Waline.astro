@@ -134,7 +134,7 @@ const walineStylus = `
 		padding: 0 var(--m3e-space-4)
 		border: none
 		border-radius: var(--shape-corner-m)
-		background: var(--surface-container-high)
+		background: var(--field-filled-bg)
 		--m3e-state-hover-alpha: 12%
 		--m3e-state-focus-alpha: 16%
 
@@ -203,7 +203,7 @@ const walineStylus = `
 		border: none
 		border-radius: var(--shape-corner-m)
 		box-shadow: none
-		background-color: var(--surface-container-high)
+		background-color: var(--field-filled-bg)
 		// Textareas cannot host a pseudo-element; paint the same 2px inset indicator.
 		background-image: linear-gradient(var(--primary), var(--primary))
 		background-repeat: no-repeat
@@ -219,10 +219,10 @@ const walineStylus = `
 
 	// Keep the filled TextField's 12% hover / 16% focus surface state on the textarea.
 	.wl-panel > .wl-editor:hover
-		background-color: unquote("color-mix(in oklab, var(--on-surface) 12%, var(--surface-container-high))")
+		background-color: unquote("color-mix(in oklab, var(--on-surface) 12%, var(--field-filled-bg))")
 
 	.wl-panel > .wl-editor:focus
-		background-color: unquote("color-mix(in oklab, var(--on-surface) 16%, var(--surface-container-high))")
+		background-color: unquote("color-mix(in oklab, var(--on-surface) 16%, var(--field-filled-bg))")
 		background-size: calc(100% - var(--m3e-space-2) * 2) 2px
 
 	.wl-footer

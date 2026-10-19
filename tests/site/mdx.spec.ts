@@ -252,6 +252,63 @@ test.describe("MDX Support and M3E Integration", () => {
 			.not.toBe("none");
 	});
 
+	test("filled text field stays distinguishable from the article card in light and dark modes", async ({
+		page,
+	}) => {
+		await page.goto("/posts/mdx-showcase/");
+		for (const theme of ["light", "dark"]) {
+			await page.evaluate(
+				(value) => localStorage.setItem("theme", value),
+				theme,
+			);
+			await page.reload();
+			await expect(page.locator("html")).toHaveClass(
+				theme === "dark" ? /\bdark\b/ : /^(?!.*\bdark\b)/,
+			);
+			await page.waitForFunction(() =>
+				document.documentElement.style
+					.getPropertyValue("--mc-primary")
+					.startsWith("#"),
+			);
+			const field = page.locator(".m3-text-field--filled").first();
+			await field.scrollIntoViewIfNeeded();
+			const contrast = await field.evaluate(async (element) => {
+				const card = element.closest(".m3-card");
+				if (!card) throw new Error("The showcase field must sit on a card");
+				await Promise.all(
+					[...element.getAnimations(), ...card.getAnimations()].map(
+						(animation) => animation.finished.catch(() => undefined),
+					),
+				);
+				const context = document
+					.createElement("canvas")
+					.getContext("2d", { willReadFrequently: true });
+				if (!context) throw new Error("Canvas 2D is unavailable");
+				const luminance = (color: string) => {
+					context.clearRect(0, 0, 1, 1);
+					context.fillStyle = color;
+					context.fillRect(0, 0, 1, 1);
+					const [r, g, b] = [...context.getImageData(0, 0, 1, 1).data].map(
+						(channel) => {
+							const value = channel / 255;
+							return value <= 0.04045
+								? value / 12.92
+								: ((value + 0.055) / 1.055) ** 2.4;
+						},
+					);
+					return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+				};
+				const [fill, host] = [element, card].map((node) =>
+					luminance(getComputedStyle(node).backgroundColor),
+				);
+				return (Math.max(fill, host) + 0.05) / (Math.min(fill, host) + 0.05);
+			});
+			// Dark cards already use surface-container-high; container-highest is
+			// only ~1.08:1 above it in the 2025 scheme, which still reads as one surface.
+			expect(contrast).toBeGreaterThan(1.1);
+		}
+	});
+
 	test("RSS feed contains cleaned MDX content without raw exports or JSX leaks", async ({
 		page,
 	}) => {

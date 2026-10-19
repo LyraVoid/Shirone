@@ -3,7 +3,7 @@ import Icon from "@iconify/svelte";
 
 /**
  * M3E Autocomplete — M3 自动补全输入（官方 Autocomplete 移植，token 对齐 v0.192 md-comp-{filled,outlined}-autocomplete）：
- * - 输入框视觉与站点 TextField 一致（filled：surface-container-high + 下划线；outlined：surface + 描边）；
+ * - 输入框视觉与站点 TextField 一致（filled：--field-filled-bg + 下划线；outlined：surface + 描边）；
  * - 输入时按 label 过滤选项，菜单 surface-container + elevation-2 + corner-extra-small；
  * - 键盘：ArrowUp/Down 导航、Enter 选中、Esc 关闭、外部点击关闭；
  * - 允许自由输入（不强制命中选项），选中项回调 onselect / onchange。
@@ -201,13 +201,13 @@ function onBlur() {
 	&--filled
 		.m3-autocomplete__field
 			border-radius: var(--shape-corner-m) 0 0 var(--shape-corner-m)
-			background: var(--surface-container-high)
+			background: var(--field-filled-bg)
 
 		&:hover .m3-autocomplete__field
-			background: unquote("color-mix(in oklab, var(--on-surface) 12%, var(--surface-container-high))")
+			background: unquote("color-mix(in oklab, var(--on-surface) 12%, var(--field-filled-bg))")
 
 		&.m3-autocomplete--focused .m3-autocomplete__field
-			background: unquote("color-mix(in oklab, var(--on-surface) 16%, var(--surface-container-high))")
+			background: unquote("color-mix(in oklab, var(--on-surface) 16%, var(--field-filled-bg))")
 
 	&--outlined
 		.m3-autocomplete__field

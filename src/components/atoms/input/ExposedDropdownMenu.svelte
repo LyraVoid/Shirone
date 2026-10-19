@@ -127,11 +127,11 @@ onMount(() => {
         cursor: pointer
 
         &--filled
-            background: var(--surface-container-high)
+            background: var(--field-filled-bg)
             border-radius: var(--shape-corner-m) var(--shape-corner-m) 0 0
             border-bottom: 2px solid var(--primary)
             &:hover
-                background: unquote("color-mix(in oklab, var(--on-surface) 12%, var(--surface-container-high))")
+                background: unquote("color-mix(in oklab, var(--on-surface) 12%, var(--field-filled-bg))")
 
         &--outlined
             background: var(--surface)

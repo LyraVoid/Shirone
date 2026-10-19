@@ -488,7 +488,7 @@ test.describe("Waline enabled", () => {
 					await expectTokenColor(
 						editor,
 						"backgroundColor",
-						"--surface-container-high",
+						"--field-filled-bg",
 					);
 					await editor.focus();
 					await expect(editor).not.toHaveCSS("background-size", "0px 2px");

@@ -39,6 +39,10 @@ define({
   --float-control-bg-hover: unquote("color-mix(in oklab, var(--on-surface) 8%, var(--surface-container-high))") unquote("color-mix(in oklab, var(--on-surface) 8%, var(--surface-container-high))")
   --float-control-bg-active: unquote("color-mix(in oklab, var(--on-surface) 12%, var(--surface-container-high))") unquote("color-mix(in oklab, var(--on-surface) 12%, var(--surface-container-high))")
 
+  /* 填充输入框容器须与所在卡片拉开色调：暗色卡片本身就是 container-high，
+     container-highest 又只高出几个色调，故暗色取更亮的 surface-bright */
+  --field-filled-bg: var(--surface-container-high) var(--surface-bright)
+
   --enter-btn-bg: var(--btn-regular-bg)
   --enter-btn-bg-hover: var(--btn-regular-bg-hover)
   --enter-btn-bg-active: var(--btn-regular-bg-active)
