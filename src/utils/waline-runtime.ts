@@ -29,6 +29,36 @@ declare global {
 const RESOURCE_TIMEOUT_MS = 8_000;
 // Waline 3.x renders one button per emoji, titled with its key, in the open tab.
 const EMOJI_BUTTON = ".wl-emoji-popup .wl-tab-wrapper > button";
+// Waline makes these clickable without keyboard access: the comment sort options
+// (list items) and each article reaction's image box.
+const SORT_OPTION = ".wl-sort > li";
+const REACTION_BUTTON = ".wl-reaction-img";
+// Brand icons for the SDK's system and browser names, as Twikoo shows them; the
+// first matching keyword wins, so Edge and in-app browsers come before Chrome.
+// Unmatched names fall back to the kind's own icon.
+const META_ICONS: Readonly<Record<string, readonly [string, string][]>> = {
+	os: [
+		["windows", "windows"],
+		["mac", "apple"],
+		["ios", "apple"],
+		["android", "android"],
+		["linux", "linux"],
+		["ubuntu", "linux"],
+	],
+	browser: [
+		["edge", "edge"],
+		["wechat", "weixin"],
+		["qq", "qq"],
+		["opera", "opera"],
+		["firefox", "firefox"],
+		["chrom", "chrome"],
+		["safari", "safari"],
+	],
+};
+
+function syncAttribute(element: Element, name: string, value: string): void {
+	if (element.getAttribute(name) !== value) element.setAttribute(name, value);
+}
 
 interface EmojiSupport {
 	readonly catalog: EmojiCatalog;
@@ -78,6 +108,40 @@ class ShironeWaline extends HTMLElement {
 				if (pick?.input.insert(pick.key)) event.stopPropagation();
 			},
 			{ capture: true, signal },
+		);
+		// Reactions toggle on Enter/Space; sort options follow radio-group keys,
+		// where moving with the arrows also selects.
+		this.addEventListener(
+			"keydown",
+			(event) => {
+				const target = event.target;
+				if (!(target instanceof HTMLElement)) return;
+				const activate = event.key === "Enter" || event.key === " ";
+				let next: HTMLElement | undefined;
+				if (target.matches(REACTION_BUTTON))
+					next = activate ? target : undefined;
+				else if (target.matches(SORT_OPTION)) {
+					const options = Array.from(target.parentElement?.children ?? []);
+					const back = getComputedStyle(target).direction === "rtl";
+					const step =
+						event.key === "ArrowDown" ||
+						event.key === (back ? "ArrowLeft" : "ArrowRight")
+							? 1
+							: event.key === "ArrowUp" ||
+									event.key === (back ? "ArrowRight" : "ArrowLeft")
+								? -1
+								: 0;
+					const index = options.indexOf(target) + step + options.length;
+					const option = options[index % options.length];
+					if (step && option instanceof HTMLElement) next = option;
+					else if (activate) next = target;
+				}
+				if (!next) return;
+				event.preventDefault();
+				next.focus();
+				next.click();
+			},
+			{ signal },
 		);
 
 		if (
@@ -194,17 +258,6 @@ class ShironeWaline extends HTMLElement {
 
 	private setupControls(container: HTMLElement): void {
 		const enhance = () => {
-			for (const field of container.querySelectorAll<HTMLElement>(
-				".wl-header-item",
-			)) {
-				const input = field.querySelector<HTMLInputElement>("input");
-				// Native :placeholder-shown tracks restored values, autofill and edits
-				// without maintaining another copy of the SDK's form state.
-				if (input && !input.hasAttribute("placeholder"))
-					input.placeholder = " ";
-				if (!field.classList.contains("m3-state-layer"))
-					field.classList.add("m3-state-layer");
-			}
 			for (const actions of container.querySelectorAll<HTMLElement>(
 				".wl-actions",
 			)) {
@@ -262,10 +315,110 @@ class ShironeWaline extends HTMLElement {
 			)) {
 				this.decorateControl(link, "rss");
 			}
+			// Like Twikoo, reply and edit forms cancel from the action row: a text
+			// button before submitting forwards to the SDK's close icon, which the
+			// stylesheet hides while the proxy exists.
 			for (const close of container.querySelectorAll<HTMLElement>(
-				".wl-close",
+				".wl-comment > .wl-close",
 			)) {
-				this.decorateControl(close, "close");
+				const info = close.parentElement?.querySelector<HTMLElement>(
+					":scope > .wl-panel > .wl-footer > .wl-info",
+				);
+				if (!info) continue;
+				let cancel = info.querySelector<HTMLButtonElement>(
+					":scope > .waline-cancel",
+				);
+				if (!cancel) {
+					cancel = document.createElement("button");
+					cancel.type = "button";
+					cancel.className = "wl-btn waline-cancel m3-state-layer";
+					cancel.addEventListener(
+						"click",
+						(event) => {
+							const target = event.currentTarget as HTMLElement;
+							target
+								.closest(".wl-comment")
+								?.querySelector<HTMLElement>(":scope > .wl-close")
+								?.click();
+						},
+						{ signal: this.lifecycle?.signal },
+					);
+					const submit = info.querySelector(":scope > .wl-btn.primary");
+					if (submit) submit.before(cancel);
+					else info.append(cancel);
+				}
+				if (cancel.textContent !== close.title)
+					cancel.textContent = close.title;
+			}
+			for (const cancel of container.querySelectorAll(".waline-cancel")) {
+				if (!cancel.closest(".wl-comment")?.querySelector(":scope > .wl-close"))
+					cancel.remove();
+			}
+			for (const item of container.querySelectorAll<HTMLElement>(
+				".wl-meta > .wl-addr, .wl-meta > .wl-os, .wl-meta > .wl-browser",
+			)) {
+				if (item.querySelector(":scope > .waline-meta-icon")) continue;
+				const kind =
+					["addr", "os", "browser"].find((name) =>
+						item.classList.contains(`wl-${name}`),
+					) ?? "browser";
+				const name = (
+					item.dataset.value ??
+					item.textContent ??
+					""
+				).toLowerCase();
+				const key =
+					META_ICONS[kind]?.find(([keyword]) => name.includes(keyword))?.[1] ??
+					kind;
+				const glyph = this.querySelector<HTMLTemplateElement>(
+					`template[data-waline-meta-icon="${key}"]`,
+				)?.content.querySelector("svg");
+				if (!glyph) continue;
+				const icon = glyph.cloneNode(true) as SVGElement;
+				icon.dataset.icon = key;
+				item.prepend(icon);
+			}
+			for (const control of container.querySelectorAll<HTMLElement>(
+				".wl-comment-actions > button, .wl-comment-actions > a",
+			)) {
+				if (!control.classList.contains("m3-state-layer"))
+					control.classList.add("m3-state-layer");
+			}
+			// Sort options become a radio group with one tab stop on the checked
+			// option. ARIA allows no button role on a list item, so each reaction's
+			// image box carries the toggle instead; its clicks reach the item.
+			for (const list of container.querySelectorAll(".wl-sort")) {
+				syncAttribute(list, "role", "radiogroup");
+				const options = list.querySelectorAll<HTMLElement>(SORT_OPTION);
+				const checked =
+					Array.from(options).find((option) =>
+						option.classList.contains("active"),
+					) ?? options[0];
+				for (const option of options) {
+					if (!option.classList.contains("m3-state-layer"))
+						option.classList.add("m3-state-layer");
+					syncAttribute(option, "role", "radio");
+					syncAttribute(
+						option,
+						"aria-checked",
+						String(option.classList.contains("active")),
+					);
+					syncAttribute(option, "tabindex", option === checked ? "0" : "-1");
+				}
+			}
+			for (const button of container.querySelectorAll<HTMLElement>(
+				REACTION_BUTTON,
+			)) {
+				if (!button.classList.contains("m3-state-layer"))
+					button.classList.add("m3-state-layer");
+				syncAttribute(button, "role", "button");
+				syncAttribute(button, "tabindex", "0");
+				const item = button.closest(".wl-reaction-item");
+				syncAttribute(
+					button,
+					"aria-pressed",
+					String(item?.classList.contains("active") ?? false),
+				);
 			}
 			this.attachInputs(container);
 		};

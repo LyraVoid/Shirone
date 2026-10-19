@@ -62,7 +62,7 @@ window.Waline = {
 				+ '</div><textarea class="wl-editor" aria-label="Comment" placeholder="' + (reply ? '@Alice' : 'Share your thoughts...') + '"></textarea><div class="wl-preview" hidden>Preview</div><div class="wl-footer"><div class="wl-actions">'
 				+ '<a class="wl-action" href="#comments" title="Markdown Guide">MD</a><button class="wl-action" type="button" title="Emoji">' + legacyIcon + '</button>'
 				+ '<input id="wl-image-upload" type="file" hidden /><label class="wl-action" for="wl-image-upload" title="Upload image" aria-label="Upload image">' + legacyIcon + '</label>'
-				+ '<button class="wl-action" type="button" title="Preview">' + legacyIcon + '</button></div><button class="wl-btn primary" type="button">Submit</button>'
+				+ '<button class="wl-action" type="button" title="Preview">' + legacyIcon + '</button></div><div class="wl-info"><div class="wl-captcha-container"></div><div class="wl-text-number">0 &nbsp;Words</div><button class="wl-btn primary" type="button">Submit</button></div>'
 				+ '<div class="wl-emoji-popup"><div class="wl-tab-wrapper">'
 				+ Object.keys(emojiMap).map((key) => '<button type="button" title="' + key + '"><img class="wl-emoji" src="' + emojiMap[key] + '" alt="' + key + '" /></button>').join('')
 				+ '</div></div></div></form>'
@@ -93,12 +93,44 @@ window.Waline = {
 				setTimeout(() => setDraft(draft.replace(pending, '\\r\\n![' + file.name + '](https://img.example/' + file.name + ')')), 50);
 			});
 			form.querySelector('.wl-close')?.addEventListener('click', () => renderForm());
-			host.replaceChildren(form);
+			// Like Waline, a reply form replaces the article's form and opens inside
+			// the replied comment's card, ahead of its nested replies.
+			list.querySelector('.wl-reply-wrapper')?.remove();
+			list.querySelector('#c1 > .wl-card > .wl-head .wl-reply').className = reply ? 'wl-reply active' : 'wl-reply';
+			if (reply) {
+				const wrapper = document.createElement('div');
+				wrapper.className = 'wl-reply-wrapper';
+				wrapper.append(form);
+				list.querySelector('#c1 > .wl-card > .wl-quote').before(wrapper);
+				host.replaceChildren();
+			} else host.replaceChildren(form);
 		}
 		const reply = document.createElement('button');
 		reply.type = 'button';
-		reply.textContent = 'Reply';
+		reply.textContent = 'Open reply form';
 		reply.addEventListener('click', () => renderForm(true));
+		// The comment list as Waline 3.16's WalineComment and CommentCard render it.
+		const list = document.createElement('div');
+		const icon = (fill) => '<svg viewBox="0 0 1024 1024" width="24" height="24"><path d="M0 0h1024v1024H0z" fill="' + fill + '" /></svg>';
+		const avatar = '<div class="wl-user" aria-hidden="true"><img class="wl-user-avatar" src="data:image/gif;base64,R0lGODlhAQABAAAAACw=" alt="" /></div>';
+		const actions = (liked, likes) => '<div class="wl-comment-actions"><button type="button" class="wl-like" title="' + (liked ? 'Cancel like' : 'Like') + '">' + icon(liked ? 'red' : 'currentColor') + likes + '</button><button type="button" class="wl-reply" title="Reply">' + icon('currentColor') + '</button></div>';
+		list.innerHTML = '<div class="wl-meta-head"><div class="wl-count"><span class="wl-num">3</span> Comments</div><ul class="wl-sort">'
+			+ ['Latest', 'Oldest', 'Hottest'].map((label, index) => '<li class="' + (index ? '' : 'active') + '">' + label + '</li>').join('')
+			+ '</ul></div><div class="wl-cards"><div id="c1" class="wl-card-item">' + avatar + '<div class="wl-card"><div class="wl-head">'
+			+ '<a class="wl-nick" href="https://example.com" target="_blank" rel="ugc nofollow noreferrer noopener">Alice</a><span class="wl-badge">Author</span><span class="wl-badge level0">Dwarves</span><span class="wl-time">1 hours ago</span>'
+			+ actions(true, 3) + '</div><div class="wl-meta" aria-hidden="true"><span class="wl-browser" data-value="Chrome 141">Chrome 141</span><span class="wl-os" data-value="Windows 11">Windows 11</span></div>'
+			+ '<div class="wl-content"><div><p>Hello <a href="https://example.com/docs">docs</a> and <code>pnpm dev</code></p><ul><li>first</li></ul><blockquote><p>Quoted</p></blockquote>'
+			+ '<pre><code class="language-js"><span class="token keyword">const</span> answer = 42;</code></pre></div></div>'
+			+ '<div class="wl-quote"><div id="c2" class="wl-card-item">' + avatar + '<div class="wl-card"><div class="wl-head"><span class="wl-nick">Bob</span><span class="wl-time">30 minutes ago</span>'
+			+ actions(false, 0) + '</div><div class="wl-content"><p class="wl-reply-to"><a href="#c1">@Alice</a><span>: </span></p><div><p>A reply with <code>code</code></p></div></div></div></div></div>'
+			+ '</div></div><div id="c3" class="wl-card-item">' + avatar + '<div class="wl-card"><div class="wl-head"><span class="wl-nick">Carol</span><span class="wl-time">1 days ago</span>'
+			+ actions(false, 0) + '</div><div class="wl-content"><div><p>No replies yet</p></div></div><div class="wl-quote"></div></div></div></div>';
+		// Vue rewrites the class binding of every option when the sorting changes.
+		for (const option of list.querySelectorAll('.wl-sort > li')) {
+			option.addEventListener('click', () => {
+				for (const item of list.querySelectorAll('.wl-sort > li')) item.className = item === option ? 'active' : '';
+			});
+		}
 		renderForm();
 		const footer = document.createElement('div');
 		footer.className = 'wl-meta-foot';
@@ -126,7 +158,7 @@ window.Waline = {
 				});
 			}
 		}
-		options.el.replaceChildren(reaction, reply, host, footer);
+		options.el.replaceChildren(reaction, reply, host, list, footer);
 		return {
 			destroy() {
 				window.__walineDestroyed.push(options.path);
@@ -193,6 +225,33 @@ async function mockWaline(page: Page) {
 			.wl-reaction-img { position: relative; width: 42px; height: 42px; }
 			.wl-reaction-loading { position: absolute; inset-inline-end: -5px; top: -4px; width: 18px; height: 18px; }
 			.wl-reaction-votes { position: absolute; inset-inline-end: -9px; top: -9px; min-width: 1em; padding: 2px; border: 1px solid var(--waline-theme-color); border-radius: 1em; font-size: .75em; line-height: 1; }
+			[data-waline] * { box-sizing: content-box; line-height: 1.75; }
+			[data-waline] code, [data-waline] pre { margin: 0; padding: .2em .4em; border-radius: 3px; background: var(--waline-bg-color-light); font-size: 85%; }
+			[data-waline] blockquote { margin: .5em 0; padding: .5em 0 .5em 1em; border-inline-start: 8px solid var(--waline-bq-color); color: var(--waline-dark-grey); }
+			.wl-meta-head { display: flex; flex-direction: row; align-items: center; padding: .375em; }
+			.wl-count { flex: 1; font-weight: bold; font-size: 1.25em; }
+			.wl-sort { margin: 0; list-style-type: none; }
+			.wl-sort li { display: inline-block; color: var(--waline-info-color); font-size: .75em; cursor: pointer; }
+			.wl-sort li.active { color: var(--waline-theme-color); }
+			.wl-sort li + li { margin-inline-start: 1em; }
+			.wl-cards .wl-user { --avatar-size: var(--waline-avatar-size); position: relative; margin-inline-end: .75em; }
+			.wl-cards .wl-user .wl-user-avatar { width: var(--avatar-size); height: var(--avatar-size); border-radius: var(--waline-avatar-radius); }
+			.wl-card-item { position: relative; display: flex; padding: .5em; }
+			.wl-card-item .wl-card-item { padding-inline-end: 0; }
+			.wl-card { flex: 1; width: 0; padding-bottom: .5em; border-bottom: 1px dashed var(--waline-border-color); }
+			.wl-card .wl-head { overflow: hidden; line-height: 1.5; }
+			.wl-card .wl-head .wl-nick { position: relative; display: inline-block; margin-inline-end: .5em; font-weight: bold; font-size: .875em; line-height: 1; }
+			.wl-card .wl-badge { display: inline-block; margin-inline-end: 1em; padding: 0 .3em; border: 1px solid var(--waline-badge-color); border-radius: 4px; color: var(--waline-badge-color); }
+			.wl-card .wl-time { margin-inline-end: .875em; color: var(--waline-info-color); font-size: .75em; }
+			.wl-card .wl-meta > span { display: inline-block; padding: 2px 4px; border-radius: .2em; background: var(--waline-info-bg-color); color: var(--waline-info-color); }
+			.wl-card .wl-comment-actions { float: right; line-height: 1; }
+			.wl-card .wl-like, .wl-card .wl-reply { display: inline-flex; align-items: center; border: none; background: transparent; color: var(--waline-color); line-height: 1; transition: color .2s ease; }
+			.wl-card .wl-content { position: relative; margin-bottom: .75em; padding-top: .625em; font-size: .875em; line-height: 2; }
+			.wl-card .wl-content .wl-reply-to { float: left; margin-right: .5em; }
+			.wl-card .wl-quote { border-inline-start: 1px dashed rgba(237, 237, 237, .5); }
+			.wl-content pre { overflow: auto; margin: .75rem 0; padding: 1rem 1.25rem; border-radius: 6px; background: var(--waline-code-bg-color); line-height: 1.4; }
+			.wl-content pre code { padding: 0; background: transparent; color: #bbb; }
+			.wl-content .token.keyword { color: #cc99cd; }
 			.wl-editor { min-height: 8.75em; }
 			.wl-emoji-popup { display: none; }
 			.wl-emoji-popup.display { display: block; }
@@ -236,7 +295,7 @@ async function settleTheme(page: Page) {
 
 async function expectTokenColor(
 	locator: Locator,
-	property: "color" | "borderTopColor" | "backgroundColor",
+	property: "color" | "borderTopColor" | "backgroundColor" | "fill",
 	token: string,
 ) {
 	await expect
@@ -496,13 +555,53 @@ test.describe("Waline enabled", () => {
 				await expect(links.locator(".waline-icon")).toHaveCount(2);
 			});
 
-			test("filled fields float labels only when focused or populated and keep the editor borderless", async ({
+			test("outlined fields keep their labels beside the input and follow the editor like Twikoo's", async ({
 				page,
 			}) => {
 				await page.addInitScript(() => localStorage.setItem("theme", "auto"));
 				await page.goto(ARTICLE);
 				await mount(page);
 				await settleTheme(page);
+				const editor = page.getByRole("textbox", {
+					name: "Comment",
+					exact: true,
+				});
+				// Twikoo's outlined field: the low container inside an outline-variant
+				// edge, which turns primary inside a primary-container ring on focus
+				// without moving anything.
+				const expectOutlined = async (
+					field: Locator,
+					focus: () => Promise<void>,
+				) => {
+					await expect(field).toHaveCSS("border-top-width", "1px");
+					await expect(field).toHaveCSS("border-top-left-radius", "12px");
+					await expect(field).toHaveCSS("box-shadow", "none");
+					await expectTokenColor(field, "borderTopColor", "--outline-variant");
+					await expectTokenColor(
+						field,
+						"backgroundColor",
+						"--surface-container-low",
+					);
+					// The field's size and its parts' offsets, which page scroll leaves alone.
+					const layout = () =>
+						field.evaluate((element) => {
+							const frame = element.getBoundingClientRect();
+							return [element, ...element.children].map((part) => {
+								const box = part.getBoundingClientRect();
+								return [
+									box.left - frame.left,
+									box.top - frame.top,
+									box.width,
+									box.height,
+								];
+							});
+						});
+					const before = await layout();
+					await focus();
+					await expectTokenColor(field, "borderTopColor", "--primary");
+					await expect(field).not.toHaveCSS("box-shadow", "none");
+					expect(await layout()).toEqual(before);
+				};
 				for (const dark of [false, true]) {
 					await page.emulateMedia({ colorScheme: dark ? "dark" : "light" });
 					await expect(page.locator("html")).toHaveClass(
@@ -511,104 +610,48 @@ test.describe("Waline enabled", () => {
 					for (const field of await page.locator(".wl-header-item").all()) {
 						const input = field.locator("input");
 						const label = field.locator("label");
-						await input.fill("");
+						await field.scrollIntoViewIfNeeded();
 						await input.blur();
-						await expect
-							.poll(() =>
-								label.evaluate((el) => {
-									const label = el.getBoundingClientRect();
-									const parent = el.parentElement;
-									if (!parent)
-										throw new Error("The field label must have a parent");
-									const field = parent.getBoundingClientRect();
-									return Math.abs(
-										label.y + label.height / 2 - field.y - field.height / 2,
-									);
-								}),
-							)
-							.toBeLessThan(1);
-						const emptyFont = await label.evaluate((el) =>
-							Number.parseFloat(getComputedStyle(el).fontSize),
+						// A fixed label segment before the input, not a floating label;
+						// the layout check keeps it in place through focus.
+						const labelBox = await label.boundingBox();
+						const inputBox = await input.boundingBox();
+						if (!labelBox || !inputBox)
+							throw new Error("The field must be laid out");
+						expect(labelBox.x + labelBox.width).toBeLessThanOrEqual(
+							inputBox.x + 1,
 						);
-						const before = await field.boundingBox();
-						await input.focus();
-						await expect
-							.poll(() =>
-								label.evaluate((el) =>
-									Number.parseFloat(getComputedStyle(el).fontSize),
-								),
-							)
-							.toBeLessThan(emptyFont);
-						await expectTokenColor(label, "color", "--primary");
-						await expect
-							.poll(() =>
-								field.evaluate((el) => getComputedStyle(el, "::after").opacity),
-							)
-							.toBe("1");
+						await expectTokenColor(
+							label,
+							"backgroundColor",
+							"--surface-container",
+						);
+						await expectTokenColor(label, "color", "--on-surface-variant");
+						await expectOutlined(field, () => input.focus());
 						await expect(input).toHaveCSS(
 							"background-color",
 							"rgba(0, 0, 0, 0)",
 						);
-						await expect(field).toHaveCSS("border-top-width", "0px");
-						expect(await field.boundingBox()).toEqual(before);
-						// Invalid email and direct SDK value restoration must still float the label.
-						await input.fill("saved-value");
-						await input.blur();
-						await expect
-							.poll(() =>
-								label.evaluate((el) =>
-									Number.parseFloat(getComputedStyle(el).fontSize),
-								),
-							)
-							.toBeLessThan(emptyFont);
-						await input.evaluate((el: HTMLInputElement) => {
-							el.value = "";
-						});
-						await expect
-							.poll(() =>
-								label.evaluate((el) =>
-									Number.parseFloat(getComputedStyle(el).fontSize),
-								),
-							)
-							.toBe(emptyFont);
-						await input.evaluate((el: HTMLInputElement) => {
-							el.value = "restored";
-						});
-						await expect
-							.poll(() =>
-								label.evaluate((el) =>
-									Number.parseFloat(getComputedStyle(el).fontSize),
-								),
-							)
-							.toBeLessThan(emptyFont);
-						await input.fill("");
 						await input.blur();
 					}
-					const editor = page.getByRole("textbox", {
-						name: "Comment",
-						exact: true,
-					});
-					await expect(editor).toHaveCSS("border-top-width", "0px");
-					await expect(editor).toHaveCSS("box-shadow", "none");
-					await expect(editor).toHaveCSS("background-size", "0px 2px");
-					await expectTokenColor(
-						editor,
-						"backgroundColor",
-						"--field-filled-bg",
-					);
-					await editor.focus();
-					await expect(editor).not.toHaveCSS("background-size", "0px 2px");
-					await expect(editor).toHaveCSS("border-top-width", "0px");
+					await editor.scrollIntoViewIfNeeded();
+					await expectOutlined(editor, () => editor.focus());
+					await editor.blur();
 					const result = await new AxeBuilder({ page })
 						.include("#comments")
 						.analyze();
 					expect(result.violations).toEqual([]);
 				}
+				// Twikoo's order: the editor first, then the identity fields.
+				const editorBox = await editor.boundingBox();
 				const rows = await page
 					.locator(".wl-header-item")
 					.evaluateAll((fields) =>
 						fields.map((field) => field.getBoundingClientRect().top),
 					);
+				expect(rows[0]).toBeGreaterThan(
+					(editorBox?.y ?? 0) + (editorBox?.height ?? 0),
+				);
 				if (width === 390) {
 					expect(rows[1]).toBeGreaterThan(rows[0]);
 					expect(rows[2]).toBeGreaterThan(rows[1]);
@@ -696,6 +739,11 @@ test.describe("Waline enabled", () => {
 					expect(box?.width).toBeGreaterThanOrEqual(width === 390 ? 48 : 40);
 					expect(box?.height).toBeGreaterThanOrEqual(width === 390 ? 48 : 40);
 				}
+				// Like Twikoo's row: no Markdown guide link, no count without a limit.
+				await expect(
+					page.getByRole("link", { name: "Markdown Guide" }),
+				).toBeHidden();
+				await expect(page.locator(".wl-text-number")).toBeHidden();
 				const emoji = page.getByRole("button", { name: "Emoji", exact: true });
 				await emoji.press("Enter");
 				await expect(emoji).toHaveAttribute("aria-pressed", "true");
@@ -718,17 +766,27 @@ test.describe("Waline enabled", () => {
 
 				for (let round = 0; round < 2; round++) {
 					await page
-						.getByRole("button", { name: "Reply", exact: true })
+						.getByRole("button", { name: "Open reply form", exact: true })
 						.click();
+					// Like Twikoo, the form cancels from its action row: a text button
+					// right before submitting, while the SDK's close icon stays hidden.
 					const close = page.getByRole("button", {
 						name: "Cancel reply",
 						exact: true,
 					});
-					await expect(close.locator(".waline-icon")).toBeVisible();
-					await expect(
-						close.locator("svg").filter({ visible: true }),
-					).toHaveCount(1);
+					await expect(close).toHaveText("Cancel reply");
+					await expect(close).toHaveClass(/m3-state-layer/);
+					await expect(page.locator(".wl-close")).toBeHidden();
+					expect(
+						await close.evaluate(
+							(el) =>
+								el.parentElement?.matches(".wl-info") &&
+								el.nextElementSibling?.matches(".wl-btn.primary"),
+						),
+					).toBe(true);
 					await expect(page.locator(".waline-upload")).toHaveCount(1);
+					// A tonal button like Twikoo's, in the secondary container that stays
+					// visible on dark cards.
 					await expectTokenColor(
 						close,
 						"backgroundColor",
@@ -741,11 +799,51 @@ test.describe("Waline enabled", () => {
 							"aria-placeholder",
 							"@Alice",
 						);
-					const buttonBox = await close.boundingBox();
-					const panelBox = await page.locator(".wl-panel").boundingBox();
+					// Like Twikoo's, the form opens unframed across the comment's body
+					// column.
+					const wrapper = page.locator(".wl-card .wl-reply-wrapper");
+					await expect(wrapper).toHaveCount(1);
+					for (const frame of [wrapper, wrapper.locator(".wl-panel")]) {
+						await expect(frame).toHaveCSS("border-width", "0px");
+						await expect(frame).toHaveCSS(
+							"background-color",
+							"rgba(0, 0, 0, 0)",
+						);
+					}
+					const panelBox = await wrapper.locator(".wl-panel").boundingBox();
+					const bodyBox = await page
+						.locator("#c1 > .wl-card > .wl-content")
+						.boundingBox();
+					if (!panelBox || !bodyBox)
+						throw new Error("The reply form must be laid out");
+					expect(Math.abs(panelBox.x - bodyBox.x)).toBeLessThan(1);
 					expect(
-						(buttonBox?.y ?? 0) + (buttonBox?.height ?? 0),
-					).toBeLessThanOrEqual(panelBox?.y ?? 0);
+						Math.abs(panelBox.x + panelBox.width - bodyBox.x - bodyBox.width),
+					).toBeLessThan(1);
+					await expect(page.locator(".wl-card .wl-reply.active")).toHaveCount(
+						1,
+					);
+					// Cancel and submit share a row that ends with the action row; phones
+					// stretch the buttons across its full width.
+					const row = await wrapper.locator(".wl-info").evaluate((info) => {
+						const buttons = [...info.querySelectorAll(":scope > .wl-btn")].map(
+							(button) => button.getBoundingClientRect(),
+						);
+						const footer = (
+							info.closest(".wl-footer") ?? info
+						).getBoundingClientRect();
+						return {
+							middles: buttons.map((box) => box.top + box.height / 2),
+							start: Math.min(...buttons.map((box) => box.left)),
+							end: Math.max(...buttons.map((box) => box.right)),
+							footer: [footer.left, footer.right],
+						};
+					});
+					for (const middle of row.middles)
+						expect(Math.abs(middle - row.middles[0])).toBeLessThan(1);
+					expect(Math.abs(row.end - row.footer[1])).toBeLessThan(1);
+					if (width === 390)
+						expect(Math.abs(row.start - row.footer[0])).toBeLessThan(1);
 					const chooser = page.waitForEvent("filechooser");
 					await page
 						.getByRole("button", { name: "Upload image" })
@@ -763,6 +861,256 @@ test.describe("Waline enabled", () => {
 						);
 				}
 				expect(iconRequests).toEqual([]);
+			});
+
+			test("comment list copies Twikoo's outlined cards and nested replies and keeps options keyboard-operable", async ({
+				page,
+			}) => {
+				await page.addInitScript(() => localStorage.setItem("theme", "auto"));
+				await page.goto(ARTICLE);
+				await mount(page);
+				await settleTheme(page);
+				const head = page.locator(".wl-meta-head");
+				const card = page.locator("#c1");
+				const replies = card.locator(":scope > .wl-card > .wl-quote");
+				const nested = replies.locator(":scope > .wl-card-item");
+				for (const dark of [false, true]) {
+					await page.emulateMedia({ colorScheme: dark ? "dark" : "light" });
+					await expect(page.locator("html")).toHaveClass(
+						dark ? /dark/ : /^(?!.*\bdark\b)/,
+					);
+					// Twikoo's lines: a ruled header, outlined cards, and replies as
+					// smaller outlined cards on the page surface.
+					await expect(head).toHaveCSS("border-top-width", "1px");
+					await expectTokenColor(head, "borderTopColor", "--outline-variant");
+					for (const [item, radius] of [
+						[card, "16px"],
+						[nested, "12px"],
+					] as const) {
+						await expect(item).toHaveCSS("border-width", "1px");
+						await expectTokenColor(item, "borderTopColor", "--outline-variant");
+						await expect(item).toHaveCSS("border-top-left-radius", radius);
+						// The SDK's card box keeps no dashed rule of its own.
+						await expect(item.locator(":scope > .wl-card")).toHaveCSS(
+							"border-width",
+							"0px",
+						);
+					}
+					await expect(card).toHaveCSS("background-color", "rgba(0, 0, 0, 0)");
+					await expectTokenColor(nested, "backgroundColor", "--page-bg");
+					await expect(replies).toHaveCSS("border-width", "0px");
+					// A comment without replies keeps no empty block.
+					await expect(page.locator("#c3 .wl-quote")).toBeHidden();
+					// Code chips in replies step off the page tone in both themes.
+					await expectTokenColor(
+						nested.locator("code"),
+						"backgroundColor",
+						dark ? "--surface-bright" : "--surface-container-high",
+					);
+					// Twikoo's master tag: quiet in light mode, primary in dark mode.
+					await expectTokenColor(
+						page.locator(".wl-badge").first(),
+						"backgroundColor",
+						dark ? "--primary" : "--btn-regular-bg",
+					);
+					await expectTokenColor(
+						page.locator(".wl-badge.level0"),
+						"backgroundColor",
+						"--surface-container-highest",
+					);
+					await expectTokenColor(
+						page.locator(".wl-content a").first(),
+						"color",
+						"--primary",
+					);
+					// Waline's highlighter colors assume a dark block; the theme's apply.
+					await expectTokenColor(
+						page.locator(".wl-content pre"),
+						"backgroundColor",
+						"--codeblock-bg",
+					);
+					await expectTokenColor(
+						page.locator(".wl-content pre"),
+						"borderTopColor",
+						"--outline-variant",
+					);
+					await expectTokenColor(
+						page.locator(".wl-content pre code"),
+						"color",
+						"--on-surface",
+					);
+					await expectTokenColor(
+						page.locator(".wl-content .token.keyword"),
+						"color",
+						"--primary",
+					);
+					await expectTokenColor(
+						page.locator(".wl-like path").first(),
+						"fill",
+						"--primary",
+					);
+					const result = await new AxeBuilder({ page })
+						.include("#comments")
+						.analyze();
+					expect(result.violations).toEqual([]);
+				}
+
+				// Sort options act as a radio group: one tab stop, arrows select.
+				await expect(page.locator(".wl-sort")).toHaveAttribute(
+					"role",
+					"radiogroup",
+				);
+				const options = page.locator(".wl-sort > li");
+				await expect(options).toHaveCount(3);
+				for (const [index, option] of (await options.all()).entries()) {
+					await expect(option).toHaveAttribute("role", "radio");
+					await expect(option).toHaveAttribute(
+						"aria-checked",
+						String(index === 0),
+					);
+					await expect(option).toHaveAttribute(
+						"tabindex",
+						index === 0 ? "0" : "-1",
+					);
+				}
+				await options.first().focus();
+				await page.keyboard.press("ArrowRight");
+				await expect(options.nth(1)).toBeFocused();
+				await expect(options.nth(1)).toHaveAttribute("aria-checked", "true");
+				await expect(options.nth(1)).toHaveAttribute("tabindex", "0");
+				await expect(options.first()).toHaveAttribute("aria-checked", "false");
+				await expect(options.nth(1)).toHaveClass(/m3-state-layer/);
+				await expectTokenColor(options.nth(1), "color", "--primary");
+				await expect(options.nth(1)).toHaveCSS("font-weight", "700");
+				await page.keyboard.press("ArrowLeft");
+				await expect(options.first()).toHaveAttribute("aria-checked", "true");
+				if (waline.reaction) {
+					await page.route("**/api/article", (route) =>
+						route.fulfill({
+							contentType: "application/json",
+							body: '{"errno":0,"data":[]}',
+						}),
+					);
+					// Each reaction's image box is its toggle button.
+					const reaction = page.locator(".wl-reaction-img").first();
+					await expect(reaction).toHaveAttribute("role", "button");
+					await expect(reaction).toHaveAttribute("aria-pressed", "false");
+					const votes = reaction.locator(".wl-reaction-votes");
+					const count = Number(await votes.textContent());
+					await reaction.focus();
+					await page.keyboard.press(" ");
+					await expect(votes).toHaveText(String(count + 1));
+				}
+
+				// Comment actions keep the toolbar's touch target, while their state
+				// layer only hugs the icon and count.
+				for (const action of await page
+					.locator(".wl-comment-actions > button")
+					.all()) {
+					await expect(action).toHaveClass(/m3-state-layer/);
+					const box = await action.boundingBox();
+					expect(box?.width).toBeGreaterThanOrEqual(width === 390 ? 48 : 40);
+					expect(box?.height).toBeGreaterThanOrEqual(width === 390 ? 48 : 40);
+					expect(
+						await action.evaluate(
+							(el) => getComputedStyle(el, "::before").height,
+						),
+					).toBe("32px");
+				}
+				// A clicked action keeps focus without staying lit; keyboard focus shows.
+				const like = card.locator(":scope > .wl-card > .wl-head .wl-like");
+				const layer = () =>
+					like.evaluate((el) => getComputedStyle(el, "::before").opacity);
+				await like.click();
+				await page.mouse.move(0, 0);
+				await expect(like).toBeFocused();
+				await expect.poll(layer).toBe("0");
+				await page.keyboard.press("Shift+Tab");
+				await page.keyboard.press("Tab");
+				await expect(like).toBeFocused();
+				await expect.poll(layer).toBe("1");
+				// Blocks inside the text keep a gap; phones also part the text from the
+				// name and time above it.
+				await expect(card.locator(".wl-content pre")).toHaveCSS(
+					"margin-top",
+					"8px",
+				);
+				await expect(card.locator(":scope > .wl-card > .wl-content")).toHaveCSS(
+					"margin-top",
+					width === 390 ? "12px" : "8px",
+				);
+				// The actions stay beside the name; on narrow screens badges and time wrap.
+				const row = await card
+					.locator(":scope > .wl-card > .wl-head")
+					.evaluate((element) => {
+						const box = (selector: string) => {
+							const target = element.querySelector(selector);
+							if (!target) throw new Error(`${selector} is missing`);
+							return target.getBoundingClientRect();
+						};
+						const nick = box(".wl-nick");
+						const actions = box(".wl-comment-actions");
+						return {
+							offset: Math.abs(
+								nick.top + nick.height / 2 - actions.top - actions.height / 2,
+							),
+							nickBottom: nick.bottom,
+							badge: box(".wl-badge").top,
+							time: box(".wl-time").top,
+						};
+					});
+				expect(row.offset).toBeLessThan(2);
+				for (const top of [row.badge, row.time]) {
+					if (width === 390) expect(top).toBeGreaterThanOrEqual(row.nickBottom);
+					else expect(top).toBeLessThan(row.nickBottom);
+				}
+				// Twikoo's columns on wide screens: the avatar beside one body column
+				// with the name row, text, browser and system, and replies. Phones keep
+				// only the name row beside the avatar and give the rest the full width.
+				const column = await card.evaluate((element) => {
+					const box = (selector: string) => {
+						const target = element.querySelector(selector);
+						if (!target) throw new Error(`${selector} is missing`);
+						return target.getBoundingClientRect();
+					};
+					const avatar = box(":scope > .wl-user");
+					const content = box(":scope > .wl-card > .wl-content");
+					const meta = box(":scope > .wl-card > .wl-meta");
+					return {
+						avatar: [avatar.left, avatar.right],
+						head: box(":scope > .wl-card > .wl-head").left,
+						body: [
+							content.left,
+							meta.left,
+							box(":scope > .wl-card > .wl-quote").left,
+						],
+						contentBottom: content.bottom,
+						metaTop: meta.top,
+					};
+				});
+				expect(column.head).toBeGreaterThan(column.avatar[1]);
+				for (const start of column.body)
+					expect(
+						Math.abs(start - (width === 390 ? column.avatar[0] : column.head)),
+					).toBeLessThan(1);
+				expect(column.metaTop).toBeGreaterThanOrEqual(column.contentBottom);
+				// System, then browser, each after its brand icon.
+				const meta = card.locator(":scope > .wl-card > .wl-meta");
+				await expect(
+					meta.locator(".wl-os > .waline-meta-icon"),
+				).toHaveAttribute("data-icon", "windows");
+				await expect(
+					meta.locator(".wl-browser > .waline-meta-icon"),
+				).toHaveAttribute("data-icon", "chrome");
+				const [os, browser] = await Promise.all(
+					[".wl-os", ".wl-browser"].map((item) =>
+						meta.locator(item).boundingBox(),
+					),
+				);
+				expect(os?.x ?? 0).toBeLessThan(browser?.x ?? 0);
+				const box = await card.boundingBox();
+				expect(box?.x).toBeGreaterThanOrEqual(0);
+				expect((box?.x ?? 0) + (box?.width ?? 0)).toBeLessThanOrEqual(width);
 			});
 		});
 	}
@@ -1007,7 +1355,16 @@ test.describe("Waline enabled", () => {
 				}, text);
 			const withIcon = await lineTops("next");
 			const glyph = input.locator("img");
-			await expect(glyph).toHaveCSS("height", "20px");
+			// Icons are 1.25em tall, within the editor's line height.
+			const metrics = await input.evaluate((element) => {
+				const style = getComputedStyle(element);
+				return {
+					font: Number.parseFloat(style.fontSize),
+					line: Number.parseFloat(style.lineHeight),
+				};
+			});
+			await expect(glyph).toHaveCSS("height", `${metrics.font * 1.25}px`);
+			expect(metrics.font * 1.25).toBeLessThanOrEqual(metrics.line);
 			await page.keyboard.press("ArrowUp");
 			await page.keyboard.press("End");
 			await page.keyboard.press("Backspace");

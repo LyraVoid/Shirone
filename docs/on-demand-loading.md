@@ -37,7 +37,9 @@
 | `src/types/stylus.d.ts` | `stylus` 包最小类型声明（构建期编译样式用） |
 | `src/utils/script-loader.ts` | `loadScriptOnce(url, timeoutMs?)` 动态加载第三方 SDK 并去重；失败或超时后清理缓存以允许重试 |
 
-Waline 的工具栏、取消回复与 RSS 图标由 `Icon.svelte` 在启用的评论组件内 SSR 输出到惰性模板，不增加图标网络请求。运行时保留 SDK 的节点与事件，通过局部 `MutationObserver` 为后续回复表单和切换状态补齐图标、状态层与上传按钮键盘入口；页面断开时同时销毁观察器。RSS 页脚保留 SDK 的本地化文字和订阅链接，两个入口始终可见并按空间换行。资料字段对齐 `TextField` 的 filled 浮动标签：空值失焦时居中，聚焦或有值时上浮；通过原生 `:placeholder-shown` 同步恢复值、自动填充和清空，无额外表单状态。编辑框使用填充表面与底部焦点指示；reaction 数量和加载图标共享同一中心锚点。样式仍只在 Waline 启用时输出。
+Waline 的工具栏、RSS、位置与浏览器/系统图标由 `Icon.svelte` 在启用的评论组件内 SSR 输出到惰性模板，不增加图标网络请求。运行时保留 SDK 的节点与事件，通过局部 `MutationObserver` 为后续回复表单和切换状态补齐图标、状态层、上传按钮键盘入口与取消按钮；页面断开时同时销毁观察器。RSS 页脚保留 SDK 的本地化文字和订阅链接，两个入口始终可见并按空间换行。评论框照搬主题 Twikoo 编辑区的线条设计：编辑框在前、资料字段在后，都是 `--surface-container-low` 底色加 1px `outline-variant` 描边与 `--shape-corner-m` 圆角，资料字段前是 `--surface-container` 的固定标签段；聚焦时描边转为 `--primary` 并加 2px `--primary-container` 光环。操作行沿用 Twikoo 的 2.75rem 控件和内容：圆形图标按钮在前、按钮在后；Markdown 指南链接与纯字数统计隐藏，配置了字数上限时才保留计数与超限提示。按钮用 `--secondary-container` 色调（Twikoo 的 `--surface-container-high` 与暗色卡片同色，看不出按钮），提交用 `--primary`；手机上按钮单独占一整行并分摊宽度。reaction 数量和加载图标共享同一中心锚点。样式仍只在 Waline 启用时输出。
+
+评论列表同样照搬主题的 Twikoo 样式，只在顶部多出文章表情反应：标题行上方是 1px `outline-variant` 分隔线，评论数加粗，排序选项是文字按钮（当前项为 `--primary` 粗体）；每条评论是 1px `outline-variant` 描边、`--shape-corner-l` 圆角的卡片（悬停为 Level 1 阴影），头像在左，昵称行、正文、浏览器/系统信息、回复表单与嵌套回复依次排在右侧同一列。回复是这一列里 `--page-bg` 底色、`--shape-corner-m` 圆角的描边小卡片，头像更小，没有回复时不留空容器；亮色模式下行内代码与代码块本与 `--page-bg` 同色，因此在回复卡片内提高到 `--surface-container-high`（Twikoo 在这里亮色下看不清代码底色，此处不照搬）。昵称加粗，徽章是 `--shape-corner-s` 的小标签，沿用 Twikoo 博主标签的配色（亮色 `--btn-regular-bg`，暗色 `--primary`），等级徽章用中性表面；时间用 Body Small。点赞、回复是名称行右侧的 `--primary` 小图标，按钮保留工具栏的触控尺寸并以负外边距溢出，不撑高名称行；状态层只包住图标与计数（32px 高的胶囊），只在悬停、按下和键盘焦点时出现，点击或轻触后按钮留着焦点也不常亮，触屏上也不显示悬停；Waline 写死为红色的已赞图标改用 `--primary`。正文对齐 Twikoo：链接与列表圆点用 `--primary`，各块之间留 `--m3e-space-2` 间距，让代码块、列表和引用不贴着上下文字（不照搬 Twikoo 的紧排），行内代码用 `--inline-code-*`，代码块是 `--codeblock-bg` 加描边，Waline 按深色代码块设计的高亮 token 映射到主题色；引用保留 `--primary` 引用条。浏览器/系统信息按 Twikoo 的顺序排列（位置、系统、浏览器），运行时按名称为每项配上品牌图标（Windows、Apple、Android、Linux、Edge、Chrome、Firefox、Safari、Opera、微信、QQ），认不出的名称用通用图标。窄屏时昵称与操作按钮保持同行，徽章与时间换到下一行，不照搬 Twikoo 把时间拆字换行；手机上只有昵称行留在头像旁，正文、浏览器/系统信息、回复表单与嵌套回复占满卡片宽度，嵌套回复的表单因此不被挤压；正文与上方的昵称、时间多隔一档（`--m3e-space-3`），时间因此归入卡片头部。回复与编辑表单像 Twikoo 一样出现在被回复评论的正文列内、嵌套回复之前，字段与文章表单相同且不加外框；取消也像 Twikoo 一样是操作行里提交按钮前的文字按钮：运行时插入一个转发到 SDK 关闭图标的按钮，文字取自 Waline 本地化的标题，SDK 的叉号在该按钮存在时隐藏，找不到操作行时作为后备保留。运行时把排序选项转为 radiogroup（单一 Tab 停靠点，方向键切换即选择），并把每个表情反应的图片框转为可切换按钮（ARIA 不允许列表项本身使用 button 角色），使二者都能用键盘操作。
 
 表情启用时，评论框直接显示表情图标而不是 `:weibo_longing:` 这类短代码。所有表情的识别与回写都经过 `emoji-tokens`：它与 Waline 的 `parseEmoji` 使用同一扫描规则（`/:(.+?):/gu`，不跨行），只把 Waline 真正会渲染成图片的片段显示为图标；编辑模式和草稿里的 `<img class="wl-emoji">` 同样显示为图标并原样回写。图标的 `alt` 取表情的语义标签：词语名去掉分隔符（`laugh_and_cry` → `laugh and cry`），twemoji 这类码点名直接还原为对应的 Emoji 字符。同一行中较早的未配对冒号（如 `Note:`、`https:`）会吞掉短代码的开头冒号，此时选择器插入的表情改存为 Waline 自己的 `<img class="wl-emoji">`，保证评论框里的每个图标发布后仍是图片；手动输入的短代码则如实保持文字，与 Waline 预览一致。
 
@@ -188,8 +190,13 @@ pnpm.cmd build
 - **Waline 回归入口**：`tests/waline-config.test.mjs` 验证配置解析与旧配置兼容；
   `tests/utils/emoji-tokens.test.mjs` 以 Waline 的 `parseEmoji` 为基准校验表情解析与回写；
   `tests/site/waline.spec.ts` 覆盖关闭状态、JS/CSS 懒加载、失败重试、Swup 切页与晚到响应、
-  主题/移动端/减少动态效果、上传按钮键盘操作、表情输入框（选择、输入、粘贴、撤销、复制、
-  SDK 写入、键盘与 axe、`emoji: false` 与表情包失败回退）和无 JavaScript 回退。开启 Waline 并配置
+  主题/移动端/减少动态效果、上传按钮键盘操作、Twikoo 式描边字段（固定标签段、聚焦描边与光环、
+  编辑框在前）、表情输入框（选择、输入、粘贴、撤销、复制、SDK 写入、键盘与 axe、
+  `emoji: false` 与表情包失败回退）、评论列表（Twikoo 式描边卡片与嵌套回复、回复卡片内代码的
+  token、头像列与正文列布局及手机整宽布局、浏览器/系统图标与顺序、正文列内的无框回复表单、
+  操作行里的取消按钮与隐藏的 Markdown 链接和字数、评论动作的紧凑状态层（点击后不常亮、键盘焦点
+  可见）与正文块间距、排序 radiogroup 与表情反应的键盘操作、
+  窄屏布局与双主题 axe）和无 JavaScript 回退。开启 Waline 并配置
   有效 `serverURL` 后运行该分片及 `tests/site/a11y.spec.ts`，再恢复原配置。
 - **UI 测试跳过守卫**：特性默认关闭，UI 测试依赖真实渲染，因此在每个 UI 测试开头：
 
