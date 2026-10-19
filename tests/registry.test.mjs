@@ -7,6 +7,7 @@ import { pathToFileURL } from "node:url";
 import { resolvePaths } from "../src/integration/resolve/paths.ts";
 import {
 	buildOverrideRegistry,
+	findLegacyIconImports,
 	findOrphanUserFiles,
 	overrideKey,
 } from "../src/integration/resolve/registry.ts";
@@ -138,4 +139,84 @@ test("barrel files stay owned by the package at any depth", () => {
 		"nested barrel must not be overridable",
 	);
 	assert.equal(overrides.has(cardKey), true, "a normal component still is");
+});
+
+test("legacy icon migration scan ignores comments and string bodies", () => {
+	const { themeRoot, siteRoot, paths } = world();
+	const relativeIcon = join("atoms", "display", "Icon.svelte");
+	write(join(themeRoot, "src", "components", relativeIcon));
+	const userCopy = join(siteRoot, "src", "components", relativeIcon);
+	write(
+		userCopy,
+		`<script lang="ts">
+/**
+ * This override was copied from the astro-icon era.
+ * import Icon from "astro-icon";
+ */
+const note = "from 'astro-icon'";
+const example = \`import Icon from "astro-icon";\`;
+</script>
+<!-- import Icon from "astro-icon"; -->
+<pre>astro-icon is mentioned in this example. <code>import Icon from "astro-icon";</code></pre>
+`,
+	);
+
+	const { overrides } = buildOverrideRegistry(paths);
+	assert.deepEqual(findLegacyIconImports(overrides), []);
+});
+
+test("legacy icon migration scan reads Astro frontmatter but not markup", () => {
+	const { themeRoot, siteRoot, paths } = world();
+	const relativeCard = join("atoms", "PostCard.astro");
+	write(join(themeRoot, "src", "components", relativeCard));
+	const userCopy = join(siteRoot, "src", "components", relativeCard);
+	write(
+		userCopy,
+		`---
+import Icon from "astro-icon";
+---
+<!-- import Icon from "astro-icon"; -->
+<pre><code>import Icon from "astro-icon";</code></pre>
+<script>
+const note = "astro-icon";
+</script>
+`,
+	);
+	const { overrides } = buildOverrideRegistry(paths);
+	assert.deepEqual(findLegacyIconImports(overrides), [userCopy]);
+
+	write(
+		userCopy,
+		`---
+const note = "astro-icon";
+---
+<!-- import Icon from "astro-icon"; -->
+<pre><code>import Icon from "astro-icon";</code></pre>
+`,
+	);
+	assert.deepEqual(findLegacyIconImports(overrides), []);
+});
+
+test("legacy icon migration scan detects import, re-export, dynamic import, and require", () => {
+	const { themeRoot, siteRoot, paths } = world();
+	const relativeIcon = join("atoms", "display", "Icon.svelte");
+	write(join(themeRoot, "src", "components", relativeIcon));
+	const userCopy = join(siteRoot, "src", "components", relativeIcon);
+	// Registry construction is a snapshot; create the override before building it.
+	write(userCopy, "<script>\n</script>\n");
+	const { overrides } = buildOverrideRegistry(paths);
+
+	for (const source of [
+		`import Icon from "astro-icon";`,
+		`import "astro-icon/components";`,
+		`export { Icon } from "astro-icon";`,
+		`const Icon = await import("astro-icon");`,
+		`const Icon = require("astro-icon/components");`,
+	]) {
+		write(userCopy, `<script>\n${source}\n</script>\n`);
+		assert.deepEqual(findLegacyIconImports(overrides), [userCopy], source);
+	}
+
+	write(userCopy, `import Icon from "astro-iconic";\n`);
+	assert.deepEqual(findLegacyIconImports(overrides), []);
 });
