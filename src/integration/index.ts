@@ -185,7 +185,7 @@ export function shirones(options: ShironesOptions = {}): AstroIntegration {
 					projectRoot: paths.projectRoot,
 					skip: paths.isThemeRepo,
 				});
-				if (reportPeerViolations(peerViolations, logger)) {
+				if (reportPeerViolations(peerViolations, logger, paths.projectRoot)) {
 					throw new Error(
 						"[shirones] the project is missing dependencies the theme requires — " +
 							"see the error above for the list and the install command.",
