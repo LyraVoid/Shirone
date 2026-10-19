@@ -259,11 +259,16 @@ async function expectTokenColor(
 }
 
 async function mount(page: Page) {
-	await page.locator(WRAPPER).scrollIntoViewIfNeeded();
-	await expect(page.locator(WRAPPER)).toHaveAttribute(
-		"data-waline-state",
-		"ready",
-	);
+	// Swup's smooth scroll to the top can outlast page:view and undo a single
+	// scroll before the lazy observer sees the wrapper, so keep it in view.
+	await expect(async () => {
+		await page.locator(WRAPPER).scrollIntoViewIfNeeded();
+		await expect(page.locator(WRAPPER)).toHaveAttribute(
+			"data-waline-state",
+			"ready",
+			{ timeout: 1_000 },
+		);
+	}).toPass({ timeout: 10_000 });
 }
 
 async function navigate(page: Page, path: string) {
