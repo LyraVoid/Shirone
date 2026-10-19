@@ -12,7 +12,7 @@ description: Creating or modifying UI components in the Shirone theme - atomic d
 1. **依赖方向**:只能引用本层与更底层;跨层引用一律 `@components/<层>/<文件>`,禁止 `../../` 相对链;禁止循环依赖;共享 UI 下沉为 molecule,不做 organism 平铺互引。
 2. **职责边界**:原子/分子禁止查询内容集合(`posts`/`tags`/`categories`)、禁止 `localStorage` 持久化、禁止路由跳转——业务副作用归 organisms;Markdown 正文渲染唯一入口是 `src/components/content/Markdown.astro`。
 3. **视觉一律走 token**:色值、圆角、字体、间距、动效用语义 token(`--primary`、`--surface-container-*`、`--shape-corner-*`、`--m3e-type-*`、`--m3e-duration-*`、`--m3e-easing-*`);交互反馈统一 `.m3-state-layer`,不自造 `:hover` 叠色;固定黑/白仅限图片覆盖层等文档化例外。视觉一致性以 `DESIGN.md` 为唯一真源。
-4. **SSR 优先**:纯 SSR 路径图标用 `astro-icon`,`@iconify/svelte` 在无 hydration 岛上不渲染;只有真正需要交互的组件加 `client:load`/`client:visible`,优先 `client:visible`;页面主体严禁 `client:only`。
+4. **SSR 优先**:图标一律走 `atoms/display/Icon.svelte`,它在构建期内联服务端 SVG,`@iconify/svelte` 在无 hydration 岛上同样渲染——不需要为图标加水合岛;只有真正需要交互的组件加 `client:load`/`client:visible`,优先 `client:visible`;页面主体严禁 `client:only`。
 5. **Svelte 单文件一种模式**:runes(`$props()`/`$state()`)与 legacy(`export let`/`$:`)不得混用;Stylus 中修饰符/元素选择器保持独立写法,防止 `&` 拼接出错误类名。
 6. **文案不硬编码**:用户可见文案走 `src/i18n/i18nKey.ts` + `i18n()`(见 `shirone-i18n` 技能)。
 

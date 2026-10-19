@@ -599,3 +599,76 @@ snapshotPathTemplate: "{snapshotDir}/{testFileDir}/{testFileName}-snapshots/{arg
 **解法**：这几个步骤**串行**跑，每步单独占满内存；同时跑两个必假阳性。判断「是不是我的改动引起的」—— 同一条命令在未改动提交上再跑一遍，结果一致即为环境问题。
 
 
+### 11.3 `astro check` 不检查 `.svelte`，必须单独运行 `svelte-check`
+
+**现象**：`Icon.svelte.d.ts` 曾把 `Icon` 声明成 Svelte 4 的
+`SvelteComponent<IconProps>`；`astro check` 报 0 errors，而 `svelte-check` 在 64 个
+`.svelte` 文件里报 164 条「not assignable to parameter of type `Component<…>`」——
+也就是每一个 `<Icon>` 调用点。
+
+**根因**：`astro check` 不会替代 Svelte language server 的类型检查。实测在 `.svelte`
+里写 `const bad: number = "x"`、在 `.astro` 里写
+`<Icon icon={123} notARealProp="x" />`，`astro check` 都仍是 0 errors。
+
+**现状与门禁**：仓库将 `svelte-check@4.7.6` 固定为 devDependency；CI 用
+`pnpm exec svelte-check --tsconfig ./tsconfig.json --threshold error`，并以错误阈值
+作为阻塞检查。不要改回未固定的 `pnpm dlx`：那会临时联网解析工具版本，且锁文件无法
+复现它。
+
+**判断**：改 `.svelte` 或 `.svelte.d.ts` 时，`astro check` 通过**不构成**类型验证证据；
+须同时运行上述固定版本的 `svelte-check`。旧的 28-error 宽限基线已过时，不能据此放行新错误。
+
+### 11.4 Playwright 测试不在 CI，回归只能靠源码级契约兜住
+
+**现象**：`1cd5466` 的图标迁移漏了 4 个跨行 `<Icon name=…>` 标签，导致文章卡片箭头、
+相关文章条目箭头、系列卡片箭头在 `dist/` 里是空节点。这类遗漏 `icons.spec.ts` 覆盖不到
+（它只检查顶栏、社交链接、复制按钮、FAB），而 `astro check` 又看不到属性名。
+
+**根因**：`playwright.config.ts` 写死 `channel: "chrome"`，且 `ci.yml` 没有 `pnpm test`，
+所以浏览器测试只能手工跑。
+
+**解法**：对「属性名换掉会导致静默空渲染」这类问题，用**源码级契约测试**兜：
+`tests/icon-call-site-contract.test.mjs` 扫描每个 `.astro`/`.svelte`，屏蔽注释与字符串
+字面量后断言 `<Icon>` 带 `icon` 且不带 `name`。这比 Playwright 更早、更便宜，且
+`icons.spec.ts` 只能作为渲染质量的补充。
+
+**教训**：源码级契约测试的关键是**先屏蔽注释与字符串**。第一版没屏蔽，
+`Icon.svelte` 自己的 deprecation 文案、JSDoc 里的 `<Icon … />` 示例全被当成调用点，
+67 个假阳性——一条没人看的测试比没有测试更糟。
+
+### 11.5 包发布流水线会重建 `workspace/`，必须核对同步的源码提交
+
+**现象**：运行模板、打包和验证步骤后，产物看起来像是源码改动没有生效；手工放入
+`workspace/` 的文件也消失了。
+
+**根因**：发布流水线的模板同步步骤会整体重建 `workspace/`：从配置的源码仓库与 ref
+同步到临时目录，再复制进 `workspace/` 并移除 `.git`。因此手改 `workspace/` 会被覆盖，
+而包验证实际使用的是所配置的仓库/ref，不一定是正在开发的那条分支。
+
+**解法**：先用 `workspace/.synced-sha` 确认本次包构建实际同步的提交。要验证尚未合并的
+改动时，显式设置发布流水线的 `SHIRONES_UPSTREAM_REPO` 和 `SHIRONES_UPSTREAM_REF`，再运行
+模板、打包与验证；不要仅凭目录名或分支名推断产物来自哪里：
+
+```bash
+SHIRONES_UPSTREAM_REPO=<repository-url> \
+SHIRONES_UPSTREAM_REF=<branch-or-commit> \
+pnpm templates && pnpm build && pnpm validate
+```
+
+**教训**：跨仓验证先确认源码来自哪个 ref，再看产物数字。若 ref 不对，箭头数量或
+`is:inline` 计数只能说明流水线测了另一份源码，不能作为回归证据。
+
+### 11.6 包模式 dev 冒烟在资源受限环境中超时，结果仍属未通过
+
+**现象**：`validate` 的 dev 冒烟曾在从 `styles/main.css` 加载模块时触发
+`transport invoke timed out after 60000ms`，随后 `/` 返回 500。用户在 2 核环境报告，
+单独等待约 68 秒后首页才返回 HTTP 200；完整验证超过 200 秒仍未完成。用户怀疑首次
+Stylus/CSS 解析在 2 核环境中太慢，这是合理假设，但目前没有证明它是唯一原因。
+
+**对照**：在不包含本次 PR 改动的干净上游基线上也复现了同一类失败。因此，
+这次失败不能单独归因于 PR 分支；但这也**不代表冒烟通过**，更不能据此保证包模式 dev
+在其他环境正常。
+
+**结论**：将该历史 smoke 状态如实记为失败/未验证。若要确认性能原因或验证修复，需在
+资源充足的环境中串行运行同一包 tarball、记录完整请求时序和日志，再与基线比较；在此
+之前不要把超时称作通过，也不要断言它是上游缺陷或 fork 回归。

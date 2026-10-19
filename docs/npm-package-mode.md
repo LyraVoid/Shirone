@@ -145,25 +145,25 @@ pnpm's strict layout, so the source repository never sees them:
   resolution is genuine (the file exists; no `vite:alias.noResolved` sentinel)
   before standing down.
 
-- **Node-level `require.resolve`** — astro-icon loads icon sets outside Vite, so
-  `@iconify-json/*` must really exist in the user's project. They are peer
-  dependencies and `init` installs them. Same story for `sharp`, which Astro's
-  image service imports dynamically.
+- **Node-level `require.resolve`** — `sharp` and `stylus` are peer dependencies
+  the user's project must really install: `init` adds them, and
+  `check:package-manifest` fails a bare import that only
+  `dependencies`/`peerDependencies` can satisfy at runtime. Astro's image
+  service imports `sharp` dynamically for the same reason.
 
-  Do not read that as a *resolution* problem and move the iconify sets into the
-  theme's `dependencies` to fix it. They resolve fine from inside the package —
-  verified with a real tarball install: both the theme's own
-  `src/integration/vite/icon/collections.ts` (which anchors on
+  The icon sets follow that rule too, with one difference that came out of
+  dropping `astro-icon`: `@iconify-json/*` are now the **theme's own**
+  `dependencies`, not peers. They used to have to be peers only because
+  astro-icon's *detection* step — `detectInstalledCollections(root)` reads the
+  **user's** `package.json` and iterates only that list — dropped any set the
+  user had not declared, even though the file itself resolved fine. A real
+  tarball install verified that resolution was never the blocker: both the
+  theme's `src/integration/vite/icon/collections.ts` (which anchors on
   `createRequire(import.meta.url)`) and astro-icon's fs loader (which anchors on
-  `process.cwd()`) find the sibling `node_modules` under pnpm's layout. What
-  breaks is astro-icon's *detection* step: `detectInstalledCollections(root)`
-  reads the **user's** `package.json` and only iterates that list, so the sets
-  go missing from the virtual `astro-icon` module even though the files are
-  reachable — every `<Icon name="material-symbols:home">` then throws. See
-  `docs/troubleshooting.md` in the packaging repository. The theme-side
-  `localIconCollections` path (used by `Icon.svelte` and the
-  `@shirone/iconify-offline` component) has no such gate, which is what makes it
-  the escape hatch if astro-icon is ever dropped.
+  `process.cwd()`) find the sibling `node_modules` under pnpm's strict layout.
+  With that discovery step gone, the sets resolve from inside the package and
+  need no user-side declaration at all. See `docs/troubleshooting.md` in the
+  packaging repository.
 - **CommonJS deps that get inlined into the SSR bundle** — `stylus` reads
   `__dirname` and then loads `lib/functions/index.styl` from disk.
   `src/integration/vite/ssr-node-shims.ts` gives every bundled CJS module its real
@@ -191,21 +191,20 @@ packaged branch is expected to follow it.
 
 ## Publishing
 
-Building and publishing live in
-[`shirones`](https://github.com/yCENzh/shirones). That repository clones
-this one, transforms the source, and publishes. No theme code lives there.
+A separate package-publishing pipeline syncs this source, transforms it, builds
+the npm archive, and publishes it. The publisher owns those scripts; no package
+build implementation lives in this theme repository.
 
-A release is entirely manual and driven from that repository — there is no push
-trigger anywhere, so merging here never publishes anything:
+Publishing is manual, with no push trigger, so merging theme changes does not
+publish a release by itself:
 
-1. Merge the work into the packaged branch (`feat/npm-package`) and bump
+1. Merge the work into the branch configured as the package source and bump
    `package.json` here. **The npm version is this repository's version**; the
    pipeline has none of its own.
-2. shirones → **Actions** → **Build & Publish** → **Run workflow**, all inputs
-   left at their defaults.
+2. In the package publisher, run its **Build & Publish** workflow with the
+   configured source and package inputs.
 
-The inputs are documented in
-[shirones/docs/releasing.md](https://github.com/yCENzh/shirones/blob/main/docs/releasing.md);
-the short version is that the defaults already point at this repository's
-packaged branch and the current package name, and the one worth using is *Build
-and validate, but do not publish* for a pre-merge rehearsal.
+For a pre-merge rehearsal, use the publisher's *build and validate without
+publishing* mode. The publisher's release guide is the source of truth for its
+current inputs; keep package names, repository URLs, and refs configurable
+rather than copying an individual fork or branch name into this document.
