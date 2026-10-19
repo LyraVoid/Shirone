@@ -423,7 +423,7 @@ The palette is a tonal surface system, not a fixed swatch collection. All colors
 ### Surface Hierarchy
 Depth in MD3 is communicated through **tonal surface color**, not shadows. Five container levels establish clean nesting hierarchy and depth:
 - **Surface**: The baseline background for pages and resting areas (`--surface`).
-- **Surface Dim / Bright**: Maintain relative brightness across both light and dark themes. In dark mode, Surface Bright also fills filled inputs (`--field-filled-bg`), because dark mode cards already occupy Surface Container High.
+- **Surface Dim / Bright**: Maintain relative brightness across both light and dark themes. In dark mode, Surface Bright also fills filled inputs (`--field-filled-bg`) and inline code chips (`--inline-code-bg`), because dark mode cards, table headers, and annotation popovers already occupy Surface Container High.
 - **Surface Container Lowest**: The lowest-emphasis container, used for cards in light mode (`--surface-container-lowest`).
 - **Surface Container Low**: Low-emphasis container, default page background in light mode (`--surface-container-low`).
 - **Surface Container**: Default container for navigation bars, menus, and docked chrome (`--surface-container`).

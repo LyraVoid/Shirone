@@ -56,7 +56,8 @@ define({
   --line-color: var(--outline) var(--outline)
   --meta-divider: var(--on-surface-variant) var(--on-surface-variant)
 
-  --inline-code-bg: var(--surface-container-low) var(--surface-container-high)
+  /* 暗色卡片、表头与批注气泡都是 container-high，行内代码取 surface-bright 才能浮出 */
+  --inline-code-bg: var(--surface-container-low) var(--surface-bright)
   --inline-code-color: var(--on-surface-variant) var(--on-surface-variant)
   --selection-bg: var(--primary-container) var(--primary-container)
   --codeblock-selection: var(--primary-container) var(--primary-container)

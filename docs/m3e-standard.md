@@ -71,7 +71,7 @@ variables.styl  --mc-* → 语义令牌（--primary、--surface-container-low…
 | `--deep-text` | 主色背景上的深色文字（= on-primary） |
 | `--link-underline/-hover/-active`、`--title-active` | 链接 / 标题强调色 |
 | `--line-divider`、`--line-color`、`--meta-divider` | 分隔线 |
-| `--inline-code-bg/-color`、`--codeblock-bg`、`--codeblock-topbar-bg` | 代码块 |
+| `--inline-code-bg/-color`、`--codeblock-bg`、`--codeblock-topbar-bg` | 代码块（行内代码底色 light: container-low / dark: surface-bright，避开暗色卡片、表头与批注气泡的 container-high） |
 | `--admonitions-color-*` | 提示块语义色（固定色相，不随种子） |
 
 ### 3.2 形状
