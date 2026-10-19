@@ -29,9 +29,7 @@ jobs:
       - name: Set up pnpm
         uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4.1.0
         with:
-          # Must match `packageManager` in package.json: pnpm/action-setup
-          # rejects the run when both specify a version.
-          version: 11.28.2
+          # Omit the version so the action reads `packageManager` from package.json.
           run_install: false
 
       - name: Set up Node.js
@@ -62,9 +60,7 @@ jobs:
       - name: Set up pnpm
         uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4.1.0
         with:
-          # Must match `packageManager` in package.json: pnpm/action-setup
-          # rejects the run when both specify a version.
-          version: 11.28.2
+          # Omit the version so the action reads `packageManager` from package.json.
           run_install: false
 
       - name: Set up Node.js
@@ -81,7 +77,7 @@ jobs:
         run: pnpm exec astro check
 
       - name: Check Svelte diagnostics
-        run: pnpm dlx svelte-check@4.7.6 --tsconfig ./tsconfig.json --threshold error
+        run: pnpm exec svelte-check --tsconfig ./tsconfig.json --threshold error
 
       - name: Validate atom manifest
         run: pnpm check:manifest
@@ -107,9 +103,7 @@ jobs:
       - name: Set up pnpm
         uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4.1.0
         with:
-          # Must match `packageManager` in package.json: pnpm/action-setup
-          # rejects the run when both specify a version.
-          version: 11.28.2
+          # Omit the version so the action reads `packageManager` from package.json.
           run_install: false
 
       - name: Set up Node.js
@@ -139,9 +133,7 @@ jobs:
       - name: Set up pnpm
         uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4.1.0
         with:
-          # Must match `packageManager` in package.json: pnpm/action-setup
-          # rejects the run when both specify a version.
-          version: 11.28.2
+          # Omit the version so the action reads `packageManager` from package.json.
           run_install: false
 
       - name: Set up Node.js
