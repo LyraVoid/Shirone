@@ -6,7 +6,7 @@
 	background: var(--codeblock-bg);
 	color: var(--on-surface);
 	font: var(--m3e-type-code, var(--m3e-type-body-medium));
-	font-family: var(--font-mono, var(--m3e-font-mono-fallback));
+	font-family: var(--m3e-font-mono-family);
 }
 
 .custom-md .m3-file-tree__header {
@@ -373,7 +373,7 @@
 	background: transparent;
 	border-radius: var(--shape-corner-s);
 	font: var(--m3e-type-body-small);
-	font-family: var(--font-mono, var(--m3e-font-mono-fallback));
+	font-family: var(--m3e-font-mono-family);
 	color: var(--on-surface-variant);
 	text-align: left;
 	cursor: pointer;

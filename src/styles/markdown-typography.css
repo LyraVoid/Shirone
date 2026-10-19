@@ -16,3 +16,14 @@
   > :is(h1, h2, h3):first-child:not(:where([class~="not-prose"], [class~="not-prose"] *)) {
   margin-top: 0;
 }
+
+/*
+ * Tailwind Typography defaults inline code to font-weight 600, which is also
+ * the default weight of <strong>. Author emphasis such as **`code`** therefore
+ * has no visible effect. Let code follow the surrounding text weight instead:
+ * plain inline code stays at the body weight, <strong>/<em> keep their meaning,
+ * and block code (pre → 400) remains the baseline.
+ */
+.markdown-content code {
+  font-weight: inherit;
+}

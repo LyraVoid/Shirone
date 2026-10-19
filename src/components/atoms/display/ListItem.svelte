@@ -1,4 +1,6 @@
 <script lang="ts">
+import type { Snippet } from "svelte";
+
 /**
  * M3E ListItem — 列表项原子（官方 ListItem.kt 移植）。
  * 行高按内容自动：仅 headline 56dp（官方 ContainerHeight）/ 两行 72dp /
@@ -65,7 +67,13 @@ const threeLine = $derived(!!overLine && !!supporting);
     </div>
 {/if}
 
-{#snippet slotInner(leading, overLine, headline, supporting, trailing)}
+{#snippet slotInner(
+    leading: Snippet | undefined,
+    overLine: string | Snippet | undefined,
+    headline: string | Snippet,
+    supporting: string | Snippet | undefined,
+    trailing: Snippet | undefined,
+)}
     {#if leading}
         <div class="m3-list-item__leading">{@render leading()}</div>
     {/if}

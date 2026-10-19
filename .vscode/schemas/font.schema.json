@@ -53,9 +53,15 @@
                 "enum": [
                   "mono"
                 ]
+              },
+              {
+                "type": "string",
+                "enum": [
+                  "mono-cjk"
+                ]
               }
             ],
-            "description": "绑定的角色：\"body\" | \"cjk\" | \"mono\"，每个角色最多定义一个字体族"
+            "description": "绑定的角色：\"body\" | \"cjk\" | \"mono\" | \"mono-cjk\"，每个角色最多定义一个字体族"
           },
           "source": {
             "anyOf": [

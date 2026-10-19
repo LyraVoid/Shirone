@@ -9,6 +9,8 @@
  * 用法：<DatePicker bind:value={date} />
  *      <DatePicker bind:value={date} locale="en-US" />
  */
+import { getLocaleWeekStart } from "@utils/locale-utils";
+
 let {
 	value = $bindable(""),
 	label = "选择日期",
@@ -31,15 +33,8 @@ let viewYear = $state(2026);
 let viewMonth = $state(0);
 let today = $state("");
 
-// 初始化
-const weekStart = $derived(
-	(() => {
-		// 周一=1（zh）/ 周日=0（en）按 locale 周起始
-		const t = new Intl.Locale(locale);
-		const w = t.weekInfo?.firstDay ?? 1;
-		return w; // 1 = Monday, 7 = Sunday
-	})(),
-);
+// 周一=1（zh-CN）/ 周日=7（en-US）按 locale 周起始
+const weekStart = $derived(getLocaleWeekStart(locale));
 
 function init() {
 	const d = value ? new Date(value + "T00:00:00") : new Date();

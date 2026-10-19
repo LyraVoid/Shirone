@@ -11,8 +11,7 @@
 }
 
 .expressive-code .title {
-	font-family: "JetBrains Mono Variable", ui-monospace, SFMono-Regular, Menlo,
-		Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+	font-family: var(--m3e-font-mono-family);
 }
 
 .expressive-code .frame {

@@ -5,6 +5,8 @@
  * （若 end < start 则交换）；范围中间日期用 secondary-container 淡背景高亮。
  * start/end 均为 ISO "YYYY-MM-DD"（$bindable），onchange({start,end})。
  */
+import { getLocaleWeekStart } from "@utils/locale-utils";
+
 let {
 	start = $bindable(""),
 	end = $bindable(""),
@@ -27,12 +29,7 @@ let viewYear = $state(2026);
 let viewMonth = $state(0);
 let today = $state("");
 
-const weekStart = $derived(
-	(() => {
-		const t = new Intl.Locale(locale);
-		return t.weekInfo?.firstDay ?? 1;
-	})(),
-);
+const weekStart = $derived(getLocaleWeekStart(locale));
 
 function init() {
 	const d = start ? new Date(start + "T00:00:00") : new Date();

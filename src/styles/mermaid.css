@@ -21,9 +21,7 @@
 	border-radius: var(--shape-corner-m);
 	background: var(--codeblock-bg);
 	color: var(--on-surface);
-	font-family:
-		"JetBrains Mono Variable", ui-monospace, SFMono-Regular, Menlo, Monaco,
-		Consolas, "Liberation Mono", "Courier New", monospace;
+	font-family: var(--m3e-font-mono-family);
 	font-size: 0.875rem;
 	line-height: 1.5rem;
 	white-space: pre;

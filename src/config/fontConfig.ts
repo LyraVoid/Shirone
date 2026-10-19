@@ -46,7 +46,7 @@ export const fontConfig: FontConfig = withUserConfig("font", {
 	mode: "custom",
 
 	/**
-	 * 字体清单列表（按需配置 body、cjk、mono 角色）
+	 * 字体清单列表（按需配置 body、cjk、mono、mono-cjk 角色）
 	 */
 	fontFamilies: [
 		// ---------------------------------------------------------------------

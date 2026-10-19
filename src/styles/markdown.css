@@ -191,7 +191,11 @@
       border-radius: var(--shape-corner-xs) !important;
       background: color-mix(in oklab, var(--on-surface) 8%, transparent) !important;
       color: var(--on-surface) !important;
+      /* The token owns family/size/line-height; weight/style must follow the
+         cell and any <strong>/<em> so author emphasis survives the shorthand. */
       font: var(--m3e-type-code) !important;
+      font-weight: inherit !important;
+      font-style: inherit !important;
       letter-spacing: 0;
       white-space: nowrap;
       box-decoration-break: clone;

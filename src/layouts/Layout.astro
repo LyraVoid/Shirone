@@ -27,7 +27,10 @@ import {
 } from "../constants/constants";
 import { defaultFavicons } from "../constants/icon";
 import type { BannerSourceValue, Favicon } from "../types/config";
-import { createFontRoleStyle } from "../utils/font-options";
+import {
+	createFontRoleStyle,
+	getConfiguredFontRoles,
+} from "../utils/font-options";
 import { resolvePageWidth } from "../utils/responsive-utils";
 import "../styles/main.css";
 import "../styles/font-faces.css";
@@ -106,13 +109,7 @@ if (!lang) {
 }
 const siteLang = lang.replace("_", "-");
 const fontRoleStyle = createFontRoleStyle(resolvedFontOptions);
-const customFontsEnabled = resolvedFontOptions.mode === "custom";
-const hasBodyFont =
-	customFontsEnabled && Boolean(resolvedFontOptions.roles.body.family);
-const hasCjkFont =
-	customFontsEnabled && Boolean(resolvedFontOptions.roles.cjk.family);
-const hasMonoFont =
-	customFontsEnabled && Boolean(resolvedFontOptions.roles.mono.family);
+const configuredFontRoles = getConfiguredFontRoles(resolvedFontOptions);
 ---
 
 <!DOCTYPE html>
@@ -147,9 +144,12 @@ const hasMonoFont =
 		<meta name="generator" content={Astro.generator} />
 		{fontRoleStyle && <style is:inline set:html={fontRoleStyle}></style>}
 		{textureEnabled && <style is:inline set:html={textureStyles}></style>}
-		{hasBodyFont && <Font cssVariable={resolvedFontOptions.roles.body.cssVariable as never} preload={resolvedFontOptions.roles.body.preload} />}
-		{hasCjkFont && <Font cssVariable={resolvedFontOptions.roles.cjk.cssVariable as never} preload={resolvedFontOptions.roles.cjk.preload} />}
-		{hasMonoFont && <Font cssVariable={resolvedFontOptions.roles.mono.cssVariable as never} preload={resolvedFontOptions.roles.mono.preload} />}
+		{configuredFontRoles.map((role) => (
+			<Font
+				cssVariable={resolvedFontOptions.roles[role].cssVariable as never}
+				preload={resolvedFontOptions.roles[role].preload}
+			/>
+		))}
 		{umamiOptions?.websiteId && umamiOptions.scriptUrl && (
 			<script is:inline async src={umamiOptions.scriptUrl} data-website-id={umamiOptions.websiteId} data-auto-track="true"></script>
 		)}
