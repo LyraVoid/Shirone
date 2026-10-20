@@ -147,8 +147,8 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       # Comments are off by default, so this run covers the zero-footprint cases.
-      - name: Run comment regressions with comments disabled
-        run: pnpm exec playwright test tests/site/comments.spec.ts tests/site/waline.spec.ts
+      - name: Run comment, content and a11y regressions with comments disabled
+        run: pnpm exec playwright test tests/site/comments.spec.ts tests/site/waline.spec.ts tests/site/mdx.spec.ts tests/site/a11y.spec.ts
 
       # The fixture enables Waline through the content-repository config overlay;
       # the specs mock its SDK, stylesheet, emoji packs and API.
