@@ -22,8 +22,8 @@ export interface CommentConfig {
 	twikoo: TwikooConfig;
 	/** Giscus 专属配置 */
 	giscus: GiscusConfig;
-	/** Waline 专属配置 */
-	waline: WalineConfig;
+	/** Waline 专属配置；旧配置可省略，未填写时 Waline 不渲染 */
+	waline?: WalineConfig;
 }
 
 export interface GiscusConfig {

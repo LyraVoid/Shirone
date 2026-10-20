@@ -43,6 +43,7 @@ const options = {
 	lang: resolvedLang,
 	// 颜色由下方局部语义 token 跟随站点切换，无需 SDK 注入全局暗色样式。
 	dark: false,
+	// 3.16.1 的 init 仍解构 comment / pageview（默认 false），显式关闭评论数与浏览量统计请求。
 	comment: false,
 	pageview: false,
 };
