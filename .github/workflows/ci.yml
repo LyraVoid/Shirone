@@ -160,6 +160,15 @@ jobs:
       - name: Run comment regressions with Waline enabled
         run: pnpm exec playwright test tests/site/comments.spec.ts tests/site/waline.spec.ts
 
+      # The Twikoo fixture matches the SDK mock in comments.spec.ts.
+      - name: Enable the Twikoo fixture
+        run: pnpm content:sync
+        env:
+          CONTENT_DIR: tests/fixtures/content/twikoo
+
+      - name: Run comment regressions with Twikoo enabled
+        run: pnpm exec playwright test tests/site/comments.spec.ts
+
   styles:
     name: Style regressions
     runs-on: ubuntu-latest

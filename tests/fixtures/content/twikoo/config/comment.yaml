@@ -1,0 +1,8 @@
+# Twikoo browser-test fixture. `CONTENT_DIR=tests/fixtures/content/twikoo pnpm content:sync`
+# compiles it into src/user/user-config.ts, the same path a content repository takes.
+# The envId and script URL match the mock in tests/site/comments.spec.ts, so nothing is fetched.
+enable: true
+provider: twikoo
+twikoo:
+  envId: https://twikoo.mysqil.com
+  scriptUrl: https://cdn.jsdelivr.net/npm/twikoo@1.7.19/dist/twikoo.min.js

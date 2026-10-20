@@ -205,8 +205,12 @@ pnpm.cmd build
   `src/user/user-config.ts`，与内容仓配置覆盖走同一路径；之后运行
   `tests/site/comments.spec.ts`、`tests/site/waline.spec.ts` 与 `tests/site/a11y.spec.ts`，
   结束后用 `git restore src/user/user-config.ts` 还原覆盖层并删除 `content.lock.json`
-  （`content:clean` 会连同挂载目录里未跟踪的内容一起清理，不适合这里）。CI 的
-  Comment regressions 任务先在默认关闭状态、再在该夹具下各运行一次前两个分片。
+  （`content:clean` 会连同挂载目录里未跟踪的内容一起清理，不适合这里）。
+- **Twikoo 开启态夹具**：`tests/fixtures/content/twikoo/config/comment.yaml` 的 `envId` 与
+  `scriptUrl` 对应 `tests/site/comments.spec.ts` 中的 mock，用法与还原方式同上，开启后运行
+  `tests/site/comments.spec.ts` 中的 Twikoo UI 用例。
+- **CI**：Comment regressions 任务先在默认关闭状态运行评论、Markdown 与 a11y 分片，再分别在
+  Waline 与 Twikoo 夹具下运行对应的评论分片。
 - **UI 测试跳过守卫**：特性默认关闭，UI 测试依赖真实渲染，因此在每个 UI 测试开头：
 
 ```ts
