@@ -77,7 +77,9 @@ if (!options || !postCommentEnabled) {
   每个分支校验各自的必填字段——Giscus 的 `repo` / `repoId` / `categoryId`
   任一缺失同样返回 `null`，与未启用完全等价。
   选中 Waline 后，`serverURL` 必须是有效 HTTP(S) 地址，`scriptUrl` / `styleUrl`
-  必须非空，否则同样不渲染评论区。
+  必须非空，否则同样不渲染评论区。Waline 选项以 JSON 写入页面，无法携带函数，
+  因此 `imageUploader` / `highlighter` / `texRenderer` 只接受 `true` / `false`；
+  传入函数会让 `resolveCommentOptions()` 在构建时直接报错，而不是悄悄退回 Waline 的默认实现。
 
 ### L2 动态导入组件，避免进主 bundle
 

@@ -111,11 +111,11 @@ export const commentConfig: CommentConfig = withUserConfig("comment", {
 		wordLimit: 0,
 		/** 每页条数 */
 		pageSize: 10,
-		/** 是否允许上传图片 */
+		/** 图片上传：true 时 Waline 将图片编码为 Base64，false 关闭；只接受 true / false，不支持自定义函数 */
 		imageUploader: true,
-		/** 代码高亮 */
+		/** 代码高亮：true 使用 Waline 内置高亮器，false 关闭；只接受 true / false */
 		highlighter: true,
-		/** TeX 渲染 */
+		/** TeX：true 在预览中提示不支持 TeX，false 不解析 TeX；只接受 true / false */
 		texRenderer: false,
 		/** 是否隐藏页脚版权信息 */
 		noCopyright: false,
@@ -209,6 +209,17 @@ export function resolveCommentOptions(
 			if (!["http:", "https:"].includes(server.protocol)) return null;
 		} catch {
 			return null;
+		}
+		// 选项以 JSON 写入页面，函数会被静默丢弃；构建时直接报错，避免自定义回调悄悄失效。
+		for (const key of [
+			"imageUploader",
+			"highlighter",
+			"texRenderer",
+		] as const) {
+			if (typeof waline[key] === "function")
+				throw new TypeError(
+					`commentConfig.waline.${key} only accepts true or false: Waline options reach the browser as JSON, which cannot carry functions.`,
+				);
 		}
 		return {
 			provider: "waline",

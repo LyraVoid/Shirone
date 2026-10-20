@@ -467,14 +467,9 @@
               "enum": [
                 true
               ]
-            },
-            {
-              "type": "object",
-              "properties": {},
-              "additionalProperties": false
             }
           ],
-          "description": "图片上传开关，默认 true（Waline 将图片编码为 Base64）"
+          "description": "图片上传：true（默认）由 Waline 将图片编码为 Base64，false 关闭；选项以 JSON 写入页面，无法携带函数，因此不支持自定义上传函数"
         },
         "highlighter": {
           "anyOf": [
@@ -490,14 +485,9 @@
               "enum": [
                 true
               ]
-            },
-            {
-              "type": "object",
-              "properties": {},
-              "additionalProperties": false
             }
           ],
-          "description": "代码高亮，默认 true（使用一个 <1kB 的简单高亮器）"
+          "description": "代码高亮：true（默认）使用 Waline 内置的 <1kB 高亮器，false 关闭；同样不支持自定义函数"
         },
         "texRenderer": {
           "anyOf": [
@@ -513,14 +503,9 @@
               "enum": [
                 true
               ]
-            },
-            {
-              "type": "object",
-              "properties": {},
-              "additionalProperties": false
             }
           ],
-          "description": "TeX 渲染"
+          "description": "TeX：true 在预览中提示不支持 TeX，false 不解析 TeX；同样不支持自定义渲染函数"
         },
         "noCopyright": {
           "anyOf": [

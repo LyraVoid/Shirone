@@ -36,6 +36,7 @@ const resolvedLang =
 	lang === "auto"
 		? (languages[siteLanguage] ?? languages[siteLanguage.split("-")[0]] ?? "en")
 		: lang;
+// 选项以 JSON 传给浏览器，只能携带数据；JSON 会丢弃的回调已由 resolveCommentOptions 拒绝。
 const options = {
 	...clientOptions,
 	path: context.path,

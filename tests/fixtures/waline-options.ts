@@ -27,6 +27,22 @@ export const customWalineOptions = {
 export const disabledEmoji: WalineConfig["emoji"] = false;
 export const defaultEmoji: WalineConfig["emoji"] = true;
 
+export const toggles = {
+	imageUploader: false,
+	highlighter: true,
+	texRenderer: false,
+} satisfies Pick<WalineConfig, "imageUploader" | "highlighter" | "texRenderer">;
+
+// Options reach the browser as JSON, which cannot carry callbacks.
+export const callbacks: Partial<WalineConfig> = {
+	// @ts-expect-error A custom uploader would be dropped on the way to the browser.
+	imageUploader: async () => "https://images.example.com/upload.png",
+	// @ts-expect-error A custom highlighter would be dropped on the way to the browser.
+	highlighter: (code: string) => code,
+	// @ts-expect-error A custom TeX renderer would be dropped on the way to the browser.
+	texRenderer: (_blockMode: boolean, tex: string) => tex,
+};
+
 export const obsoleteOptions: Partial<WalineConfig> = {
 	// @ts-expect-error Input hints belong to locale.placeholder.
 	placeholder: "Obsolete top-level option",

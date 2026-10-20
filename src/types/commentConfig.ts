@@ -83,15 +83,6 @@ export interface WalineEmojiInfo {
 	items: string[];
 }
 
-/** 自定义图片上传方法 */
-export type WalineImageUploader = (image: File) => Promise<string>;
-
-/** 自定义代码高亮方法 */
-export type WalineHighlighter = (code: string, lang: string) => string;
-
-/** 自定义 TeX 渲染方法 */
-export type WalineTeXRenderer = (blockMode: boolean, tex: string) => string;
-
 export interface WalineConfig {
 	/** Waline 服务端 HTTP(S) 地址（必填），如 https://comments.example.com */
 	serverURL: string;
@@ -117,12 +108,12 @@ export interface WalineConfig {
 	wordLimit?: number | [number, number];
 	/** 每页评论条数，默认 10 */
 	pageSize?: number;
-	/** 图片上传开关，默认 true（Waline 将图片编码为 Base64） */
-	imageUploader?: WalineImageUploader | boolean;
-	/** 代码高亮，默认 true（使用一个 <1kB 的简单高亮器） */
-	highlighter?: WalineHighlighter | boolean;
-	/** TeX 渲染 */
-	texRenderer?: WalineTeXRenderer | boolean;
+	/** 图片上传：true（默认）由 Waline 将图片编码为 Base64，false 关闭；选项以 JSON 写入页面，无法携带函数，因此不支持自定义上传函数 */
+	imageUploader?: boolean;
+	/** 代码高亮：true（默认）使用 Waline 内置的 <1kB 高亮器，false 关闭；同样不支持自定义函数 */
+	highlighter?: boolean;
+	/** TeX：true 在预览中提示不支持 TeX，false 不解析 TeX；同样不支持自定义渲染函数 */
+	texRenderer?: boolean;
 	/** 是否隐藏页脚版权信息 */
 	noCopyright?: boolean;
 	/** 是否隐藏 RSS 订阅链接 */

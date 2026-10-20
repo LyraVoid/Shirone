@@ -58,6 +58,28 @@ test("Waline rejects malformed or non-HTTP service URLs", () => {
 	}
 });
 
+test("Waline rejects callbacks that cannot reach the browser", () => {
+	for (const key of ["imageUploader", "highlighter", "texRenderer"]) {
+		assert.throws(
+			() =>
+				resolveCommentOptions({
+					...valid,
+					waline: { ...valid.waline, [key]: () => "" },
+				}),
+			{ name: "TypeError", message: new RegExp(`waline\\.${key} `) },
+		);
+		for (const value of [true, false, undefined]) {
+			assert.equal(
+				resolveCommentOptions({
+					...valid,
+					waline: { ...valid.waline, [key]: value },
+				}).waline[key],
+				value,
+			);
+		}
+	}
+});
+
 test("Waline normalizes required fields without mutating configuration", () => {
 	const config = {
 		...valid,
@@ -110,7 +132,7 @@ test("Adding Waline preserves the existing Twikoo and Giscus providers", () => {
 	assert.equal(giscus.giscus.repo, "owner/repo");
 });
 
-test("Waline types accept locale overrides and mixed emoji sources", () => {
+test("Waline types accept locale overrides, mixed emoji sources and switches without callbacks", () => {
 	const fixture = fileURLToPath(
 		new URL("./fixtures/waline-options.ts", import.meta.url),
 	);
