@@ -9,9 +9,9 @@
  *
  * Writing during `buildStart` is safe: it happens before Vite resolves any
  * import of the generated module, so `Icon.svelte` cannot observe a missing
- * file. `astro sync` and `astro check` do not run `buildStart`, so they read
- * whatever the last dev/build run left behind; run `pnpm dev` once after
- * adding an icon to a component.
+ * file. Verified that `astro dev`, `astro build`, `astro sync` and `astro check`
+ * all fire `buildStart`, so every entry point regenerates the collection and
+ * none of them needs a step in the script chain.
  */
 
 import { existsSync } from "node:fs";

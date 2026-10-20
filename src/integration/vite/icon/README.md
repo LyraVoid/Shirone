@@ -24,9 +24,10 @@ and in one request.
 `regeneration.ts` regenerates in two places:
 
 - `buildStart` — the collection must exist before Vite resolves
-  `Icon.svelte`. This runs for `astro dev` and `astro build`. `astro sync`
-  does not fire it, so that command reads whatever the last dev or build
-  left behind; run `pnpm dev` once after adding an icon to a component.
+  `Icon.svelte`. Verified to fire for `astro dev`, `astro build` **and**
+  `astro sync`, so all three regenerate it and none of them needs a step in the
+  script chain. `astro check` does the same, which is why a broken icon name
+  shows up before CI rather than at runtime.
 - `handleHotUpdate` — an icon added while the dev server is up regenerates
   without a restart. This is the reason the plugin exists at all; generation used
   to happen only in the script chain, which ran once before the server started.
@@ -97,9 +98,16 @@ redirect look broken — and `Icon.svelte` shipping as source is easy to miss,
 because `find node_modules/shirones -name Icon.svelte` follows no symlink under
 pnpm's layout and reports nothing while the file is there.
 
-## Errors are swallowed on purpose
+## Errors: dev warns, build throws
 
-`regeneration.ts` catches failures. A typo in one post should cost one icon,
-not take the dev server down or fail a deploy. The CLI path is gone, so nothing
-reports the problem loudly — if an icon silently does not appear, check that the
-name exists in the installed set.
+`regeneration.ts` catches failures and then splits by command, which `configResolved`
+records:
+
+- `astro dev` warns and keeps going, leaving the previous collection in place.
+  A typo in one post should cost one icon, not take the dev server down.
+- `astro build` **throws**. An icon that fails to resolve renders as nothing at
+  runtime, which is exactly the silent breakage worth failing a deploy on.
+
+So a blank icon in `dist/` means the build did not run this plugin, not that the
+error was swallowed. If an icon is missing in dev, check the warning first, then
+that the name exists in an installed set.

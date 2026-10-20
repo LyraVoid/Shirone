@@ -11,13 +11,24 @@ import { join } from "node:path";
  *
  * 1. `astro` — the project *is* an Astro project; its own `astro.config.mjs`
  *    imports it, and every Astro integration is loaded through it.
- * 2. `svelte` + `@astrojs/svelte` — `@astrojs/svelte` registers `svelte/*` and
- *    `@astrojs/svelte/client.js` in `optimizeDeps.include`, which Vite resolves
- *    from the **project root**. Missing either one leaves Svelte islands
- *    unhydrated while the page still renders, so the failure is silent.
+ * 2. `svelte` + `@astrojs/svelte` — the project's `astro.config.mjs` imports
+ *    `@astrojs/svelte` to register the integration, and that package lists
+ *    `svelte` as a **peer dependency**. Both therefore resolve from the
+ *    **project root**, not from inside the installed theme. Missing either one
+ *    leaves Svelte islands unhydrated while the page still renders, so the
+ *    failure is silent.
  * 3. `sharp` — Astro's image service `import`s it dynamically from its own
  *    location, which never reaches the theme's nested `node_modules`, and its
  *    `@img/*` native bindings must be version-matched to the JS wrapper.
+ *
+ * `@astrojs/svelte` does reach back into Vite's optimisation config — its
+ * `configEnvironment` returns `optimizeDeps.exclude: ["svelte"]` so
+ * `@sveltejs/vite-plugin-svelte` skips pre-bundling Svelte's SSR runtime, which
+ * would otherwise give dev SSR two separate copies with independent
+ * `ssr_context` state. That is not why the peer has to sit at the project root,
+ * though: the `optimizeDeps` entry only *names* `svelte`, and the name resolves
+ * wherever the hoisted layout puts it. The root dependency is what the
+ * config-file import and the peer relationship require.
  *
  * The `@iconify-json/*` sets used to be a fourth entry: `astro-icon` located
  * them by reading the *user's* `package.json`, which made them unshippable no
@@ -58,13 +69,13 @@ export const PEER_REQUIREMENTS: readonly PeerRequirement[] = [
 		name: "svelte",
 		tier: "runtime",
 		reason:
-			"`@astrojs/svelte` registers `svelte/*` in Vite's `optimizeDeps.include`, which is resolved from the project root",
+			"`@astrojs/svelte` (which `astro.config.mjs` imports) declares `svelte` a peer dependency, so it must resolve from the project root",
 	},
 	{
 		name: "@astrojs/svelte",
 		tier: "runtime",
 		reason:
-			"registers its hydration client in `optimizeDeps.include`, so Svelte islands stay server-only without it",
+			"`astro.config.mjs` imports it to register the integration, so it must resolve from the project root",
 	},
 	{
 		name: "sharp",
@@ -96,45 +107,28 @@ export interface PeerViolation {
 	stale: boolean;
 }
 
-/** A dependency's version floor as [major, minor, patch], or null. */
-function rangeFloor(range: unknown): [number, number, number] | null {
-	if (typeof range !== "string") return null;
-	const match = /(\d+)\.(\d+)(?:\.(\d+))?/.exec(range);
-	if (!match) return null;
-	return [Number(match[1]), Number(match[2]), Number(match[3] ?? 0)];
-}
+// The range engine is shared with `cli.mjs`, which repairs the ranges this
+// module reports. Two copies used to live, one per file, and they drifted three
+// times: the integration rejected `astro: <7.3.5` while `init --update` left it
+// alone, and it bumped `^7.3.0` although that range still has a valid
+// intersection. See `version-range.mjs` for why it is a `.mjs`.
+import { rangesIntersect, versionSatisfies } from "./version-range.mjs";
 
-/** Whether floor `a` is strictly below floor `b`. Null floors are "unknown". */
-function floorBelow(
-	a: [number, number, number] | null,
-	b: [number, number, number] | null,
-): boolean {
-	if (!a || !b) return false;
-	for (let index = 0; index < 3; index += 1) {
-		if (a[index] !== b[index]) return a[index] < b[index];
-	}
-	return false;
-}
-
-/**
- * `true` when the declared range cannot satisfy the required one.
- *
- * Ranges are compared by floor, which is what matters in practice: a caret
- * range that starts below the theme's floor will resolve to a version the
- * theme has never seen. A range with no numeric floor (`*`, `latest`,
- * `workspace:`) is taken as satisfying, since there is nothing to compare and
- * refusing to install is worse than a warning nobody can act on.
- */
-function isStale(declared: unknown, required: unknown): boolean {
-	return floorBelow(rangeFloor(declared), rangeFloor(required));
-}
-
-/** Turn `"pnpm add -D x@^1"` into something safe to paste into a shell. */
-function installCommand(names: string[], ranges: Map<string, string>): string {
+/** Turn `"pnpm add x@^1"` into something safe to paste into a shell. */
+function installCommand(
+	names: string[],
+	ranges: Map<string, string>,
+	projectRoot: string,
+): string {
 	const specs = names.map((name) => `${name}@${ranges.get(name) ?? "latest"}`);
-	const manager = existsSync(join(process.cwd(), "pnpm-lock.yaml"))
-		? "pnpm add -D"
-		: "npm install -D";
+	// `projectRoot`, not `process.cwd()`: the integration runs wherever the
+	// user's shell happens to be, and only the project root knows which
+	// package manager owns the lockfile. `-D` is deliberately absent —
+	// `shirones init` writes these into `dependencies`, and a `--omit=dev`
+	// deploy would otherwise ship without `astro`.
+	const manager = existsSync(join(projectRoot, "pnpm-lock.yaml"))
+		? "pnpm add"
+		: "npm install";
 	return `${manager} ${specs.join(" ")}`;
 }
 
@@ -145,6 +139,20 @@ function readPackageJson(file: string): Record<string, unknown> | null {
 	} catch {
 		return null;
 	}
+}
+
+/**
+ * The version actually installed for the project, or null when it is not.
+ *
+ * A symlink under pnpm's strict layout, so `readFileSync` following it is what
+ * finds the real package.json. A missing directory is a normal answer — the
+ * project is simply not installed yet — and not an error to report.
+ */
+function installedVersion(projectRoot: string, name: string): string | null {
+	const pkg = readPackageJson(
+		join(projectRoot, "node_modules", ...name.split("/"), "package.json"),
+	);
+	return typeof pkg?.version === "string" ? pkg.version : null;
 }
 
 /**
@@ -220,30 +228,56 @@ export function verifyPeerRequirements(
 	for (const requirement of PEER_REQUIREMENTS) {
 		const range = required.get(requirement.name) ?? null;
 		// No range means the theme cannot say what it needs — a manifest that
-		// predates a dependency, or one that dropped it. Reporting "missing"
-		// there would be a warning the user cannot act on.
+		// predates a dependency, or one that dropped it. Reporting anything
+		// there would be a message the user cannot act on.
 		if (range === null) continue;
+
 		const declaredRange = declared[requirement.name];
-		if (typeof declaredRange === "string") {
-			if (isStale(declaredRange, range)) {
-				violations.push({
-					name: requirement.name,
-					tier: requirement.tier,
-					reason: requirement.reason,
-					required: range,
-					declared: declaredRange,
-					stale: true,
-				});
-			}
+		if (typeof declaredRange !== "string") {
+			violations.push({
+				name: requirement.name,
+				tier: requirement.tier,
+				reason: requirement.reason,
+				required: range,
+				declared: null,
+				stale: false,
+			});
 			continue;
 		}
+
+		// Ground truth first: what is actually on disk. An installed version
+		// inside the requirement settles it without reasoning about ranges.
+		// Deliberate tradeoff: this does not prove every version permitted by a
+		// broader declared range is supported; e.g. `^7.0.0` may resolve below
+		// the theme's `^7.3.5` floor on a later install. See the packaging
+		// contract before changing this precedence.
+		const installed = installedVersion(projectRoot, requirement.name);
+		if (installed !== null) {
+			if (versionSatisfies(installed, range)) continue;
+			violations.push({
+				name: requirement.name,
+				tier: requirement.tier,
+				reason: requirement.reason,
+				required: range,
+				declared: `${declaredRange} (installed ${installed})`,
+				stale: true,
+			});
+			continue;
+		}
+
+		// Nothing installed yet, so the only evidence is the declared range.
+		// Passing here means the range *can* resolve to a version the theme
+		// supports — which is all a manifest can promise before a lockfile.
+		if (rangesIntersect(declaredRange, range)) continue;
+
+		// The ranges provably share no version, so no install can satisfy both.
 		violations.push({
 			name: requirement.name,
 			tier: requirement.tier,
 			reason: requirement.reason,
 			required: range,
-			declared: null,
-			stale: false,
+			declared: declaredRange,
+			stale: true,
 		});
 	}
 	return violations;
@@ -257,10 +291,14 @@ export function verifyPeerRequirements(
  * the package and the wanted range and says nothing about why the range exists
  * or what to run. This is the version that tells the user what is missing, why
  * only the theme can know, and the exact command that fixes it.
+ *
+ * `projectRoot` is needed only to name the right package manager in that
+ * command; the violations themselves carry everything else.
  */
 export function reportPeerViolations(
 	violations: PeerViolation[],
 	logger: { error: (message: string) => void; warn: (message: string) => void },
+	projectRoot: string,
 ): boolean {
 	if (violations.length === 0) return false;
 
@@ -282,12 +320,21 @@ export function reportPeerViolations(
 	}
 
 	if (runtime.length > 0) {
-		const lines = runtime.map((violation) => {
-			const detail = violation.stale
-				? `declares ${violation.declared}, needs ${violation.required}`
-				: "missing";
-			return `  - ${violation.name} (${detail})\n    ${violation.reason}`;
-		});
+		// "missing" and "out of date" need different fixes: one is a `pnpm add`
+		// that does not touch what is there, the other is a version bump. The
+		// old wording called both of them "missing".
+		const absent = runtime.filter((violation) => !violation.stale);
+		const stale = runtime.filter((violation) => violation.stale);
+		const lines = [
+			...absent.map(
+				(violation) =>
+					`  - not declared: ${violation.name}\n    ${violation.reason}`,
+			),
+			...stale.map(
+				(violation) =>
+					`  - out of date: ${violation.name} declares ${violation.declared}, the theme needs ${violation.required}\n    ${violation.reason}`,
+			),
+		];
 		const ranges = new Map(
 			runtime.map((violation) => [
 				violation.name,
@@ -297,11 +344,12 @@ export function reportPeerViolations(
 		const command = installCommand(
 			runtime.map((violation) => violation.name),
 			ranges,
+			projectRoot,
 		);
 		logger.error(
 			`${runtime.length} required ${
 				runtime.length === 1 ? "dependency is" : "dependencies are"
-			} missing from this project:\n${lines.join("\n")}\n` +
+			} unusable in this project:\n${lines.join("\n")}\n` +
 				"  pnpm prints an unmet peer warning for these, but it does not say that the\n" +
 				"  build will fail. Install them, or run `npx shirones init --update`:\n" +
 				`    ${command}`,

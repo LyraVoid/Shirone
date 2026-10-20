@@ -307,6 +307,44 @@ test.describe("banner wallpaper", () => {
 		expect(html).not.toContain("/assets/banner/desktop/1.webp");
 	});
 
+	test("detaches initial picture sources on dark desktop and mobile entries", async ({
+		page,
+	}) => {
+		await page.addInitScript(() => localStorage.setItem("theme", "dark"));
+		for (const viewport of [
+			{ width: 1440, height: 1000 },
+			{ width: 390, height: 844 },
+		]) {
+			await page.setViewportSize(viewport);
+			await page.goto("/", { waitUntil: "domcontentloaded" });
+			await waitForBannerState(page, true);
+			await expect(
+				page.locator(".banner-stage__media picture source"),
+			).toHaveCount(0);
+		}
+	});
+
+	test("detaches initial picture sources after a runtime theme switch", async ({
+		page,
+	}) => {
+		await page.goto("/", { waitUntil: "domcontentloaded" });
+		await waitForBannerState(page, true);
+		await expect(
+			page.locator(".banner-stage__media picture source"),
+		).not.toHaveCount(0);
+		await page.evaluate(() => {
+			document.documentElement.classList.add("dark");
+			window.dispatchEvent(
+				new CustomEvent("shirone:theme-change", {
+					detail: { isDark: true },
+				}),
+			);
+		});
+		await expect(
+			page.locator(".banner-stage__media picture source"),
+		).toHaveCount(0);
+	});
+
 	test("desktop exposes subtitle typewriter controls", async ({ page }) => {
 		await page.goto("/", { waitUntil: "domcontentloaded" });
 		await waitForBannerState(page, true);

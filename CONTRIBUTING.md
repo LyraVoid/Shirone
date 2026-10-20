@@ -50,7 +50,7 @@ See [`docs/atomic-structure.md`](./docs/atomic-structure.md) and [`rules/compone
 
 ### Rendering and navigation
 
-Static content should remain useful without client-side JavaScript. Hydrate an Astro component only when its interaction requires browser code, and use `astro-icon` for icons rendered on pure SSR paths.
+Static content should remain useful without client-side JavaScript. Hydrate an Astro component only when its interaction requires browser code, and render every icon through `atoms/display/Icon.svelte`, which emits server-side SVG from a build-time tree-shaken collection — including on pure SSR paths, so no hydration island is needed for an icon.
 
 Shirone uses Swup for in-site navigation. Elements outside `#swup-container` remain mounted between pages, so route-dependent behavior must work both on a direct page load and after client navigation.
 

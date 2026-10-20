@@ -9,9 +9,9 @@ import Icon from "@iconify/svelte";
  * - shape：round（默认，corner-full）/ square（按尺寸 corner-medium~extra-large）；toggle 选中时形状互换（官方行为）；
  * - toggle 模式：checked（$bindable）+ checkedIcon，点击切换并触发 onchange，aria-pressed 同步；
  * - 交互：原生 button + m3-state-layer（hover/focus/pressed）；disabled 对齐官方（图标 38%、filled/tonal 容器 12%）；
- * - **图标两种方式**：`icon` prop（Iconify 名，仅客户端水合场景可用——@iconify/svelte 靠运行时加载数据，
- *   SSR 无 hydration 时渲染空白）；`children` snippet（静态 SSR 场景必须用此方式传 Icon 原子等已渲染图标，
- *   尺寸由调用方 class 控制，如 `text-[1.25rem]`）；
+ * - **图标两种方式**：`icon` prop（Iconify 名，主题 `atoms/display/Icon.svelte` 在构建期内联
+ *   服务端 SVG，纯 SSR 与客户端水合场景同样可用）；`children` snippet（传已渲染的 Icon 原子等
+ *   内容，尺寸由调用方 class 控制，如 `text-[1.25rem]`）；
  * - href 提供时渲染 <a>（原生语义，带 target/rel）；
  * - 通用场景：工具条操作、收藏/开关图标、AppBar 动作等。
  */
