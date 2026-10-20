@@ -696,6 +696,85 @@ test.describe("Comment System - Configuration & Architecture", () => {
 		await assertFieldGeometry(true);
 	});
 
+	test("browser and system row stays clear of an open reply form", async ({
+		page,
+	}) => {
+		test.skip(
+			!twikooUiEnabled,
+			"评论未启用或 provider 非 twikoo，跳过 twikoo UI 测试",
+		);
+		await mockTwikoo(page);
+		await page.goto("/posts/guide/");
+		await page.locator("#comments").scrollIntoViewIfNeeded();
+		await expect(page.locator(".tk-comments-container")).toHaveCount(1);
+		// 一条打开了回复框的评论，连同 Twikoo 运行时注入、决定浏览器/系统行排版的默认样式
+		await page.evaluate(() => {
+			document.querySelector(".tk-comments-container")?.insertAdjacentHTML(
+				"beforeend",
+				`<style>
+					.tk-comment { margin-top: 1rem; display: flex; }
+					.tk-main { flex: 1; width: 0; }
+					.tk-extras { color: #999999; font-size: 0.875em; display: flex; flex-wrap: wrap; }
+					.tk-extra { margin-top: 0.5rem; margin-right: 0.75rem; display: flex; align-items: center; }
+					.tk-extra-text { line-height: 1; }
+					.tk-submit { margin-top: 1rem; }
+				</style>
+				<div class="tk-comment">
+					<div class="tk-avatar"></div>
+					<div class="tk-main">
+						<div class="tk-content"><span><p>Hello</p></span></div>
+						<div class="tk-extras">
+							<div class="tk-extra"><span class="tk-icon"><svg width="14" height="14"></svg></span><span class="tk-extra-text">&nbsp;Windows 11</span></div>
+							<div class="tk-extra"><span class="tk-icon"><svg width="14" height="14"></svg></span><span class="tk-extra-text">&nbsp;Chrome 141</span></div>
+						</div>
+						<div class="tk-submit"><div class="tk-row"><div class="tk-col"><div class="tk-input el-textarea"><textarea class="el-textarea__inner"></textarea></div></div></div></div>
+					</div>
+				</div>`,
+			);
+		});
+
+		const row = await page.locator(".tk-comment").evaluate((element) => {
+			const extras = element.querySelector(".tk-extras");
+			const reply = element.querySelector(".tk-submit");
+			if (!extras || !reply) throw new Error("The reply fixture is missing");
+			const textBottom = Math.max(
+				...[...extras.querySelectorAll(".tk-extra-text")].flatMap((text) => {
+					const range = document.createRange();
+					range.selectNodeContents(text);
+					return [...range.getClientRects()].map((rect) => rect.bottom);
+				}),
+			);
+			const extrasBottom = extras.getBoundingClientRect().bottom;
+			const gap = reply.getBoundingClientRect().top - extrasBottom;
+			// Measure first: the token probe joins the row only afterwards.
+			const probe = document.createElement("span");
+			probe.style.cssText =
+				"display:block;flex:none;color:var(--on-surface-variant);width:var(--m3e-space-3)";
+			extras.append(probe);
+			const expected = getComputedStyle(probe);
+			const result = {
+				extrasBottom,
+				textBottom,
+				gap,
+				spacing: Number.parseFloat(expected.width),
+				color: getComputedStyle(extras).color,
+				expectedColor: expected.color,
+			};
+			probe.remove();
+			return result;
+		});
+		// 文字不溢出所在行，评论内的回复框与这一行隔开一个间距单位
+		expect(row.textBottom).toBeLessThanOrEqual(row.extrasBottom);
+		expect(row.gap).toBeCloseTo(row.spacing, 0);
+		// 使用主题次要文字色，而不是 Twikoo 的 #999
+		expect(row.color).toBe(row.expectedColor);
+		// 顶部主编辑区仍然贴齐
+		await expect(page.locator(".tk-comments > .tk-submit")).toHaveCSS(
+			"margin-top",
+			"0px",
+		);
+	});
+
 	test("preview appears only for comment content with tonal colors", async ({
 		page,
 	}) => {
