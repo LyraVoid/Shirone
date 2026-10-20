@@ -1,0 +1,7 @@
+# Waline browser-test fixture. `CONTENT_DIR=tests/fixtures/content/waline pnpm content:sync`
+# compiles it into src/user/user-config.ts, the same path a content repository takes.
+# The specs mock the SDK, stylesheet, emoji packs and API, so this address is never contacted.
+enable: true
+provider: waline
+waline:
+  serverURL: https://comments.example.com

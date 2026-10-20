@@ -198,8 +198,15 @@ pnpm.cmd build
   token、头像列与正文列布局及手机整宽布局、浏览器/系统图标与顺序、正文列内的无框回复表单、
   操作行里的取消按钮与隐藏的 Markdown 链接和字数、评论动作的紧凑状态层（点击后不常亮、键盘焦点
   可见）与正文块间距、排序 radiogroup 与表情反应的键盘操作、
-  窄屏布局与双主题 axe）和无 JavaScript 回退。开启 Waline 并配置
-  有效 `serverURL` 后运行该分片及 `tests/site/a11y.spec.ts`，再恢复原配置。
+  窄屏布局与双主题 axe）和无 JavaScript 回退。
+- **Waline 开启态夹具**：`tests/fixtures/content/waline/config/comment.yaml` 只开启 Waline
+  并填入不会被访问的 `serverURL`，SDK、样式、表情包与 API 均由 spec mock。
+  `CONTENT_DIR=tests/fixtures/content/waline pnpm content:sync` 把它编译进
+  `src/user/user-config.ts`，与内容仓配置覆盖走同一路径；之后运行
+  `tests/site/comments.spec.ts`、`tests/site/waline.spec.ts` 与 `tests/site/a11y.spec.ts`，
+  结束后用 `git restore src/user/user-config.ts` 还原覆盖层并删除 `content.lock.json`
+  （`content:clean` 会连同挂载目录里未跟踪的内容一起清理，不适合这里）。CI 的
+  Comment regressions 任务先在默认关闭状态、再在该夹具下各运行一次前两个分片。
 - **UI 测试跳过守卫**：特性默认关闭，UI 测试依赖真实渲染，因此在每个 UI 测试开头：
 
 ```ts
