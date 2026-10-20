@@ -373,6 +373,12 @@ async function snapshot(page: Page) {
 	});
 }
 
+// Swup can still be fetching a page through a test's route handler when the
+// test ends; drop those handlers so a late response cannot fail the next test.
+test.afterEach(async ({ page }) => {
+	await page.unrouteAll({ behavior: "ignoreErrors" });
+});
+
 test("pages without comments make no Waline requests or DOM", async ({
 	page,
 }) => {
@@ -1505,6 +1511,44 @@ test.describe("Waline enabled", () => {
 		expect((await snapshot(page)).mounts.map((item) => item.path)).toEqual([
 			OTHER_ARTICLE,
 		]);
+	});
+
+	test("hydrates the loading indicator once it scrolls into view", async ({
+		page,
+	}) => {
+		let release!: () => void;
+		const gate = new Promise<void>((resolve) => {
+			release = resolve;
+		});
+		await page.route(waline.scriptUrl, async (route) => {
+			await gate;
+			await route.fallback();
+		});
+		try {
+			await page.goto(ARTICLE);
+			const loading = page.locator(".waline-loading");
+			const island = loading.locator("astro-island");
+			// The server renders the loading state hidden and the runtime reveals it
+			// on connection, while the section is still far below the viewport;
+			// `client:visible` waits until the indicator itself is on screen.
+			await expect(loading).toBeVisible();
+			await expect(island).toHaveAttribute("ssr");
+			await expect(async () => {
+				await page.locator(WRAPPER).scrollIntoViewIfNeeded();
+				await expect(island).not.toHaveAttribute("ssr", { timeout: 1_000 });
+			}).toPass({ timeout: 6_000 });
+			// The indeterminate shape is drawn only by the hydrated animation loop.
+			await expect(
+				loading.locator(".m3-loading__indicator path"),
+			).toHaveAttribute("d", /^M/);
+		} finally {
+			release();
+		}
+		await expect(page.locator(WRAPPER)).toHaveAttribute(
+			"data-waline-state",
+			"ready",
+		);
+		await expect(page.locator(".waline-loading")).toBeHidden();
 	});
 
 	test("follows theme tokens, fits mobile and respects reduced motion", async ({
