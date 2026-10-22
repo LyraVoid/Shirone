@@ -27,9 +27,7 @@ for (const theme of ["light", "dark"]) {
 			const root = document.documentElement;
 			return {
 				dark: root.classList.contains("dark"),
-				primary: getComputedStyle(root)
-					.getPropertyValue("--mc-primary")
-					.trim(),
+				primary: getComputedStyle(root).getPropertyValue("--mc-primary").trim(),
 				styles: [
 					...(window as unknown as { __rootStyles: string[] }).__rootStyles,
 					root.getAttribute("style") ?? "",
