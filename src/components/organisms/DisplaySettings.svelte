@@ -244,7 +244,9 @@ function styleColors(s: McStyle, h: number, d: boolean, sp: McSpec) {
 }
 
 /** 当前主色（标题右侧预览圆点） */
-const currentColor = $derived(styleColors(style, hue, dark, spec).primary);
+const currentColor = $derived(
+	panelOpened ? styleColors(style, hue, dark, spec).primary : "transparent",
+);
 
 /** 9 个风格的色卡预览（3×3 网格） */
 const stylePreviews = $derived(
