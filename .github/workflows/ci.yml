@@ -196,5 +196,5 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Run style and banner regressions
-        run: pnpm exec playwright test tests/site/fonts.spec.ts tests/site/inline-code-emphasis.spec.ts tests/site/banner.spec.ts
+      - name: Run style, banner and theme scheme regressions
+        run: pnpm exec playwright test tests/site/fonts.spec.ts tests/site/inline-code-emphasis.spec.ts tests/site/banner.spec.ts tests/site/theme-scheme.spec.ts
