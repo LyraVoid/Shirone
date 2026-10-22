@@ -1,6 +1,6 @@
 import type { CollectionEntry } from "astro:content";
-import { getPostUrl } from "./url-utils.ts";
 import type { LlmsConfig, LlmsCustomLink } from "@/types/llmsConfig";
+import { getPostUrl } from "./url-utils.ts";
 
 const CODE_BLOCK_RE =
 	/(?:^|\n)(?<marker>\s*(?:`{3,}|~{3,}))([\s\w-]*)\n[\s\S]*?\n\k<marker>(?:\n|$)/g;

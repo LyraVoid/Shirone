@@ -3,8 +3,8 @@
 import DeviceSection from "@components/organisms/DeviceSection.svelte";
 import I18nKey from "@i18n/i18nKey";
 import MainGridLayout from "@layouts/MainGridLayout.astro";
-import { devicesConfig } from "@/config/devicesConfig";
 import { resolveI18nText } from "@utils/i18n-utils";
+import { devicesConfig } from "@/config/devicesConfig";
 import { resolveDevicesData } from "@/utils/feature-data";
 
 if (!devicesConfig.enable) {
@@ -12,7 +12,10 @@ if (!devicesConfig.enable) {
 }
 
 const pageTitle = resolveI18nText(devicesConfig.title, I18nKey.devices);
-const pageDescription = resolveI18nText(devicesConfig.description, I18nKey.devicesBanner);
+const pageDescription = resolveI18nText(
+	devicesConfig.description,
+	I18nKey.devicesBanner,
+);
 
 const items = resolveDevicesData(devicesConfig);
 ---

@@ -25,6 +25,9 @@ import {
 import { tmpdir } from "node:os";
 import { basename, dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+// Shared with `src/integration/verify-peers.ts`. See `version-range.mjs`
+// for why it is a `.mjs` and not a `.ts`.
+import { rangesIntersect } from "./version-range.mjs";
 
 const PACKAGE_ROOT = resolve(fileURLToPath(import.meta.url), "../..");
 const TEMPLATE_DIR = join(PACKAGE_ROOT, "template");
@@ -179,11 +182,12 @@ async function countFiles(dir) {
 
 /**
  * The user's project must depend on `astro` and on the theme's peer
- * dependencies directly. Some tooling resolves from the project root rather
- * than from the importing file, and pnpm's strict layout hides the theme's own
- * dependencies there: `@astrojs/svelte` registers `svelte/*` subpaths in
- * `optimizeDeps.include`. Installing them at the root is the only thing that
- * satisfies both, so `init` writes them into package.json and installs.
+ * dependencies directly. Two mechanisms force that, and pnpm's strict layout
+ * hides the theme's own dependencies at the project root either way:
+ * `astro.config.mjs` imports `@astrojs/svelte` to register the integration,
+ * and that package names `svelte` a peer dependency. Installing them at the
+ * root is the only thing that satisfies both, so `init` writes them into
+ * package.json and installs.
  *
  * This is the short list, and each entry has a reason recorded in
  * `src/integration/verify-peers.ts`, which also reports a missing one with
@@ -338,15 +342,34 @@ async function ensurePackageJson(
 		[packageName]: version ? `^${version}` : "latest",
 	};
 
+	// The theme used to declare nothing of its own and asked the project to
+	// install the icon sets, so an older project still carries some of them.
+	// They are reported, never removed: "no longer a peer of the theme" says
+	// nothing about whether the user's own components and scripts import them,
+	// and deleting one they use breaks their build with a resolution error
+	// that names neither the cause nor this command.
+	const obsolete = [];
+	for (const name of ICONIFY_SET_PACKAGES) {
+		if (Object.hasOwn(peers, name)) continue;
+		if (pkg.dependencies?.[name]) obsolete.push(`${name} (dependencies)`);
+		else if (pkg.devDependencies?.[name])
+			obsolete.push(`${name} (devDependencies)`);
+	}
+
 	const addedDeps = [];
 	const upgradedDeps = [];
 	for (const [dep, range] of Object.entries(wantedDeps)) {
 		const declared = pkg.dependencies[dep] ?? pkg.devDependencies[dep];
 		if (declared) {
-			// A declared dependency that can no longer satisfy the theme's
-			// requirement would break the build (e.g. a starter pinned astro@5
-			// while the theme needs astro@^7). Bump it and say so.
-			if (rangeLower(rangeFloor(declared), rangeFloor(range))) {
+			// A declared dependency that no longer shares a version with the
+			// theme's requirement has to be bumped (e.g. a starter pinned
+			// astro@5 while the theme needs astro@^7). Sharing the engine with
+			// `verify-peers.ts` is what makes "it this is the command that fixes
+			// what the integration reported" true rather than merely suggested:
+			// `^0.36.0` for `^0.35.5` and `<7.3.5` for `^7.3.5` are both
+			// disjoint and both get rewritten here, while `^7.3.0` for
+			// `^7.3.5` keeps a valid intersection and is left alone.
+			if (!rangesIntersect(declared, range)) {
 				pkg.dependencies[dep] = range;
 				delete pkg.devDependencies[dep];
 				upgradedDeps.push({ dep, from: declared, to: range });
@@ -407,8 +430,31 @@ async function ensurePackageJson(
 			`bumped ${dep} ${from} -> ${to} — the declared version no longer satisfies the theme`,
 		);
 	}
+	if (obsolete.length > 0) {
+		log.warn(
+			"still declared, but the theme no longer resolves icon sets from the project:\n" +
+				`${obsolete.map((entry) => `  - ${entry}`).join("\n")}\n` +
+				"  Remove them by hand if nothing of yours imports them.",
+		);
+	}
 	return [...addedDeps, ...upgradedDeps.map((d) => d.dep)];
 }
+
+/**
+ * The icon-set packages the theme used to require of the project.
+ *
+ * Reported, never removed: see the `obsolete` block in `ensurePackageJson`.
+ * Kept as an explicit list rather than a `@iconify-json/*` glob so the message
+ * names them and so a package the user adds under that scope for their own
+ * purposes is never touched.
+ */
+const ICONIFY_SET_PACKAGES = [
+	"@iconify-json/fa7-brands",
+	"@iconify-json/fa7-solid",
+	"@iconify-json/material-symbols",
+	"@iconify-json/simple-icons",
+	"@iconify-json/twemoji",
+];
 
 /** Read the theme's declared peer dependencies. */
 async function themePeers() {
@@ -418,27 +464,6 @@ async function themePeers() {
 	} catch {
 		return {};
 	}
-}
-
-/**
- * Lowest version a range admits, as [major, minor, patch]. Handles the common
- * caret/tilde/plain forms ("^7.0.0", "~0.34.5", "7", ">=6"); anything
- * unparseable ("latest", "*", …) is `null` and treated as unknown.
- */
-function rangeFloor(range) {
-	if (typeof range !== "string") return null;
-	const m = range.match(/(\d+)\.(\d+)(?:\.(\d+))?/);
-	if (!m) return null;
-	return [Number(m[1]), Number(m[2]), Number(m[3] ?? 0)];
-}
-
-/** Whether floor `a` is strictly below floor `b` (null floors are "unknown"). */
-function rangeLower(a, b) {
-	if (!a || !b) return false;
-	for (let i = 0; i < 3; i++) {
-		if (a[i] !== b[i]) return a[i] < b[i];
-	}
-	return false;
 }
 
 /**

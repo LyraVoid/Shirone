@@ -94,7 +94,9 @@
                     {
                       "type": "number"
                     },
-                    {}
+                    {
+                      "type": "string"
+                    }
                   ],
                   "description": "字体字重（数字或可变字体区间）"
                 },

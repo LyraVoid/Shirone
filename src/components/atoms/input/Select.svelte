@@ -306,17 +306,17 @@ $effect(() => {
 			background-color var(--m3e-duration-short) var(--m3e-easing-standard),
 			border-color var(--m3e-duration-short) var(--m3e-easing-standard)
 
-	/* ===== filled：surface-container-high + 顶部圆角 + 底部下划线（与站内 TextField 一致）===== */
+	/* ===== filled：--field-filled-bg + 顶部圆角 + 底部下划线（与站内 TextField 一致）===== */
 	&--filled &__field
 		border-radius: var(--shape-corner-m) var(--shape-corner-m) 0 0
-		background: var(--surface-container-high)
+		background: var(--field-filled-bg)
 		&:hover
-			background: unquote("color-mix(in oklab, var(--on-surface) 12%, var(--surface-container-high))")
+			background: unquote("color-mix(in oklab, var(--on-surface) 12%, var(--field-filled-bg))")
 		&:focus-visible
 			outline: none
 
 	&--filled.m3-select--open &__field
-		background: unquote("color-mix(in oklab, var(--on-surface) 16%, var(--surface-container-high))")
+		background: unquote("color-mix(in oklab, var(--on-surface) 16%, var(--field-filled-bg))")
 
 	/* ===== outlined：surface + 1px outline-variant 边框 ===== */
 	&--outlined &__field
@@ -518,7 +518,7 @@ $effect(() => {
 			color: unquote("color-mix(in oklab, var(--on-surface) 38%, transparent)")
 
 	&--disabled.m3-select--filled &__field
-		background: unquote("color-mix(in oklab, var(--on-surface) 4%, var(--surface-container-high))")
+		background: unquote("color-mix(in oklab, var(--on-surface) 4%, var(--field-filled-bg))")
 
 	&--disabled.m3-select--filled &__underline
 		background: unquote("color-mix(in oklab, var(--on-surface) 38%, transparent)")

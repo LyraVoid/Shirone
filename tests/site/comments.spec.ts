@@ -17,14 +17,18 @@ import { zh_TW } from "../../src/i18n/languages/zh_TW";
 import type {
 	CommentConfig,
 	GiscusConfig,
+	WalineConfig,
 } from "../../src/types/commentConfig";
+import { customWalineOptions } from "../fixtures/waline-options";
 
 const translations = [en, es, id, ja, ko, th, tr, vi, zh_CN, zh_TW];
 const commentKeys = [
 	I18nKey.comments,
+	I18nKey.commentsEditor,
 	I18nKey.commentsLoading,
 	I18nKey.commentsLoadFailed,
 	I18nKey.commentsRequiresJavaScript,
+	I18nKey.retry,
 ];
 
 const twikooScriptUrl =
@@ -136,6 +140,36 @@ async function mockGiscus(page: Page) {
 	});
 }
 
+async function mockWaline(page: Page, config: WalineConfig) {
+	await page.route(config.scriptUrl, (route) =>
+		route.fulfill({
+			contentType: "application/javascript",
+			body: `
+				window.Waline = {
+					init(options) {
+						const editor = document.createElement('textarea');
+						editor.setAttribute('aria-label', 'Comment');
+						editor.placeholder = options.locale?.placeholder ?? '';
+						options.el.dataset.walineMockOptions = JSON.stringify({ ...options, el: undefined });
+						options.el.replaceChildren(editor);
+						return { destroy() { options.el.replaceChildren(); } };
+					}
+				};
+			`,
+		}),
+	);
+	await page.route(config.styleUrl, (route) =>
+		route.fulfill({ contentType: "text/css", body: "" }),
+	);
+	// Emoji presets are fetched by the theme before Waline mounts.
+	await page.route("**/info.json", (route) =>
+		route.fulfill({
+			contentType: "application/json",
+			body: JSON.stringify({ name: "Fixture", icon: "a", items: ["a"] }),
+		}),
+	);
+}
+
 test.describe("Comment System - Configuration & Architecture", () => {
 	test.use({ viewport: { width: 1280, height: 900 } });
 
@@ -151,6 +185,7 @@ test.describe("Comment System - Configuration & Architecture", () => {
 
 	test("resolveCommentOptions returns null when disabled or misconfigured", () => {
 		const disabledConfig: CommentConfig = {
+			...commentConfig,
 			enable: false,
 			provider: "twikoo",
 			lazy: true,
@@ -164,6 +199,7 @@ test.describe("Comment System - Configuration & Architecture", () => {
 		expect(resolveCommentOptions(disabledConfig)).toBeNull();
 
 		const noneProviderConfig: CommentConfig = {
+			...commentConfig,
 			enable: true,
 			provider: "none",
 			lazy: true,
@@ -177,6 +213,7 @@ test.describe("Comment System - Configuration & Architecture", () => {
 		expect(resolveCommentOptions(noneProviderConfig)).toBeNull();
 
 		const missingEnvIdConfig: CommentConfig = {
+			...commentConfig,
 			enable: true,
 			provider: "twikoo",
 			lazy: true,
@@ -192,6 +229,7 @@ test.describe("Comment System - Configuration & Architecture", () => {
 
 	test("resolveCommentOptions returns resolved options when valid", () => {
 		const validConfig: CommentConfig = {
+			...commentConfig,
 			enable: true,
 			provider: "twikoo",
 			lazy: true,
@@ -208,8 +246,10 @@ test.describe("Comment System - Configuration & Architecture", () => {
 		expect(resolved).not.toBeNull();
 		expect(resolved?.provider).toBe("twikoo");
 		expect(resolved?.lazy).toBe(true);
-		expect(resolved?.twikoo.envId).toBe("https://twikoo.mysqil.com");
-		expect(resolved?.twikoo.placeholder).toBe("Comment guidance");
+		if (resolved?.provider === "twikoo") {
+			expect(resolved.twikoo.envId).toBe("https://twikoo.mysqil.com");
+			expect(resolved.twikoo.placeholder).toBe("Comment guidance");
+		}
 	});
 
 	test("resolveCommentOptions returns null for giscus with missing required ids", () => {
@@ -234,6 +274,7 @@ test.describe("Comment System - Configuration & Architecture", () => {
 		} as const;
 
 		const missingRepoId: CommentConfig = {
+			...commentConfig,
 			enable: true,
 			provider: "giscus",
 			lazy: true,
@@ -243,6 +284,7 @@ test.describe("Comment System - Configuration & Architecture", () => {
 		expect(resolveCommentOptions(missingRepoId)).toBeNull();
 
 		const missingCategoryId: CommentConfig = {
+			...commentConfig,
 			enable: true,
 			provider: "giscus",
 			lazy: true,
@@ -252,6 +294,7 @@ test.describe("Comment System - Configuration & Architecture", () => {
 		expect(resolveCommentOptions(missingCategoryId)).toBeNull();
 
 		const disabledGiscus: CommentConfig = {
+			...commentConfig,
 			enable: false,
 			provider: "giscus",
 			lazy: true,
@@ -263,6 +306,7 @@ test.describe("Comment System - Configuration & Architecture", () => {
 
 	test("resolveCommentOptions returns trimmed giscus options when valid", () => {
 		const validConfig: CommentConfig = {
+			...commentConfig,
 			enable: true,
 			provider: "giscus",
 			lazy: false,
@@ -298,6 +342,101 @@ test.describe("Comment System - Configuration & Architecture", () => {
 			expect(resolved.giscus.categoryId).toBe("DIC_id");
 			expect(resolved.giscus.theme.dark).toBe("transparent_dark");
 		}
+	});
+
+	const validWalineConfig: CommentConfig = {
+		...commentConfig,
+		enable: true,
+		provider: "waline",
+		waline: {
+			...commentConfig.waline,
+			serverURL: "https://comments.example.com",
+			scriptUrl: "https://cdn.example.com/waline.umd.js",
+			styleUrl: "https://cdn.example.com/waline.css",
+			lang: "auto",
+		},
+	};
+
+	test("resolveCommentOptions rejects disabled, missing or invalid Waline configuration", () => {
+		expect(
+			resolveCommentOptions({ ...validWalineConfig, enable: false }),
+		).toBeNull();
+		expect(
+			resolveCommentOptions({ ...validWalineConfig, provider: "none" }),
+		).toBeNull();
+
+		// 模拟旧 JS/YAML 配置缺失 Waline 块或必填字段的运行时输入。
+		const legacy = structuredClone(validWalineConfig);
+		Reflect.deleteProperty(legacy, "waline");
+		expect(resolveCommentOptions(legacy)).toBeNull();
+		for (const key of ["serverURL", "scriptUrl", "styleUrl"] as const) {
+			for (const value of ["", "  "]) {
+				expect(
+					resolveCommentOptions({
+						...validWalineConfig,
+						waline: { ...validWalineConfig.waline, [key]: value },
+					}),
+					`${key} must not be blank`,
+				).toBeNull();
+			}
+			const missing = structuredClone(validWalineConfig);
+			Reflect.deleteProperty(missing.waline, key);
+			expect(
+				resolveCommentOptions(missing),
+				`${key} must be present`,
+			).toBeNull();
+		}
+		for (const serverURL of [
+			"invalid",
+			"/api/comments",
+			"ftp://comments.example.com",
+			"javascript:alert(1)",
+		]) {
+			expect(
+				resolveCommentOptions({
+					...validWalineConfig,
+					waline: { ...validWalineConfig.waline, serverURL },
+				}),
+				`${serverURL} must be rejected`,
+			).toBeNull();
+		}
+	});
+
+	test("resolveCommentOptions trims Waline fields and preserves locale and mixed emoji options", () => {
+		const config: CommentConfig = {
+			...validWalineConfig,
+			lazy: false,
+			waline: {
+				...validWalineConfig.waline,
+				...customWalineOptions,
+				serverURL: " https://comments.example.com/api/ ",
+				scriptUrl: " /comments/waline.umd.js ",
+				styleUrl: " /comments/waline.css ",
+				lang: " en ",
+				pageSize: 20,
+				login: "force",
+			},
+		};
+		const before = structuredClone(config);
+		const expected = {
+			provider: "waline",
+			lazy: false,
+			waline: {
+				...config.waline,
+				serverURL: "https://comments.example.com/api/",
+				scriptUrl: "/comments/waline.umd.js",
+				styleUrl: "/comments/waline.css",
+				lang: "en",
+			},
+		};
+		expect(resolveCommentOptions(config)).toEqual(expected);
+		expect(config).toEqual(before);
+		expect(
+			resolveCommentOptions({
+				...config,
+				waline: { ...config.waline, lang: "  " },
+			}),
+		).toEqual({ ...expected, waline: { ...expected.waline, lang: "auto" } });
 	});
 
 	// giscus UI 测试要求评论启用且 provider 为 giscus（与站点真实配置联动）
@@ -373,6 +512,120 @@ test.describe("Comment System - Configuration & Architecture", () => {
 		expect(giscusRequests).toHaveLength(0);
 	});
 
+	for (const path of ["/", "/posts/guide/"]) {
+		test(`Waline leaves no DOM, styles or external requests on ${path} without comments`, async ({
+			page,
+			baseURL,
+		}) => {
+			test.skip(
+				path !== "/" && resolveCommentOptions(commentConfig) !== null,
+				"文章零足迹测试需要评论关闭或配置不完整",
+			);
+			const config = commentConfig.waline;
+			const resourceUrls = [
+				config?.scriptUrl,
+				config?.styleUrl,
+				config?.serverURL,
+			]
+				.filter((url): url is string => Boolean(url?.trim()))
+				.map((url) => new URL(url.trim(), baseURL).href);
+			const requests: string[] = [];
+			page.on("request", (request) => {
+				const url = request.url();
+				if (
+					resourceUrls.some(
+						(resource) =>
+							url === resource ||
+							url.startsWith(`${resource.replace(/\/$/, "")}/`),
+					)
+				)
+					requests.push(url);
+			});
+			if (config) await mockWaline(page, config);
+			await page.goto(path);
+			await expect(page.locator("#comments")).toHaveCount(0);
+			await expect(
+				page.locator(
+					"shirone-waline, .shirone-waline-wrapper, [data-waline-style]",
+				),
+			).toHaveCount(0);
+			const styles = await page.locator("style").allTextContents();
+			expect(styles.some((style) => style.includes("--waline-"))).toBe(false);
+			expect(requests).toEqual([]);
+		});
+	}
+
+	test("Waline mounts in the shared comment section with serialized configuration", async ({
+		page,
+	}) => {
+		const options = resolveCommentOptions(commentConfig);
+		if (options?.provider !== "waline") {
+			test.skip(true, "评论未启用或 provider 非 waline，跳过 Waline UI 测试");
+			return;
+		}
+		await mockWaline(page, options.waline);
+		await page.goto("/posts/guide/");
+		const section = page.locator("#comments");
+		await expect(section).toHaveCount(1);
+		await expect(section).toHaveAttribute("aria-labelledby", "comments-title");
+		await expect(section.locator("#comments-title")).toBeVisible();
+		await expect(
+			section.locator(".shirone-twikoo-wrapper, .shirone-giscus-wrapper"),
+		).toHaveCount(0);
+
+		const wrapper = section.locator("shirone-waline");
+		await expect(wrapper).toHaveAttribute(
+			"data-waline-script-url",
+			options.waline.scriptUrl,
+		);
+		await expect(wrapper).toHaveAttribute(
+			"data-waline-style-url",
+			options.waline.styleUrl,
+		);
+		await expect(wrapper).toHaveAttribute(
+			"data-waline-lazy",
+			String(options.lazy),
+		);
+		const serialized = JSON.parse(
+			(await wrapper.getAttribute("data-waline-options")) ?? "null",
+		);
+		expect(serialized).toMatchObject({
+			serverURL: options.waline.serverURL,
+			path: "/posts/guide/",
+			dark: false,
+			comment: false,
+			pageview: false,
+			...(options.waline.locale ? { locale: options.waline.locale } : {}),
+			...(options.waline.emoji !== undefined
+				? { emoji: options.waline.emoji }
+				: {}),
+		});
+		expect(serialized).not.toHaveProperty("placeholder");
+		expect(serialized).not.toHaveProperty("scriptUrl");
+		expect(serialized).not.toHaveProperty("styleUrl");
+		await wrapper.scrollIntoViewIfNeeded();
+		await expect(wrapper).toHaveAttribute("data-waline-state", "ready");
+		await expect(
+			wrapper
+				.locator(".waline-loading, .waline-error")
+				.filter({ visible: true }),
+		).toHaveCount(0);
+		const mounted = await wrapper
+			.locator("[data-waline]")
+			.getAttribute("data-waline-mock-options");
+		const { emoji: mountedEmoji, ...mountedRest } = JSON.parse(
+			mounted ?? "null",
+		);
+		const { emoji: serializedEmoji, ...serializedRest } = serialized;
+		expect(mountedRest).toEqual(serializedRest);
+		// Presets reach Waline as the inline packs the theme already fetched.
+		if (serializedEmoji === false) expect(mountedEmoji).toBe(false);
+		else expect(Array.isArray(mountedEmoji)).toBe(true);
+		await expect(
+			wrapper.getByRole("textbox", { name: "Comment", exact: true }),
+		).toHaveAttribute("placeholder", options.waline.locale?.placeholder ?? "");
+	});
+
 	test("comment editor keeps fields aligned on desktop and mobile", async ({
 		page,
 	}) => {
@@ -441,6 +694,85 @@ test.describe("Comment System - Configuration & Architecture", () => {
 		await page.setViewportSize({ width: 390, height: 844 });
 		await page.locator("#comments").scrollIntoViewIfNeeded();
 		await assertFieldGeometry(true);
+	});
+
+	test("browser and system row stays clear of an open reply form", async ({
+		page,
+	}) => {
+		test.skip(
+			!twikooUiEnabled,
+			"评论未启用或 provider 非 twikoo，跳过 twikoo UI 测试",
+		);
+		await mockTwikoo(page);
+		await page.goto("/posts/guide/");
+		await page.locator("#comments").scrollIntoViewIfNeeded();
+		await expect(page.locator(".tk-comments-container")).toHaveCount(1);
+		// 一条打开了回复框的评论，连同 Twikoo 运行时注入、决定浏览器/系统行排版的默认样式
+		await page.evaluate(() => {
+			document.querySelector(".tk-comments-container")?.insertAdjacentHTML(
+				"beforeend",
+				`<style>
+					.tk-comment { margin-top: 1rem; display: flex; }
+					.tk-main { flex: 1; width: 0; }
+					.tk-extras { color: #999999; font-size: 0.875em; display: flex; flex-wrap: wrap; }
+					.tk-extra { margin-top: 0.5rem; margin-right: 0.75rem; display: flex; align-items: center; }
+					.tk-extra-text { line-height: 1; }
+					.tk-submit { margin-top: 1rem; }
+				</style>
+				<div class="tk-comment">
+					<div class="tk-avatar"></div>
+					<div class="tk-main">
+						<div class="tk-content"><span><p>Hello</p></span></div>
+						<div class="tk-extras">
+							<div class="tk-extra"><span class="tk-icon"><svg width="14" height="14"></svg></span><span class="tk-extra-text">&nbsp;Windows 11</span></div>
+							<div class="tk-extra"><span class="tk-icon"><svg width="14" height="14"></svg></span><span class="tk-extra-text">&nbsp;Chrome 141</span></div>
+						</div>
+						<div class="tk-submit"><div class="tk-row"><div class="tk-col"><div class="tk-input el-textarea"><textarea class="el-textarea__inner"></textarea></div></div></div></div>
+					</div>
+				</div>`,
+			);
+		});
+
+		const row = await page.locator(".tk-comment").evaluate((element) => {
+			const extras = element.querySelector(".tk-extras");
+			const reply = element.querySelector(".tk-submit");
+			if (!extras || !reply) throw new Error("The reply fixture is missing");
+			const textBottom = Math.max(
+				...[...extras.querySelectorAll(".tk-extra-text")].flatMap((text) => {
+					const range = document.createRange();
+					range.selectNodeContents(text);
+					return [...range.getClientRects()].map((rect) => rect.bottom);
+				}),
+			);
+			const extrasBottom = extras.getBoundingClientRect().bottom;
+			const gap = reply.getBoundingClientRect().top - extrasBottom;
+			// Measure first: the token probe joins the row only afterwards.
+			const probe = document.createElement("span");
+			probe.style.cssText =
+				"display:block;flex:none;color:var(--on-surface-variant);width:var(--m3e-space-3)";
+			extras.append(probe);
+			const expected = getComputedStyle(probe);
+			const result = {
+				extrasBottom,
+				textBottom,
+				gap,
+				spacing: Number.parseFloat(expected.width),
+				color: getComputedStyle(extras).color,
+				expectedColor: expected.color,
+			};
+			probe.remove();
+			return result;
+		});
+		// 文字不溢出所在行，评论内的回复框与这一行隔开一个间距单位
+		expect(row.textBottom).toBeLessThanOrEqual(row.extrasBottom);
+		expect(row.gap).toBeCloseTo(row.spacing, 0);
+		// 使用主题次要文字色，而不是 Twikoo 的 #999
+		expect(row.color).toBe(row.expectedColor);
+		// 顶部主编辑区仍然贴齐
+		await expect(page.locator(".tk-comments > .tk-submit")).toHaveCSS(
+			"margin-top",
+			"0px",
+		);
 	});
 
 	test("preview appears only for comment content with tonal colors", async ({
@@ -605,7 +937,7 @@ test.describe("Comment System - Configuration & Architecture", () => {
 		await page.goto("/posts/guide/", { waitUntil: "networkidle" });
 
 		const result = await page.evaluate(async () => {
-			// 动态引入 script-loader 模块
+			// @ts-expect-error 此绝对 URL 由 Vite 在浏览器中解析。
 			const { loadScriptOnce } = await import("/src/utils/script-loader.ts");
 
 			// Mock 创建一个测试用的 inline blob script URL

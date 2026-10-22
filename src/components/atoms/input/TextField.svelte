@@ -3,7 +3,7 @@ import type { FullAutoFill } from "svelte/elements";
 
 /**
  * M3E TextField — M3 文本输入原子（官方 TextField 移植）。
- * variant: filled（默认，surface-container-high + 底部下划线 focus 亮起）/
+ * variant: filled（默认，--field-filled-bg 填充 + 底部下划线 focus 亮起）/
  *          outlined（surface + outline-variant 1px 边框 + focus primary 2px）。
  * error：错误态（下划线/边框变 error 色 + 可选错误提示）。
  * label 浮动（focus/有值时上浮顶部），leading/trailing 图标或操作用命名插槽。
@@ -107,15 +107,15 @@ let focused = $state(false);
     font: var(--m3e-type-body-large)
     transition: background-color var(--m3e-duration-short) var(--m3e-easing-standard), border-color var(--m3e-duration-short) var(--m3e-easing-standard)
 
-    /* ===== filled（默认）：surface-container-high + 底部下划线 ===== */
+    /* ===== filled（默认）：--field-filled-bg + 底部下划线 ===== */
     &--filled
         padding: 0 1rem
         border-radius: var(--shape-corner-m)
-        background: var(--surface-container-high)
+        background: var(--field-filled-bg)
         &:hover
-            background: unquote("color-mix(in oklab, var(--on-surface) 12%, var(--surface-container-high))")
+            background: unquote("color-mix(in oklab, var(--on-surface) 12%, var(--field-filled-bg))")
         &:focus-within
-            background: unquote("color-mix(in oklab, var(--on-surface) 16%, var(--surface-container-high))")
+            background: unquote("color-mix(in oklab, var(--on-surface) 16%, var(--field-filled-bg))")
 
     /* ===== outlined：surface + 边框线 ===== */
     &--outlined

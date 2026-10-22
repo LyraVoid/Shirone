@@ -29,9 +29,7 @@ jobs:
       - name: Set up pnpm
         uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4.1.0
         with:
-          # Must match `packageManager` in package.json: pnpm/action-setup
-          # rejects the run when both specify a version.
-          version: 11.28.2
+          # Omit the version so the action reads `packageManager` from package.json.
           run_install: false
 
       - name: Set up Node.js
@@ -62,9 +60,7 @@ jobs:
       - name: Set up pnpm
         uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4.1.0
         with:
-          # Must match `packageManager` in package.json: pnpm/action-setup
-          # rejects the run when both specify a version.
-          version: 11.28.2
+          # Omit the version so the action reads `packageManager` from package.json.
           run_install: false
 
       - name: Set up Node.js
@@ -81,7 +77,7 @@ jobs:
         run: pnpm exec astro check
 
       - name: Check Svelte diagnostics
-        run: pnpm dlx svelte-check@4.7.6 --tsconfig ./tsconfig.json --threshold error
+        run: pnpm exec svelte-check --tsconfig ./tsconfig.json --threshold error
 
       - name: Validate atom manifest
         run: pnpm check:manifest
@@ -107,9 +103,7 @@ jobs:
       - name: Set up pnpm
         uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4.1.0
         with:
-          # Must match `packageManager` in package.json: pnpm/action-setup
-          # rejects the run when both specify a version.
-          version: 11.28.2
+          # Omit the version so the action reads `packageManager` from package.json.
           run_install: false
 
       - name: Set up Node.js
@@ -125,6 +119,56 @@ jobs:
       - name: Build production site
         run: pnpm build
 
+  comments:
+    name: Comment regressions
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      CI: true
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4.1.0
+        with:
+          # Omit the version so the action reads `packageManager` from package.json.
+          run_install: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@cdca7365b2dadb8aad0a33bc7601856ffabcc48e # v4.3.0
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Comments are off by default, so this run covers the zero-footprint cases.
+      - name: Run comment, content and a11y regressions with comments disabled
+        run: pnpm exec playwright test tests/site/comments.spec.ts tests/site/waline.spec.ts tests/site/mdx.spec.ts tests/site/a11y.spec.ts
+
+      # The fixture enables Waline through the content-repository config overlay;
+      # the specs mock its SDK, stylesheet, emoji packs and API.
+      - name: Enable the Waline fixture
+        run: pnpm content:sync
+        env:
+          CONTENT_DIR: tests/fixtures/content/waline
+
+      - name: Run comment regressions with Waline enabled
+        run: pnpm exec playwright test tests/site/comments.spec.ts tests/site/waline.spec.ts
+
+      # The Twikoo fixture matches the SDK mock in comments.spec.ts.
+      - name: Enable the Twikoo fixture
+        run: pnpm content:sync
+        env:
+          CONTENT_DIR: tests/fixtures/content/twikoo
+
+      - name: Run comment regressions with Twikoo enabled
+        run: pnpm exec playwright test tests/site/comments.spec.ts
+
   styles:
     name: Style regressions
     runs-on: ubuntu-latest
@@ -139,9 +183,7 @@ jobs:
       - name: Set up pnpm
         uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4.1.0
         with:
-          # Must match `packageManager` in package.json: pnpm/action-setup
-          # rejects the run when both specify a version.
-          version: 11.28.2
+          # Omit the version so the action reads `packageManager` from package.json.
           run_install: false
 
       - name: Set up Node.js
@@ -154,5 +196,5 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Run style regressions
-        run: pnpm exec playwright test tests/site/fonts.spec.ts tests/site/inline-code-emphasis.spec.ts
+      - name: Run style and banner regressions
+        run: pnpm exec playwright test tests/site/fonts.spec.ts tests/site/inline-code-emphasis.spec.ts tests/site/banner.spec.ts

@@ -618,11 +618,18 @@ const initialMobileBanner = page === "home";
 		runtime.layerMotions[1]?.resume();
 	}
 
-	// Remove the `<picture><source>` elements after the carousel takes over; otherwise, modifying `src` on the `<img>` tag at runtime will be overridden by the initial `<source>` element
+	// Remove the `<picture><source>` elements after the runtime takes over; otherwise,
+	// modifying `src` on the `<img>` tag is overridden by the initial `<source>` element.
+	function detachInitialPictureSources() {
+		stage
+			?.querySelectorAll(".banner-stage__media picture source")
+			.forEach((source) => source.remove());
+	}
+
 	function prepareCarouselMedia(images: string[]) {
 		if (runtime.carouselMediaPrepared || !stage || images.length < 2) return;
 		if (stage.dataset.carouselEnabled !== "true") return;
-		stage.querySelectorAll("picture source").forEach((source) => source.remove());
+		detachInitialPictureSources();
 		runtime.carouselMediaPrepared = true;
 	}
 
@@ -896,6 +903,16 @@ const initialMobileBanner = page === "home";
 		const currentTheme = isDarkMode() ? "dark" : "light";
 		const themeChanged = runtime.activeTheme !== currentTheme;
 		runtime.activeTheme = currentTheme;
+
+		// The SSR `<picture>` sources are built for the initial (light) image. They
+		// would keep overriding `showImage()`'s themed `img.src`, so detach them on
+		// the first dark sync or any theme switch. Desktop and mobile share this path.
+		if (
+			themeChanged ||
+			(runtime.activeGroup === null && currentTheme === "dark")
+		) {
+			detachInitialPictureSources();
+		}
 
 		const page = pageOverride ?? currentPage();
 		const state = resolveBannerState({

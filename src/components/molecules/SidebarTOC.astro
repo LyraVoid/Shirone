@@ -1,10 +1,10 @@
 ---
-import type { MarkdownHeading } from "astro";
 import TocList from "@components/atoms/blog/TocList.astro";
-import WidgetLayout from "./WidgetLayout.astro";
 import I18nKey from "@i18n/i18nKey";
 import { i18n } from "@i18n/translation";
+import type { MarkdownHeading } from "astro";
 import { siteConfig } from "@/config/siteConfig";
+import WidgetLayout from "./WidgetLayout.astro";
 
 interface Props {
 	headings?: MarkdownHeading[];

@@ -30,8 +30,9 @@ import {
 	renameSync,
 	writeFileSync,
 } from "node:fs";
+import type { Dirent } from "node:fs";
 import { createRequire } from "node:module";
-import { dirname, extname, join } from "node:path";
+import { dirname, extname, join, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 /**
@@ -96,7 +97,10 @@ function svgLength(value: string | undefined): number | null {
 
 /** Read an attribute from the opening `<svg …>` tag, single or double quoted. */
 function svgAttribute(source: string, name: string): string | undefined {
-	const pattern = new RegExp(`\\s${name}\\s*=\\s*("([^"]*)"|'([^']*)')`);
+	// Matched case-insensitively. A hand-written file may spell `viewbox` or
+	// `VIEWBOX`, and SVG-as-HTML treats attribute names that way, so a
+	// case-sensitive read drops the viewBox and mis-sizes the whole icon.
+	const pattern = new RegExp(`\\s${name}\\s*=\\s*("([^"]*)"|'([^']*)')`, "i");
 	const match = pattern.exec(source);
 	if (!match) return undefined;
 	return match[2] ?? match[3];
@@ -118,11 +122,15 @@ function parseLocalIcon(
 	if (!open) return null;
 	const tag = open[0];
 
-	// An `<svg>` with no content at all is still valid, but an icon with no
-	// geometry is not; drop it rather than emit an empty symbol.
-	const body = source
-		.slice(open.index + open[0].length, source.lastIndexOf("</svg>"))
-		.trim();
+	// The closing tag is matched forward from the opening one rather than
+	// located with `lastIndexOf`. A self-closing `<svg … />` and an uppercased
+	// `</SVG>` both contain no `</svg>` for that to find, and `lastIndexOf`
+	// returning −1 would slice from a negative offset and read whatever markup
+	// follows as if it were the icon's geometry. An empty body is dropped here
+	// too: an `<svg>` with no geometry is valid SVG but not a usable icon.
+	const rest = source.slice(open.index + open[0].length);
+	const close = /<\/\s*svg\s*>/i.exec(rest);
+	const body = (close ? rest.slice(0, close.index) : "").trim();
 	if (!body) return null;
 
 	const viewBox = svgAttribute(tag, "viewBox");
@@ -155,24 +163,49 @@ export function collectLocalIcons(
 	directory: string,
 ): Record<string, unknown> | null {
 	if (!existsSync(directory)) return null;
-	let entries: string[];
-	try {
-		entries = readdirSync(directory);
-	} catch {
-		return null;
-	}
 	const icons: Record<string, Record<string, number | string>> = {};
-	for (const entry of entries) {
-		if (!entry.toLowerCase().endsWith(".svg")) continue;
-		const name = entry.slice(0, -4);
-		// astro-icon kept sub-directories as prefixes (`sub/name`); the theme's
-		// own usage has never had any, so a nested file is skipped rather than
-		// silently flattened into a colliding name.
-		const parsed = parseLocalIcon(readFileSync(join(directory, entry), "utf8"));
-		if (parsed) icons[name] = parsed;
-	}
+	collectLocalIconsFrom(directory, directory, icons);
 	if (Object.keys(icons).length === 0) return null;
 	return { prefix: "local", icons };
+}
+
+/**
+ * Walks `directory` recursively, naming each icon by its path relative to the
+ * icon root: `src/icons/foo.svg` becomes `foo`, and `src/icons/sub/bar.svg`
+ * becomes `sub/bar`.
+ *
+ * astro-icon exposed sub-directories the same way, so a package-mode override
+ * file carried over from that era keeps working. Flattening instead would be
+ * lossy — two files in different sub-directories can share a basename, and
+ * silently dropping one of them is the failure nobody can diagnose.
+ *
+ * A directory that cannot be read contributes nothing rather than throwing:
+ * the top-level caller already handles a missing directory, and an unreadable
+ * one is no reason to fail a build that only wanted an optional icon.
+ */
+function collectLocalIconsFrom(
+	root: string,
+	directory: string,
+	icons: Record<string, Record<string, number | string>>,
+): void {
+	let entries: Dirent[];
+	try {
+		entries = readdirSync(directory, { withFileTypes: true });
+	} catch {
+		return;
+	}
+	const nesting = relative(root, directory);
+	const prefix = nesting === "" ? "" : `${nesting.split(sep).join("/")}/`;
+	for (const entry of entries) {
+		const absolute = join(directory, entry.name);
+		if (entry.isDirectory()) {
+			collectLocalIconsFrom(root, absolute, icons);
+			continue;
+		}
+		if (!entry.name.toLowerCase().endsWith(".svg")) continue;
+		const parsed = parseLocalIcon(readFileSync(absolute, "utf8"));
+		if (parsed) icons[`${prefix}${entry.name.slice(0, -4)}`] = parsed;
+	}
 }
 
 /** The specifier `Icon.svelte` imports; see `regeneration.ts` for how it resolves. */

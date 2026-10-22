@@ -134,8 +134,8 @@ function runtimeSpecifiers(source) {
 	// waive every runtime `from "x"` in the same file.
 	const typeOnlyRanges = [];
 	const typePatterns = [
-		/\bimport\s+type\s+[^;'"]*?\bfrom\s*["']([^"']+)["']/g,
-		/\bexport\s+type\s+[^;'"]*?\bfrom\s*["']([^"']+)["']/g,
+		/\bimport\s+type\s+[^;'"]*?\bfrom\s*["']([^"'\s]+)["']/g,
+		/\bexport\s+type\s+[^;'"]*?\bfrom\s*["']([^"'\s]+)["']/g,
 	];
 	for (const re of typePatterns) {
 		for (const m of code.matchAll(re)) {
@@ -154,11 +154,15 @@ function runtimeSpecifiers(source) {
 				range.spec === spec && index >= range.start && index < range.end,
 		);
 
+	// A specifier never contains whitespace, and the `from` keyword is never
+	// directly preceded by a quote. Without both rules, a tokenizer comparing
+	// `token.value === "from" && next?.kind === "string"` reads the code between
+	// the two literals as an undeclared package.
 	const patterns = [
-		/\bfrom\s*["']([^"']+)["']/g,
-		/\bimport\s*\(\s*["']([^"']+)["']\s*\)/g,
-		/\bimport\s+["']([^"']+)["']/g,
-		/\brequire\s*\(\s*["']([^"']+)["']\s*\)/g,
+		/(?<!["'`])\bfrom\s*["']([^"'\s]+)["']/g,
+		/\bimport\s*\(\s*["']([^"'\s]+)["']\s*\)/g,
+		/\bimport\s+["']([^"'\s]+)["']/g,
+		/\brequire\s*\(\s*["']([^"'\s]+)["']\s*\)/g,
 	];
 	for (const re of patterns) {
 		for (const m of code.matchAll(re)) {

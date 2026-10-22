@@ -40,10 +40,10 @@
 - 标题与副标题左缘对齐（副标题不缩进），与下方内容区齐平；
 - 用于非首页内容页顶部（友链、归档、关于等），替代各页自维护的 h1 块。
 
-> **SSR 静态页注意**：`PageHeader.svelte` 用 `@iconify/svelte` 渲染图标；
-> 在无 hydration 的纯 SSR 页面上图标为空（HTML 只留占位）。纯 SSR 页面
-> 请用视觉一致的 `atoms/display/PageHeader.astro`（astro-icon 构建期内联）；
-> 分类/标签索引页即此用法；Svelte 岛内（client:only）继续用 molecules 版。
+> **SSR 静态页注意**：两个版本都可用在纯 SSR 页面。`PageHeader.svelte` 的图标走
+> `atoms/display/Icon.svelte`，它在构建期内联服务端 SVG，无 hydration 岛也能出图；
+> `PageHeader.astro` 则是同视觉的纯 Astro 版本。分类/标签索引页即此用法；
+> Svelte 岛内（`client:visible`/`client:load`）继续用 molecules 版。
 
 ### 2.2 SectionTitle — 区块标题
 

@@ -71,6 +71,10 @@ const twikooStylus = `/* =======================================================
 		.tk-avatar
 			display: none !important
 
+	/* 评论内打开的回复框与上方的浏览器/系统行隔开；顶部主编辑区仍然贴齐 */
+	.shirone-twikoo-wrapper .tk-comment .tk-submit
+		margin-top: var(--m3e-space-3, 0.75rem)
+
 	/* 2. 编辑区：正文优先，身份字段紧随其后 */
 	.shirone-twikoo-wrapper .tk-submit > .tk-row
 		align-items: stretch
@@ -323,6 +327,14 @@ const twikooStylus = `/* =======================================================
 	.tk-time
 		color: var(--on-surface-variant) !important
 		font-size: 0.75rem
+
+	/* 浏览器/系统行：使用主题次要文字色与正文行高，文字不再溢出 Twikoo 的 1 倍行高 */
+	.shirone-twikoo-wrapper .tk-extras
+		color: var(--on-surface-variant)
+		font: var(--m3e-type-body-medium)
+
+	.shirone-twikoo-wrapper .tk-extra-text
+		line-height: inherit
 
 	.tk-meta
 		.tk-tag

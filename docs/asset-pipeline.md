@@ -79,10 +79,10 @@ Astro 图片优化有两类输入，不能混为一谈：
 
 ## 4. 图标的 SSR 与离线边界
 
-图标按渲染生命周期选择实现：
+图标统一走 `atoms/display/Icon.svelte`，不按渲染生命周期分叉：
 
-- Astro 纯 SSR 路径使用 `astro-icon`，直接输出 SVG，保证无 JavaScript时也可见。
-- 需要水合的 Svelte 组件使用 `src/components/atoms/display/Icon.svelte`；它只消费 `src/generated/local-icon-collections.ts` 中的本地集合。
+- 它在构建期从 `src/generated/local-icon-collections.ts`（摇树后的本地集合）输出内联服务端 SVG，无论页面有没有 hydration 岛，HTML 里都有成品图标。
+- 裸名（无 `prefix:`）指向项目自己的 `src/icons/*.svg`，由该组件回退 `local:` 前缀，调用方无需关心。
 - 禁止业务组件直接导入在线 Iconify 组件，避免首屏访问 Iconify API，也避免 SSR 阶段输出空图标。
 
 `src/integration/vite/icon/collections.ts` 会扫描项目实际使用的图标名，从已安装的 `@iconify-json/*` 集合生成最小本地数据，产物写入 `src/generated/local-icon-collections.ts`。该文件在 `astro:config:setup` 自动重算，无需手动命令；但**图标名拼错不会自动修复**——生成器只在报错时跳过，Material Symbols 的错误名称不会因本地化而纠正。

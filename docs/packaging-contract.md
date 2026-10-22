@@ -99,6 +99,60 @@ CSS file, so it resolves to the theme's own `src/` in both modes.
   dynamic `import()` outside the bundle) must be a **peer** dependency, because
   pnpm's strict layout hides the theme's own copy from the project root.
 
+### Every relative import used by the copied CLI must be in the package archive
+
+The package publisher copies the CLI rather than bundling it. A relative import
+that works in the source tree is not automatically present in the published
+archive, especially when its source directory is excluded from the package
+payload. A missing sibling is discovered only after a successful install, when
+`shirones init` fails with `ERR_MODULE_NOT_FOUND`.
+
+`src/integration/version-range.mjs` is shared with `verify-peers.ts` so peer
+validation and `init --update` use the same range logic. The integration bundle
+can inline that import; the standalone CLI still needs the sibling at its
+published relative path (or a packaging step that bundles the CLI without
+changing its dependency-free startup contract).
+
+**Release validation must use the actual archive.** The publisher should derive
+or explicitly maintain the CLI sibling list, inspect the `npm pack` tarball,
+install that tarball in a clean temporary project, and invoke the CLI path that
+imports the range engine (including `init --update`). A source-only manifest
+check or a successful import from the repository does not prove that the
+published package contains the file.
+
+### What the range engine does and does not decide
+
+`src/integration/version-range.mjs` is a deliberate SemVer **subset**, shared by
+`verify-peers.ts` and `cli.mjs` so the two cannot drift. It reads full and
+partial versions (for example `^7`, `^8`, `~7.3`, and `7.3.x`), caret and tilde
+ranges including both 0.x caret boundaries, and comparator sets as
+conjunctions. Full SemVer prerelease identifiers are compared in order, and
+build metadata does not affect precedence.
+
+The following limits are deliberate:
+
+- **Prerelease admission follows npm's tuple rule.** A prerelease version is
+  rejected unless the range explicitly names a prerelease comparator on that
+  same `major.minor.patch` tuple. Thus `7.4.0-beta.1` does not satisfy `^7.3.5`
+  or `*`, while `>=7.3.6-beta.1 <8.0.0` can admit matching prereleases of
+  `7.3.6` that fall inside both bounds.
+- **Unsupported range syntax fails open.** `||`, `workspace:`, `file:`,
+  `link:`, `npm:`, dist-tags, and hyphen ranges are not interpreted; they do
+  not cause a peer violation or a CLI rewrite. This avoids rejecting a build
+  for syntax the lightweight engine cannot safely assess.
+- **An installed version is ground truth for the current project.** When
+  `node_modules/<pkg>` exists, that concrete version decides even if the
+  declared range is broader. For example, `astro: ^7.0.0` with `astro@7.4.2`
+  installed passes if the theme requires `^7.3.5`. This is useful with a valid
+  lockfile, but it does **not** prove every version allowed by `^7.0.0` is
+  supported; a fresh install could choose an older release. The check and
+  `init --update` only repair ranges that provably have no compatible version;
+  they do not narrow a broad range. Keep the declared floor and lockfile
+  appropriate for the project that will be installed.
+
+This is not a complete SemVer implementation, and the peer-check message does
+not claim it is. Do not describe the check as full SemVer validation.
+
 ## The peer dependency list
 
 The shortest possible one, and each entry has a verified reason in
@@ -108,8 +162,13 @@ onto the user's project:
 | Mechanism | Packages | Why bundling fails |
 | --- | --- | --- |
 | Imported by the user's own config | `astro` | the project *is* an Astro project |
-| Registered in `optimizeDeps.include` | `svelte`, `@astrojs/svelte` | Vite resolves that list from the project root, so a nested copy is invisible and islands silently stay server-side |
+| Imported by the user's config **and** declared a peer by it | `svelte`, `@astrojs/svelte` | `astro.config.mjs` imports `@astrojs/svelte` to register the integration, and that package names `svelte` a peer dependency — so both resolve from the project root, and a nested copy stays invisible to pnpm's peer resolution |
 | Imported by Astro itself, dynamically | `sharp` | Astro's image service resolves it from its own location; the `@img/*` bindings must also be version-matched |
+
+`@astrojs/svelte` does place a `optimizeDeps.exclude: ["svelte"]` entry, but
+that is not the reason for the peer: the entry only *names* `svelte`, and the
+name resolves wherever the resolved layout puts it. The root dependency is
+required by the config-file import and the peer relationship, not by that list.
 
 Plus `@astrojs/check` and `typescript`, which only `astro check` needs — they
 are declared so the command works right after `init`, not because a build
@@ -145,7 +204,7 @@ tooling-only cases.
 | --- | --- |
 | A route in `src/pages/` | Nothing. `routes.ts` discovers it and `injectRoute`s it. Non-HTML endpoints (`*.txt.ts`, `*.xml.ts`) are handled. |
 | A config module in `src/config/` | Nothing, if it follows the existing shape — the template picks it up and its relative imports are rewritten. Keep it exporting through the `src/config/index.ts` barrel. |
-| An integration option (swup, astro-icon, expressive-code, svelte, mdx, or the shared `vite.build` keys) | Put it in `src/config/integrationsConfig.ts`, not in the wiring. The integration — the single Astro config entry point for source mode and package mode alike — reads it, so one edit covers both. Do **not** export it through the barrel and do **not** route it through `withUserConfig` — package mode bundles this file at build time, so it has no user-overlay layer. Wiring (aliases, `preprocess`, `optimizeDeps`, `vite.plugins`, expressive-code `themes`/`plugins`) stays in `src/integration/index.ts`, where per-mode branches are commented. |
+| An integration option (swup, expressive-code, svelte, mdx, or the shared `vite.build` keys) | Put it in `src/config/integrationsConfig.ts`, not in the wiring. The integration — the single Astro config entry point for source mode and package mode alike — reads it, so one edit covers both. Do **not** export it through the barrel and do **not** route it through `withUserConfig` — package mode bundles this file at build time, so it has no user-overlay layer. Wiring (aliases, `preprocess`, `optimizeDeps`, `vite.plugins`, expressive-code `themes`/`plugins`) stays in `src/integration/index.ts`, where per-mode branches are commented. |
 | A content collection | Three things, all in this repo. Export its schema from `src/integration/collections.ts` (name it `<singular>Schema`), declare it in `src/content.config.ts` with `glob({ base: "./src/content/<key>", … })`, and add one entry to `src/integration/collections.manifest.json`. `tests/collections-manifest.test.mjs` fails if those three disagree. The pipeline reads that manifest to generate a package-mode user's `content.config.ts`, and copies `src/content/` recursively, so **shirones needs no change**. |
 | A data module in `src/data/` | Nothing. It is scaffolded to `shirones/config/data/`. Remember imports of `../config/x` become `../x` there. |
 | A component or layout | Nothing for it to work; it becomes overridable automatically. |

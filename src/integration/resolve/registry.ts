@@ -1,7 +1,10 @@
-import { existsSync, readdirSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { extname, join, relative } from "node:path";
 import type { ResolvedShironesPaths } from "../types.ts";
 import { normalisePath } from "./paths.ts";
+
+/** Only files that can carry an import are worth opening. */
+const SOURCE_EXTENSIONS = /\.(astro|svelte|ts|tsx|mjs|js)$/;
 
 /**
  * Extensions probed when a user override is looked up without one.
@@ -14,7 +17,12 @@ export const CONFIG_EXTENSIONS: string[] = [".ts", ".mts", ".js", ".mjs"];
  * overridable despite the comment claiming otherwise.
  */
 const BARREL_RE = /(?:^|\/)index\.(ts|js|mts|mjs)$/;
-export const COMPONENT_EXTENSIONS: string[] = [".astro", ".svelte", ".ts", ".js"];
+export const COMPONENT_EXTENSIONS: string[] = [
+	".astro",
+	".svelte",
+	".ts",
+	".js",
+];
 
 /** Strip a known source extension from a path. */
 function stripExtension(path: string): string {
@@ -240,4 +248,281 @@ export function findOrphanUserFiles(paths: ResolvedShironesPaths): string[] {
 	}
 
 	return orphans.sort();
+}
+
+/** The package a project has to drop to be on the current icon pipeline. */
+const LEGACY_ICON_IMPORT = "astro-icon";
+
+type ImportToken = { kind: "word" | "string" | "punct"; value: string };
+
+/**
+ * Tokenize enough JavaScript/TypeScript to recognise module specifiers without
+ * mistaking prose, comments, string values, or a regular expression for code.
+ * This is intentionally not a parser: the registry only needs import edges.
+ */
+function importTokens(source: string): ImportToken[] {
+	const tokens: ImportToken[] = [];
+	let index = 0;
+
+	while (index < source.length) {
+		const char = source[index];
+		if (/\s/.test(char)) {
+			index += 1;
+			continue;
+		}
+
+		if (source.startsWith("//", index)) {
+			const newline = source.indexOf("\n", index + 2);
+			index = newline < 0 ? source.length : newline + 1;
+			continue;
+		}
+		if (source.startsWith("/*", index)) {
+			const end = source.indexOf("*/", index + 2);
+			index = end < 0 ? source.length : end + 2;
+			continue;
+		}
+
+		if (char === "'" || char === '"') {
+			const quote = char;
+			let value = "";
+			index += 1;
+			while (index < source.length) {
+				const current = source[index];
+				if (current === "\\") {
+					if (index + 1 < source.length) value += source[index + 1];
+					index += 2;
+					continue;
+				}
+				index += 1;
+				if (current === quote) break;
+				value += current;
+			}
+			tokens.push({ kind: "string", value });
+			continue;
+		}
+
+		// Template literals are opaque to the import check: the theme's legacy
+		// warning itself mentions `astro-icon` in one, but that text is not an
+		// import. Dynamic imports inside template expressions are not used by
+		// these override modules.
+		if (char === "`") {
+			index += 1;
+			while (index < source.length) {
+				if (source[index] === "\\") {
+					index += 2;
+					continue;
+				}
+				if (source[index] === "`") {
+					index += 1;
+					break;
+				}
+				index += 1;
+			}
+			continue;
+		}
+
+		if (char === "/" && canStartRegularExpression(tokens.at(-1))) {
+			index += 1;
+			let inCharacterClass = false;
+			while (index < source.length) {
+				const current = source[index];
+				if (current === "\\") {
+					index += 2;
+					continue;
+				}
+				if (current === "[") inCharacterClass = true;
+				if (current === "]") inCharacterClass = false;
+				index += 1;
+				if (current === "/" && !inCharacterClass) break;
+				if (current === "\n") break;
+			}
+			while (/[A-Za-z]/.test(source[index] ?? "")) index += 1;
+			continue;
+		}
+
+		if (/[A-Za-z_$]/.test(char)) {
+			const start = index;
+			index += 1;
+			while (/[A-Za-z0-9_$]/.test(source[index] ?? "")) index += 1;
+			tokens.push({ kind: "word", value: source.slice(start, index) });
+			continue;
+		}
+
+		if (source.startsWith("?.", index) || source.startsWith("=>", index)) {
+			tokens.push({ kind: "punct", value: source.slice(index, index + 2) });
+			index += 2;
+			continue;
+		}
+		tokens.push({ kind: "punct", value: char });
+		index += 1;
+	}
+	return tokens;
+}
+
+/** Whether a slash can begin a regexp at this token boundary. */
+function canStartRegularExpression(previous: ImportToken | undefined): boolean {
+	if (!previous) return true;
+	if (previous.kind === "punct")
+		return "([{=,:;!?&|+-*%^~<>".includes(previous.value);
+	return (
+		previous.kind === "word" &&
+		[
+			"return",
+			"throw",
+			"case",
+			"delete",
+			"void",
+			"typeof",
+			"instanceof",
+			"in",
+			"of",
+			"yield",
+			"await",
+		].includes(previous.value)
+	);
+}
+
+/** Does a specifier refer to the removed package or one of its subpaths? */
+function isLegacyIconSpecifier(value: string | undefined): boolean {
+	return (
+		value === LEGACY_ICON_IMPORT ||
+		value?.startsWith(`${LEGACY_ICON_IMPORT}/`) === true
+	);
+}
+
+/** Recognise an import/export declaration's `from "specifier"` clause. */
+function hasFromSpecifier(tokens: ImportToken[], start: number): boolean {
+	for (let index = start + 1; index < tokens.length; index += 1) {
+		const token = tokens[index];
+		if (token.value === ";") return false;
+		if (
+			index > start + 1 &&
+			token.kind === "word" &&
+			(token.value === "import" || token.value === "export")
+		)
+			return false;
+		if (
+			token.kind === "word" &&
+			token.value === "from" &&
+			tokens[index + 1]?.kind === "string"
+		) {
+			return isLegacyIconSpecifier(tokens[index + 1].value);
+		}
+	}
+	return false;
+}
+
+/** Extract JavaScript from Svelte/Astro files without treating page markup as code. */
+function scriptBlocks(source: string): string[] {
+	const blocks: string[] = [];
+	const openTag = /<script\b[^>]*>/gi;
+	const closeTag = /<\/script\s*>/gi;
+	let cursor = 0;
+
+	while (cursor < source.length) {
+		const commentStart = source.indexOf("<!--", cursor);
+		openTag.lastIndex = cursor;
+		const opening = openTag.exec(source);
+		if (commentStart !== -1 && (!opening || commentStart < opening.index)) {
+			const commentEnd = source.indexOf("-->", commentStart + 4);
+			if (commentEnd === -1) break;
+			cursor = commentEnd + 3;
+			continue;
+		}
+		if (!opening) break;
+
+		const bodyStart = opening.index + opening[0].length;
+		closeTag.lastIndex = bodyStart;
+		const closing = closeTag.exec(source);
+		if (!closing) {
+			blocks.push(source.slice(bodyStart));
+			break;
+		}
+		blocks.push(source.slice(bodyStart, closing.index));
+		cursor = closing.index + closing[0].length;
+	}
+	return blocks;
+}
+
+/** Select executable source sections for each file format we scan. */
+function importSources(source: string, file: string): string[] {
+	const extension = extname(file).toLowerCase();
+	if (extension === ".svelte") return scriptBlocks(source);
+	if (extension === ".astro") {
+		const frontmatter =
+			/^(?:\uFEFF)?---[ \t]*\r?\n([\s\S]*?)\r?\n---[ \t]*(?:\r?\n|$)/.exec(
+				source,
+			);
+		const markup = frontmatter ? source.slice(frontmatter[0].length) : source;
+		return [...(frontmatter ? [frontmatter[1]] : []), ...scriptBlocks(markup)];
+	}
+	return [source];
+}
+
+/** Check for actual static/dynamic imports, re-exports, and CommonJS requires. */
+function importsLegacyIcon(source: string): boolean {
+	const tokens = importTokens(source);
+	for (let index = 0; index < tokens.length; index += 1) {
+		const token = tokens[index];
+		if (token.kind !== "word") continue;
+		const previous = tokens[index - 1];
+		if (
+			token.value === "import" &&
+			previous?.value !== "." &&
+			previous?.value !== "?."
+		) {
+			const next = tokens[index + 1];
+			if (next?.kind === "string" && isLegacyIconSpecifier(next.value))
+				return true;
+			if (
+				next?.value === "(" &&
+				tokens[index + 2]?.kind === "string" &&
+				isLegacyIconSpecifier(tokens[index + 2].value)
+			)
+				return true;
+			if (next?.value !== "." && hasFromSpecifier(tokens, index)) return true;
+		}
+		if (token.value === "export" && hasFromSpecifier(tokens, index))
+			return true;
+		if (
+			token.value === "require" &&
+			tokens[index + 1]?.value === "(" &&
+			tokens[index + 2]?.kind === "string" &&
+			isLegacyIconSpecifier(tokens[index + 2].value)
+		)
+			return true;
+	}
+	return false;
+}
+
+/**
+ * Overridden files that still import the removed `astro-icon` package.
+ *
+ * Scoped to overrides only, never to the project's own components: a file the
+ * user copied out of the theme and edited carries the theme's imports with it,
+ * so a surviving one there is a real migration signal. A file the user wrote
+ * themselves is their business, and reporting it would cry wolf on ordinary
+ * code — which is why `findOrphanUserFiles` keeps away from `src/components`
+ * for the same reason.
+ *
+ * Reading only registered overrides keeps this cheap: a project that customises
+ * nothing scans nothing. Comments and string bodies are ignored; only module
+ * specifiers in actual import/export/require syntax trigger the warning.
+ */
+export function findLegacyIconImports(
+	overrides: ReadonlyMap<string, string>,
+): string[] {
+	const found: string[] = [];
+	for (const userCopy of overrides.values()) {
+		if (!SOURCE_EXTENSIONS.test(userCopy)) continue;
+		try {
+			const source = readFileSync(userCopy, "utf8");
+			if (importSources(source, userCopy).some(importsLegacyIcon))
+				found.push(userCopy);
+		} catch {
+			// An unreadable file is a resolution problem the registry already
+			// reports; it is not a reason to fail a build.
+		}
+	}
+	return found.sort();
 }

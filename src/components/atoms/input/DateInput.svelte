@@ -134,12 +134,12 @@ function onBlur() {
     align-items: center
     gap: 12px
     padding: 0 16px
-    background: var(--surface-container-high)
+    background: var(--field-filled-bg)
     border-radius: var(--shape-corner-xs) var(--shape-corner-xs) 0 0
     transition: background-color var(--m3e-duration-short) var(--m3e-easing-standard)
 
     &:hover
-        background: var(--surface-container-higher, var(--surface-container-high))
+        background: unquote("color-mix(in oklab, var(--on-surface) 12%, var(--field-filled-bg))")
 
     &__icon
         display: flex

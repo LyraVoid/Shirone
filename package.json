@@ -1,7 +1,7 @@
 {
 	"name": "shirone",
 	"type": "module",
-	"version": "1.0.3",
+	"version": "1.0.6",
 	"description": "An expressive, anime-inspired blog theme built on Material 3 Expressive, Astro 7, and Svelte 5",
 	"license": "MIT",
 	"author": "matsuzaka-yuki",
@@ -63,7 +63,7 @@
 	},
 	"dependencies": {
 		"@astrojs/check": "^0.9.10",
-		"@astrojs/markdown-remark": "^7.3.2",
+		"@astrojs/markdown-remark": "^7.3.3",
 		"@astrojs/mdx": "^8.0.3",
 		"@astrojs/rss": "^4.0.19",
 		"@astrojs/sitemap": "^3.7.4",
@@ -91,7 +91,7 @@
 		"hastscript": "^9.0.1",
 		"katex": "^0.16.47",
 		"lxgw-wenkai-screen-webfont": "^1.7.0",
-		"markdown-it": "^15.0.2",
+		"markdown-it": "^15.0.3",
 		"mdast-util-to-string": "^4.0.0",
 		"mermaid": "^11.17.2",
 		"oddmisc": "^1.2.11",
@@ -109,7 +109,7 @@
 		"remark-math": "^6.0.0",
 		"remark-parse": "11.0.0",
 		"remark-sectionize": "^2.1.0",
-		"sanitize-html": "^2.18.0",
+		"sanitize-html": "^2.18.1",
 		"sharp": "^0.35.5",
 		"stylus": "^0.64.0",
 		"subset-font": "2.9.0",
@@ -135,6 +135,7 @@
 		"@types/qrcode": "^1.5.6",
 		"@types/sanitize-html": "^2.16.2",
 		"esbuild": "^0.28.2",
+		"svelte-check": "4.7.7",
 		"vite": "^8.3.4"
 	},
 	"packageManager": "pnpm@11.28.2"

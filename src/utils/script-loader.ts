@@ -4,7 +4,7 @@ const scriptCache = new Map<string, Promise<void>>();
  * 确保指定 URL 的外部脚本在页面中只被加载一次。
  * 返回 Promise，若已在加载中或已完成则复用同一个 Promise。
  */
-export function loadScriptOnce(url: string): Promise<void> {
+export function loadScriptOnce(url: string, timeoutMs?: number): Promise<void> {
 	const normalizedUrl = url.trim();
 	if (!normalizedUrl) {
 		return Promise.reject(new Error("Empty script URL provided"));
@@ -30,16 +30,26 @@ export function loadScriptOnce(url: string): Promise<void> {
 		script.src = normalizedUrl;
 		script.async = true;
 
-		script.onload = () => {
-			resolve();
+		const signal = timeoutMs ? AbortSignal.timeout(timeoutMs) : undefined;
+		const cleanup = () => {
+			script.onload = null;
+			script.onerror = null;
+			signal?.removeEventListener("abort", abort);
 		};
-
-		script.onerror = () => {
-			// 加载失败时从缓存移除，允许后续重试
+		const fail = (reason: unknown) => {
+			cleanup();
+			// 失败或超时后清理缓存，允许用户重试。
 			scriptCache.delete(normalizedUrl);
 			script.remove();
-			reject(new Error(`Failed to load external script: ${normalizedUrl}`));
+			reject(reason);
 		};
+		const abort = () => fail(signal?.reason);
+		script.onload = () => {
+			cleanup();
+			resolve();
+		};
+		script.onerror = () => fail(new Error("Failed to load external script"));
+		signal?.addEventListener("abort", abort, { once: true });
 
 		document.head.appendChild(script);
 	});

@@ -63,4 +63,4 @@ Shirone 同时支持源码 checkout 和已发布的 `shirones` npm 包。修改�
 
 进行包模式冒烟测试时，在临时项目运行 `npx.cmd shirones init`，检查 `shirones/`、`public/`、项目根依赖和 pnpm 构建脚本许可配置。先运行 `pnpm.cmd check:manifest`、`npx.cmd astro check`、`pnpm.cmd type-check`、`pnpm.cmd build`，再在包模式临时项目运行 `astro build` 和开发服务器冒烟测试。
 
-发布由 `yCENzh/shirones` 仓库的 Actions -> Build & Publish 手动触发；合并前使用 `Build and validate, but do not publish` 进行预演。npm 版本以本仓库 `package.json` 的 `version` 为准。
+发布由独立的包发布流水线在 Actions 中手动触发；合并主题代码不会自动发布。合并前使用发布流水线的“Build and validate, but do not publish”模式预演。npm 版本以本仓库 `package.json` 的 `version` 为准；发布仓库与 ref 应由流水线配置提供，不要在主题文档中写死个人 fork。

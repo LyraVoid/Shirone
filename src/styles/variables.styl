@@ -39,6 +39,10 @@ define({
   --float-control-bg-hover: unquote("color-mix(in oklab, var(--on-surface) 8%, var(--surface-container-high))") unquote("color-mix(in oklab, var(--on-surface) 8%, var(--surface-container-high))")
   --float-control-bg-active: unquote("color-mix(in oklab, var(--on-surface) 12%, var(--surface-container-high))") unquote("color-mix(in oklab, var(--on-surface) 12%, var(--surface-container-high))")
 
+  /* 填充输入框容器须与所在卡片拉开色调：暗色卡片本身就是 container-high，
+     container-highest 又只高出几个色调，故暗色取更亮的 surface-bright */
+  --field-filled-bg: var(--surface-container-high) var(--surface-bright)
+
   --enter-btn-bg: var(--btn-regular-bg)
   --enter-btn-bg-hover: var(--btn-regular-bg-hover)
   --enter-btn-bg-active: var(--btn-regular-bg-active)
@@ -52,7 +56,8 @@ define({
   --line-color: var(--outline) var(--outline)
   --meta-divider: var(--on-surface-variant) var(--on-surface-variant)
 
-  --inline-code-bg: var(--surface-container-low) var(--surface-container-high)
+  /* 暗色卡片、表头与批注气泡都是 container-high，行内代码取 surface-bright 才能浮出 */
+  --inline-code-bg: var(--surface-container-low) var(--surface-bright)
   --inline-code-color: var(--on-surface-variant) var(--on-surface-variant)
   --selection-bg: var(--primary-container) var(--primary-container)
   --codeblock-selection: var(--primary-container) var(--primary-container)

@@ -1,0 +1,934 @@
+---
+import Button from "@components/atoms/action/Button.svelte";
+import Icon from "@components/atoms/display/Icon.svelte";
+import LoadingIndicator from "@components/atoms/feedback/LoadingIndicator.svelte";
+import I18nKey from "@i18n/i18nKey";
+import { i18n } from "@i18n/translation";
+import stylus from "stylus";
+import type { CommentContext, WalineConfig } from "@/types/commentConfig";
+
+interface Props {
+	context: CommentContext;
+	config: WalineConfig;
+	lazy?: boolean;
+}
+
+const { context, config, lazy = true } = Astro.props;
+const { scriptUrl, styleUrl, lang, ...clientOptions } = config;
+
+// Waline 使用 jp 表示日语；未内置的站点语言显式回退英语，避免落到中文默认值。
+const languages: Record<string, string> = {
+	zh: "zh-CN",
+	"zh-cn": "zh-CN",
+	"zh-tw": "zh-TW",
+	"zh-hk": "zh-TW",
+	"zh-hans": "zh-CN",
+	"zh-hant": "zh-TW",
+	jp: "jp",
+	ja: "jp",
+	en: "en",
+	es: "es",
+	ko: "ko",
+	vi: "vi",
+};
+const siteLanguage = context.language.toLowerCase().replaceAll("_", "-");
+const resolvedLang =
+	lang === "auto"
+		? (languages[siteLanguage] ?? languages[siteLanguage.split("-")[0]] ?? "en")
+		: lang;
+// 选项以 JSON 传给浏览器，只能携带数据；JSON 会丢弃的回调已由 resolveCommentOptions 拒绝。
+const options = {
+	...clientOptions,
+	path: context.path,
+	lang: resolvedLang,
+	// 颜色由下方局部语义 token 跟随站点切换，无需 SDK 注入全局暗色样式。
+	dark: false,
+	// 3.16.1 的 init 仍解构 comment / pageview（默认 false），显式关闭评论数与浏览量统计请求。
+	comment: false,
+	pageview: false,
+};
+
+// 内嵌编译，避免 Astro 将未启用 provider 的样式提升进共享 CSS。
+const walineStylus = `
+.shirone-waline-wrapper
+	display: block
+	min-width: 0
+	font: var(--m3e-type-body-medium)
+	--waline-font-size: 1em
+	--waline-white: var(--on-primary)
+	--waline-light-grey: var(--on-surface-variant)
+	--waline-dark-grey: var(--on-surface-variant)
+	--waline-theme-color: var(--primary)
+	--waline-active-color: var(--primary)
+	--waline-color: var(--on-surface)
+	--waline-bg-color: var(--card-bg)
+	--waline-bg-color-light: var(--surface-container-low)
+	--waline-bg-color-hover: var(--surface-container-high)
+	--waline-border-color: var(--outline-variant)
+	--waline-disable-bg-color: var(--surface-container-highest)
+	--waline-disable-color: var(--on-surface-variant)
+	--waline-code-bg-color: var(--codeblock-bg)
+	--waline-warning-color: var(--on-tertiary-container)
+	--waline-warning-bg-color: var(--tertiary-container)
+	--waline-bq-color: var(--surface-container-high)
+	--waline-badge-color: var(--primary)
+	--waline-info-bg-color: var(--surface-container-high)
+	--waline-info-color: var(--on-surface-variant)
+	--waline-avatar-radius: var(--shape-corner-xs)
+	--waline-box-shadow: none
+	// Twikoo's 2.75rem controls, so both comment providers' editors match.
+	--shirone-waline-control-size: 2.75rem
+
+	.waline-loading:not([hidden])
+		display: flex
+		flex-direction: column
+		align-items: center
+		justify-content: center
+		gap: var(--m3e-space-3)
+		min-height: 10rem
+		padding-block: var(--m3e-space-6)
+		color: var(--on-surface-variant)
+
+	.waline-error
+		padding: var(--m3e-space-4)
+		border-radius: var(--shape-corner-m)
+		background: var(--error-container)
+		color: var(--on-error-container)
+		text-align: center
+
+	.waline-error p
+		margin-bottom: var(--m3e-space-3)
+
+	.waline-noscript
+		padding: var(--m3e-space-4)
+		color: var(--on-surface-variant)
+		text-align: center
+
+	.waline-upload-label
+		display: none
+
+	// The comment box copies the theme's Twikoo editor: the editor first, then the
+	// identity fields, all outlined on the low container; focus turns the outline
+	// primary inside a primary-container ring.
+	.wl-comment
+		gap: var(--m3e-space-3)
+
+	.wl-panel
+		display: flex
+		flex-direction: column
+		gap: var(--m3e-space-3)
+		box-sizing: border-box
+		min-width: 0
+		margin: 0
+		border: none
+		border-radius: 0
+
+	.wl-panel > .wl-editor, .wl-panel > .emoji-input
+		order: -1
+
+	.wl-panel > .wl-preview
+		order: 1
+
+	.wl-header
+		display: grid
+		grid-auto-columns: minmax(0, 1fr)
+		grid-auto-flow: column
+		gap: var(--m3e-space-3)
+		overflow: visible
+		padding: 0
+		border: none
+
+	.wl-header .wl-header-item
+		display: grid
+		grid-template-columns: max-content minmax(0, 1fr)
+		box-sizing: border-box
+		min-width: 0
+		height: calc(var(--m3e-space-6) * 2)
+		padding: 0
+		overflow: hidden
+		border: 1px solid var(--outline-variant)
+		border-radius: var(--shape-corner-m)
+		background: var(--surface-container-low)
+		transition-property: border-color, box-shadow
+
+	.wl-header .wl-header-item:focus-within, .wl-panel > .wl-editor:focus, .wl-panel > .emoji-input:focus
+		border-color: var(--primary)
+		box-shadow: 0 0 0 2px var(--primary-container)
+		outline: none
+
+	.wl-header .wl-header-item:has(input:invalid)
+		border-color: var(--error)
+
+	.wl-header label
+		display: flex
+		align-items: center
+		min-width: 0
+		padding: 0 var(--m3e-space-3)
+		border-inline-end: 1px solid var(--outline-variant)
+		background: var(--surface-container)
+		color: var(--on-surface-variant)
+		font: var(--m3e-type-label-medium)
+		white-space: nowrap
+
+	.wl-header input.wl-input
+		display: block
+		box-sizing: border-box
+		min-width: 0
+		width: 100%
+		height: 100%
+		padding: 0 var(--m3e-space-3)
+		border: none
+		border-radius: 0
+		background: transparent
+		color: var(--on-surface)
+		caret-color: var(--primary)
+		font: var(--m3e-type-body-medium)
+		outline: none
+
+	.wl-header input.wl-input:focus
+		background: transparent
+
+	// The emoji input (utils/emoji-input) edits in place of the SDK textarea, which
+	// stays hidden as Waline's model; both wear the same outlined field, at least
+	// as tall as Twikoo's 7rem editor.
+	.wl-panel > .wl-editor, .wl-panel > .emoji-input
+		box-sizing: border-box
+		min-width: 0
+		width: 100%
+		min-height: 7rem
+		margin: 0
+		padding: var(--m3e-space-3) var(--m3e-space-4)
+		border: 1px solid var(--outline-variant)
+		border-radius: var(--shape-corner-m)
+		box-shadow: none
+		background: var(--surface-container-low)
+		color: var(--on-surface)
+		caret-color: var(--primary)
+		font: var(--m3e-type-body-medium)
+		transition-property: border-color, box-shadow
+
+	.wl-panel > .wl-editor::placeholder
+		color: var(--on-surface-variant)
+
+	.wl-panel > .wl-editor[hidden]
+		display: none
+
+	// Grows with its content like the autosized textarea, from the same minimum.
+	.wl-panel > .emoji-input
+		position: relative
+		white-space: pre-wrap
+		overflow-wrap: anywhere
+		cursor: text
+
+	.emoji-input[data-empty]::before
+		content: attr(data-placeholder)
+		position: absolute
+		inset-inline: var(--m3e-space-4)
+		top: var(--m3e-space-3)
+		color: var(--on-surface-variant)
+		pointer-events: none
+
+	// Same height as the published .wl-emoji, centred on the line it sits in.
+	.emoji-input__glyph
+		display: inline-block
+		width: auto
+		height: 1.25em
+		margin-inline: 0.0625em
+		vertical-align: -0.25em
+
+	// Twikoo's action row: round icon actions first, then the count and buttons.
+	.wl-footer
+		align-items: center
+		gap: var(--m3e-space-2)
+		margin: 0 0 var(--m3e-space-6)
+
+	.wl-actions
+		flex: 1 1 auto
+		flex-wrap: wrap
+		gap: var(--m3e-space-1)
+
+	// Takes its own line before wrapping inside, which only a nested reply's
+	// narrow column needs.
+	.wl-info
+		display: flex
+		flex: 1 1 auto
+		flex-wrap: wrap
+		align-items: center
+		justify-content: flex-end
+		gap: var(--m3e-space-2)
+
+	// The row keeps only what Twikoo's has: the Markdown guide link and the plain
+	// word count go, though a configured word limit keeps its count and warning.
+	.wl-actions > a.wl-action, .wl-text-number:not(:has(span)), .wl-captcha-container:empty
+		display: none
+
+	.wl-text-number
+		color: var(--on-surface-variant)
+		font: var(--m3e-type-label-small)
+		white-space: nowrap
+
+	button.wl-action, a.wl-action, .wl-close
+		display: inline-flex
+		align-items: center
+		justify-content: center
+		flex-shrink: 0
+		width: var(--shirone-waline-control-size)
+		height: var(--shirone-waline-control-size)
+		margin: 0
+		padding: 0
+		border: none
+		border-radius: var(--shape-corner-full)
+		background: transparent
+		color: var(--on-surface-variant)
+
+	.wl-action.active
+		background: var(--secondary-container)
+		color: var(--on-secondary-container)
+		--m3e-state-color: var(--on-secondary-container)
+
+	.waline-icon-button > svg:not(.waline-icon)
+		display: none
+
+	.waline-icon
+		width: var(--m3e-space-5)
+		height: var(--m3e-space-5)
+		pointer-events: none
+
+	// The SDK's close icon only shows when no action row takes the runtime's
+	// text cancel button; it then wears the same tonal colors.
+	.wl-close
+		border-radius: var(--shape-corner-m)
+		background: var(--secondary-container)
+		color: var(--on-secondary-container)
+		--m3e-state-color: var(--on-secondary-container)
+
+	.wl-comment:has(.waline-cancel) > .wl-close
+		display: none
+
+	// Both SDK nodes share the image corner as their center, including wide counts.
+	.wl-reaction-votes, .wl-reaction-loading
+		position: absolute
+		box-sizing: border-box
+		top: 0
+		inset-inline-end: 0
+		min-width: var(--m3e-space-5)
+		height: var(--m3e-space-5)
+		margin: 0
+		transform: translate(50%, -50%)
+
+	.wl-reaction-votes:dir(rtl), .wl-reaction-loading:dir(rtl)
+		transform: translate(-50%, -50%)
+
+	.wl-reaction-votes
+		display: grid
+		place-items: center
+		padding: 0 var(--m3e-space-1)
+		border-radius: var(--shape-corner-full)
+		font: var(--m3e-type-label-small)
+
+	.wl-reaction-loading
+		width: var(--m3e-space-5)
+
+	// Article reactions head the section; the list below keeps Twikoo's structure.
+	.wl-reaction
+		margin-bottom: var(--m3e-space-6)
+
+	.wl-reaction-title
+		margin: 0 0 var(--m3e-space-2)
+		color: var(--on-surface)
+		font: var(--m3e-type-title-medium)
+
+	.wl-reaction-list
+		gap: var(--m3e-space-1)
+		padding: var(--m3e-space-3) var(--m3e-space-2) 0
+
+	.wl-reaction-item
+		padding: var(--m3e-space-2)
+
+	// The runtime makes each image box the reaction's toggle button.
+	.wl-reaction-img
+		border-radius: var(--shape-corner-m)
+
+	.wl-reaction-item img
+		transition-duration: var(--m3e-duration-short)
+		transition-timing-function: var(--m3e-easing-standard)
+
+	// The list copies the theme's Twikoo comments: a ruled header, outlined cards
+	// with the avatar beside the body, and replies as outlined cards on the page
+	// surface inside their comment's body.
+	.wl-meta-head
+		flex-wrap: wrap
+		gap: var(--m3e-space-3)
+		margin: 0
+		padding: var(--m3e-space-4) 0 0
+		border-top: 1px solid var(--outline-variant)
+
+	.wl-count
+		color: var(--on-surface)
+		line-height: 1
+
+	.wl-sort
+		display: flex
+		flex-wrap: wrap
+		gap: var(--m3e-space-1)
+
+	// Text options like Twikoo's; their touch targets overflow the header row.
+	.wl-sort li, .wl-sort li + li
+		display: inline-flex
+		align-items: center
+		box-sizing: border-box
+		min-height: var(--shirone-waline-control-size)
+		margin: calc((var(--m3e-space-6) - var(--shirone-waline-control-size)) / 2) 0
+		padding: 0 var(--m3e-space-2)
+		border-radius: var(--shape-corner-full)
+		color: var(--on-surface-variant)
+		font: var(--m3e-type-label-large)
+
+	.wl-sort li.active
+		color: var(--primary)
+		font-weight: 700
+		--m3e-state-color: var(--primary)
+
+	.wl-cards
+		display: flex
+		flex-direction: column
+		--waline-avatar-size: var(--m3e-space-10)
+		--waline-m-avatar-size: var(--m3e-space-10)
+
+	.wl-card-item
+		display: flex
+		min-width: 0
+		margin: var(--m3e-space-4) 0 var(--m3e-space-3)
+		padding: var(--m3e-space-4)
+		border: 1px solid var(--outline-variant)
+		border-radius: var(--shape-corner-l)
+		transition-property: box-shadow, border-color
+
+	.wl-card-item:hover
+		box-shadow: var(--m3e-elevation-1)
+
+	.wl-cards .wl-user
+		flex-shrink: 0
+		margin: 0
+		margin-inline-end: var(--m3e-space-4)
+
+	// Reply cards sit on the page surface with a smaller avatar.
+	.wl-quote > .wl-card-item
+		margin: var(--m3e-space-2) 0 var(--m3e-space-3)
+		padding: var(--m3e-space-3)
+		border-radius: var(--shape-corner-m)
+		background: var(--page-bg)
+
+	.wl-quote .wl-user
+		--avatar-size: var(--m3e-space-6)
+
+	// Light code chips and blocks share the reply card's page tone, so they step
+	// one tone further there; the dark tokens already differ from it.
+	:root:not(.dark) & .wl-quote > .wl-card-item
+		--inline-code-bg: var(--surface-container-high)
+		--codeblock-bg: var(--surface-container-high)
+
+	// The body column follows Twikoo's order: browser and system after the text,
+	// then the reply form, then the replies.
+	.wl-card
+		display: flex
+		flex-direction: column
+		flex: 1
+		min-width: 0
+		width: auto
+		padding: 0
+		border: none
+
+	.wl-card > .wl-meta
+		order: 1
+
+	.wl-card > .wl-reply-wrapper, .wl-card > .wl-edit-wrapper
+		order: 2
+
+	.wl-card > .wl-quote
+		order: 3
+
+	.wl-card .wl-quote
+		margin: 0
+		padding: 0
+		border: none
+
+	.wl-card .wl-quote:not(:has(> .wl-card-item))
+		display: none
+
+	.wl-card .wl-head
+		display: flex
+		flex-wrap: wrap
+		align-items: center
+		gap: var(--m3e-space-1)
+		min-height: var(--m3e-space-6)
+		overflow: visible
+		line-height: var(--m3e-space-6)
+
+	.wl-card .wl-head .wl-nick
+		margin: 0
+		color: var(--on-surface)
+		font: var(--m3e-type-title-medium)
+		font-weight: 700
+
+	.wl-card .wl-head a.wl-nick:hover
+		text-decoration: underline
+
+	// Twikoo's master tag: a quiet chip, primary in dark mode; levels stay neutral.
+	.wl-card .wl-badge
+		margin: 0
+		padding: 0 0.5em
+		border: none
+		border-radius: var(--shape-corner-s)
+		background: var(--btn-regular-bg)
+		color: var(--btn-content)
+		font: var(--m3e-type-body-small)
+		line-height: 1.5
+
+	:root.dark & .wl-card .wl-badge:not([class*="level"])
+		background: var(--primary)
+		color: var(--deep-text)
+
+	.wl-card .wl-badge[class*="level"]
+		background: var(--surface-container-highest)
+		color: var(--on-surface-variant)
+
+	.wl-card .wl-time
+		margin: 0
+		color: var(--on-surface-variant)
+		font: var(--m3e-type-body-small)
+
+	// Small primary icons on the name row; the buttons keep the toolbar's touch
+	// size and overflow the row instead of growing it.
+	.wl-card .wl-comment-actions
+		display: flex
+		align-items: center
+		float: none
+		margin-inline-start: auto
+
+	.wl-card .wl-comment-actions > button, .wl-card .wl-comment-actions > a
+		box-sizing: border-box
+		justify-content: center
+		gap: var(--m3e-space-1)
+		min-width: var(--shirone-waline-control-size)
+		height: var(--shirone-waline-control-size)
+		margin: calc((var(--m3e-space-6) - var(--shirone-waline-control-size)) / 2) 0
+		padding: 0 var(--m3e-space-2)
+		border-radius: var(--shape-corner-full)
+		color: var(--btn-content)
+		font: var(--m3e-type-body-small)
+		--m3e-state-color: var(--primary)
+
+	.wl-card .wl-comment-actions svg
+		width: var(--m3e-space-4)
+		height: var(--m3e-space-4)
+
+	// Twikoo's actions carry no chip, so the state layer hugs the icon and count
+	// instead of filling the touch target, and a clicked or tapped button that
+	// keeps focus does not stay lit; keyboard focus still shows it.
+	.wl-card .wl-comment-actions > .m3-state-layer::before
+		inset: calc((var(--shirone-waline-control-size) - var(--m3e-space-8)) / 2) var(--m3e-space-1)
+		border-radius: var(--shape-corner-full)
+
+	.wl-card .wl-comment-actions > .m3-state-layer:focus-within:not(:focus-visible):not(:hover):not(:active)::before
+		opacity: 0
+
+	// Waline fills a liked heart with literal red; the theme's primary replaces it.
+	.wl-card .wl-comment-actions path, .wl-card .wl-comment-actions path[fill="red"]
+		fill: var(--primary)
+
+	.wl-card .wl-meta
+		display: flex
+		flex-wrap: wrap
+		gap: 0 var(--m3e-space-3)
+		margin: 0
+
+	.wl-card .wl-meta > span
+		display: inline-flex
+		align-items: center
+		gap: var(--m3e-space-1)
+		margin: var(--m3e-space-2) 0 0
+		padding: 0
+		background: none
+		color: var(--on-surface-variant)
+		font: var(--m3e-type-body-medium)
+
+	// Twikoo's order: location, system, browser, each after its icon.
+	.wl-card .wl-meta > .wl-addr
+		order: -2
+
+	.wl-card .wl-meta > .wl-os
+		order: -1
+
+	.waline-meta-icon
+		flex-shrink: 0
+		width: 1em
+		height: 1em
+
+	.wl-card .wl-warning
+		margin-block-start: var(--m3e-space-2)
+		padding: var(--m3e-space-2) var(--m3e-space-3)
+		border: none
+		border-radius: var(--shape-corner-s)
+		font: var(--m3e-type-body-small)
+
+	.wl-card .wl-content
+		margin: var(--m3e-space-2) 0 0
+		padding: 0
+		font: var(--m3e-type-body-medium)
+		line-height: 1.625
+		overflow-wrap: anywhere
+
+	// A reply or edit form opens in the comment's body column before its replies,
+	// like Twikoo's: the same outlined fields without a box, cancelled from the
+	// action row.
+	.wl-card .wl-reply-wrapper, .wl-card .wl-edit-wrapper
+		margin-block-start: var(--m3e-space-2)
+
+	.wl-reply-wrapper > .wl-comment, .wl-edit-wrapper > .wl-comment
+		align-items: flex-start
+		gap: var(--m3e-space-2)
+		margin: 0
+
+	.wl-reply-wrapper .wl-close, .wl-edit-wrapper .wl-close
+		position: static
+
+	.wl-reply-wrapper .wl-panel, .wl-edit-wrapper .wl-panel
+		background: transparent
+
+	// Published comments and the preview read like Twikoo's: primary links and
+	// bullets, outlined code blocks.
+	.wl-content
+		color: var(--on-surface)
+
+	.wl-content p, .wl-content li, .wl-content blockquote
+		line-height: inherit
+
+	.wl-content p, .wl-content ul, .wl-content ol, .wl-content pre
+		margin: 0
+
+	.wl-content .wl-reply-to
+		display: block
+		float: none
+		margin: 0
+		font: var(--m3e-type-body-small)
+		line-height: inherit
+
+	.wl-content a
+		color: var(--primary)
+		font-weight: 500
+		text-decoration: underline
+		text-underline-offset: 0.2em
+
+	.wl-content .wl-reply-to a
+		text-decoration: none
+
+	.wl-content :not(pre) > code
+		padding: 0.125em 0.375em
+		border-radius: var(--shape-corner-xs)
+		background: var(--inline-code-bg)
+		color: var(--inline-code-color)
+		font-size: 0.85em
+		font-weight: 600
+
+	.wl-content ul
+		padding: 0
+		list-style: none
+
+	.wl-content ul > li::before
+		content: '•'
+		margin-inline-end: var(--m3e-space-1)
+		color: var(--primary)
+
+	.wl-content ol
+		padding-inline-start: 1.25em
+		list-style: decimal
+
+	.wl-content ol > li::marker
+		color: var(--primary)
+
+	.wl-content blockquote
+		position: relative
+		margin: 0
+		padding: 0
+		padding-inline-start: var(--m3e-space-4)
+		border: none
+		color: var(--on-surface-variant)
+
+	.wl-content blockquote::before
+		content: ''
+		position: absolute
+		inset-block: 0
+		inset-inline-start: 0
+		width: var(--m3e-space-1)
+		border-radius: var(--shape-corner-full)
+		background: var(--primary)
+
+	.wl-content pre, .wl-content pre[class*="language-"]
+		padding: var(--m3e-space-2)
+		border: 1px solid var(--outline-variant)
+		border-radius: var(--shape-corner-m)
+		background: var(--codeblock-bg)
+		color: var(--on-surface)
+
+	// Blocks keep a small gap, so code, lists and quotes never touch the text
+	// beside them.
+	.wl-content > div > * + *, .wl-preview .wl-content > * + *
+		margin-block-start: var(--m3e-space-2)
+
+	.wl-content pre code, .wl-content pre[class*="language-"] code, .wl-content code[class*="language-"]
+		color: inherit
+
+	// Waline's highlighter colors assume a dark block; map its tokens to the theme.
+	.wl-content .token.comment, .wl-content .token.block-comment, .wl-content .token.prolog, .wl-content .token.doctype, .wl-content .token.cdata, .wl-content .token.punctuation
+		color: var(--on-surface-variant)
+
+	.wl-content .token.keyword, .wl-content .token.selector, .wl-content .token.important, .wl-content .token.atrule, .wl-content .token.builtin, .wl-content .token.tag
+		color: var(--primary)
+
+	.wl-content .token.string, .wl-content .token.char, .wl-content .token.attr-value, .wl-content .token.regex, .wl-content .token.inserted
+		color: var(--tertiary)
+
+	.wl-content .token.number, .wl-content .token.boolean, .wl-content .token.function, .wl-content .token.function-name, .wl-content .token.constant, .wl-content .token.class-name, .wl-content .token.property, .wl-content .token.symbol, .wl-content .token.attr-name, .wl-content .token.namespace, .wl-content .token.variable, .wl-content .token.operator, .wl-content .token.entity, .wl-content .token.url
+		color: var(--secondary)
+
+	.wl-content .token.deleted
+		color: var(--error)
+
+	.wl-empty
+		padding: var(--m3e-space-6) var(--m3e-space-4)
+		color: var(--on-surface-variant)
+		font: var(--m3e-type-body-medium)
+
+	.wl-operation .wl-btn
+		margin-block: var(--m3e-space-4)
+
+	.wl-meta-foot
+		flex-wrap: wrap
+		gap: var(--m3e-space-2)
+
+	.wl-meta-foot > .wl-rss
+		flex-wrap: wrap
+		gap: var(--m3e-space-2)
+		min-width: 0
+		max-width: none
+		overflow: visible
+		transition: none
+
+	.wl-meta-foot .wl-rss > a
+		box-sizing: border-box
+		display: inline-flex
+		align-items: center
+		gap: var(--m3e-space-2)
+		flex-shrink: 1
+		min-height: var(--shirone-waline-control-size)
+		max-width: 100%
+		padding: var(--m3e-space-2)
+		border-radius: var(--shape-corner-m)
+		color: var(--primary)
+		font: var(--m3e-type-body-small)
+		text-decoration: none
+
+	.wl-meta-foot .wl-rss span
+		color: inherit
+		font: inherit
+		text-align: start
+		overflow-wrap: anywhere
+
+	.wl-meta-foot .wl-rss .waline-icon
+		order: -1
+		flex-shrink: 0
+
+	.wl-power, .wl-word
+		font: var(--m3e-type-body-small)
+
+	// Twikoo's button shapes: tonal by default, primary for submitting. The tonal
+	// fill is the secondary container, which unlike Twikoo's surface-container-high
+	// stays visible on dark cards.
+	.wl-btn
+		display: inline-flex
+		align-items: center
+		justify-content: center
+		box-sizing: border-box
+		min-width: calc(var(--m3e-space-8) * 2)
+		min-height: var(--shirone-waline-control-size)
+		margin: 0
+		padding: 0 var(--m3e-space-4)
+		border: none
+		border-radius: var(--shape-corner-m)
+		background: var(--secondary-container)
+		color: var(--on-secondary-container)
+		font: var(--m3e-type-label-large)
+		--m3e-state-color: var(--on-secondary-container)
+
+	.wl-btn.primary
+		background: var(--primary)
+		color: var(--on-primary)
+		--m3e-state-color: var(--on-primary)
+
+	.wl-btn:disabled
+		background: var(--surface-container)
+		color: var(--on-surface-variant)
+		opacity: 0.38
+		cursor: not-allowed
+
+	.wl-btn, .wl-input, .wl-editor, .emoji-input, .wl-header-item, .wl-sort li, .wl-card-item, .wl-card .wl-comment-actions > *
+		transition-duration: var(--m3e-duration-short)
+		transition-timing-function: var(--m3e-easing-standard)
+
+@media (max-width: 767px)
+	.shirone-waline-wrapper .wl-header
+		grid-auto-flow: row
+
+@media (max-width: 600px)
+	// Narrow comments keep the actions beside the name; badges and time wrap below.
+	.shirone-waline-wrapper .wl-card .wl-head .wl-nick
+		order: -2
+		min-width: 0
+		overflow-wrap: anywhere
+
+	.shirone-waline-wrapper .wl-card .wl-head .wl-comment-actions
+		order: -1
+
+	.shirone-waline-wrapper .wl-card .wl-head::after
+		content: ''
+		order: -1
+		flex-basis: 100%
+
+	// Phones keep the avatar beside the name row only: the text, meta, reply form
+	// and replies take the card's full width instead of a squeezed column.
+	.shirone-waline-wrapper .wl-card-item
+		display: grid
+		grid-template-columns: auto minmax(0, 1fr)
+		align-items: start
+
+	.shirone-waline-wrapper .wl-card
+		display: contents
+
+	.shirone-waline-wrapper .wl-card > :not(.wl-head)
+		grid-column: 1 / -1
+
+	// The text sits a step further from the name and time, which then read as
+	// the card's header rather than as part of the text.
+	.shirone-waline-wrapper .wl-card .wl-content
+		margin-block-start: var(--m3e-space-3)
+
+	// The buttons take a full-width row of their own, sharing it evenly.
+	.shirone-waline-wrapper .wl-info
+		flex-basis: 100%
+
+	.shirone-waline-wrapper .wl-info > .wl-btn
+		flex: 1 1 auto
+
+@media (pointer: coarse)
+	.shirone-waline-wrapper
+		--shirone-waline-control-size: calc(var(--m3e-space-6) * 2)
+
+// Touch screens keep hover after a tap; there the actions light only while pressed.
+@media (hover: none)
+	.shirone-waline-wrapper .wl-card .wl-comment-actions > .m3-state-layer:hover:not(:active):not(:focus-visible)::before
+		opacity: 0
+
+/* !important boundary: Waline owns its generated animations/transitions;
+   this integration enforces both Shirone and OS reduced-motion preferences. */
+html.motion-reduced .shirone-waline-wrapper [data-waline] *
+	animation: none !important
+	transition: none !important
+
+@media (prefers-reduced-motion: reduce)
+	.shirone-waline-wrapper [data-waline] *
+		animation: none !important
+		transition: none !important
+`;
+const walineStyles = await new Promise<string>((resolve, reject) => {
+	stylus.render(walineStylus, (error, css) => {
+		if (error) reject(error);
+		else resolve(css);
+	});
+});
+---
+
+<shirone-waline
+	class="shirone-waline-wrapper"
+	data-waline-script-url={scriptUrl}
+	data-waline-style-url={styleUrl}
+	data-waline-options={JSON.stringify(options)}
+	data-waline-editor-label={i18n(I18nKey.commentsEditor)}
+	data-waline-lazy={lazy ? "true" : "false"}
+	data-waline-state="loading"
+>
+	<!-- SSR icon templates stay inert until the enabled SDK renders its controls. -->
+	<template data-waline-icon="emoji">
+		<Icon icon="material-symbols:sentiment-satisfied-outline-rounded" class="waline-icon" aria-hidden="true" />
+	</template>
+	<template data-waline-icon="image">
+		<Icon icon="material-symbols:image-outline-rounded" class="waline-icon" aria-hidden="true" />
+	</template>
+	<template data-waline-icon="preview">
+		<Icon icon="material-symbols:visibility-outline-rounded" class="waline-icon" aria-hidden="true" />
+	</template>
+	<template data-waline-icon="rss">
+		<Icon icon="material-symbols:rss-feed-rounded" class="waline-icon" aria-hidden="true" />
+	</template>
+	<!-- Location, system and browser icons for the comment meta, picked by name. -->
+	<template data-waline-meta-icon="addr">
+		<Icon icon="material-symbols:location-on-outline-rounded" class="waline-meta-icon" aria-hidden="true" />
+	</template>
+	<template data-waline-meta-icon="os">
+		<Icon icon="material-symbols:devices-outline" class="waline-meta-icon" aria-hidden="true" />
+	</template>
+	<template data-waline-meta-icon="windows">
+		<Icon icon="fa7-brands:windows" class="waline-meta-icon" aria-hidden="true" />
+	</template>
+	<template data-waline-meta-icon="apple">
+		<Icon icon="fa7-brands:apple" class="waline-meta-icon" aria-hidden="true" />
+	</template>
+	<template data-waline-meta-icon="android">
+		<Icon icon="fa7-brands:android" class="waline-meta-icon" aria-hidden="true" />
+	</template>
+	<template data-waline-meta-icon="linux">
+		<Icon icon="fa7-brands:linux" class="waline-meta-icon" aria-hidden="true" />
+	</template>
+	<template data-waline-meta-icon="browser">
+		<Icon icon="material-symbols:public" class="waline-meta-icon" aria-hidden="true" />
+	</template>
+	<template data-waline-meta-icon="edge">
+		<Icon icon="fa7-brands:edge" class="waline-meta-icon" aria-hidden="true" />
+	</template>
+	<template data-waline-meta-icon="chrome">
+		<Icon icon="fa7-brands:chrome" class="waline-meta-icon" aria-hidden="true" />
+	</template>
+	<template data-waline-meta-icon="firefox">
+		<Icon icon="fa7-brands:firefox-browser" class="waline-meta-icon" aria-hidden="true" />
+	</template>
+	<template data-waline-meta-icon="safari">
+		<Icon icon="fa7-brands:safari" class="waline-meta-icon" aria-hidden="true" />
+	</template>
+	<template data-waline-meta-icon="opera">
+		<Icon icon="fa7-brands:opera" class="waline-meta-icon" aria-hidden="true" />
+	</template>
+	<template data-waline-meta-icon="weixin">
+		<Icon icon="fa7-brands:weixin" class="waline-meta-icon" aria-hidden="true" />
+	</template>
+	<template data-waline-meta-icon="qq">
+		<Icon icon="fa7-brands:qq" class="waline-meta-icon" aria-hidden="true" />
+	</template>
+	<div class="waline-loading" role="status" hidden>
+		<span aria-hidden="true"><LoadingIndicator client:visible /></span>
+		<span>{i18n(I18nKey.commentsLoading)}</span>
+	</div>
+	<div class="waline-container" data-waline hidden></div>
+	<div class="waline-error" hidden>
+		<p role="alert">{i18n(I18nKey.commentsLoadFailed)}</p>
+		<Button class="waline-retry" variant="tonal" label={i18n(I18nKey.retry)} />
+	</div>
+	<noscript>
+		<p class="waline-noscript">{i18n(I18nKey.commentsRequiresJavaScript)}</p>
+	</noscript>
+</shirone-waline>
+
+<style is:inline set:html={walineStyles}></style>
+
+<script>
+	import "@utils/waline-runtime";
+</script>

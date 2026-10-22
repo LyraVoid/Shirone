@@ -423,11 +423,11 @@ The palette is a tonal surface system, not a fixed swatch collection. All colors
 ### Surface Hierarchy
 Depth in MD3 is communicated through **tonal surface color**, not shadows. Five container levels establish clean nesting hierarchy and depth:
 - **Surface**: The baseline background for pages and resting areas (`--surface`).
-- **Surface Dim / Bright**: Maintain relative brightness across both light and dark themes.
+- **Surface Dim / Bright**: Maintain relative brightness across both light and dark themes. In dark mode, Surface Bright also fills filled inputs (`--field-filled-bg`) and inline code chips (`--inline-code-bg`), because dark mode cards, table headers, and annotation popovers already occupy Surface Container High.
 - **Surface Container Lowest**: The lowest-emphasis container, used for cards in light mode (`--surface-container-lowest`).
 - **Surface Container Low**: Low-emphasis container, default page background in light mode (`--surface-container-low`).
 - **Surface Container**: Default container for navigation bars, menus, and docked chrome (`--surface-container`).
-- **Surface Container High**: High-emphasis container for inputs, dialogs, and dark mode cards (`--surface-container-high`).
+- **Surface Container High**: High-emphasis container for light mode inputs, dialogs, and dark mode cards (`--surface-container-high`).
 - **Surface Container Highest**: Highest-emphasis container for switches, active chips, and selected list rows (`--surface-container-highest`).
 - **On-Surface**: Default reading text and prominent icons.
 - **On-Surface-Variant**: Supporting text, timestamps, metadata, and unselected icons.
@@ -549,7 +549,7 @@ Components follow atomic design layering (`atoms/ → molecules/ → organisms/ 
 - **Search Bar & Search View**: Docked 56dp search bar with smooth animated expansion to docked or full-screen search view with history, suggestion keyboard navigation, and zero bundle impact when closed.
 
 ### Input & Feedback
-- **TextField**: Filled (surface-container-high + bottom active indicator) and Outlined (1px outline-variant + 2px primary focus) variants with floating labels and assistive helper/error text.
+- **TextField**: Filled (`--field-filled-bg`: surface-container-high in light mode, surface-bright in dark mode, + bottom active indicator) and Outlined (1px outline-variant + 2px primary focus) variants with floating labels and assistive helper/error text.
 - **Select & Autocomplete**: M3 compliant dropdowns with anchored elevation and typeahead navigation.
 - **Switch, Checkbox, Radio**: Fully accessible selection controls with animated glyph transitions.
 - **Chips**: Assist, filter, input, and suggestion chips in 32px height with full pill rounding.
