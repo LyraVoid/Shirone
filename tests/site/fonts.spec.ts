@@ -7,7 +7,7 @@ test("code blocks resolve the configured mono font family", async ({
 }) => {
 	await page.goto(CODE_POST_PATH, { waitUntil: "networkidle" });
 	await page.waitForFunction(() =>
-		document.documentElement.style
+		getComputedStyle(document.documentElement)
 			.getPropertyValue("--mc-primary")
 			.trim()
 			.startsWith("#"),

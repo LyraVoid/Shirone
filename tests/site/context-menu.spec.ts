@@ -19,7 +19,7 @@ const postPath = "/posts/guide/";
 
 async function waitForTheme(page: import("@playwright/test").Page) {
 	await page.waitForFunction(() =>
-		document.documentElement.style
+		getComputedStyle(document.documentElement)
 			.getPropertyValue("--mc-primary")
 			.trim()
 			.startsWith("#"),

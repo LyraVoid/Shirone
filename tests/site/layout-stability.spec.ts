@@ -37,7 +37,7 @@ declare global {
 
 async function waitForLayoutReady(page: Page) {
 	await page.waitForFunction(() =>
-		document.documentElement.style
+		getComputedStyle(document.documentElement)
 			.getPropertyValue("--mc-primary")
 			.trim()
 			.startsWith("#"),

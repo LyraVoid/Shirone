@@ -60,10 +60,13 @@ async function captureAndCompare(
 			body: JSON.stringify(GITHUB_MOCK),
 		}),
 	);
-	await page.goto(p.path, { waitUntil: "domcontentloaded" });
+	await page.goto(p.path, { waitUntil: "load" });
 	await page.waitForFunction(() => {
 		const root = document.documentElement;
-		return root.style.getPropertyValue("--mc-primary").trim().startsWith("#");
+		return getComputedStyle(root)
+			.getPropertyValue("--mc-primary")
+			.trim()
+			.startsWith("#");
 	});
 	// 等 onload-animation 收敛（reduced-motion 下立即到最终态）+ Svelte 挂载
 	await page.waitForFunction(

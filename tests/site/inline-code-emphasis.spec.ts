@@ -33,7 +33,7 @@ for (const navigation of ["direct", "swup"] as const) {
 		}
 
 		await page.waitForFunction(() =>
-			document.documentElement.style
+			getComputedStyle(document.documentElement)
 				.getPropertyValue("--mc-primary")
 				.trim()
 				.startsWith("#"),

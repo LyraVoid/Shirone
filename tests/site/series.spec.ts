@@ -20,7 +20,7 @@ async function openSitePage(
 	await page.goto(path, { waitUntil: "domcontentloaded" });
 	// 主题引擎初始化 + onload-animation 收敛（与 a11y 扫描同一前置条件）
 	await page.waitForFunction(() =>
-		document.documentElement.style
+		getComputedStyle(document.documentElement)
 			.getPropertyValue("--mc-primary")
 			.trim()
 			.startsWith("#"),

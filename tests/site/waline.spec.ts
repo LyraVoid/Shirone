@@ -282,7 +282,7 @@ async function setRssEnabled(page: Page, enabled: boolean) {
 
 async function settleTheme(page: Page) {
 	await page.waitForFunction(() =>
-		document.documentElement.style
+		getComputedStyle(document.documentElement)
 			.getPropertyValue("--mc-primary")
 			.startsWith("#"),
 	);
@@ -1558,7 +1558,7 @@ test.describe("Waline enabled", () => {
 		await page.goto(ARTICLE);
 		await mount(page);
 		await page.waitForFunction(() =>
-			document.documentElement.style
+			getComputedStyle(document.documentElement)
 				.getPropertyValue("--mc-primary")
 				.startsWith("#"),
 		);

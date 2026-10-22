@@ -19,7 +19,7 @@ async function applyTheme(page: Page, theme: string) {
 		theme === "dark" ? /\bdark\b/ : /^(?!.*\bdark\b)/,
 	);
 	await page.waitForFunction(() =>
-		document.documentElement.style
+		getComputedStyle(document.documentElement)
 			.getPropertyValue("--mc-primary")
 			.startsWith("#"),
 	);

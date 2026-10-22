@@ -7,7 +7,7 @@ const POST_PATH = "/posts/markdown-enhancements/";
 async function openPost(page: Page) {
 	await page.goto(POST_PATH, { waitUntil: "domcontentloaded" });
 	await page.waitForFunction(() =>
-		document.documentElement.style
+		getComputedStyle(document.documentElement)
 			.getPropertyValue("--mc-primary")
 			.trim()
 			.startsWith("#"),

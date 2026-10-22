@@ -76,10 +76,13 @@ async function openSitePage(
 		}),
 	);
 	await page.goto(path, { waitUntil: "domcontentloaded" });
-	// 等待主题引擎初始化（HCT 动态配色写入 :root）
+	// 等待配色就绪（默认配色为静态 CSS；非默认配色由 HCT 写入 :root）
 	await page.waitForFunction(() => {
 		const root = document.documentElement;
-		return root.style.getPropertyValue("--mc-primary").trim().startsWith("#");
+		return getComputedStyle(root)
+			.getPropertyValue("--mc-primary")
+			.trim()
+			.startsWith("#");
 	});
 	// 等待 onload-animation 全部收敛（跳过 display:none 元素），防止动画中间帧
 	await page.waitForFunction(

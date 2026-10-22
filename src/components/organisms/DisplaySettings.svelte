@@ -135,7 +135,9 @@ onMount(() => {
 		panelOpened = true;
 		panelObserver.disconnect();
 	});
-	if (panel)
+	if (panel && !panel.classList.contains("float-panel-closed"))
+		panelOpened = true;
+	else if (panel)
 		panelObserver.observe(panel, {
 			attributes: true,
 			attributeFilter: ["class"],
