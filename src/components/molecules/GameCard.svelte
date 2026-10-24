@@ -47,6 +47,12 @@ const statusMeta: Record<
 		bg: "var(--surface-container-highest)",
 		fg: "var(--on-surface-variant)",
 	},
+	paused: {
+		key: I18nKey.gamesStatusPaused,
+		icon: "material-symbols:pause-circle-outline-rounded",
+		bg: "var(--tertiary-container)",
+		fg: "var(--on-tertiary-container)",
+	},
 	wishlist: {
 		key: I18nKey.gamesStatusWishlist,
 		icon: "material-symbols:bookmark-outline-rounded",

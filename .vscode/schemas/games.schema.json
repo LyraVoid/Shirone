@@ -135,6 +135,12 @@
                     "enum": [
                       "backlog"
                     ]
+                  },
+                  {
+                    "type": "string",
+                    "enum": [
+                      "paused"
+                    ]
                   }
                 ],
                 "description": "游玩状态。"

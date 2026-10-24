@@ -10,7 +10,12 @@
 import type { PageMeta } from "./pageMeta.ts";
 
 /** 游玩状态 */
-export type GameStatus = "playing" | "completed" | "backlog" | "wishlist";
+export type GameStatus =
+	| "playing"
+	| "completed"
+	| "backlog"
+	| "paused"
+	| "wishlist";
 
 /** 游戏分类定义（数组顺序即筛选 Chips 渲染顺序） */
 export interface GameCategory {
