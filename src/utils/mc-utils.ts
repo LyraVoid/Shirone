@@ -190,7 +190,6 @@ function buildScheme(
 			return new SchemeRainbow(hct, isDark, 0, spec);
 		case "vibrant":
 			return new SchemeVibrant(hct, isDark, 0, spec);
-		case "tonalSpot":
 		default:
 			return new SchemeTonalSpot(hct, isDark, 0, spec);
 	}

@@ -58,9 +58,9 @@ function onInput(e: Event) {
 function validate(s: string): string {
 	const m = s.match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})$/);
 	if (!m) return "格式应为 YYYY/MM/DD";
-	const y = +m[1],
-		mo = +m[2],
-		d = +m[3];
+	const y = +m[1];
+	const mo = +m[2];
+	const d = +m[3];
 	const [minY = 1900, maxY = new Date().getFullYear()] = yearRange ?? [];
 	if (y < minY || y > maxY) return `年份需在 ${minY}-${maxY} 之间`;
 	if (mo < 1 || mo > 12) return "月份无效";

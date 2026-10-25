@@ -120,7 +120,9 @@ function switchLayoutMode(mode: AnimeLayoutMode) {
 		/* Ignore local storage access failure */
 	}
 	requestAnimationFrame(() => {
-		cards.forEach((card, index) => flipFromRect(card, before[index], 400));
+		cards.forEach((card, index) => {
+			flipFromRect(card, before[index], 400);
+		});
 	});
 }
 

@@ -14,6 +14,7 @@
  */
 
 import { createHash } from "node:crypto";
+import type { Dirent } from "node:fs";
 import { existsSync } from "node:fs";
 import fs from "node:fs/promises";
 import path from "node:path";
@@ -52,7 +53,7 @@ export interface MomentThumbnailOptions {
 }
 
 async function collectImages(directory: string): Promise<string[]> {
-	let entries;
+	let entries: Dirent[];
 	try {
 		entries = await fs.readdir(directory, { withFileTypes: true });
 	} catch {

@@ -22,6 +22,7 @@
  * same behaviour without shipping `scripts/`.
  */
 
+import type { Dirent } from "node:fs";
 import {
 	existsSync,
 	mkdirSync,
@@ -30,7 +31,6 @@ import {
 	renameSync,
 	writeFileSync,
 } from "node:fs";
-import type { Dirent } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, extname, join, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";

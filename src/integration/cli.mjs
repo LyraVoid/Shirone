@@ -147,13 +147,12 @@ async function mergeDirectory(from, to, { force }) {
 				await walk(nextSource, nextTarget);
 				continue;
 			}
-			let saved;
 			if (existsSync(nextTarget) && !force) {
 				kept += 1;
 				continue;
 			}
 			if (existsSync(nextTarget) && force) {
-				saved = await backup(relative(CWD, nextTarget));
+				await backup(relative(CWD, nextTarget));
 			}
 			await cp(nextSource, nextTarget, { force: true });
 			added += 1;

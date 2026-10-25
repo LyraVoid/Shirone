@@ -37,7 +37,7 @@ let today = $state("");
 const weekStart = $derived(getLocaleWeekStart(locale));
 
 function init() {
-	const d = value ? new Date(value + "T00:00:00") : new Date();
+	const d = value ? new Date(`${value}T00:00:00`) : new Date();
 	if (!Number.isNaN(d.getTime())) {
 		viewYear = d.getFullYear();
 		viewMonth = d.getMonth();
