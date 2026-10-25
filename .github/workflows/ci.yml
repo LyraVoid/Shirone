@@ -54,24 +54,26 @@ jobs:
             head="$CURRENT_SHA"
           fi
 
-          changed_files=$(git diff --name-only "$base" "$head")
+          changed_files=$(git diff --name-only --no-renames "$base" "$head")
           comments=false
           styles=false
 
-          # Package-manager-only and documentation-only changes still run the
-          # always-on install, diagnostics and production builds.
+          # Dependency manifests can change browser/runtime behavior, so they
+          # are included below. Documentation-only changes keep the fast path.
           while IFS= read -r path; do
             case "$path" in
-              src/*|tests/site/*|scripts/*|public/*|*.config.*|.github/workflows/*|.github/actions/*)
+              package.json|pnpm-lock.yaml|pnpm-workspace.yaml|src/*|tests/site/*|scripts/*|public/*|*.config.*|.github/workflows/*|.github/actions/*)
                 comments=true
                 styles=true
                 ;;
-              tests/*)
+              # Comment suites also consume fixtures outside tests/site/.
+              tests/fixtures/*)
                 comments=true
                 ;;
             esac
           done <<< "$changed_files"
 
+          printf 'Selected browser suites: comments=%s, styles=%s\n' "$comments" "$styles"
           echo "comments=$comments" >> "$GITHUB_OUTPUT"
           echo "styles=$styles" >> "$GITHUB_OUTPUT"
 
@@ -244,6 +246,7 @@ jobs:
     # Keep the required check name stable for branch protection.
     name: Comment regressions
     runs-on: ubuntu-24.04
+    timeout-minutes: 5
     needs: [changes, comment-tests]
     if: always()
     steps:
@@ -255,6 +258,10 @@ jobs:
         run: |
           if [[ "$CHANGES_RESULT" != "success" ]]; then
             echo "::error::Changed-path detection did not succeed ($CHANGES_RESULT)."
+            exit 1
+          fi
+          if [[ "$SHOULD_RUN" != "true" && "$SHOULD_RUN" != "false" ]]; then
+            echo "::error::Changed-path detection produced an invalid comments value."
             exit 1
           fi
           if [[ "$SHOULD_RUN" == "true" && "$TEST_RESULT" != "success" ]]; then
@@ -277,6 +284,12 @@ jobs:
         if: needs.changes.result != 'success'
         run: |
           echo "::error::Changed-path detection did not succeed (${{ needs.changes.result }})."
+          exit 1
+
+      - name: Fail if changed-path detection output is invalid
+        if: needs.changes.result == 'success' && needs.changes.outputs.styles != 'true' && needs.changes.outputs.styles != 'false'
+        run: |
+          echo "::error::Changed-path detection produced an invalid styles value."
           exit 1
 
       - name: Skip style regressions for unrelated changes
