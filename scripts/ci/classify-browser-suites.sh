@@ -24,15 +24,27 @@ fi
 
 comments=false
 styles=false
+select_both_suites() {
+  comments=true
+  styles=true
+}
+
 while IFS= read -r -d '' path; do
   case "$path" in
-    package.json|pnpm-lock.yaml|pnpm-workspace.yaml|.npmrc|tsconfig*.json|src/*|tests/site/*|scripts/*|public/*|*.config.*|.github/workflows/*|.github/actions/*)
-      comments=true
-      styles=true
-      ;;
-    # Comment suites also consume fixtures outside tests/site/.
+    # Comment suites also consume fixtures outside tests/site/; keep this before docs/config patterns.
     tests/fixtures/*)
       comments=true
+      ;;
+    # Known source, dependency, and runtime/build configuration paths.
+    package.json|pnpm-lock.yaml|pnpm-workspace.yaml|.npmrc|tsconfig*.json|biome.json|pagefind.yml|frontmatter.json|vercel.json|lighthouserc.cjs|astro.config.*|svelte.config.*|playwright.config.*|src/*|tests/site/*|scripts/*|public/*|.github/workflows/*|.github/actions/*)
+      select_both_suites
+      ;;
+    # Only explicit documentation and unit-test files are safe browser-suite fast paths.
+    docs/*|*.md|*.mdx|tests/*.test.mjs|tests/*/*.test.mjs)
+      ;;
+    # Unknown paths fail closed: a new config or runtime surface runs both suites.
+    *)
+      select_both_suites
       ;;
   esac
 done < "$changed_paths_file"
