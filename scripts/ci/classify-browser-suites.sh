@@ -36,7 +36,7 @@ while IFS= read -r -d '' path; do
       comments=true
       ;;
     # Known source, dependency, and runtime/build configuration paths.
-    package.json|pnpm-lock.yaml|pnpm-workspace.yaml|.npmrc|tsconfig*.json|biome.json|pagefind.yml|frontmatter.json|vercel.json|lighthouserc.cjs|astro.config.*|svelte.config.*|playwright.config.*|src/*|tests/site/*|scripts/*|public/*|.github/workflows/*|.github/actions/*)
+    package.json|pnpm-lock.yaml|pnpm-workspace.yaml|.npmrc|tsconfig*.json|biome.json|pagefind.yml|frontmatter.json|shirone.content.example.json|vercel.json|lighthouserc.cjs|astro.config.*|svelte.config.*|playwright.config.*|src/*|tests/site/*|scripts/*|public/*|.github/workflows/*|.github/actions/*)
       select_both_suites
       ;;
     # Only explicit documentation and unit-test files are safe browser-suite fast paths.
