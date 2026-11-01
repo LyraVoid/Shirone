@@ -1,8 +1,31 @@
 import AxeBuilder from "@axe-core/playwright";
+import { readFileSync } from "node:fs";
 import { expect, test } from "@playwright/test";
 
 const POST_PATH = "/posts/markdown-extended/";
 const DEMO_PATH = "/posts/markdown-mermaid/";
+
+const mermaidRuntimeSource = readFileSync(
+	new URL("../../src/utils/mermaid.ts", import.meta.url),
+	"utf8",
+);
+
+test("pins Mermaid 12 to the established dagre layout and classic look", () => {
+	const initializeStart = mermaidRuntimeSource.indexOf("mermaid.initialize({");
+	const initializeEnd = mermaidRuntimeSource.indexOf(
+		"\n\t\t});",
+		initializeStart,
+	);
+	const initializeOptions = mermaidRuntimeSource.slice(
+		initializeStart,
+		initializeEnd,
+	);
+
+	expect(initializeStart).toBeGreaterThanOrEqual(0);
+	expect(initializeEnd).toBeGreaterThan(initializeStart);
+	expect(initializeOptions).toContain('layout: "dagre"');
+	expect(initializeOptions).toContain('look: "classic"');
+});
 
 async function waitForViewer(page: import("@playwright/test").Page) {
 	const diagram = page.locator(".markdown-mermaid").first();

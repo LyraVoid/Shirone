@@ -445,6 +445,9 @@ async function renderDiagrams() {
 			startOnLoad: false,
 			securityLevel: "strict",
 			suppressErrorRendering: true,
+			// Mermaid 12 changed its defaults; keep the established diagram layout and look.
+			layout: "dagre",
+			look: "classic",
 			theme: "base",
 			themeVariables,
 		});
