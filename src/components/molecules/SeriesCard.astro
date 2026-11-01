@@ -53,10 +53,6 @@ if (context.next) {
 		index: context.index + 1,
 	});
 }
-const directionLabel = {
-	prev: I18nKey.seriesPrevInSeries,
-	next: I18nKey.seriesNextInSeries,
-} as const;
 ---
 
 <section
@@ -105,7 +101,6 @@ const directionLabel = {
 					<a
 						class={`series-card__row series-card__row--${neighbour.direction} m3-state-layer`}
 						href={neighbour.ref.url ?? getPostUrlBySlug(neighbour.ref.slug)}
-						aria-label={`${i18n(directionLabel[neighbour.direction])}: ${neighbour.ref.title}`}
 					>
 						{neighbour.direction === "prev" && (
 							<Icon
@@ -118,6 +113,13 @@ const directionLabel = {
 							<span class="series-card__row-meta">
 								{partLabel(neighbour.index)}
 							</span>
+						</span>
+						<span class="sr-only">
+							{i18n(
+								neighbour.direction === "prev"
+									? I18nKey.seriesPrevInSeries
+									: I18nKey.seriesNextInSeries,
+							)}
 						</span>
 						{neighbour.direction === "next" && (
 							<Icon

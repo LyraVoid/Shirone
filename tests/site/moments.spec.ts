@@ -117,7 +117,7 @@ test.describe("动态页", () => {
 		const focused = await page.evaluate(() =>
 			document.activeElement?.getAttribute("aria-label"),
 		);
-		expect(focused).toBe("Open image 1");
+		expect(focused).toBe("Open image 1: Lovely girl wallpaper one");
 	});
 
 	test("多图切换期间保持主舞台和卡片布局稳定", async ({ page }) => {

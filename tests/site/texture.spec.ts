@@ -68,11 +68,10 @@ test.describe("M3E Ambient Texture & Pattern System", () => {
 	test("04. 纹理浓度透明度调节与 CSS 变量实时联动", async ({ page }) => {
 		await page.goto("/", { waitUntil: "domcontentloaded" });
 
-		await page.evaluate(() => {
+		await page.evaluate(async () => {
 			// @ts-expect-error dynamic import in browser
-			import("/src/utils/setting-utils.ts").then((mod) => {
-				mod.setTextureOpacity(0.2);
-			});
+			const mod = await import("/src/utils/setting-utils.ts");
+			mod.setTextureOpacity(0.2);
 		});
 
 		const opacityStyle = await page.evaluate(() =>

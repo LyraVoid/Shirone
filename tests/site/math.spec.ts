@@ -78,13 +78,17 @@ for (const navigation of ["direct", "swup"]) {
 			expect(bounds?.width).toBeGreaterThan(10);
 			expect(bounds?.height).toBeGreaterThan(10);
 		}
-		await expect(fixture.locator(".vbox")).toHaveCount(2);
-		for (const negation of await fixture.locator(".vbox").all()) {
+		// KaTeX 0.18 prefixes these generated box classes with `katex-`.
+		await expect(fixture.locator(".katex-vbox")).toHaveCount(2);
+		for (const negation of await fixture.locator(".katex-vbox").all()) {
 			await expect(negation).toHaveCSS("display", "inline-flex");
-			await expect(negation.locator(".thinbox")).toHaveCSS("width", "0px");
+			await expect(negation.locator(".katex-thinbox")).toHaveCSS(
+				"width",
+				"0px",
+			);
 		}
-		await expect(fixture.locator(".overlay")).toHaveCount(3);
-		for (const arrow of await fixture.locator(".overlay").all()) {
+		await expect(fixture.locator(".katex-overlay")).toHaveCount(3);
+		for (const arrow of await fixture.locator(".katex-overlay").all()) {
 			await expect(arrow).toHaveCSS("display", "block");
 		}
 	});

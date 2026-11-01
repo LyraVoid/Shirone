@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { readFileSync } from "node:fs";
 import { resolveAnimeOptions } from "../../src/config/animeConfig.ts";
 import { animeData } from "../../src/data/anime.ts";
 import {
@@ -11,6 +12,24 @@ import {
 import { getAnimeList } from "../../src/utils/anime-data.ts";
 
 test.describe("Anime 数据源与配置解析契约", () => {
+	test("AnimeCard: 无封面外链仍暴露番剧标题", () => {
+		const source = readFileSync(
+			new URL(
+				"../../src/components/molecules/AnimeCard.svelte",
+				import.meta.url,
+			),
+			"utf8",
+		);
+		const linkStart = source.indexOf("\n\t{#if anime.link}\n\t\t<a");
+		const linkEnd = source.indexOf("\n\t{:else}\n\t\t<div", linkStart);
+		const linkBranch = source.slice(linkStart, linkEnd);
+
+		expect(linkStart).toBeGreaterThanOrEqual(0);
+		expect(linkEnd).toBeGreaterThan(linkStart);
+		expect(linkBranch).toContain("{#if !anime.cover}");
+		expect(linkBranch).toContain('<span class="sr-only">{anime.title}</span>');
+	});
+
 	test("resolveAnimeOptions: 默认本地模式与配置安全解析", () => {
 		const defaultResolved = resolveAnimeOptions({
 			enable: true,

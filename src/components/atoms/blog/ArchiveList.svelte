@@ -114,7 +114,7 @@ function toggleGroup(id: string) {
 				<ul class="m3-blog-archive__list">
 					{#each g.items as it (it.href)}
 						<li>
-							<a class="m3-blog-archive__item" href={it.href} aria-label={it.title}>
+							<a class="m3-blog-archive__item" href={it.href}>
 								<span class="m3-blog-archive__date">{it.date}</span>
 								<span class="m3-blog-archive__node" aria-hidden="true"></span>
 								<span class="m3-blog-archive__title">

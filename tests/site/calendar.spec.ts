@@ -120,7 +120,10 @@ test.describe("sidebar calendar widget", () => {
 			.locator(".m3-calendar__day--has-posts")
 			.first();
 		await expect(postDay).toBeVisible();
-		await expect(postDay).toHaveAttribute("aria-label", "2024-05-01，1 篇文章");
+		await expect(postDay).toHaveAttribute(
+			"aria-label",
+			"1, Wednesday, May 1, 2024, 1 post",
+		);
 
 		// 展开：panel 高度 > 0，文章链接出现
 		await postDay.click();
@@ -140,6 +143,18 @@ test.describe("sidebar calendar widget", () => {
 			.locator(".m3-calendar__panel")
 			.evaluate((el) => el.getBoundingClientRect().height);
 		expect(closedHeight).toBeLessThanOrEqual(4); // 顶部 padding 4px 残留
+	});
+
+	test("uses the localized plural post count in day accessible names", async ({
+		page,
+	}) => {
+		await openHome(page);
+		await gotoMonth(page, "August 2026");
+
+		const postDay = calendar(page).getByRole("button", {
+			name: "28, Friday, August 28, 2026, 6 posts",
+		});
+		await expect(postDay).toBeVisible();
 	});
 
 	test("reduced motion toggles instantly", async ({ page }) => {

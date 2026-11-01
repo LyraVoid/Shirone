@@ -89,6 +89,14 @@ const monthTitle = $derived(
 		new Date(viewYear, viewMonth, 1),
 	),
 );
+const dateLabelFormatter = $derived(
+	new Intl.DateTimeFormat(locale, { dateStyle: "full" }),
+);
+
+function formatDateLabel(iso: string): string {
+	// Keep the visible day number in the localized accessible name.
+	return dateLabelFormatter.format(new Date(`${iso}T00:00:00`));
+}
 
 function prevMonth() {
 	if (viewMonth === 0) {
@@ -136,7 +144,7 @@ function select(iso: string) {
                     class:m3-date-picker__day--selected={value === cell.iso}
                     class:m3-date-picker__day--today={today === cell.iso}
                     aria-pressed={value === cell.iso}
-                    aria-label={cell.iso}
+                    aria-label={formatDateLabel(cell.iso)}
                     onclick={() => select(cell.iso)}
                 >
                     {cell.day}

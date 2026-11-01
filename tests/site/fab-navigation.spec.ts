@@ -118,9 +118,21 @@ test.describe("FAB Navigation System", () => {
 		});
 		await page.setViewportSize({ width: 375, height: 667 });
 		await page.goto("/posts/guide/", { waitUntil: "networkidle" });
-		await page.evaluate(() => window.scrollTo(0, 800));
-		await page.evaluate(() => window.scrollBy(0, -120));
 		const controls = page.locator("#floating-controls");
+		await page.evaluate(() => window.scrollTo(0, 800));
+		await page.waitForFunction(() =>
+			document
+				.getElementById("floating-controls")
+				?.classList.contains("fab-scroll-hidden"),
+		);
+		await page.evaluate(() => window.scrollBy(0, -120));
+		await page.waitForFunction(
+			() =>
+				window.scrollY < 800 &&
+				!document
+					.getElementById("floating-controls")
+					?.classList.contains("fab-scroll-hidden"),
+		);
 		await expect(controls).not.toHaveClass(/fab-scroll-hidden/);
 
 		await page.evaluate(() => {
