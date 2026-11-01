@@ -7,6 +7,7 @@ import {
 	unlinkSync,
 	writeFileSync,
 } from "node:fs";
+import { createRequire } from "node:module";
 import { join, relative } from "node:path";
 import { pathToFileURL } from "node:url";
 import type { ResolvedShironesPaths } from "../types.ts";
@@ -117,6 +118,17 @@ function overlayEsbuildPlugin(
 					return undefined;
 				},
 			);
+
+			// rehype-katex@7 still declares KaTeX ^0.16. Workspace overrides do
+			// not reach npm consumers, so all
+			// renderer imports must use the theme's direct KaTeX dependency — the
+			// same package that supplies the page stylesheet.
+			const themeRequire = createRequire(
+				join(paths.packageRoot, "package.json"),
+			);
+			build.onResolve({ filter: /^katex$/ }, () => ({
+				path: themeRequire.resolve("katex"),
+			}));
 
 			// Relative imports: resolve, then apply user overrides.
 			//

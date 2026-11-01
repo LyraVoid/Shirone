@@ -99,6 +99,14 @@ CSS file, so it resolves to the theme's own `src/` in both modes.
   dynamic `import()` outside the bundle) must be a **peer** dependency, because
   pnpm's strict layout hides the theme's own copy from the project root.
 
+**KaTeX is version-coupled.** The theme imports `katex/dist/katex.css` directly,
+while `rehype-katex@7` declares KaTeX `^0.16.0`.
+The workspace override is not published, so package-mode's `loadPackageModule`
+bundler resolves every renderer import from the theme's direct `katex`
+dependency. Keep the stylesheet on that same dependency and retain
+`tests/plugins/markdown/katex-package-mode.test.mjs`; a clean consumer install
+must not split renderer and CSS versions.
+
 ### Every relative import used by the copied CLI must be in the package archive
 
 The package publisher copies the CLI rather than bundling it. A relative import
