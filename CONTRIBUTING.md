@@ -16,7 +16,7 @@ Changes that only replace the demo profile, posts, links, or artwork for one per
 
 ## Local Development
 
-You will need Node.js 22.12 or newer and pnpm 11.x. The repository currently pins `pnpm@11.28.2`.
+You will need Node.js 22.23.4 or newer and pnpm 11.x. The repository currently pins `pnpm@11.28.2`.
 
 ```bash
 git clone https://github.com/<your-name>/Shirone.git

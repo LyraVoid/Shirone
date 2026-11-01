@@ -12,8 +12,8 @@ A calm reading space for long-form writing, personal collections, and the small 
 
 [English](./README.md) · [简体中文](./README.zh-CN.md) · [繁體中文](./README.zh-TW.md) · [日本語](./README.ja.md)
 
-![Node.js >= 22.12](https://img.shields.io/badge/Node.js-%3E%3D22.12-5FA04E?logo=nodedotjs&logoColor=white)
-![pnpm 9](https://img.shields.io/badge/pnpm-9-F69220?logo=pnpm&logoColor=white)
+![Node.js >= 22.23.4](https://img.shields.io/badge/Node.js-%3E%3D22.23.4-5FA04E?logo=nodedotjs&logoColor=white)
+![pnpm 11](https://img.shields.io/badge/pnpm-11-F69220?logo=pnpm&logoColor=white)
 ![Astro 7](https://img.shields.io/badge/Astro-7-BC52EE?logo=astro&logoColor=white)
 [![License: MIT](https://img.shields.io/badge/License-MIT-3DA639.svg)](./LICENSE)
 
@@ -80,7 +80,7 @@ repository and updates the theme with `pnpm add shirones@latest`.
 
 ### Requirements
 
-- [Node.js](https://nodejs.org/) 22.12 or newer
+- [Node.js](https://nodejs.org/) 22.23.4 or newer
 - [pnpm](https://pnpm.io/) 11.x (the repository pins `pnpm@11.28.2`)
 
 ### Run locally

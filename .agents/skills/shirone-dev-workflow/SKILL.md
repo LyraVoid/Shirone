@@ -16,7 +16,7 @@ Shirone 是 Astro 7 + Svelte 5 + Tailwind 4 + Stylus + pnpm 的 M3E 博客主题
 ## 环境要点
 
 - Windows PowerShell 禁脚本执行:一律使用 `pnpm.cmd` / `npx.cmd` / `npm.cmd` 后缀。
-- 包管理器锁定 pnpm(`preinstall` 强制),Node >= 22.12。
+- 包管理器锁定 pnpm(`preinstall` 强制),Node >= 22.23.4。
 - 开发服务器:`pnpm.cmd astro dev --port 4321`(`pnpm.cmd dev` 会先跑图标/缩略图生成)。
 
 ## 提交前验证门禁
