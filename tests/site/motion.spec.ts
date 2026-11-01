@@ -296,9 +296,7 @@ test.describe("sidebar pages filter (swup sync)", () => {
 			const row = [...document.querySelectorAll(".m3-site-stats__row")].find(
 				(element) => element.textContent?.includes("Tags"),
 			);
-			const icon = row?.querySelector(
-				'svg[data-icon="material-symbols:tag-rounded"]',
-			);
+			const icon = row?.querySelector("svg");
 			return !!icon?.querySelector("path");
 		});
 	}

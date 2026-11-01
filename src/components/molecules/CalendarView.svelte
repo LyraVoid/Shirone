@@ -8,6 +8,7 @@
  */
 import IconButton from "@components/atoms/action/IconButton.svelte";
 import type { CalendarPost } from "@utils/calendar-data";
+import { createGregorianDateFormatter } from "@utils/locale-utils";
 import { collapse, reveal } from "@utils/motion";
 
 interface Props {
@@ -43,13 +44,14 @@ let month = $state(today.getMonth());
 let selectedDate = $state<string | null>(null);
 
 const monthTitle = $derived(
-	new Intl.DateTimeFormat(locale, { year: "numeric", month: "long" }).format(
-		new Date(year, month, 1),
-	),
+	createGregorianDateFormatter(locale, {
+		year: "numeric",
+		month: "long",
+	}).format(new Date(year, month, 1)),
 );
 
 const dateLabelFormatter = $derived(
-	new Intl.DateTimeFormat(locale, { dateStyle: "full" }),
+	createGregorianDateFormatter(locale, { dateStyle: "full" }),
 );
 
 function formatDateLabel(key: string): string {
@@ -62,7 +64,7 @@ const weekStartOffset = $derived(startOfWeek === "mon" ? 1 : 0);
 const weekdays = $derived(
 	Array.from({ length: 7 }, (_, i) => {
 		const day = (i + weekStartOffset) % 7;
-		return new Intl.DateTimeFormat(locale, { weekday: "short" }).format(
+		return createGregorianDateFormatter(locale, { weekday: "short" }).format(
 			new Date(2021, 0, 3 + day),
 		);
 	}),

@@ -12,6 +12,7 @@ import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
+import { parse as parseYaml } from "yaml";
 
 const CLASSIFIER = fileURLToPath(
 	new URL("../scripts/ci/classify-browser-suites.sh", import.meta.url),
@@ -19,11 +20,12 @@ const CLASSIFIER = fileURLToPath(
 const WORKFLOW = fileURLToPath(
 	new URL("../.github/workflows/ci.yml", import.meta.url),
 );
+const GUARD = fileURLToPath(
+	new URL("../scripts/ci/classifier-change-guard.sh", import.meta.url),
+);
 const CAN_RUN_BASH_PATH_TESTS =
 	process.platform !== "win32" &&
 	spawnSync("bash", ["--version"], { stdio: "ignore" }).status === 0;
-const WORKFLOW_GUARD_MARKER =
-	'if git diff --quiet "$base" "$head" -- scripts/ci/classify-browser-suites.sh; then';
 
 function git(cwd, ...args) {
 	return execFileSync("git", args, { cwd, encoding: "utf8" }).trim();
@@ -88,62 +90,36 @@ function assertClassification(options, expected) {
 	);
 }
 
-test("workflow forces both browser suites only on a real classifier diff", () => {
-	const workflow = readFileSync(WORKFLOW, "utf8");
-	const guard = workflow.indexOf(WORKFLOW_GUARD_MARKER);
-	const classifierCall = workflow.indexOf(
-		'scripts/ci/classify-browser-suites.sh "$base" "$head" "$GITHUB_OUTPUT"',
+test("workflow invokes the standalone classifier guard before classifying paths", () => {
+	const workflow = parseYaml(readFileSync(WORKFLOW, "utf8"));
+	const classifyStep = workflow.jobs.changes.steps.find(
+		(step) => step.id === "filter",
 	);
+	assert.ok(classifyStep, "changed-path classifier step must exist");
+	const guardCall =
+		'scripts/ci/classifier-change-guard.sh "$base" "$head" "$GITHUB_OUTPUT"';
+	const classifierCall =
+		'scripts/ci/classify-browser-suites.sh "$base" "$head" "$GITHUB_OUTPUT"';
+	const guard = classifyStep.run.indexOf(guardCall);
+	const classifier = classifyStep.run.indexOf(classifierCall);
 	assert.notEqual(
 		guard,
 		-1,
-		"workflow must check the classifier path directly",
+		"workflow must execute the independently tested guard",
 	);
-	assert.ok(
-		guard < classifierCall,
-		"self-change guard must run before the classifier",
-	);
-	const guardBody = workflow.slice(guard, classifierCall);
-	assert.match(guardBody, /comments=true/);
-	assert.match(guardBody, /styles=true/);
-	assert.match(guardBody, /diff_status=\$\?/);
-	assert.match(guardBody, /"\$diff_status" -eq 1/);
-	assert.match(guardBody, /exit "\$diff_status"/);
-	assert.doesNotMatch(guardBody, /if ! git diff/);
+	assert.ok(guard < classifier, "guard must run before the classifier");
 });
-
-function workflowGuardScript() {
-	const workflow = readFileSync(WORKFLOW, "utf8");
-	const start = workflow.indexOf(WORKFLOW_GUARD_MARKER);
-	const end = workflow.indexOf(
-		"\n          # Keep the classifier separately testable",
-		start,
-	);
-	if (start === -1 || end === -1) {
-		throw new Error("Workflow classifier guard block is missing");
-	}
-	return workflow
-		.slice(start, end)
-		.replace(/^ {10}/gm, "")
-		.trimEnd();
-}
 
 function runWorkflowGuard(cwd, base, head, outputFile) {
 	writeFileSync(outputFile, "");
-	const script = `set -euo pipefail\nbase="$1"\nhead="$2"\n${workflowGuardScript()}\n`;
-	const result = spawnSync(
-		"bash",
-		["-c", script, "workflow-guard", base, head],
-		{
-			cwd,
-			encoding: "utf8",
-			env: { ...process.env, GITHUB_OUTPUT: outputFile },
-		},
-	);
+	const result = spawnSync("bash", [GUARD, base, head, outputFile], {
+		cwd,
+		encoding: "utf8",
+	});
 	return { result, output: readFileSync(outputFile, "utf8") };
 }
 
-test("workflow guard distinguishes a classifier diff from a git error", {
+test("classifier guard distinguishes a classifier diff from a git error", {
 	skip: !CAN_RUN_BASH_PATH_TESTS,
 }, () => {
 	const temp = mkdtempSync(join(tmpdir(), "shirone-workflow-guard-"));

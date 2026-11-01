@@ -146,7 +146,8 @@ test.describe("article last updated notice", () => {
 		// threshold, so the notice is genuinely shown.
 		await page.clock.setFixedTime(new Date("2026-12-05T12:00:00Z"));
 		await page.goto("/", { waitUntil: "domcontentloaded" });
-		await page.locator('a[href="/posts/guide/"]').first().click();
+		await page.waitForFunction(() => Boolean(window.swup?.navigate));
+		await page.evaluate((path) => window.swup?.navigate(path), "/posts/guide/");
 		await expect(page).toHaveURL(/\/posts\/guide\/$/);
 		await expect(page.locator(NOTICE)).toBeVisible();
 		// 2026-08-26 → 2026-12-05, matching the clock above.

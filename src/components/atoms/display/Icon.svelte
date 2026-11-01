@@ -56,4 +56,4 @@ function resolveIconName(raw: unknown): string {
 const resolved = $derived(resolveIconName(icon ?? name));
 </script>
 
-<OfflineIcon icon={resolved} {...props} data-icon={resolved} />
+<OfflineIcon icon={resolved} {...props} />
