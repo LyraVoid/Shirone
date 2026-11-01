@@ -11,3 +11,18 @@ export function resolveWeekStart(locale: WeekInfoLocale): number {
 export function getLocaleWeekStart(locale: string): number {
 	return resolveWeekStart(new Intl.Locale(locale));
 }
+
+/**
+ * Create localized date text with the same Gregorian calendar and Latin digits
+ * used by the ISO-backed calendar grid.
+ */
+export function createGregorianDateFormatter(
+	locale: string,
+	options: Intl.DateTimeFormatOptions,
+): Intl.DateTimeFormat {
+	return new Intl.DateTimeFormat(locale, {
+		...options,
+		calendar: "gregory",
+		numberingSystem: "latn",
+	});
+}
