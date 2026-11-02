@@ -5,11 +5,11 @@ import { dirname, join } from "node:path";
 import test from "node:test";
 import { pathToFileURL } from "node:url";
 import { createServer } from "vite";
-import { buildOverrideRegistry } from "../src/integration/resolve/registry.ts";
 import {
 	normalisePath,
 	resolvePaths,
 } from "../src/integration/resolve/paths.ts";
+import { buildOverrideRegistry } from "../src/integration/resolve/registry.ts";
 import { shironesOverlay } from "../src/integration/vite/overlay.ts";
 
 const write = (file, contents) => {
@@ -53,6 +53,13 @@ test("package overlays resolve consistently in Vite client and SSR dev environme
 			packageComponent,
 			'<div class="package-field"></div>\n<style lang="stylus">\n.package-field\n  color: blue\n</style>\n',
 		);
+		const packageAnimeCard = join(
+			packageSrc,
+			"components",
+			"molecules",
+			"AnimeCard.astro",
+		);
+		write(packageAnimeCard, "<article>package card</article>\n");
 
 		const userConfig = join(projectRoot, "shirones", "config", "siteConfig.ts");
 		write(userConfig, 'export const siteConfig = { lang: "zh_CN" };\n');
@@ -70,6 +77,13 @@ test("package overlays resolve consistently in Vite client and SSR dev environme
 				'<style lang="stylus">\n@import "../../../styles/shared.styl"\n' +
 				".user-field\n  color: green\n</style>\n",
 		);
+		const explicitUserComponent = join(
+			projectRoot,
+			"src",
+			"overrides",
+			"AnimeCard.astro",
+		);
+		write(explicitUserComponent, "<article>user card</article>\n");
 		const importer = join(
 			packageSrc,
 			"components",
@@ -89,6 +103,21 @@ test("package overlays resolve consistently in Vite client and SSR dev environme
 			pathToFileURL(join(themeRoot, "src", "integration", "index.ts")).href,
 		);
 		const registryRef = buildOverrideRegistry(paths);
+		const explicitComponentOverlay = shironesOverlay({
+			paths,
+			components: {
+				"molecules/AnimeCard": "src/overrides/AnimeCard.astro",
+			},
+			registryRef,
+		});
+		const resolvedExplicitComponent =
+			await explicitComponentOverlay.resolveId.call({}, packageAnimeCard);
+		assert.equal(
+			normalisePath(resolvedExplicitComponent ?? ""),
+			normalisePath(explicitUserComponent),
+			"uppercase explicit component key should match the package component on Windows",
+		);
+
 		const overlay = shironesOverlay({ paths, registryRef });
 		server = await createServer({
 			configFile: false,

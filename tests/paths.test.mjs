@@ -178,6 +178,21 @@ test("normalises Vite filesystem IDs and Windows drive paths", () => {
 	);
 });
 
+test("normalises relative override keys with Windows case-insensitive semantics", () => {
+	assert.equal(
+		normalisePath("molecules/AnimeCard", { caseInsensitive: true }),
+		"molecules/animecard",
+	);
+	assert.equal(
+		normalisePath("molecules/animecard", { caseInsensitive: true }),
+		"molecules/animecard",
+	);
+	assert.equal(
+		normalisePath("molecules/AnimeCard", { caseInsensitive: false }),
+		"molecules/AnimeCard",
+	);
+});
+
 // ── The gate that used to misfire for a linked install ──────────────────────
 import { prebundleCandidates } from "../src/integration/index.ts";
 

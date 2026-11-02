@@ -146,11 +146,20 @@ export function resolvePaths(
  * Vite can expose a Windows drive URL as `/@fs/D:/...` (or `/D:/...`), while
  * `paths.packageSrc` is a native `D:/...` path. Strip those URL-only prefixes
  * and fold Windows path casing because the underlying filesystem is
- * case-insensitive.
+ * case-insensitive. On Windows, relative override keys are folded too, so they
+ * compare consistently with keys derived from normalised absolute module IDs.
+ * The option lets tests exercise Windows semantics on any host.
  */
-export function normalisePath(value: string): string {
+export function normalisePath(
+	value: string,
+	options: { caseInsensitive?: boolean } = {},
+): string {
 	const withoutFsPrefix = value.replace(/\\/g, "/").replace(/^\/@fs(?=\/)/, "");
 	const withoutDriveRoot = withoutFsPrefix.replace(/^\/([a-z]:\/)/i, "$1");
 	const trimmed = withoutDriveRoot.replace(/\/+$/, "");
-	return /^[a-z]:(?:$|\/)/i.test(trimmed) ? trimmed.toLowerCase() : trimmed;
+	const caseInsensitive =
+		options.caseInsensitive ?? process.platform === "win32";
+	return caseInsensitive || /^[a-z]:(?:$|\/)/i.test(trimmed)
+		? trimmed.toLowerCase()
+		: trimmed;
 }
