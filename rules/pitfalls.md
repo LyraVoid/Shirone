@@ -620,9 +620,11 @@ snapshotPathTemplate: "{snapshotDir}/{testFileDir}/{testFileName}-snapshots/{arg
 里写 `const bad: number = "x"`、在 `.astro` 里写
 `<Icon icon={123} notARealProp="x" />`，`astro check` 都仍是 0 errors。
 
-**现状与门禁**：仓库将 `svelte-check@4.7.6` 固定为 devDependency；CI 用
-`pnpm exec svelte-check --tsconfig ./tsconfig.json --threshold error`，并以错误阈值
-作为阻塞检查。不要改回未固定的 `pnpm dlx`：那会临时联网解析工具版本，且锁文件无法
+**现状与门禁**：仓库将 `svelte-check` 固定为 devDependency（当前 4.7.7）；CI 用
+`pnpm exec svelte-check --tsconfig ./tsconfig.json`，默认阈值就是 error，只有错误会让
+它非零退出。不要再加 `--threshold error`：4.7.7 搭配 TypeScript 6 时该参数会直接抛
+`Debug Failure. False expression: parameter should have errors when reporting errors`，
+与代码无关。不要改回未固定的 `pnpm dlx`：那会临时联网解析工具版本，且锁文件无法
 复现它。
 
 **判断**：改 `.svelte` 或 `.svelte.d.ts` 时，`astro check` 通过**不构成**类型验证证据；

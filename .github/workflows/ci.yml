@@ -120,7 +120,7 @@ jobs:
         run: pnpm exec astro check
 
       - name: Check Svelte diagnostics
-        run: pnpm exec svelte-check --tsconfig ./tsconfig.json --threshold error
+        run: pnpm exec svelte-check --tsconfig ./tsconfig.json
 
       - name: Validate atom manifest
         run: pnpm check:manifest
