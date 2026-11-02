@@ -1,0 +1,10 @@
+# Swup container fixture. `CONTENT_DIR=tests/fixtures/content/no-toc pnpm content:sync`
+# compiles it into src/user/user-config.ts, the same path a content repository takes.
+# The sidebar override replaces the default components array wholesale (arrays are
+# not merged item-by-item), which turns the TOC widget off — the configuration where
+# the layout's fallback `#toc` container is the only thing keeping Swup navigation
+# from degrading into full page loads.
+components:
+  - type: profile
+    enable: true
+    slot: top

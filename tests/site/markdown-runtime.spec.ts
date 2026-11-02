@@ -769,6 +769,11 @@ test.describe("Markdown syntax runtime loading", () => {
 			page.locator('style[data-swup-optional="image-presentations"]'),
 		).toHaveCount(1);
 		await expect(imagePresentation).toHaveCSS("margin-top", "24px");
+		const captions = page.locator(".markdown-image-caption");
+		await expect(captions).toHaveCount(2);
+		for (const caption of await captions.all()) {
+			await expect(caption).toHaveCSS("text-align", "center");
+		}
 
 		await page.evaluate(
 			(path) => window.swup?.navigate(path),

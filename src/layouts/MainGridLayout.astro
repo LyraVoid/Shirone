@@ -17,7 +17,7 @@ import {
 	isDualColumn,
 } from "@utils/responsive-utils";
 import type { MarkdownHeading } from "astro";
-import { contextMenuConfig } from "@/config";
+import { contextMenuConfig, sidebarConfig } from "@/config";
 import type { SidebarPage } from "@/types/sidebarConfig";
 import Layout from "./Layout.astro";
 
@@ -61,6 +61,27 @@ const sidebarClasses = generatePrimarySidebarClasses(sidebarResponsive);
 const secondarySidebarClasses =
 	generateSecondarySidebarClasses(sidebarResponsive);
 const mainContentClasses = generateMainContentClasses(sidebarResponsive);
+
+// Swup container fallback: `containers` declares ["main", "#toc"], but `#toc`
+// is emitted only by the TOC sidebar widget (enabled by default; its `pages`
+// filter merely hides wrappers per page — they still carry `#toc` in the
+// DOM). When it is missing, Swup reports a container mismatch and every
+// in-site navigation falls back to a full page load.
+//
+// Whether the widget can provide `#toc` mirrors SideBar's own render path:
+// the sidebar master switch must be on, and the widget must reach a rendered
+// column — the primary instance always renders it, while a secondary-column
+// widget needs the dual arrangement (the primary instance filters it out,
+// and the secondary instance is not rendered at all under "single").
+// Otherwise render one inert fallback container here.
+const tocWidget = sidebarConfig.components.find(
+	(widget) => widget.type === "toc" && widget.enable,
+);
+const hasTocWidget =
+	sidebarConfig.enable &&
+	tocWidget !== undefined &&
+	((tocWidget.column ?? "primary") === "primary" ||
+		isDualColumn(sidebarResponsive));
 ---
 
 <Layout title={title} banner={banner} ogImage={ogImage} description={description} lang={lang} setOGTypeArticle={setOGTypeArticle} page={page}>
@@ -110,6 +131,10 @@ const mainContentClasses = generateMainContentClasses(sidebarResponsive);
                     </div>
                 </main>
             </div>
+
+            {!hasTocWidget && (
+                <div id="toc" hidden aria-hidden="true" data-swup-toc-fallback></div>
+            )}
 
             <div class="footer col-span-2 onload-animation block lg:hidden">
                 <Footer></Footer>

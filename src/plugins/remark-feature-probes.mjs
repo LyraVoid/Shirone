@@ -4,6 +4,7 @@ import { getAcFunEmbedData } from "./markdown/core/acfun.mjs";
 import { getArtPlayerEmbedData } from "./markdown/core/artplayer.mjs";
 import { getAudioReaderEmbedData } from "./markdown/core/audio-reader.mjs";
 import { getBilibiliEmbedData } from "./markdown/core/bilibili.mjs";
+import { isImageOnOwnLine } from "./markdown/core/image-line.mjs";
 import { getYouTubeEmbedData } from "./markdown/core/youtube.mjs";
 
 const IMAGE_PRESENTATION_WIDTH_TOKEN = /(?:^|\s)w-(?:[1-9]\d?|100)%(?=\s|$)/;
@@ -24,7 +25,7 @@ export function remarkFeatureProbes() {
 		const syntaxes = new Set();
 		if (tree.data?.shironeIncludes) syntaxes.add("include");
 
-		visit(tree, (node, _index, parent) => {
+		visit(tree, (node, index, parent) => {
 			if (node.type === "math" || node.type === "inlineMath") {
 				syntaxes.add("math");
 			}
@@ -132,7 +133,7 @@ export function remarkFeatureProbes() {
 			if (
 				node.type === "image" &&
 				parent?.type === "paragraph" &&
-				parent.children.length === 1 &&
+				isImageOnOwnLine(parent.children, index) &&
 				(Boolean(node.title?.trim()) ||
 					IMAGE_PRESENTATION_WIDTH_TOKEN.test(node.alt ?? ""))
 			) {

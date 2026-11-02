@@ -17,6 +17,7 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 import type { Plugin } from "vite";
+import { normalisePath } from "../../resolve/paths.ts";
 import type { ResolvedShironesPaths } from "../../types.ts";
 import {
 	generateIconCollections,
@@ -106,10 +107,15 @@ export function shironesIconRegeneration(
 		// the bare specifier, because which one shows up depends on how the
 		// theme is being consumed.
 		resolveId(source) {
+			// Same separator hazard as the hot-update guard below: Vite hands
+			// paths through with posix separators on every platform, while the
+			// derived copies keep the platform separator. Compare normalized or
+			// the redirect silently misses on Windows.
+			const requested = normalisePath(source);
 			if (
-				source !== ICON_COLLECTIONS_SPECIFIER &&
-				source !== withoutExtension(userCopy) &&
-				source !== withoutExtension(packageCopy)
+				requested !== normalisePath(ICON_COLLECTIONS_SPECIFIER) &&
+				requested !== normalisePath(withoutExtension(userCopy)) &&
+				requested !== normalisePath(withoutExtension(packageCopy))
 			) {
 				return null;
 			}
@@ -122,8 +128,12 @@ export function shironesIconRegeneration(
 
 		handleHotUpdate({ file }) {
 			// Writing the output re-triggers this handler; regenerating again
-			// would loop.
-			if (file === userCopy) return;
+			// would loop. Vite hands `file` through with posix separators on
+			// every platform, while `userCopy` keeps the platform separator, so
+			// a bare `===` never matches on Windows: every write re-entered the
+			// handler and re-ran the generator in a self-sustaining loop, with
+			// one full page reload per write.
+			if (normalisePath(file) === normalisePath(userCopy)) return;
 			if (!SOURCE_EXTENSIONS.test(file)) return;
 
 			clearTimeout(pending.get(paths.projectRoot));

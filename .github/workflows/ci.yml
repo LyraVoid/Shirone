@@ -81,7 +81,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: 22
+          node-version: 26.13.0
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
 
@@ -112,7 +112,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: 22
+          node-version: 26.13.0
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
 
@@ -123,7 +123,7 @@ jobs:
         run: pnpm exec astro check
 
       - name: Check Svelte diagnostics
-        run: pnpm exec svelte-check --tsconfig ./tsconfig.json --threshold error
+        run: pnpm exec svelte-check --tsconfig ./tsconfig.json
 
       - name: Validate atom manifest
         run: pnpm check:manifest
@@ -150,7 +150,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: 22
+          node-version: 26.13.0
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
 
@@ -167,7 +167,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node: [22, 24]
+        node: [26.13.0]
     env:
       CI: true
 
@@ -203,7 +203,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        mode: [disabled, waline, twikoo]
+        mode: [disabled, waline, twikoo, no-toc]
     env:
       CI: true
 
@@ -220,7 +220,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: 22
+          node-version: 26.13.0
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
 
@@ -228,9 +228,9 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       # Comments are off by default, so this run covers the zero-footprint cases.
-      - name: Run comment, content and a11y regressions with comments disabled
+      - name: Run comment, content, a11y and swup container regressions with comments disabled
         if: matrix.mode == 'disabled'
-        run: pnpm exec playwright test tests/site/comments.spec.ts tests/site/waline.spec.ts tests/site/mdx.spec.ts tests/site/a11y.spec.ts
+        run: pnpm exec playwright test tests/site/comments.spec.ts tests/site/waline.spec.ts tests/site/mdx.spec.ts tests/site/a11y.spec.ts tests/site/swup-navigation.spec.ts
 
       # The fixture enables Waline through the content-repository config overlay;
       # the specs mock its SDK, stylesheet, emoji packs and API.
@@ -254,6 +254,19 @@ jobs:
       - name: Run comment regressions with Twikoo enabled
         if: matrix.mode == 'twikoo'
         run: pnpm exec playwright test tests/site/comments.spec.ts
+
+      # The fixture turns the TOC sidebar widget off, the configuration where
+      # the layout's fallback #toc container is the only thing keeping swup
+      # navigation soft; the spec's default-configuration cases skip there.
+      - name: Enable the no-toc fixture
+        if: matrix.mode == 'no-toc'
+        run: pnpm content:sync
+        env:
+          CONTENT_DIR: tests/fixtures/content/no-toc
+
+      - name: Run swup container regressions with the TOC widget disabled
+        if: matrix.mode == 'no-toc'
+        run: pnpm exec playwright test tests/site/swup-navigation.spec.ts
 
   comments:
     # Keep the required check name stable for branch protection.
@@ -309,7 +322,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
-          node-version: 22
+          node-version: 26.13.0
           cache: pnpm
           cache-dependency-path: pnpm-lock.yaml
 
