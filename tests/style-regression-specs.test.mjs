@@ -38,9 +38,19 @@ test("workflow runs four style shards and retains a stable aggregate check", () 
 		workflow.jobs["style-tests"].steps.at(-1).run,
 		/scripts\/ci\/run-style-regressions\.sh/,
 	);
-	assert.deepEqual(workflow.jobs["comment-tests"].strategy.matrix.mode, [
-		"disabled",
-		"waline",
-		"twikoo",
-	]);
+	// Preserve the core fixtures while allowing focused modes (for example,
+	// `no-toc`) to be added without making this test brittle.
+	const commentModes = workflow.jobs["comment-tests"].strategy.matrix.mode;
+	assert.ok(Array.isArray(commentModes));
+	for (const requiredMode of ["disabled", "waline", "twikoo"]) {
+		assert.ok(
+			commentModes.includes(requiredMode),
+			`comment regression matrix must retain the ${requiredMode} fixture`,
+		);
+	}
+	assert.equal(
+		new Set(commentModes).size,
+		commentModes.length,
+		"comment regression matrix must not repeat a fixture",
+	);
 });

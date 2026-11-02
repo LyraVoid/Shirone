@@ -6,6 +6,7 @@ import test, { after } from "node:test";
 import { pathToFileURL } from "node:url";
 import {
 	detectThemeRepo,
+	fileSystemPathFromUrl,
 	findPackageRoot,
 	normalisePath,
 	resolvePaths,
@@ -143,6 +144,38 @@ test("the repository comparison ignores the trailing slash config.root carries",
 	assert.equal(normalisePath(`${themeRoot}/`), normalisePath(themeRoot));
 	assert.equal(detectThemeRepo(`${themeRoot}/`, themeRoot), true);
 	assert.equal(detectThemeRepo(siteRoot, themeRoot), false);
+});
+
+test("converts file URLs to filesystem paths on Windows and POSIX", () => {
+	const windowsUrl = new URL("file:///D:/Code/My%20Blog/dist/");
+	assert.equal(
+		fileSystemPathFromUrl(windowsUrl, { windows: true }),
+		"D:\\Code\\My Blog\\dist\\",
+	);
+	assert.equal(
+		fileSystemPathFromUrl(windowsUrl, { windows: false }),
+		"/D:/Code/My Blog/dist/",
+	);
+});
+
+test("normalises Vite filesystem IDs and Windows drive paths", () => {
+	assert.equal(
+		normalisePath("/@fs/D:/Users/Example/site/src/"),
+		"d:/users/example/site/src",
+	);
+	assert.equal(
+		normalisePath("/D:/Users/Example/site/src/"),
+		"d:/users/example/site/src",
+	);
+	assert.equal(
+		normalisePath("D:\\Users\\Example\\site\\src\\"),
+		"d:/users/example/site/src",
+	);
+	assert.equal(normalisePath("/D:/"), "d:");
+	assert.equal(
+		normalisePath("/@fs/home/user/site/src/"),
+		"/home/user/site/src",
+	);
 });
 
 // ── The gate that used to misfire for a linked install ──────────────────────
