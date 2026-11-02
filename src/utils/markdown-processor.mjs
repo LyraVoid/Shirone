@@ -37,6 +37,7 @@ import { remarkFields } from "../plugins/markdown/remark-fields.mjs";
 import { remarkIncludes } from "../plugins/markdown/remark-includes.mjs";
 import { remarkMarker } from "../plugins/markdown/remark-marker.mjs";
 import { remarkOptionGroups } from "../plugins/markdown/remark-option-groups.mjs";
+import { remarkRestoreBareDirectives } from "../plugins/markdown/remark-restore-bare-directives.mjs";
 import { remarkYouTube } from "../plugins/markdown/remark-youtube.mjs";
 import { AcFunComponent } from "../plugins/rehype-component-acfun.mjs";
 import { AdmonitionComponent } from "../plugins/rehype-component-admonition.mjs";
@@ -85,6 +86,7 @@ export const siteRemarkPlugins = [
 	remarkReadingTime,
 	remarkExcerpt,
 	remarkDirective,
+	remarkRestoreBareDirectives,
 	remarkAcFun,
 	remarkAudioReader,
 	remarkArtPlayer,
