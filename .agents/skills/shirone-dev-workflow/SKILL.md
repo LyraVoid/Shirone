@@ -5,7 +5,7 @@ description: Daily development workflow for the Shirone Astro blog theme - envir
 
 ## CI 与 Node 测试排查
 
-修改 Markdown、i18n 或 Node 直接加载的测试路径时，先阅读 `docs/ci-and-node-tests.md`。Node 22/24 不能执行运行时 TypeScript `enum`；需要 enum 形状的 key 时使用 `.mjs` 运行时桥接和 `.d.mts` 类型声明。翻译仍必须通过 `i18n()` 和 locale 注册表。
+修改 Markdown、i18n 或 Node 直接加载的测试路径时，先阅读 `docs/ci-and-node-tests.md`。Node 的类型擦除不能执行运行时 TypeScript `enum`；需要 enum 形状的 key 时使用 `.mjs` 运行时桥接和 `.d.mts` 类型声明。翻译仍必须通过 `i18n()` 和 locale 注册表。
 
 将 `node --test "tests/**/*.test.mjs"` 与 `npx.cmd astro check` 串行执行：Astro check 会触发内容同步，可能与 `tests/content/*` 夹具竞争。检查 GitHub 失败时，先用 `gh run view <run-id> --json status,conclusion,headSha,jobs,url` 查看摘要，再用 `gh run view <run-id> --job <job-id> --log-failed` 查看失败日志。
 
@@ -16,7 +16,7 @@ Shirone 是 Astro 7 + Svelte 5 + Tailwind 4 + Stylus + pnpm 的 M3E 博客主题
 ## 环境要点
 
 - Windows PowerShell 禁脚本执行:一律使用 `pnpm.cmd` / `npx.cmd` / `npm.cmd` 后缀。
-- 包管理器锁定 pnpm(`preinstall` 强制),Node >= 22.12。
+- 包管理器锁定 pnpm(`preinstall` 强制),Node >= 26.13.0。
 - 开发服务器:`pnpm.cmd astro dev --port 4321`(`pnpm.cmd dev` 会先跑图标/缩略图生成)。
 
 ## 提交前验证门禁
