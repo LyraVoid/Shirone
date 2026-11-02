@@ -168,6 +168,11 @@ const hasVisibleSticky = stickyWidgets.some(isVisible);
 	.sidebar-widget > *
 		display: block
 		width: 100%
+
+	/* 无内容组件（例如没有任何系列时的系列卡）不参与侧栏排版：
+	   空包装层若留下来，仍会吃掉 flex gap，把上下两张卡片撑开一道空白 */
+	.sidebar-widget:not(:has(*))
+		display: none
 </style>
 
 <script>
