@@ -122,6 +122,47 @@ test("images mixed with inline text are never wrapped in figure", async () => {
 	assert.match(html, /width: 40%;/);
 });
 
+test("renders each image on its own line between paragraphs and in tight lists", async () => {
+	const result = await renderer.render(
+		[
+			`2. First step\n   ![First w-100%](${IMAGE} "First caption")\n3. Next step`,
+			"",
+			`Before\n![Second w-100%](${IMAGE} "Second caption")\n![Third](${IMAGE} "Third caption")\nAfter`,
+		].join("\n"),
+	);
+	assert.deepEqual(result.metadata.frontmatter.markdownSyntaxes.syntaxes, [
+		"image-presentation",
+	]);
+	assert.equal(
+		(result.code.match(/class="markdown-image-caption"/g) ?? []).length,
+		3,
+	);
+	assert.match(
+		result.code,
+		/<li>First step\s*<figure class="markdown-image-figure">/,
+	);
+	assert.match(result.code, /<p>Before\s*<\/p>\s*<figure/);
+	assert.match(
+		result.code,
+		/Third caption<\/figcaption><\/figure>\s*<p>\s*After<\/p>/,
+	);
+	assert.doesNotMatch(result.code, /<p>\s*<figure/);
+});
+
+test("inline images do not acquire captions or presentation styles", async () => {
+	const result = await renderer.render(
+		`Before ![Inline](${IMAGE} "Not a caption") after`,
+	);
+	assert.doesNotMatch(result.code, /markdown-image-figure/);
+	assert.deepEqual(result.metadata.frontmatter.markdownSyntaxes.syntaxes, []);
+
+	const adjacent = await renderer.render(
+		`![First](${IMAGE} "First") ![Second](${IMAGE} "Second")`,
+	);
+	assert.doesNotMatch(adjacent.code, /markdown-image-figure/);
+	assert.deepEqual(adjacent.metadata.frontmatter.markdownSyntaxes.syntaxes, []);
+});
+
 test("enhances raw HTML images with the shared rules", async () => {
 	const html = await render(
 		'<img src="https://i0.hdslb.com/demo.webp" alt="Raw image w-60%" title="Raw caption" class="existing-image" data-credit="Author">',

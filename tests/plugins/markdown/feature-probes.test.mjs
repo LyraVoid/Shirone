@@ -150,6 +150,18 @@ test("records standalone image presentations without matching inline images", as
 	);
 });
 
+test("records image presentations in tight lists and mixed paragraphs", async () => {
+	for (const markdown of [
+		'1. Step\n   ![Example](/example.webp "Caption")',
+		'Text\n![Example](/example.webp "Caption")\nMore text',
+	]) {
+		const result = await renderer.render(markdown);
+		assert.deepEqual(result.metadata.frontmatter.markdownSyntaxes.syntaxes, [
+			"image-presentation",
+		]);
+	}
+});
+
 test("records fenced code blocks for Expressive Code styling", async () => {
 	const code = await renderer.render("```ts\nexport {};\n```");
 	assert.deepEqual(code.metadata.frontmatter.markdownSyntaxes.syntaxes, [

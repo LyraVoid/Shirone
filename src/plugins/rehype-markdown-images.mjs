@@ -2,6 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { fromHtml } from "hast-util-from-html";
 import sharp from "sharp";
+import { isImageOnOwnLine } from "./markdown/core/image-line.mjs";
 
 /**
  * rehype 插件：Markdown 图片通用增强。
@@ -9,7 +10,7 @@ import sharp from "sharp";
  * 语法：`![图片描述 w-50%](图片链接 "图片标题")`
  * - `w-N%`（1~100）写在 alt 文本中，解析后从 alt 移除并作为显示宽度（居中）；
  * - `"图片标题"` 渲染为图片下方的可见图注；
- * - 独立成段的图片在带标题或宽度令牌时包装为 `<figure>`，否则仅补齐
+ * - 独占一行的图片在带标题或宽度令牌时包装为 `<figure>`，否则仅补齐
  *   `loading="lazy"` / `decoding="async"`，不改变既有排版。
  * - 原始 HTML `<img>` 使用同一套规则；匹配配置域名时补充
  *   `referrerpolicy="no-referrer"`。
@@ -253,6 +254,59 @@ async function transformChildren(
 						filePath,
 					),
 				);
+				continue;
+			}
+
+			const children = child.children ?? [];
+			const images = children.map(
+				(node, index) =>
+					node.tagName === "img" &&
+					isImageOnOwnLine(children, index) &&
+					!shouldSkipEnhancement([...ancestors, child], node) &&
+					(Boolean(node.properties?.title?.trim()) ||
+						parseMarkdownImageAlt(node.properties?.alt).width !== undefined),
+			);
+			if (allowFigure && images.some(Boolean)) {
+				let inline = [];
+				for (let index = 0; index < children.length; index++) {
+					const node = children[index];
+					if (!images[index]) {
+						inline.push(node);
+						continue;
+					}
+					if (inline.some((item) => !isWhitespaceText(item))) {
+						const paragraph = { ...child, children: inline };
+						await transformChildren(
+							paragraph,
+							[...ancestors, paragraph],
+							options,
+							filePath,
+							false,
+						);
+						nextChildren.push(paragraph);
+					}
+					inline = [];
+					nextChildren.push(
+						await enhanceImage(
+							node,
+							[...ancestors, child],
+							true,
+							options,
+							filePath,
+						),
+					);
+				}
+				if (inline.some((item) => !isWhitespaceText(item))) {
+					const paragraph = { ...child, children: inline };
+					await transformChildren(
+						paragraph,
+						[...ancestors, paragraph],
+						options,
+						filePath,
+						false,
+					);
+					nextChildren.push(paragraph);
+				}
 				continue;
 			}
 		}

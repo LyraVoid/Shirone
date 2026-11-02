@@ -981,7 +981,10 @@
 					"default": null
 				}
 			],
-			"implementation": ["src/plugins/rehype-markdown-images.mjs"],
+			"implementation": [
+				"src/plugins/rehype-markdown-images.mjs",
+				"src/plugins/markdown/core/image-line.mjs"
+			],
 			"registeredIn": "src/utils/markdown-processor.mjs",
 			"styles": ["src/styles/markdown/image-presentations.css"],
 			"runtime": {
@@ -991,7 +994,9 @@
 			},
 			"docs": ["src/content/posts/spoilers.md", "docs/markdown-extensions.md"],
 			"tests": ["tests/plugins/rehype-markdown-images.test.mjs"],
-			"notes": ["非法或越界宽度令牌保留在 alt，不静默改写。"]
+			"notes": [
+				"图片独占一行时可紧邻正文或连续出现；行内混排图片不生成图注。非法或越界宽度令牌保留在 alt，不静默改写。"
+			]
 		},
 		{
 			"id": "include",
