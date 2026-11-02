@@ -23,6 +23,9 @@ const WORKFLOW = fileURLToPath(
 const GUARD = fileURLToPath(
 	new URL("../scripts/ci/classifier-change-guard.sh", import.meta.url),
 );
+const DETECTOR = fileURLToPath(
+	new URL("../scripts/ci/detect-browser-suites.sh", import.meta.url),
+);
 const CAN_RUN_BASH_PATH_TESTS =
 	process.platform !== "win32" &&
 	spawnSync("bash", ["--version"], { stdio: "ignore" }).status === 0;
@@ -90,24 +93,116 @@ function assertClassification(options, expected) {
 	);
 }
 
-test("workflow invokes the standalone classifier guard before classifying paths", () => {
+test("workflow delegates changed-path outputs to the tested detector", () => {
 	const workflow = parseYaml(readFileSync(WORKFLOW, "utf8"));
 	const classifyStep = workflow.jobs.changes.steps.find(
 		(step) => step.id === "filter",
 	);
 	assert.ok(classifyStep, "changed-path classifier step must exist");
-	const guardCall =
-		'scripts/ci/classifier-change-guard.sh "$base" "$head" "$GITHUB_OUTPUT"';
-	const classifierCall =
-		'scripts/ci/classify-browser-suites.sh "$base" "$head" "$GITHUB_OUTPUT"';
-	const guard = classifyStep.run.indexOf(guardCall);
-	const classifier = classifyStep.run.indexOf(classifierCall);
-	assert.notEqual(
-		guard,
-		-1,
-		"workflow must execute the independently tested guard",
+	assert.ok(
+		classifyStep.run.includes(
+			'scripts/ci/detect-browser-suites.sh "$base" "$head" "$GITHUB_OUTPUT"',
+		),
+		"workflow must invoke the detector that combines the guard and classifier",
 	);
-	assert.ok(guard < classifier, "guard must run before the classifier");
+	assert.doesNotMatch(
+		classifyStep.run,
+		/scripts\/ci\/(?:classifier-change-guard|classify-browser-suites)\.sh/,
+		"workflow must not append either intermediate result directly to GITHUB_OUTPUT",
+	);
+});
+
+function runWorkflowDetector(cwd, detector, base, head, outputFile) {
+	writeFileSync(outputFile, "");
+	const result = spawnSync("bash", [detector, base, head, outputFile], {
+		cwd,
+		encoding: "utf8",
+	});
+	return { result, output: readFileSync(outputFile, "utf8") };
+}
+
+test("workflow detector keeps guard outputs authoritative after the classifier runs", {
+	skip: !CAN_RUN_BASH_PATH_TESTS,
+}, () => {
+	const temp = mkdtempSync(join(tmpdir(), "shirone-workflow-detector-"));
+	const repo = join(temp, "repo");
+	const scriptsDir = join(repo, "scripts", "ci");
+	const output = join(temp, "github-output.txt");
+	mkdirSync(scriptsDir, { recursive: true });
+	try {
+		git(repo, "init", "--quiet");
+		git(repo, "config", "user.name", "CI workflow detector test");
+		git(repo, "config", "user.email", "ci-detector@example.invalid");
+
+		for (const [source, name] of [
+			[GUARD, "classifier-change-guard.sh"],
+			[CLASSIFIER, "classify-browser-suites.sh"],
+			[DETECTOR, "detect-browser-suites.sh"],
+		]) {
+			writeFileSync(join(scriptsDir, name), readFileSync(source), {
+				mode: 0o755,
+			});
+		}
+		const docs = join(repo, "docs", "guide.md");
+		mkdirSync(dirname(docs), { recursive: true });
+		writeFileSync(docs, "baseline\n");
+		git(repo, "add", "--all");
+		git(repo, "commit", "--quiet", "-m", "base");
+		const base = git(repo, "rev-parse", "HEAD");
+
+		// An ordinary docs-only diff should use the classifier's false values.
+		writeFileSync(docs, "documentation change\n");
+		git(repo, "add", "--all");
+		git(repo, "commit", "--quiet", "-m", "docs change");
+		const docsHead = git(repo, "rev-parse", "HEAD");
+		const docsResult = runWorkflowDetector(
+			repo,
+			join(scriptsDir, "detect-browser-suites.sh"),
+			base,
+			docsHead,
+			output,
+		);
+		assert.equal(docsResult.result.status, 0, docsResult.result.stderr);
+		assert.equal(docsResult.output, "comments=false\nstyles=false\n");
+
+		// Simulate a classifier edit that now reports false for its own change.
+		// The guard and classifier both run, but only the guard's true values
+		// should be written to the workflow output file.
+		const classifier = join(scriptsDir, "classify-browser-suites.sh");
+		writeFileSync(
+			classifier,
+			[
+				"#!/usr/bin/env bash",
+				"set -euo pipefail",
+				"printf 'ran\\n' > classifier-ran.txt",
+				"printf 'comments=false\\nstyles=false\\n' >> \"$3\"",
+				"",
+			].join("\n"),
+		);
+		git(repo, "add", "--all");
+		git(repo, "commit", "--quiet", "-m", "classifier change");
+		const classifierHead = git(repo, "rev-parse", "HEAD");
+		const changedClassifier = runWorkflowDetector(
+			repo,
+			join(scriptsDir, "detect-browser-suites.sh"),
+			base,
+			classifierHead,
+			output,
+		);
+		assert.equal(
+			changedClassifier.result.status,
+			0,
+			changedClassifier.result.stderr,
+		);
+		assert.equal(changedClassifier.output, "comments=true\nstyles=true\n");
+		assert.equal(
+			readFileSync(join(repo, "classifier-ran.txt"), "utf8"),
+			"ran\n",
+			"classifier should run into its separate output file before the guard result is chosen",
+		);
+	} finally {
+		rmSync(temp, { recursive: true, force: true });
+	}
 });
 
 function runWorkflowGuard(cwd, base, head, outputFile) {

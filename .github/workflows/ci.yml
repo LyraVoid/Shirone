@@ -54,12 +54,9 @@ jobs:
             head="$CURRENT_SHA"
           fi
 
-          # Guard the classifier independently so a classifier edit cannot classify itself away.
-          scripts/ci/classifier-change-guard.sh "$base" "$head" "$GITHUB_OUTPUT"
-
-          # Keep the classifier separately testable; it reads Git's NUL-delimited
-          # path list without passing it through command substitution.
-          scripts/ci/classify-browser-suites.sh "$base" "$head" "$GITHUB_OUTPUT"
+          # The orchestrator keeps the guard and classifier outputs separate,
+          # then gives the guard precedence if the classifier itself changed.
+          scripts/ci/detect-browser-suites.sh "$base" "$head" "$GITHUB_OUTPUT"
 
   quality:
     name: Code quality
