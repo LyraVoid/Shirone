@@ -35,8 +35,6 @@ export function mountCalendarProbe(target: HTMLElement, locale: string) {
 			backTodayLabel: "Back to today",
 			prevMonthLabel: "Previous month",
 			nextMonthLabel: "Next month",
-			postCountLabel: "post",
-			postsCountLabel: "posts",
 		},
 	});
 }

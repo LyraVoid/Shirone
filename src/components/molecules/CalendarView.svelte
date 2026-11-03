@@ -2,11 +2,13 @@
 /**
  * 月度文章历交互视图（Calendar.astro 的水合岛）。
  * 单月视图 + 切月 + 点击有文日展开当日文章；月/周名称由 Intl
- * 按站点 locale 生成，文章计数短语由 Calendar.astro 注入 i18n 文案。
+ * 按站点 locale 生成，文章计数短语在组件内取 i18n（与侧栏同一来源）。
  * 动效：切月网格 reveal 淡入、文章列表 collapse 展开（motion.ts
  * 原语，reduced-motion 自动瞬切）。
  */
 import IconButton from "@components/atoms/action/IconButton.svelte";
+import I18nKey from "@i18n/i18nKey";
+import { i18n } from "@i18n/translation";
 import type { CalendarPost } from "@utils/calendar-data";
 import { createGregorianDateFormatter } from "@utils/locale-utils";
 import { collapse, reveal } from "@utils/motion";
@@ -22,8 +24,6 @@ interface Props {
 	backTodayLabel: string;
 	prevMonthLabel: string;
 	nextMonthLabel: string;
-	postCountLabel: string;
-	postsCountLabel: string;
 }
 
 let {
@@ -34,8 +34,6 @@ let {
 	backTodayLabel,
 	prevMonthLabel,
 	nextMonthLabel,
-	postCountLabel,
-	postsCountLabel,
 }: Props = $props();
 
 const today = new Date();
@@ -84,8 +82,8 @@ function formatDayAccessibleName(cell: DayCell): string {
 	const parts = [String(cell.day), formatDateLabel(cell.key)];
 	if (cell.posts.length > 0) {
 		const countLabel =
-			cell.posts.length === 1 ? postCountLabel : postsCountLabel;
-		parts.push(`${cell.posts.length} ${countLabel}`);
+			cell.posts.length === 1 ? I18nKey.postCount : I18nKey.postsCount;
+		parts.push(`${cell.posts.length} ${i18n(countLabel)}`);
 	}
 	return parts.join(", ");
 }
