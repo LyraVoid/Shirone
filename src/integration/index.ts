@@ -1,7 +1,7 @@
 import { existsSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, join } from "node:path";
-import { pathToFileURL } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import type { AstroIntegration } from "astro";
 import {
 	expressiveCodeShared,
@@ -142,6 +142,29 @@ function createMusicSidebarPlugin(
 			}
 		},
 	};
+}
+
+/** The subset of Pagefind's index API the build hook uses. */
+interface PagefindIndex {
+	addDirectory(options: { path: string }): Promise<unknown>;
+	writeFiles(options: { outputPath: string }): Promise<unknown>;
+}
+
+/**
+ * Index Astro's build output with Pagefind using native filesystem paths.
+ *
+ * `astro:build:done` receives `dir` as a `file:` URL. Its `pathname` is not a
+ * filesystem path on Windows: `file:///D:/site/` yields `/D:/site/`, which
+ * Pagefind rejects with an invalid-filename error. `fileURLToPath` produces
+ * `D:\site\` instead.
+ */
+export async function indexPagefindOutput(
+	dir: URL,
+	index: PagefindIndex,
+): Promise<void> {
+	const outDir = fileURLToPath(dir);
+	await index.addDirectory({ path: outDir });
+	await index.writeFiles({ outputPath: join(outDir, "pagefind") });
 }
 
 /**
@@ -483,13 +506,11 @@ export function shirones(options: ShironesOptions = {}): AstroIntegration {
 				// (workers, exclusions, ...). Indexing here as well would build
 				// the index twice.
 				if (options.pagefind === false || paths.isThemeRepo) return;
-				const outDir = dir.pathname;
 				try {
 					const pagefind = await import("pagefind");
 					const { index } = await pagefind.createIndex({});
 					if (!index) throw new Error("Pagefind failed to create an index");
-					await index.addDirectory({ path: outDir });
-					await index.writeFiles({ outputPath: join(outDir, "pagefind") });
+					await indexPagefindOutput(dir, index);
 					logger.info("pagefind index generated");
 				} catch (error) {
 					logger.warn(
