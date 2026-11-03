@@ -10,14 +10,22 @@ base="$1"
 head="$2"
 output_file="$3"
 
-if git diff --quiet "$base" "$head" -- scripts/ci/classify-browser-suites.sh; then
+# Every script that decides which suites run is part of the trust chain: an
+# edit to the orchestrator can skip both suites just as an edit to the
+# classifier can.
+protected_scripts=(
+  scripts/ci/classify-browser-suites.sh
+  scripts/ci/detect-browser-suites.sh
+)
+
+if git diff --quiet "$base" "$head" -- "${protected_scripts[@]}"; then
   exit 0
 else
   diff_status=$?
 fi
 
 if [[ "$diff_status" -eq 1 ]]; then
-  echo "::warning::Changed-path classifier changed; forcing both browser suites."
+  echo "::warning::Changed-path classifier or orchestrator changed; forcing both browser suites."
   {
     printf 'comments=true\n'
     printf 'styles=true\n'
@@ -25,5 +33,5 @@ if [[ "$diff_status" -eq 1 ]]; then
   exit 0
 fi
 
-echo "::error::Failed to check whether the changed-path classifier changed (git diff exited $diff_status)."
+echo "::error::Failed to check whether the changed-path classifier or orchestrator changed (git diff exited $diff_status)."
 exit "$diff_status"

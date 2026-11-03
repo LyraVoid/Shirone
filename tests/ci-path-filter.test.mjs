@@ -257,8 +257,35 @@ test("classifier guard distinguishes a classifier diff from a git error", {
 		assert.equal(failed.output, "");
 		assert.match(
 			`${failed.result.stdout}\n${failed.result.stderr}`,
-			/Failed to check whether the changed-path classifier changed/,
+			/Failed to check whether the changed-path classifier or orchestrator changed/,
 		);
+
+		// The orchestrator decides which suites run, so it is part of the same
+		// trust boundary: editing it alone must force both suites too.
+		const detector = join(repo, "scripts", "ci", "detect-browser-suites.sh");
+		writeFileSync(detector, "#!/usr/bin/env bash\n# baseline\n");
+		git(repo, "add", "--all");
+		git(repo, "commit", "--quiet", "-m", "detector baseline");
+		const detectorBase = git(repo, "rev-parse", "HEAD");
+		writeFileSync(detector, "#!/usr/bin/env bash\n# changed\n");
+		git(repo, "add", "--all");
+		git(repo, "commit", "--quiet", "-m", "detector change");
+		const detectorHead = git(repo, "rev-parse", "HEAD");
+		const changedDetector = runWorkflowGuard(
+			repo,
+			detectorBase,
+			detectorHead,
+			output,
+		);
+		assert.equal(
+			changedDetector.result.status,
+			0,
+			changedDetector.result.stderr,
+		);
+		assert.deepEqual(changedDetector.output.trim().split("\n").sort(), [
+			"comments=true",
+			"styles=true",
+		]);
 	} finally {
 		rmSync(temp, { recursive: true, force: true });
 	}
