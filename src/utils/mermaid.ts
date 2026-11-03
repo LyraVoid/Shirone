@@ -1,3 +1,4 @@
+import { createMermaidConfig } from "./mermaid-config";
 import type { MermaidInteractionController } from "./mermaid-interaction";
 
 const DIAGRAM_SELECTOR = ".markdown-mermaid[data-mermaid]";
@@ -441,13 +442,7 @@ async function renderDiagrams() {
 	try {
 		const { default: mermaid } = await import("mermaid");
 		const themeVariables = createThemeVariables(theme.values, theme.isDark);
-		mermaid.initialize({
-			startOnLoad: false,
-			securityLevel: "strict",
-			suppressErrorRendering: true,
-			theme: "base",
-			themeVariables,
-		});
+		mermaid.initialize(createMermaidConfig(themeVariables));
 
 		for (const diagram of targets) {
 			diagram.style.setProperty(

@@ -60,7 +60,7 @@ test.describe("文章内系列块", () => {
 			await expect(card).toContainText("Part 2 of 3");
 			await expect(card).toContainText("This post is part of the series");
 
-			// 组内上一篇/下一篇：目标与无障碍名称都带文章标题
+			// 名称次序保持可见内容在前，方向上下文作为末尾说明
 			const prev = card.locator(".series-card__row--prev");
 			const next = card.locator(".series-card__row--next");
 			await expect(prev).toHaveAttribute("href", "/posts/markdown/");
@@ -68,13 +68,11 @@ test.describe("文章内系列块", () => {
 				"href",
 				"/posts/markdown-enhancements/",
 			);
-			await expect(prev).toHaveAttribute(
-				"aria-label",
-				"Previous in series: Markdown Example",
+			await expect(prev).toHaveAccessibleName(
+				"Markdown Example Part 1 of 3 Previous in series",
 			);
-			await expect(next).toHaveAttribute(
-				"aria-label",
-				"Next in series: Shirone Markdown Enhancements",
+			await expect(next).toHaveAccessibleName(
+				"Shirone Markdown Enhancements Part 3 of 3 Next in series",
 			);
 			await expect(prev).toContainText("Part 1 of 3");
 			await expect(next).toContainText("Part 3 of 3");

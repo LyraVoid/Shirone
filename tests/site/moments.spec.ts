@@ -117,7 +117,7 @@ test.describe("动态页", () => {
 		const focused = await page.evaluate(() =>
 			document.activeElement?.getAttribute("aria-label"),
 		);
-		expect(focused).toBe("Open image 1");
+		expect(focused).toBe("Open image 1: Lovely girl wallpaper one");
 	});
 
 	test("多图切换期间保持主舞台和卡片布局稳定", async ({ page }) => {
@@ -278,16 +278,72 @@ test.describe("动态页", () => {
 	});
 
 	test("筛选过渡：指示器展示 → 淡出 → 列表 stagger 揭幕", async ({ page }) => {
+		await page.evaluate(() => {
+			type PhaseSnapshot = {
+				phase: "loading" | "out" | "idle";
+				hasIndicator: boolean;
+			};
+			type DebugWindow = Window & {
+				__momentPhaseObserver?: MutationObserver;
+				__momentPhaseSnapshots?: PhaseSnapshot[];
+			};
+			const section = document.querySelector(".moment-section");
+			if (!section) throw new Error("Moment section is missing");
+			const debugWindow = window as DebugWindow;
+			const snapshots: PhaseSnapshot[] = [];
+			debugWindow.__momentPhaseSnapshots = snapshots;
+			const observer = new MutationObserver(() => {
+				const loading = section.querySelector<HTMLElement>(
+					".moment-section__loading",
+				);
+				snapshots.push({
+					phase: !loading
+						? "idle"
+						: loading.classList.contains("moment-section__loading--out")
+							? "out"
+							: "loading",
+					hasIndicator: Boolean(loading?.querySelector(".m3-loading")),
+				});
+			});
+			observer.observe(section, {
+				attributes: true,
+				attributeFilter: ["class"],
+				childList: true,
+				subtree: true,
+			});
+			debugWindow.__momentPhaseObserver = observer;
+		});
+
 		await page.getByRole("button", { name: "wallpaper", exact: true }).click();
-		// loading 段：contained LoadingIndicator 占据列表位
 		const loading = page.locator(".moment-section__loading");
-		await expect(loading).toBeVisible();
-		await expect(loading.locator(".m3-loading")).toHaveCount(1);
-		// out 段：淡出修饰生效（reduced-motion 下压缩为终态仍可见类切换）
-		await expect(loading).toHaveClass(/moment-section__loading--out/);
-		// idle 段：指示器让位，新列表揭幕
 		await expect(loading).toHaveCount(0);
 		await expect(page.locator(".moment-card")).toHaveCount(3);
+
+		const snapshots = await page.evaluate(() => {
+			type PhaseSnapshot = {
+				phase: "loading" | "out" | "idle";
+				hasIndicator: boolean;
+			};
+			type DebugWindow = Window & {
+				__momentPhaseObserver?: MutationObserver;
+				__momentPhaseSnapshots?: PhaseSnapshot[];
+			};
+			const debugWindow = window as DebugWindow;
+			debugWindow.__momentPhaseObserver?.disconnect();
+			return debugWindow.__momentPhaseSnapshots ?? [];
+		});
+		const loadingIndex = snapshots.findIndex(
+			(snapshot) => snapshot.phase === "loading" && snapshot.hasIndicator,
+		);
+		const outIndex = snapshots.findIndex(
+			(snapshot, index) => index > loadingIndex && snapshot.phase === "out",
+		);
+		const idleIndex = snapshots.findIndex(
+			(snapshot, index) => index > outIndex && snapshot.phase === "idle",
+		);
+		expect(loadingIndex).toBeGreaterThanOrEqual(0);
+		expect(outIndex).toBeGreaterThan(loadingIndex);
+		expect(idleIndex).toBeGreaterThan(outIndex);
 	});
 
 	test("搜索过滤 + 空态", async ({ page }) => {

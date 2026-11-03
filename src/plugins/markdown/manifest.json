@@ -1139,6 +1139,7 @@
 				"src/content/posts/markdown.md"
 			],
 			"tests": [
+				"tests/plugins/markdown/katex-package-mode.test.mjs",
 				"tests/plugins/markdown/katex-version.test.mjs",
 				"tests/site/math.spec.ts",
 				"tests/site/post-encryption.spec.ts"

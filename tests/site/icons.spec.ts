@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 
 /**
  * SSR 图标渲染防回归。
@@ -43,6 +43,30 @@ test.describe("SSR 图标渲染", () => {
 	test("文章页复制链接按钮图标可见", async ({ page }) => {
 		await page.goto("/posts/markdown/");
 		await expect(page.locator("#copy-post-link svg")).toBeVisible();
+	});
+
+	test("Icon only emits data-icon when the caller provides it", async ({
+		page,
+	}) => {
+		await page.goto("/");
+		await page.evaluate(async () => {
+			const defaultHost = document.createElement("div");
+			defaultHost.id = "icon-default-probe";
+			const callerHost = document.createElement("div");
+			callerHost.id = "icon-caller-probe";
+			document.body.append(defaultHost, callerHost);
+			const { mountIconProbe } = await import(
+				"/tests/site/fixtures/component-probes.ts"
+			);
+			mountIconProbe(defaultHost);
+			mountIconProbe(callerHost, "caller-owned-value");
+		});
+
+		const defaultSvg = page.locator("#icon-default-probe svg");
+		const callerSvg = page.locator("#icon-caller-probe svg");
+		await expect(defaultSvg).toHaveCount(1);
+		await expect(defaultSvg).not.toHaveAttribute("data-icon");
+		await expect(callerSvg).toHaveAttribute("data-icon", "caller-owned-value");
 	});
 
 	test("BackToTop FAB 图标 SSR 渲染存在（初始隐藏态）", async ({ page }) => {

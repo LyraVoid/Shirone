@@ -11,6 +11,26 @@ import {
 import { getAnimeList } from "../../src/utils/anime-data.ts";
 
 test.describe("Anime 数据源与配置解析契约", () => {
+	test("AnimeCard: 无封面外链仍暴露番剧标题", async ({ page }) => {
+		await page.goto("/anime/");
+		await page.evaluate(async () => {
+			const host = document.createElement("div");
+			host.id = "anime-card-accessibility-probe";
+			document.body.append(host);
+			const { mountAnimeCardProbe } = await import(
+				"/tests/site/fixtures/component-probes.ts"
+			);
+			mountAnimeCardProbe(host);
+		});
+
+		const link = page.locator(
+			"#anime-card-accessibility-probe a.anime-card__cover",
+		);
+		await expect(link).toHaveCount(1);
+		await expect(link.locator(".sr-only")).toHaveText("Accessible anime title");
+		await expect(link).toHaveAccessibleName(/Accessible anime title/);
+	});
+
 	test("resolveAnimeOptions: 默认本地模式与配置安全解析", () => {
 		const defaultResolved = resolveAnimeOptions({
 			enable: true,

@@ -13,7 +13,7 @@ A calm reading space for long-form writing, personal collections, and the small 
 [English](./README.md) · [简体中文](./README.zh-CN.md) · [繁體中文](./README.zh-TW.md) · [日本語](./README.ja.md)
 
 ![Node.js >= 26.13.0](https://img.shields.io/badge/Node.js-%3E%3D26.13.0-5FA04E?logo=nodedotjs&logoColor=white)
-![pnpm 9](https://img.shields.io/badge/pnpm-9-F69220?logo=pnpm&logoColor=white)
+![pnpm 11](https://img.shields.io/badge/pnpm-11-F69220?logo=pnpm&logoColor=white)
 ![Astro 7](https://img.shields.io/badge/Astro-7-BC52EE?logo=astro&logoColor=white)
 [![License: MIT](https://img.shields.io/badge/License-MIT-3DA639.svg)](./LICENSE)
 

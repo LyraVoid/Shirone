@@ -307,7 +307,7 @@ async function ensurePackageJson(
 			private: true,
 			type: "module",
 			// Pin the same package manager the theme is developed with (e.g.
-			// pnpm@9.x) so `.npmrc`'s `manage-package-manager-versions` and
+			// pnpm@11.28.2) so `.npmrc`'s `manage-package-manager-versions` and
 			// CI hosts (Vercel, corepack) resolve the intended pnpm.
 			...(packageManager ? { packageManager } : {}),
 			scripts: {

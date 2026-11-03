@@ -17,7 +17,7 @@ Items open independently by default. Prefix a title with `:+` to open that item 
 ::: collapse
 - **Package requirements**
 
-  Use Node.js 22 or newer and enable Corepack before installing packages.
+  Use Node.js 26.13.0 or newer and enable Corepack before installing packages.
 
 - :+ Install dependencies
 

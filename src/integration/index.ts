@@ -17,6 +17,7 @@ import {
 	viteBuildShared,
 } from "../config/integrationsConfig.ts";
 import { buildFontDeclarations } from "./fonts.ts";
+import { indexPagefindDirectory } from "./pagefind.ts";
 import {
 	invalidateConfigCache,
 	loadConfigModule,
@@ -483,13 +484,11 @@ export function shirones(options: ShironesOptions = {}): AstroIntegration {
 				// (workers, exclusions, ...). Indexing here as well would build
 				// the index twice.
 				if (options.pagefind === false || paths.isThemeRepo) return;
-				const outDir = dir.pathname;
 				try {
 					const pagefind = await import("pagefind");
 					const { index } = await pagefind.createIndex({});
 					if (!index) throw new Error("Pagefind failed to create an index");
-					await index.addDirectory({ path: outDir });
-					await index.writeFiles({ outputPath: join(outDir, "pagefind") });
+					await indexPagefindDirectory(dir, index);
 					logger.info("pagefind index generated");
 				} catch (error) {
 					logger.warn(

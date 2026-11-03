@@ -41,7 +41,7 @@
 
 ## CI 对照
 
-GitHub Actions 的 [`ci.yml`](.github/workflows/ci.yml) 运行 Biome、`astro check`、清单校验与单元测试，并在 Node.js 22/24 上分别执行 `pnpm build`。本地发布前应至少复现同一组命令；`ci.yml` 不负责部署到具体托管平台。
+GitHub Actions 的 [`ci.yml`](.github/workflows/ci.yml) 运行 Biome、`astro check`、`svelte-check`、清单校验、单元测试，并在 Node.js 26.13.0 上执行 `pnpm build`；Windows 路径回归测试在 `windows-latest` 上单独运行。本地发布前应至少复现同一组命令；`ci.yml` 不负责部署到具体托管平台。
 
 使用独立内容仓库时，另有两个流程：[`deploy.yml.example`](.github/workflows/deploy.yml.example) 是双仓构建与部署的示例（复制为 `deploy.yml` 后补全部署步骤），[`content-validate.yml`](.github/workflows/content-validate.yml) 是供内容仓调用的可复用校验流程。
 

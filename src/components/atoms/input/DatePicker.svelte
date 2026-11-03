@@ -9,7 +9,10 @@
  * 用法：<DatePicker bind:value={date} />
  *      <DatePicker bind:value={date} locale="en-US" />
  */
-import { getLocaleWeekStart } from "@utils/locale-utils";
+import {
+	createGregorianDateFormatter,
+	getLocaleWeekStart,
+} from "@utils/locale-utils";
 
 let {
 	value = $bindable(""),
@@ -21,7 +24,7 @@ let {
 	/** 选中日期 ISO "YYYY-MM-DD"（$bindable） */
 	value?: string;
 	label?: string;
-	/** 本地化（周起始/星期名） */
+	/** 本地化周起始、星期名和日期文案；日期使用公历与拉丁数字以匹配网格 */
 	locale?: string;
 	/** 选择变化回调 */
 	onchange?: (date: string) => void;
@@ -84,11 +87,20 @@ const weekNames = $derived(
 	})(),
 );
 
-const monthTitle = $derived(
-	new Intl.DateTimeFormat(locale, { year: "numeric", month: "long" }).format(
-		new Date(viewYear, viewMonth, 1),
-	),
+const monthTitleFormatter = $derived(
+	createGregorianDateFormatter(locale, { year: "numeric", month: "long" }),
 );
+const monthTitle = $derived(
+	monthTitleFormatter.format(new Date(viewYear, viewMonth, 1)),
+);
+const dateLabelFormatter = $derived(
+	createGregorianDateFormatter(locale, { dateStyle: "full" }),
+);
+
+function formatDateLabel(iso: string): string {
+	// Keep the accessible date in sync with the Gregorian, Latin-numbered grid.
+	return dateLabelFormatter.format(new Date(`${iso}T00:00:00`));
+}
 
 function prevMonth() {
 	if (viewMonth === 0) {
@@ -136,7 +148,7 @@ function select(iso: string) {
                     class:m3-date-picker__day--selected={value === cell.iso}
                     class:m3-date-picker__day--today={today === cell.iso}
                     aria-pressed={value === cell.iso}
-                    aria-label={cell.iso}
+                    aria-label={formatDateLabel(cell.iso)}
                     onclick={() => select(cell.iso)}
                 >
                     {cell.day}

@@ -19,13 +19,12 @@ const host = $derived.by(() => {
 	href={friend.siteurl}
 	target="_blank"
 	rel="noopener noreferrer"
-	aria-label={friend.title}
 >
 	<div class="friend-card__body">
 		<div class="friend-card__header">
 			<Avatar
 				src={friend.imgurl}
-				alt={friend.title}
+				alt=""
 				size={40}
 				shape="circle"
 			/>

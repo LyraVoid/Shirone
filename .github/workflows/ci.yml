@@ -54,9 +54,9 @@ jobs:
             head="$CURRENT_SHA"
           fi
 
-          # Keep the classifier separately testable; it reads Git's NUL-delimited
-          # path list without passing it through command substitution.
-          scripts/ci/classify-browser-suites.sh "$base" "$head" "$GITHUB_OUTPUT"
+          # The orchestrator keeps the guard and classifier outputs separate,
+          # then gives the guard precedence if the classifier itself changed.
+          scripts/ci/detect-browser-suites.sh "$base" "$head" "$GITHUB_OUTPUT"
 
   quality:
     name: Code quality
@@ -127,6 +127,35 @@ jobs:
 
       - name: Run unit tests
         run: node --test "tests/**/*.test.mjs"
+
+  windows-paths:
+    name: Windows path regressions
+    runs-on: windows-latest
+    timeout-minutes: 20
+    env:
+      CI: true
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+        with:
+          run_install: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 26.13.0
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run Windows path regressions
+        run: node --test tests/paths.test.mjs tests/overlay.test.mjs tests/pagefind.test.mjs
 
   build:
     name: Build (Node.js ${{ matrix.node }})
@@ -264,45 +293,30 @@ jobs:
           fi
           echo "Comment regression check passed (suite selected: $SHOULD_RUN)."
 
-  styles:
-    name: Style regressions
+  style-tests:
+    name: Style regression shard ${{ matrix.shard }}
     needs: changes
-    if: always()
+    if: needs.changes.outputs.styles == 'true'
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: ["1/4", "2/4", "3/4", "4/4"]
     env:
       CI: true
 
     steps:
-      - name: Fail if changed-path detection did not succeed
-        if: needs.changes.result != 'success'
-        run: |
-          echo "::error::Changed-path detection did not succeed (${{ needs.changes.result }})."
-          exit 1
-
-      - name: Fail if changed-path detection output is invalid
-        if: needs.changes.result == 'success' && needs.changes.outputs.styles != 'true' && needs.changes.outputs.styles != 'false'
-        run: |
-          echo "::error::Changed-path detection produced an invalid styles value."
-          exit 1
-
-      - name: Skip style regressions for unrelated changes
-        if: needs.changes.outputs.styles != 'true'
-        run: echo "No changed paths require the style suite; install, diagnostics and builds still run."
-
       - name: Checkout
-        if: needs.changes.outputs.styles == 'true'
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Set up pnpm
-        if: needs.changes.outputs.styles == 'true'
         uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
         with:
           # Omit the version so the action reads `packageManager` from package.json.
           run_install: false
 
       - name: Set up Node.js
-        if: needs.changes.outputs.styles == 'true'
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 26.13.0
@@ -310,9 +324,36 @@ jobs:
           cache-dependency-path: pnpm-lock.yaml
 
       - name: Install dependencies
-        if: needs.changes.outputs.styles == 'true'
         run: pnpm install --frozen-lockfile
 
-      - name: Run style, banner and theme scheme regressions
-        if: needs.changes.outputs.styles == 'true'
-        run: pnpm exec playwright test tests/site/fonts.spec.ts tests/site/inline-code-emphasis.spec.ts tests/site/banner.spec.ts tests/site/theme-scheme.spec.ts
+      - name: Run site browser regression shard
+        run: bash scripts/ci/run-style-regressions.sh "${{ matrix.shard }}"
+
+  styles:
+    # Keep the required check name stable while running four parallel shards.
+    name: Style regressions
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    needs: [changes, style-tests]
+    if: always()
+    env:
+      CHANGES_RESULT: ${{ needs.changes.result }}
+      SHOULD_RUN: ${{ needs.changes.outputs.styles }}
+      TEST_RESULT: ${{ needs.style-tests.result }}
+
+    steps:
+      - name: Verify style regression result
+        run: |
+          if [[ "$CHANGES_RESULT" != "success" ]]; then
+            echo "::error::Changed-path detection did not succeed ($CHANGES_RESULT)."
+            exit 1
+          fi
+          if [[ "$SHOULD_RUN" != "true" && "$SHOULD_RUN" != "false" ]]; then
+            echo "::error::Changed-path detection produced an invalid styles value."
+            exit 1
+          fi
+          if [[ "$SHOULD_RUN" == "true" && "$TEST_RESULT" != "success" ]]; then
+            echo "::error::Style regression matrix did not succeed ($TEST_RESULT)."
+            exit 1
+          fi
+          echo "Style regression check passed (suite selected: $SHOULD_RUN)."

@@ -48,6 +48,14 @@ emitted chunk's location rather than the source file's.
 `public/images/albums/`, a directory named in their config, generated caches
 under `.shirones/`.
 
+**Convert file URLs before calling filesystem APIs.** Astro hooks can supply a
+`URL` such as the build output directory. Use `fileSystemPathFromUrl()` (which
+wraps Node's `fileURLToPath`) before passing it to Node or native tools such as
+Pagefind. Do not use `.pathname`: on Windows it can be `/D:/...`, which is not a
+valid native drive path. `tests/paths.test.mjs` exercises both Windows and
+POSIX conversion, and `tests/pagefind.test.mjs` verifies the paths sent to both
+Pagefind APIs on any host.
+
 ### Files that exist in both places
 
 Config-adjacent files that ship in the template land in `shirones/config/` in a
@@ -98,6 +106,14 @@ CSS file, so it resolves to the theme's own `src/` in both modes.
 - A package that is resolved by Node rather than Vite (`require.resolve`,
   dynamic `import()` outside the bundle) must be a **peer** dependency, because
   pnpm's strict layout hides the theme's own copy from the project root.
+
+**KaTeX is version-coupled.** The theme imports `katex/dist/katex.css` directly,
+while `rehype-katex@7` declares KaTeX `^0.16.0`.
+The workspace override is not published, so package-mode's `loadPackageModule`
+bundler resolves every renderer import from the theme's direct `katex`
+dependency. Keep the stylesheet on that same dependency and retain
+`tests/plugins/markdown/katex-package-mode.test.mjs`; a clean consumer install
+must not split renderer and CSS versions.
 
 ### Every relative import used by the copied CLI must be in the package archive
 

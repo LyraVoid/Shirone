@@ -1,7 +1,21 @@
 import { existsSync } from "node:fs";
 import { isAbsolute, join, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath as nodeFileURLToPath } from "node:url";
 import type { ResolvedShironesPaths, ShironesOptions } from "../types.ts";
+
+/**
+ * Convert a file URL to a native filesystem path.
+ *
+ * `URL.pathname` is not a filesystem path on Windows: a URL for `D:\\site`
+ * has the pathname `/D:/site`, which Node filesystem APIs reject. The optional
+ * platform override lets tests exercise both URL forms on any host.
+ */
+export function fileSystemPathFromUrl(
+	url: string | URL,
+	options?: { windows?: boolean },
+): string {
+	return nodeFileURLToPath(url, options);
+}
 
 /**
  * Directory name used for user content/config. Intentionally identical to the
@@ -18,7 +32,7 @@ export const CACHE_DIR_NAME = ".shirones";
  * level up from the bundle) and when running from source inside the repo.
  */
 export function findPackageRoot(fromUrl: string): string {
-	let dir = resolve(fileURLToPath(fromUrl), "..");
+	let dir = resolve(fileSystemPathFromUrl(fromUrl), "..");
 	for (let depth = 0; depth < 10; depth += 1) {
 		if (existsSync(join(dir, "package.json"))) return dir;
 		const parent = resolve(dir, "..");
@@ -26,7 +40,7 @@ export function findPackageRoot(fromUrl: string): string {
 		dir = parent;
 	}
 	// Fall back to the directory containing the entry module.
-	return resolve(fileURLToPath(fromUrl), "..");
+	return resolve(fileSystemPathFromUrl(fromUrl), "..");
 }
 
 /**
@@ -75,7 +89,7 @@ export function resolvePaths(
 	projectRootUrl: URL,
 	moduleUrl: string,
 ): ResolvedShironesPaths {
-	const projectRoot = fileURLToPath(projectRootUrl);
+	const projectRoot = fileSystemPathFromUrl(projectRootUrl);
 	const packageRoot = findPackageRoot(moduleUrl);
 	const isThemeRepo = detectThemeRepo(projectRoot, packageRoot);
 
@@ -126,7 +140,26 @@ export function resolvePaths(
 	};
 }
 
-/** Normalise a filesystem path for comparison across platforms. */
-export function normalisePath(value: string): string {
-	return value.replace(/\\/g, "/").replace(/\/+$/, "");
+/**
+ * Normalise filesystem paths and Vite's `/@fs/` module IDs for comparisons.
+ *
+ * Vite can expose a Windows drive URL as `/@fs/D:/...` (or `/D:/...`), while
+ * `paths.packageSrc` is a native `D:/...` path. Strip those URL-only prefixes
+ * and fold Windows path casing because the underlying filesystem is
+ * case-insensitive. On Windows, relative override keys are folded too, so they
+ * compare consistently with keys derived from normalised absolute module IDs.
+ * The option lets tests exercise Windows semantics on any host.
+ */
+export function normalisePath(
+	value: string,
+	options: { caseInsensitive?: boolean } = {},
+): string {
+	const withoutFsPrefix = value.replace(/\\/g, "/").replace(/^\/@fs(?=\/)/, "");
+	const withoutDriveRoot = withoutFsPrefix.replace(/^\/([a-z]:\/)/i, "$1");
+	const trimmed = withoutDriveRoot.replace(/\/+$/, "");
+	const caseInsensitive =
+		options.caseInsensitive ?? process.platform === "win32";
+	return caseInsensitive || /^[a-z]:(?:$|\/)/i.test(trimmed)
+		? trimmed.toLowerCase()
+		: trimmed;
 }

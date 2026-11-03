@@ -5,7 +5,10 @@
  * （若 end < start 则交换）；范围中间日期用 secondary-container 淡背景高亮。
  * start/end 均为 ISO "YYYY-MM-DD"（$bindable），onchange({start,end})。
  */
-import { getLocaleWeekStart } from "@utils/locale-utils";
+import {
+	createGregorianDateFormatter,
+	getLocaleWeekStart,
+} from "@utils/locale-utils";
 
 let {
 	start = $bindable(""),
@@ -20,6 +23,7 @@ let {
 	/** 范围终点（$bindable） */
 	end?: string;
 	label?: string;
+	/** 日期文案沿用 locale 语言，但使用公历与拉丁数字匹配 ISO 网格。 */
 	locale?: string;
 	onchange?: (range: { start: string; end: string }) => void;
 	class?: string;
@@ -76,11 +80,19 @@ const weekNames = $derived(
 	})(),
 );
 
-const monthTitle = $derived(
-	new Intl.DateTimeFormat(locale, { year: "numeric", month: "long" }).format(
-		new Date(viewYear, viewMonth, 1),
-	),
+const monthTitleFormatter = $derived(
+	createGregorianDateFormatter(locale, { year: "numeric", month: "long" }),
 );
+const monthTitle = $derived(
+	monthTitleFormatter.format(new Date(viewYear, viewMonth, 1)),
+);
+const dateLabelFormatter = $derived(
+	createGregorianDateFormatter(locale, { dateStyle: "full" }),
+);
+
+function formatDateLabel(iso: string): string {
+	return dateLabelFormatter.format(new Date(`${iso}T00:00:00`));
+}
 
 function prevMonth() {
 	if (viewMonth === 0) {
@@ -151,7 +163,7 @@ function select(iso: string) {
                         class:m3-date-picker__day--selected={isStart(cell.iso) || isEnd(cell.iso)}
                         class:m3-date-picker__day--today={today === cell.iso}
                         aria-pressed={isStart(cell.iso) || isEnd(cell.iso)}
-                        aria-label={cell.iso}
+                        aria-label={formatDateLabel(cell.iso)}
                         onclick={() => select(cell.iso)}
                     >
                         {cell.day}

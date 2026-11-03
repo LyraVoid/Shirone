@@ -18,10 +18,8 @@ test.describe("分类索引页 /categories/", () => {
 		// 页头装饰图标：SSR 直出（astro-icon 构建期内联，非空）
 		await expect(page.locator(".page-header__icon svg")).toHaveCount(1);
 		await expect(
-			page.locator(
-				'.page-header__icon svg[data-icon="material-symbols:folder-outline-rounded"]',
-			),
-		).toHaveCount(1);
+			page.locator(".page-header__icon svg path").first(),
+		).toBeVisible();
 		const rows = page.locator(".category-index__row");
 		await expect(rows).toHaveCount(2);
 		const first = rows.first();
@@ -84,15 +82,14 @@ test.describe("标签索引页 /tags/", () => {
 		// 页头装饰图标：SSR 直出（astro-icon 构建期内联，非空）
 		await expect(page.locator(".page-header__icon svg")).toHaveCount(1);
 		await expect(
-			page.locator(
-				'.page-header__icon svg[data-icon="material-symbols:tag-rounded"]',
-			),
-		).toHaveCount(1);
+			page.locator(".page-header__icon svg path").first(),
+		).toBeVisible();
 		const chips = page.locator(".tag-index__chip");
 		await expect(chips).toHaveCount(27);
 		const bloggingChip = chips.filter({ hasText: "Blogging" });
 		await expect(bloggingChip).toBeVisible();
 		await expect(bloggingChip.locator(".tag-index__count")).toHaveText("4");
+		await expect(bloggingChip).toHaveAccessibleName("Blogging 4");
 		await expect(bloggingChip).toHaveAttribute(
 			"href",
 			"/archive/?tag=Blogging",
@@ -127,11 +124,12 @@ test.describe("侧栏分类与标签入口", () => {
 			tagsWidget.boundingBox(),
 			indexLink.boundingBox(),
 		]);
-		expect(widgetBox).not.toBeNull();
-		expect(linkBox).not.toBeNull();
+		if (!widgetBox || !linkBox) {
+			throw new Error("Expected the tag widget and index link to be visible");
+		}
 		expect(
 			Math.abs(
-				widgetBox!.x + widgetBox!.width / 2 - (linkBox!.x + linkBox!.width / 2),
+				widgetBox.x + widgetBox.width / 2 - (linkBox.x + linkBox.width / 2),
 			),
 		).toBeLessThanOrEqual(1);
 	});

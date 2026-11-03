@@ -2,12 +2,13 @@
 /**
  * 月度文章历交互视图（Calendar.astro 的水合岛）。
  * 单月视图 + 切月 + 点击有文日展开当日文章；月/周名称由 Intl
- * 按站点 locale 生成（本地化数据不占 i18n key）。
+ * 按站点 locale 生成，文章计数短语由 Calendar.astro 注入 i18n 文案。
  * 动效：切月网格 reveal 淡入、文章列表 collapse 展开（motion.ts
  * 原语，reduced-motion 自动瞬切）。
  */
 import IconButton from "@components/atoms/action/IconButton.svelte";
 import type { CalendarPost } from "@utils/calendar-data";
+import { createGregorianDateFormatter } from "@utils/locale-utils";
 import { collapse, reveal } from "@utils/motion";
 
 interface Props {
@@ -21,6 +22,8 @@ interface Props {
 	backTodayLabel: string;
 	prevMonthLabel: string;
 	nextMonthLabel: string;
+	postCountLabel: string;
+	postsCountLabel: string;
 }
 
 let {
@@ -31,6 +34,8 @@ let {
 	backTodayLabel,
 	prevMonthLabel,
 	nextMonthLabel,
+	postCountLabel,
+	postsCountLabel,
 }: Props = $props();
 
 const today = new Date();
@@ -39,17 +44,27 @@ let month = $state(today.getMonth());
 let selectedDate = $state<string | null>(null);
 
 const monthTitle = $derived(
-	new Intl.DateTimeFormat(locale, { year: "numeric", month: "long" }).format(
-		new Date(year, month, 1),
-	),
+	createGregorianDateFormatter(locale, {
+		year: "numeric",
+		month: "long",
+	}).format(new Date(year, month, 1)),
 );
+
+const dateLabelFormatter = $derived(
+	createGregorianDateFormatter(locale, { dateStyle: "full" }),
+);
+
+function formatDateLabel(key: string): string {
+	const [dateYear, dateMonth, day] = key.split("-").map(Number);
+	return dateLabelFormatter.format(new Date(dateYear, dateMonth - 1, day, 12));
+}
 
 // 周名：2021-01-03 是周日，由此锚定一周 7 天（Intl weekday short）
 const weekStartOffset = $derived(startOfWeek === "mon" ? 1 : 0);
 const weekdays = $derived(
 	Array.from({ length: 7 }, (_, i) => {
 		const day = (i + weekStartOffset) % 7;
-		return new Intl.DateTimeFormat(locale, { weekday: "short" }).format(
+		return createGregorianDateFormatter(locale, { weekday: "short" }).format(
 			new Date(2021, 0, 3 + day),
 		);
 	}),
@@ -63,6 +78,16 @@ interface DayCell {
 	day: number;
 	key: string;
 	posts: CalendarPost[];
+}
+
+function formatDayAccessibleName(cell: DayCell): string {
+	const parts = [String(cell.day), formatDateLabel(cell.key)];
+	if (cell.posts.length > 0) {
+		const countLabel =
+			cell.posts.length === 1 ? postCountLabel : postsCountLabel;
+		parts.push(`${cell.posts.length} ${countLabel}`);
+	}
+	return parts.join(", ");
 }
 
 const cells = $derived.by(() => {
@@ -194,7 +219,7 @@ function toggleDay(cell: DayCell) {
 						class={`m3-calendar__day${cell.posts.length > 0 ? " m3-calendar__day--has-posts" : ""}${isTodayCell(cell) ? " m3-calendar__day--today" : ""}${cell.key === selectedDate ? " m3-calendar__day--selected" : ""}`}
 						disabled={cell.posts.length === 0}
 						aria-current={isTodayCell(cell) ? "date" : undefined}
-						aria-label={`${cell.key}${cell.posts.length > 0 ? `，${cell.posts.length} 篇文章` : ""}`}
+						aria-label={formatDayAccessibleName(cell)}
 						onclick={() => toggleDay(cell)}
 					>
 						{cell.day}
