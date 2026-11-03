@@ -2,13 +2,15 @@
 # ignored, which silently disables overrides. Keep security pins here.
 #
 # KaTeX 0.18.2 is the first patched release for GHSA-238p-pmpm-9mq7.
-# rehype-katex@7 still declares ^0.16.0. This workspace override protects
-# source builds; package mode separately resolves renderer imports to the
-# theme's direct KaTeX dependency (see the package-mode test).
+# rehype-katex@7 still declares ^0.16.0, so this override keeps the renderer
+# on the theme's 0.18 line. 0.18.11 shipped accidental breaking changes and is
+# deprecated, which is why the pin is exact: a caret would resolve it. Package
+# mode separately resolves renderer imports to the theme's direct KaTeX
+# dependency (see the package-mode test).
 # postcss-selector-parser 6.1.5 fixes GHSA-rj75-hqrm-r3gf; scope the override to v6
 # so safe v7 copies are not downgraded. serialize-javascript 7.1.3 fixes GHSA-m5mm-p8h7-m29v.
 overrides:
-  katex: 0.18.3
+  katex: 0.18.10
   postcss-selector-parser@6: 6.1.5
   serialize-javascript: 7.1.3
 

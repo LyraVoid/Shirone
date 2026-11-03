@@ -89,7 +89,7 @@
 		"astro-expressive-code": "^0.44.3",
 		"hast-util-from-html": "2.0.3",
 		"hastscript": "^9.0.1",
-		"katex": "0.18.3",
+		"katex": "0.18.10",
 		"lxgw-wenkai-screen-webfont": "^1.7.0",
 		"markdown-it": "^15.0.3",
 		"mdast-util-to-string": "^4.0.0",
