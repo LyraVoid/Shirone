@@ -1161,12 +1161,19 @@
 				}
 			],
 			"attributes": [],
-			"implementation": ["src/plugins/remark-mermaid.mjs"],
+			"implementation": [
+				"src/plugins/remark-mermaid.mjs",
+				"src/plugins/rehype-mermaid-fallback.mjs"
+			],
 			"registeredIn": "src/utils/markdown-processor.mjs",
 			"styles": ["src/styles/mermaid.css"],
 			"runtime": {
 				"mode": "client-enhanced",
-				"modules": ["src/utils/mermaid.ts", "src/utils/mermaid-interaction.ts"],
+				"modules": [
+					"src/utils/mermaid.ts",
+					"src/utils/mermaid-config.ts",
+					"src/utils/mermaid-interaction.ts"
+				],
 				"network": []
 			},
 			"docs": [
