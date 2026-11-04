@@ -12,6 +12,21 @@ function isBannerVariant(
 	return decodeURIComponent(value).includes(`/banner/${variant}/`);
 }
 
+function collectBannerRequests(
+	page: import("@playwright/test").Page,
+): string[] {
+	const requests: string[] = [];
+	page.on("request", (request) => {
+		// Only real image loads count: the dev toolbar audits an `<img>` by
+		// fetching its src, and that fetch would otherwise look like a second
+		// banner request. Dedupe because a mutation re-triggers the audit.
+		if (request.resourceType() !== "image") return;
+		const url = request.url();
+		if (isBannerAsset(url) && !requests.includes(url)) requests.push(url);
+	});
+	return requests;
+}
+
 async function waitForBannerState(
 	page: import("@playwright/test").Page,
 	visible: boolean,
@@ -383,10 +398,7 @@ test.describe("banner wallpaper", () => {
 	test("desktop loads only desktop images and types home subtitle", async ({
 		page,
 	}) => {
-		const requests: string[] = [];
-		page.on("request", (request) => {
-			if (isBannerAsset(request.url())) requests.push(request.url());
-		});
+		const requests = collectBannerRequests(page);
 
 		await page.goto("/", { waitUntil: "domcontentloaded" });
 		await waitForBannerState(page, true);
@@ -438,10 +450,7 @@ test.describe("banner wallpaper", () => {
 		page,
 	}) => {
 		await page.setViewportSize({ width: 390, height: 844 });
-		const requests: string[] = [];
-		page.on("request", (request) => {
-			if (isBannerAsset(request.url())) requests.push(request.url());
-		});
+		const requests = collectBannerRequests(page);
 
 		await page.goto("/posts/guide/", { waitUntil: "domcontentloaded" });
 		await waitForBannerState(page, false);
@@ -457,10 +466,7 @@ test.describe("banner wallpaper", () => {
 
 	test("mobile home loads only mobile image resources", async ({ page }) => {
 		await page.setViewportSize({ width: 390, height: 844 });
-		const requests: string[] = [];
-		page.on("request", (request) => {
-			if (isBannerAsset(request.url())) requests.push(request.url());
-		});
+		const requests = collectBannerRequests(page);
 
 		await page.goto("/", { waitUntil: "domcontentloaded" });
 		await waitForBannerState(page, true);
@@ -492,10 +498,7 @@ test.describe("banner wallpaper", () => {
 		await page.addInitScript(() =>
 			localStorage.setItem("wallpaper-mode", "none"),
 		);
-		const requests: string[] = [];
-		page.on("request", (request) => {
-			if (isBannerAsset(request.url())) requests.push(request.url());
-		});
+		const requests = collectBannerRequests(page);
 
 		await page.goto("/", { waitUntil: "domcontentloaded" });
 		await waitForBannerState(page, false);
