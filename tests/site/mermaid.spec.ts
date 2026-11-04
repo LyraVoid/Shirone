@@ -369,7 +369,7 @@ test.describe("Mermaid diagrams", () => {
 	}) => {
 		await page.goto(DEMO_PATH, { waitUntil: "domcontentloaded" });
 		const diagrams = page.locator(".markdown-mermaid");
-		await expect(diagrams).toHaveCount(14);
+		await expect(diagrams).toHaveCount(15);
 		await expect
 			.poll(
 				() =>
@@ -381,13 +381,13 @@ test.describe("Mermaid diagrams", () => {
 					),
 				{ timeout: 30_000 },
 			)
-			.toBe(14);
-		await expect(diagrams.locator("[data-mermaid-svg]")).toHaveCount(14);
-		await expect(diagrams.locator("[data-mermaid-toolbar]")).toHaveCount(14);
+			.toBe(15);
+		await expect(diagrams.locator("[data-mermaid-svg]")).toHaveCount(15);
+		await expect(diagrams.locator("[data-mermaid-toolbar]")).toHaveCount(15);
 		const regions = diagrams.locator(
 			'.markdown-mermaid__diagram[role="region"]',
 		);
-		await expect(regions).toHaveCount(14);
+		await expect(regions).toHaveCount(15);
 		expect(
 			await regions.evaluateAll((elements) =>
 				elements.every(
@@ -401,6 +401,20 @@ test.describe("Mermaid diagrams", () => {
 			(await new AxeBuilder({ page }).include(".markdown-mermaid").analyze())
 				.violations,
 		).toEqual([]);
+	});
+
+	test("renders an HTML line break inside a label", async ({ page }) => {
+		await page.goto(DEMO_PATH, { waitUntil: "domcontentloaded" });
+		const diagram = page
+			.locator(".markdown-mermaid")
+			.filter({ hasText: "First line" });
+		await expect(diagram).toHaveCount(1);
+		await expect(diagram).toHaveAttribute("data-mermaid-state", "ready", {
+			timeout: 15_000,
+		});
+		// The break must stay a real element; mermaid serializes it as `<br>`,
+		// which a strict XML parse rejects outright.
+		await expect(diagram.locator("[data-mermaid-svg] br")).toHaveCount(1);
 	});
 
 	test("keeps fullscreen modal and controls centered on compact mobile screens with long diagram titles", async ({
@@ -476,7 +490,7 @@ test.describe("Mermaid diagrams", () => {
 					),
 				{ timeout: 30_000 },
 			)
-			.toBe(14);
+			.toBe(15);
 
 		await page.evaluate(() => {
 			document.documentElement.classList.add("dark");
@@ -494,7 +508,7 @@ test.describe("Mermaid diagrams", () => {
 					),
 				{ timeout: 30_000 },
 			)
-			.toBe(14);
+			.toBe(15);
 
 		const flowchart = diagrams.first();
 		const edgeLabelInfo = await flowchart.evaluate((element) => {

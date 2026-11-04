@@ -287,4 +287,13 @@ Reading,Topics,210
 Reading,Outbound,140
 ```
 
+## Line Breaks in Labels
+
+HTML labels accept a line break, so a label can wrap without widening the diagram.
+
+```mermaid
+flowchart LR
+  A[First line<br>Second line] --> B[Plain label]
+```
+
 Each example uses a standard `mermaid` code fence. The server preserves readable source markup, and the browser enhances it into an SVG that follows the active theme. Diagrams render again when the theme changes or when Swup navigates to this article.
