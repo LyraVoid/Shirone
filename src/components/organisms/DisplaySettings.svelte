@@ -266,7 +266,7 @@ const stylePreviews = $derived(
                 <div class="flex gap-2 font-bold text-lg text-[var(--on-surface)] transition relative ml-3">
                     <AccentBar size="small" class="absolute -left-3 top-[0.33rem]" />
                     {i18n(I18nKey.themeColor)}
-                    <button aria-label="Reset to Default" class="float-control w-7 h-7 rounded-md active:scale-90 will-change-transform flex items-center justify-center"
+                    <button aria-label={i18n(I18nKey.resetToDefault)} class="float-control w-7 h-7 rounded-md active:scale-90 will-change-transform flex items-center justify-center"
                             class:opacity-0={!isDirty} class:pointer-events-none={!isDirty} onclick={confirmReset}>
                         <Icon icon="fa7-solid:arrow-rotate-left" class="text-[0.875rem]"></Icon>
                     </button>

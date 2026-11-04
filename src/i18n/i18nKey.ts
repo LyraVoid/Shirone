@@ -333,6 +333,15 @@ enum I18nKey {
 	feedHowToUseDesc = "feedHowToUseDesc",
 	feedOpenXml = "feedOpenXml",
 	feedRecentPosts = "feedRecentPosts",
+	menu = "menu",
+	mainNavigation = "mainNavigation",
+	navigationDrawer = "navigationDrawer",
+	breadcrumb = "breadcrumb",
+	displaySettings = "displaySettings",
+	searchPanel = "searchPanel",
+	lightDarkMode = "lightDarkMode",
+	resetToDefault = "resetToDefault",
+	goToAboutPage = "goToAboutPage",
 }
 
 export default I18nKey;

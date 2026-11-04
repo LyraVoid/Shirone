@@ -345,4 +345,13 @@ export const vi: Translation = {
 		"Thêm URL nguồn cấp ở trên vào trình đọc RSS/Atom yêu thích của bạn (như NetNewsWire, Feedly, Inoreader, Follow) để nhận thông báo bài viết mới.",
 	[Key.feedOpenXml]: "Xem XML gốc",
 	[Key.feedRecentPosts]: "Bài viết mới nhất trong nguồn cấp",
+	[Key.menu]: "Menu",
+	[Key.mainNavigation]: "Điều hướng chính",
+	[Key.navigationDrawer]: "Ngăn điều hướng",
+	[Key.breadcrumb]: "Đường dẫn điều hướng",
+	[Key.displaySettings]: "Cài đặt hiển thị",
+	[Key.searchPanel]: "Bảng tìm kiếm",
+	[Key.lightDarkMode]: "Chế độ sáng/tối",
+	[Key.resetToDefault]: "Đặt lại mặc định",
+	[Key.goToAboutPage]: "Đi đến trang giới thiệu",
 };

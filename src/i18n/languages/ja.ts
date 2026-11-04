@@ -342,4 +342,13 @@ export const ja: Translation = {
 		"上記の購読 URL をお好みの RSS/Atom リーダー（NetNewsWire、Feedly、Inoreader、Follow など）に登録すると、最新記事が通知されます。",
 	[Key.feedOpenXml]: "XML を直接表示",
 	[Key.feedRecentPosts]: "最新の配信記事",
+	[Key.menu]: "メニュー",
+	[Key.mainNavigation]: "メインナビゲーション",
+	[Key.navigationDrawer]: "ナビゲーションドロワー",
+	[Key.breadcrumb]: "パンくずリスト",
+	[Key.displaySettings]: "表示設定",
+	[Key.searchPanel]: "検索パネル",
+	[Key.lightDarkMode]: "ライト/ダークモード",
+	[Key.resetToDefault]: "既定に戻す",
+	[Key.goToAboutPage]: "About ページへ",
 };

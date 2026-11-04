@@ -166,7 +166,7 @@ $: if (initialized) {
 <!-- toggle btn for phone/tablet view -->
 <IconButton
     icon="material-symbols:search"
-    label="Search Panel"
+    label={i18n(I18nKey.searchPanel)}
     id="search-switch"
     size="small"
     shape="round"

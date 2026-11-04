@@ -330,4 +330,13 @@ export const th: Translation = {
 		"เพิ่ม URL ฟีดด้านบนลงในโปรแกรมอ่าน RSS/Atom (เช่น NetNewsWire, Feedly, Inoreader, Follow) เพื่อรับการแจ้งเตือนบทความใหม่",
 	[Key.feedOpenXml]: "ดู XML ต้นฉบับ",
 	[Key.feedRecentPosts]: "บทความล่าสุดในฟีด",
+	[Key.menu]: "เมนู",
+	[Key.mainNavigation]: "การนำทางหลัก",
+	[Key.navigationDrawer]: "แผงนำทาง",
+	[Key.breadcrumb]: "เส้นทางนำทาง",
+	[Key.displaySettings]: "การตั้งค่าการแสดงผล",
+	[Key.searchPanel]: "แผงค้นหา",
+	[Key.lightDarkMode]: "โหมดสว่าง/มืด",
+	[Key.resetToDefault]: "รีเซ็ตเป็นค่าเริ่มต้น",
+	[Key.goToAboutPage]: "ไปยังหน้าเกี่ยวกับ",
 };

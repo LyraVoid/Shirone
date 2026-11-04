@@ -343,4 +343,13 @@ export const en: Translation = {
 		"Add this feed URL to your favorite RSS/Atom reader (e.g. NetNewsWire, Feedly, Inoreader, Follow) to get instant updates.",
 	[Key.feedOpenXml]: "View Raw XML",
 	[Key.feedRecentPosts]: "Recent Posts in Feed",
+	[Key.menu]: "Menu",
+	[Key.mainNavigation]: "Main navigation",
+	[Key.navigationDrawer]: "Navigation drawer",
+	[Key.breadcrumb]: "Breadcrumb",
+	[Key.displaySettings]: "Display Settings",
+	[Key.searchPanel]: "Search Panel",
+	[Key.lightDarkMode]: "Light/Dark Mode",
+	[Key.resetToDefault]: "Reset to Default",
+	[Key.goToAboutPage]: "Go to About Page",
 };

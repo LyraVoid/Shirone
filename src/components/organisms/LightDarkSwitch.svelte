@@ -71,7 +71,7 @@ function onMainButtonClick() {
 
 <!-- z-50 make the menu higher than other float panels -->
 <div class="relative z-50 flex h-10 w-10 shrink-0 items-center justify-center">
-    <button aria-label="Light/Dark Mode" aria-haspopup="menu" aria-expanded={menuOpen}
+    <button aria-label={i18n(I18nKey.lightDarkMode)} aria-haspopup="menu" aria-expanded={menuOpen}
             class="m3-state-layer relative inline-flex items-center justify-center rounded-full h-10 w-10 border-none cursor-pointer select-none text-[var(--on-surface)]"
             style="font-size: 1.25rem; line-height: 1; --m3e-state-color: var(--on-surface); --m3e-focus-outline: var(--on-surface);"
             id="scheme-switch" onclick={onMainButtonClick}>

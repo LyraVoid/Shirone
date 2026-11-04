@@ -5,6 +5,9 @@
  *   一级导航（navBarConfig）+ 可折叠「分类」分组（多级扩展点）。
  * 链接由 Swup 自动接管，点击后收起抽屉；高亮与当前路由/分类筛选同步。
  */
+
+import I18nKey from "@i18n/i18nKey";
+import { i18n } from "@i18n/translation";
 import Icon from "@iconify/svelte";
 import { resolveNavBarLinks, resolvePageKey } from "@utils/nav-utils";
 import { url } from "@utils/url-utils";
@@ -113,7 +116,7 @@ let drawerEl: HTMLElement | undefined = $state();
 			<div class="site-drawer__subtitle">{siteConfig.subtitle}</div>
 		</div>
 
-		<nav class="site-drawer__nav" aria-label="Navigation drawer">
+		<nav class="site-drawer__nav" aria-label={i18n(I18nKey.navigationDrawer)}>
 			{#each primaryItems as item (item.value)}
 				{#if item.children}
 					<div class="site-drawer__group">

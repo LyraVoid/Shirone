@@ -6,6 +6,8 @@ import Avatar from "@components/atoms/display/Avatar.svelte";
 import Card from "@components/atoms/display/Card.svelte";
 import Tooltip from "@components/atoms/overlay/Tooltip.svelte";
 import UmamiStats from "@components/organisms/UmamiStats.astro";
+import I18nKey from "@i18n/i18nKey";
+import { i18n } from "@i18n/translation";
 import Icon from "@iconify/svelte";
 import { resolveImageAsset } from "@utils/asset-utils";
 import { url } from "@utils/url-utils";
@@ -57,7 +59,7 @@ if (typeof avatarAsset !== "string") {
 ---
 <div class={className} style={style}>
 	<Card color="var(--card-bg)" radius="l" class="m3-profile p-3">
-    <a aria-label="Go to About Page" href={url('/about/')}
+    <a aria-label={i18n(I18nKey.goToAboutPage)} href={url('/about/')}
        class="m3-profile__avatar-link group">
         <div class="m3-profile__avatar-overlay">
             <Icon icon="fa7-solid:address-card"

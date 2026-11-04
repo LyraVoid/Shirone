@@ -195,7 +195,7 @@ $effect(() => {
 		</div>
 	{/if}
 	{#if filterCrumb}
-		<nav class="archive-panel__crumb" aria-label="Breadcrumb">
+		<nav class="archive-panel__crumb" aria-label={i18n(I18nKey.breadcrumb)}>
 			<ol class="archive-panel__crumb-list">
 				<li class="archive-panel__crumb-item">
 					<a class="archive-panel__crumb-link m3-state-layer" href={filterCrumb.href}>

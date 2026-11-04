@@ -6,6 +6,8 @@
  * 菜单按钮点击派发 site-drawer:toggle 事件，由 SiteNavigationDrawer 监听开合。
  */
 import IconButton from "@components/atoms/action/IconButton.svelte";
+import I18nKey from "@i18n/i18nKey";
+import { i18n } from "@i18n/translation";
 import Icon from "@iconify/svelte";
 import { resolveNavBarLinks, resolvePageKey } from "@utils/nav-utils";
 import { url } from "@utils/url-utils";
@@ -39,7 +41,7 @@ function isActive(link: (typeof links)[number]): boolean {
 	]}
 >
 	<div class="relative max-w-[var(--page-width)] mx-auto h-16 px-3 md:px-5 flex items-center gap-1">
-		<IconButton id="nav-drawer-switch" label="Menu" class="shrink-0 lg:!hidden">
+		<IconButton id="nav-drawer-switch" label={i18n(I18nKey.menu)} class="shrink-0 lg:!hidden">
 			<Icon icon="material-symbols:menu-rounded" class="text-[1.25rem]"></Icon>
 		</IconButton>
 		<a
@@ -49,7 +51,7 @@ function isActive(link: (typeof links)[number]): boolean {
 			<span class="h-5 w-1 rounded-full bg-[var(--primary)] transition-all group-hover:h-7"></span>
 			<span class="text-lg font-bold group-hover:text-[var(--primary)]">{siteConfig.title}</span>
 		</a>
-		<nav class:list={["top-app-bar__nav hidden h-full items-center gap-1 lg:flex", siteConfig.topAppBar.contentAlign === "center" ? "lg:absolute lg:left-1/2 lg:-translate-x-1/2" : "ml-4"]} aria-label="Main navigation">
+		<nav class:list={["top-app-bar__nav hidden h-full items-center gap-1 lg:flex", siteConfig.topAppBar.contentAlign === "center" ? "lg:absolute lg:left-1/2 lg:-translate-x-1/2" : "ml-4"]} aria-label={i18n(I18nKey.mainNavigation)}>
 			{links.map((link) => {
 				const href = link.external ? link.url : hrefFor(link.url);
 				const active = isActive(link);
@@ -87,7 +89,7 @@ function isActive(link: (typeof links)[number]): boolean {
 		<div class="flex-1"></div>
 		<Search client:only="svelte"></Search>
 		{!siteConfig.themeColor.fixed && (
-			<IconButton id="display-settings-switch" label="Display Settings" class="shrink-0">
+			<IconButton id="display-settings-switch" label={i18n(I18nKey.displaySettings)} class="shrink-0">
 				<Icon icon="material-symbols:palette-outline" class="text-[1.25rem]"></Icon>
 			</IconButton>
 		)}
