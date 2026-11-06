@@ -10,6 +10,23 @@ This project runs unit tests directly with Node. CI uses Node 26.13.0. Astro/Vit
 - User-facing copy must still go through `i18n()` and the `I18nKey` registry. A runtime bridge changes loading only; it must not duplicate translations or bypass the ten locale modules.
 - The repository's supported Node floor is 26.13.0 (`package.json#engines.node`, README, and Contributing). CI pins Node 26.13.0 for diagnostics, unit tests, source builds, and Windows path regressions. Individual Astro packages may support earlier Node releases, but that is not the project's stated runtime floor.
 
+## Shirones pipeline contract job
+
+The independent `shirones-pipeline-tests` job in `.github/workflows/ci.yml`
+clones the `work` branch of `yCENzh/shirones` and runs its JavaScript test suite
+with Node 26.13.0. It also checks out the exact Shirone revision under test
+(including the PR merge commit), exposes that checkout as a local `ci-theme`
+branch, and points `pnpm templates` at it before testing. That sync is required
+because `icon-contract.test.mjs` checks the real theme integration source in
+`workspace/` as well as its fixtures. The job installs the pipeline's locked
+dependencies with pnpm 11.28.2, then runs `node --test scripts/*.test.mjs`.
+
+This is a script-contract check, not an npm package build, tarball lifecycle or
+override test, and it never publishes. The `Shirone CI` triggers remain pushes
+to `main`, pull requests targeting `main`, and manual dispatches. A normal push
+to `work` does not start it automatically; use **workflow_dispatch** on that
+branch when an immediate run is needed.
+
 ## Browser regression path selection
 
 The main `ci.yml` runs quality checks, diagnostics, Node unit tests, and a Node 26.13.0 production build for every PR and push. Only the Playwright browser suites are path-gated.
@@ -22,7 +39,7 @@ The main `ci.yml` runs quality checks, diagnostics, Node unit tests, and a Node 
 
 The Biome step in `ci.yml` currently has `continue-on-error: true`; a green required check does not itself make Biome blocking. Run `pnpm exec biome ci ./src` locally for source changes and review formatter edits rather than assuming CI status enforces them.
 
-The Node 26.13.0 production build exercises source mode. The 30-minute Style regressions check is a stable aggregate over four parallel Playwright shards. `scripts/ci/list-style-regression-specs.mjs` selects every top-level `tests/site/*.spec.ts` except `comments.spec.ts` and `waline.spec.ts` (kept in the separate disabled/Waline/Twikoo mode matrix) and `visual.spec.ts` (its golden screenshots are ignored and local-only). `tests/style-regression-specs.test.mjs` checks this selection against the filesystem and the four-shard workflow matrix. The prior 14-spec focused suite took about 21.5 minutes in the 2-GiB local review sandbox (147 passed, 2 intentionally skipped); the expanded all-applicable suite is now divided across four shards. This workflow does not build and install a `shirones` npm tarball. Changes under `src/integration/` or other package-mode wiring should also follow [npm package mode](./npm-package-mode.md) and the [packaging contract](./packaging-contract.md); do not treat a source-mode green run as package-mode evidence.
+The Node 26.13.0 production build exercises source mode. The 30-minute Style regressions check is a stable aggregate over four parallel Playwright shards. `scripts/ci/list-style-regression-specs.mjs` selects every top-level `tests/site/*.spec.ts` except `comments.spec.ts` and `waline.spec.ts` (kept in the separate disabled/Waline/Twikoo mode matrix) and `visual.spec.ts` (its golden screenshots are ignored and local-only). `tests/style-regression-specs.test.mjs` checks this selection against the filesystem and the four-shard workflow matrix. The prior 14-spec focused suite took about 21.5 minutes in the 2-GiB local review sandbox (147 passed, 2 intentionally skipped); the expanded all-applicable suite is now divided across four shards. The added cross-repository job runs Shirones' JavaScript contract tests, but this workflow still does not build or install a `shirones` npm tarball. Changes under `src/integration/` or other package-mode wiring should also follow [npm package mode](./npm-package-mode.md) and the [packaging contract](./packaging-contract.md); do not treat a source-mode green run or the script-contract job as package-mode evidence.
 
 ## Local validation order
 

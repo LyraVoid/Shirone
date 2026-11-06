@@ -357,3 +357,52 @@ jobs:
             exit 1
           fi
           echo "Style regression check passed (suite selected: $SHOULD_RUN)."
+
+  shirones-pipeline-tests:
+    name: Shirones JS contract tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      CI: true
+
+    steps:
+      - name: Checkout the Shirone revision under test
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          path: theme
+
+      - name: Clone shirones pipeline work branch
+        run: >-
+          git clone --depth 1 --single-branch --branch work
+          https://github.com/yCENzh/shirones.git shirones
+
+      - name: Expose the tested theme revision as a local branch
+        run: git -C theme switch --force-create ci-theme
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+        with:
+          version: 11.28.2
+          run_install: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 26.13.0
+          cache: pnpm
+          cache-dependency-path: shirones/pnpm-lock.yaml
+
+      - name: Install pipeline dependencies
+        working-directory: shirones
+        run: pnpm install --frozen-lockfile
+
+      - name: Sync the tested theme revision into the pipeline workspace
+        working-directory: shirones
+        env:
+          SHIRONES_UPSTREAM_REPO: file://${{ github.workspace }}/theme
+          SHIRONES_UPSTREAM_REF: ci-theme
+        run: pnpm templates
+
+      - name: Run all Shirones JavaScript tests
+        working-directory: shirones
+        run: node --test scripts/*.test.mjs
