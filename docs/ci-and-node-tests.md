@@ -13,13 +13,13 @@ This project runs unit tests directly with Node. CI uses Node 26.13.0. Astro/Vit
 ## Shirones pipeline contract job
 
 The independent `shirones-pipeline-tests` job in `.github/workflows/ci.yml`
-invokes the reusable workflow `.github/workflows/shirones-pipeline-tests.yml`.
-That file contains the full test flow: check out the exact Shirone revision
-under test (including a PR merge commit), clone `yCENzh/shirones`'s `work`
-branch, expose the theme checkout as a local `ci-theme` ref, install the
-pipeline's locked dependencies with pnpm 11.28.2, sync via `pnpm templates`,
-and run
-`node --test scripts/*.test.mjs` on Node 26.13.0. The sync is required because
+checks out the exact Shirone revision under test (including a PR merge commit),
+sets up Node 26.13.0 and pnpm 11.28.2, then runs
+`scripts/ci/test-shirones-pipeline.mjs`. That Node script contains the rest of
+the flow: it clones `yCENzh/shirones`'s `work` branch, creates a temporary local
+ref for the theme checkout, installs the pipeline's locked dependencies, syncs
+via `pnpm templates`, runs `node --test` across `scripts/*.test.mjs`, and cleans
+up its temporary clone/ref. The sync is required because
 `icon-contract.test.mjs` checks the real theme integration source in
 `workspace/` as well as its fixtures.
 
