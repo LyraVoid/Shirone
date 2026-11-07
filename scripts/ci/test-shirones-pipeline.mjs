@@ -1,12 +1,14 @@
 /**
- * Run yCENzh/shirones' JavaScript contract tests against this exact Shirone
- * checkout. The CI job sets up Node and pnpm; this script owns the rest of the
- * cross-repository test flow and removes all temporary files/refs afterward.
+ * Run yCENzh/shirones' complete pre-publish pipeline against this exact
+ * Shirone checkout. `pnpm all` covers the pipeline tests, template generation,
+ * package build, packed-tarball/CLI validation, and override tests; it never
+ * publishes. CI sets up Node and pnpm, while this script owns the temporary
+ * cross-repository refs and removes them afterward.
  */
 
-import { randomUUID } from "node:crypto";
 import { execFileSync } from "node:child_process";
-import { mkdtemp, readdir, rm } from "node:fs/promises";
+import { randomUUID } from "node:crypto";
+import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -39,11 +41,13 @@ function run(command, args, { cwd, env } = {}) {
 }
 
 try {
-	console.log(`[shirones-contracts] creating temporary theme ref ${THEME_REF}`);
+	console.log(
+		`[shirones-validation] creating temporary theme ref ${THEME_REF}`,
+	);
 	run("git", ["branch", "--force", THEME_REF, "HEAD"], { cwd: THEME_DIR });
 	themeRefCreated = true;
 
-	console.log(`[shirones-contracts] cloning ${PIPELINE_REPO}@${PIPELINE_REF}`);
+	console.log(`[shirones-validation] cloning ${PIPELINE_REPO}@${PIPELINE_REF}`);
 	run(
 		"git",
 		[
@@ -59,35 +63,27 @@ try {
 		{ cwd: TEMP_DIR },
 	);
 
-	console.log("[shirones-contracts] installing pipeline dependencies");
+	console.log("[shirones-validation] installing pipeline dependencies");
 	run("pnpm", ["install", "--frozen-lockfile"], { cwd: PIPELINE_DIR });
 
-	console.log("[shirones-contracts] syncing the tested theme revision");
-	run("pnpm", ["templates"], {
+	console.log(
+		"[shirones-validation] running full package validation with `pnpm all`",
+	);
+	run("pnpm", ["all"], {
 		cwd: PIPELINE_DIR,
 		env: {
 			SHIRONES_UPSTREAM_REPO: pathToFileURL(THEME_DIR).href,
 			SHIRONES_UPSTREAM_REF: THEME_REF,
 		},
 	});
-
-	const scriptsDir = join(PIPELINE_DIR, "scripts");
-	const testFiles = (await readdir(scriptsDir))
-		.filter((file) => file.endsWith(".test.mjs"))
-		.sort()
-		.map((file) => join("scripts", file));
-	if (testFiles.length === 0) {
-		throw new Error(`No pipeline JavaScript tests found in ${scriptsDir}`);
-	}
-
-	console.log(`[shirones-contracts] running ${testFiles.length} JavaScript test files`);
-	run(process.execPath, ["--test", ...testFiles], { cwd: PIPELINE_DIR });
 } finally {
 	if (themeRefCreated) {
 		try {
 			run("git", ["branch", "--delete", THEME_REF], { cwd: THEME_DIR });
 		} catch (error) {
-			console.warn(`[shirones-contracts] could not delete temporary ref: ${error.message}`);
+			console.warn(
+				`[shirones-validation] could not delete temporary ref: ${error.message}`,
+			);
 		}
 	}
 	await rm(TEMP_DIR, { recursive: true, force: true });

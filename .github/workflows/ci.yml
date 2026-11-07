@@ -359,9 +359,9 @@ jobs:
           echo "Style regression check passed (suite selected: $SHOULD_RUN)."
 
   shirones-pipeline-tests:
-    name: Shirones JS contract tests
+    name: Shirones full package validation
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 45
     env:
       CI: true
 
@@ -380,5 +380,5 @@ jobs:
         with:
           node-version: 26.13.0
 
-      - name: Run Shirones pipeline contract tests
+      - name: Run full Shirones package validation
         run: node scripts/ci/test-shirones-pipeline.mjs
