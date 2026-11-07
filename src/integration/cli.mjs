@@ -8,8 +8,8 @@
  *   npx shirones init --force    replace template files after backing them up
  *   npx shirones info            detailed status and drift report
  *
- * The command is intentionally dependency-free so it can run via `npx` in a
- * bare project before anything else is installed.
+ * The command does not rely on dependencies in the user's project. Its only
+ * parser dependency, `jsonc-parser`, ships with this package.
  */
 
 import { spawnSync } from "node:child_process";
@@ -22,12 +22,17 @@ import {
 	rename,
 	writeFile,
 } from "node:fs/promises";
+import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { basename, dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 // Shared with `src/integration/verify-peers.ts`. See `version-range.mjs`
 // for why it is a `.mjs` and not a `.ts`.
 import { rangesIntersect } from "./version-range.mjs";
+
+const { applyEdits, modify, parse } = createRequire(import.meta.url)(
+	"jsonc-parser",
+);
 
 const PACKAGE_ROOT = resolve(fileURLToPath(import.meta.url), "../..");
 const TEMPLATE_DIR = join(PACKAGE_ROOT, "template");
@@ -393,11 +398,6 @@ async function ensurePackageJson(
 			changed = true;
 		}
 	}
-	if (pkg.type !== "module") {
-		pkg.type = "module";
-		changed = true;
-	}
-
 	// A fresh project gets the package pin above. On an explicit `--update`,
 	// advance an older Shirone-generated pin to the current package pin too;
 	// otherwise the project would keep running the previous release's pnpm even
@@ -679,33 +679,72 @@ async function ensureTsConfig(packageName, { force }) {
 		return;
 	}
 
-	const tsconfig = JSON.parse(await readFile(tsconfigPath, "utf8"));
-	tsconfig.compilerOptions ??= {};
-	tsconfig.compilerOptions.baseUrl ??= ".";
-	tsconfig.compilerOptions.paths ??= {};
+	const original = await readFile(tsconfigPath, "utf8");
+	const parseErrors = [];
+	const tsconfig = parse(original, parseErrors, { allowTrailingComma: true });
+	if (parseErrors.length > 0) {
+		const { error, offset } = parseErrors[0];
+		throw new Error(
+			`Could not parse tsconfig.json (JSONC error ${error} at offset ${offset}); ` +
+				"fix the file and run `shirones init` again.",
+		);
+	}
+	if (!tsconfig || typeof tsconfig !== "object" || Array.isArray(tsconfig)) {
+		throw new Error("tsconfig.json must contain a JSON object.");
+	}
 
-	let changed = false;
+	const compilerOptions = tsconfig.compilerOptions;
+	if (
+		compilerOptions !== undefined &&
+		(compilerOptions === null ||
+			typeof compilerOptions !== "object" ||
+			Array.isArray(compilerOptions))
+	) {
+		throw new Error("tsconfig.json compilerOptions must be an object.");
+	}
+	const currentPaths = compilerOptions?.paths;
+	if (
+		currentPaths !== undefined &&
+		(currentPaths === null ||
+			typeof currentPaths !== "object" ||
+			Array.isArray(currentPaths))
+	) {
+		throw new Error("tsconfig.json compilerOptions.paths must be an object.");
+	}
+
+	const formattingOptions = {
+		insertSpaces: true,
+		tabSize: 2,
+		eol: original.includes("\r\n") ? "\r\n" : "\n",
+	};
+	let updated = original;
+	const setJsoncValue = (path, value) => {
+		updated = applyEdits(
+			updated,
+			modify(updated, path, value, { formattingOptions }),
+		);
+	};
+
+	if (compilerOptions?.baseUrl == null) {
+		setJsoncValue(["compilerOptions", "baseUrl"], ".");
+	}
 	for (const [key, value] of Object.entries(desiredPaths)) {
-		if (!tsconfig.compilerOptions.paths[key] || force) {
-			tsconfig.compilerOptions.paths[key] = value;
-			changed = true;
+		if (!Object.hasOwn(currentPaths ?? {}, key) || force) {
+			setJsoncValue(["compilerOptions", "paths", key], value);
 		}
 	}
-	if (changed) {
-		if (force) await backup("tsconfig.json");
-		await writeFile(
-			tsconfigPath,
-			`${JSON.stringify(tsconfig, null, 2)}\n`,
-			"utf8",
-		);
-		log.ok(
-			force
-				? "tsconfig.json (theme path aliases; previous copy backed up)"
-				: "tsconfig.json (theme path aliases)",
-		);
-	} else {
+
+	if (updated === original) {
 		log.skip("tsconfig.json already configured");
+		return;
 	}
+	if (force) await backup("tsconfig.json");
+	await writeFile(tsconfigPath, updated, "utf8");
+	log.ok(
+		force
+			? "tsconfig.json (theme path aliases; previous copy backed up)"
+			: "tsconfig.json (theme path aliases)",
+	);
 }
 
 /** Every filename Astro will load a config from, in its own resolution order. */
@@ -753,9 +792,172 @@ async function replaceDirectory(from, to) {
  * `pnpm create astro` always leaves a config behind, so "skip if it exists"
  * silently produced a project where the integration was never registered —
  * Astro then served its own starter page and the theme appeared to do nothing.
- * A config that does not mention the package is therefore replaced (the old one
- * is kept as a backup); a config that already wires the theme in is left alone.
+ * A config with no real import of the package is replaced (the old one is
+ * kept as a backup). A recognizable static import or CommonJS require plus a
+ * call in an inline `integrations` array is left alone; indirect wiring is
+ * preserved with a warning rather than guessed from an arbitrary mention.
  */
+function stripJavaScriptComments(source) {
+	let output = "";
+	let quote = null;
+	let escaped = false;
+	let lineComment = false;
+	let blockComment = false;
+
+	for (let i = 0; i < source.length; i += 1) {
+		const char = source[i];
+		const next = source[i + 1];
+
+		if (lineComment) {
+			if (char === "\n") {
+				output += "\n";
+				lineComment = false;
+			} else {
+				output += " ";
+			}
+			continue;
+		}
+		if (blockComment) {
+			if (char === "*" && next === "/") {
+				output += "  ";
+				i += 1;
+				blockComment = false;
+			} else {
+				output += char === "\n" ? "\n" : " ";
+			}
+			continue;
+		}
+		if (quote) {
+			output += char;
+			if (escaped) escaped = false;
+			else if (char === "\\") escaped = true;
+			else if (char === quote) quote = null;
+			continue;
+		}
+		if (char === "'" || char === '"' || char === "`") {
+			quote = char;
+			output += char;
+		} else if (char === "/" && next === "/") {
+			output += "  ";
+			i += 1;
+			lineComment = true;
+		} else if (char === "/" && next === "*") {
+			output += "  ";
+			i += 1;
+			blockComment = true;
+		} else {
+			output += char;
+		}
+	}
+	return output;
+}
+
+function maskJavaScriptStrings(source) {
+	let output = "";
+	let quote = null;
+	let escaped = false;
+	for (const char of source) {
+		if (quote) {
+			output += char === "\n" ? "\n" : " ";
+			if (escaped) escaped = false;
+			else if (char === "\\") escaped = true;
+			else if (char === quote) quote = null;
+		} else if (char === "'" || char === '"' || char === "`") {
+			quote = char;
+			output += " ";
+		} else {
+			output += char;
+		}
+	}
+	return output;
+}
+
+function matchingSquareBracket(source, open) {
+	let depth = 0;
+	for (let i = open; i < source.length; i += 1) {
+		if (source[i] === "[") depth += 1;
+		else if (source[i] === "]") {
+			depth -= 1;
+			if (depth === 0) return i;
+		}
+	}
+	return -1;
+}
+
+function escapeRegExp(value) {
+	return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/**
+ * Return whether the package is wired in, not merely mentioned in a comment.
+ * `uncertain` means a real package import exists but the integration list is
+ * indirect; in that case init preserves the config and asks the user to check it.
+ */
+function astroConfigThemeStatus(source, packageName) {
+	const code = stripJavaScriptComments(source);
+	const codeWithoutStrings = maskJavaScriptStrings(code);
+	const targets = [];
+	let referencesPackage = false;
+	const importPattern = /\bimport\s+([\s\S]*?)\s+from\s*(["'])([^"']+)\2/g;
+
+	for (const match of code.matchAll(importPattern)) {
+		if (codeWithoutStrings.slice(match.index, match.index + 6) !== "import")
+			continue;
+		if (match[3] !== packageName) continue;
+		const clause = match[1];
+		if (/^\s*type\s+(?=[A-Za-z_$*{])/.test(clause)) continue;
+		referencesPackage = true;
+		const defaultBinding = /^\s*([A-Za-z_$][\w$]*)/.exec(clause);
+		if (defaultBinding) targets.push(defaultBinding[1]);
+		const named = /\{([^}]*)\}/.exec(clause)?.[1];
+		if (named) {
+			for (const item of named.split(",")) {
+				const binding = /^\s*shirones(?:\s+as\s+([A-Za-z_$][\w$]*))?\s*$/.exec(
+					item,
+				);
+				if (binding) targets.push(binding[1] ?? "shirones");
+			}
+		}
+		const namespace = /\*\s+as\s+([A-Za-z_$][\w$]*)/.exec(clause)?.[1];
+		if (namespace) {
+			targets.push(`${namespace}.default`, `${namespace}.shirones`);
+		}
+	}
+
+	const escapedPackageName = escapeRegExp(packageName);
+	const requirePattern = new RegExp(
+		`\\brequire\\s*\\(\\s*(["'])${escapedPackageName}\\1\\s*\\)`,
+		"g",
+	);
+	for (const match of code.matchAll(requirePattern)) {
+		if (codeWithoutStrings.slice(match.index, match.index + 7) !== "require")
+			continue;
+		referencesPackage = true;
+	}
+
+	if (!referencesPackage) return "not-wired";
+	const integrations = /\bintegrations\s*:\s*\[/.exec(codeWithoutStrings);
+	if (!integrations) return "uncertain";
+	const open = codeWithoutStrings.indexOf("[", integrations.index);
+	const close = matchingSquareBracket(codeWithoutStrings, open);
+	if (close === -1) return "uncertain";
+	const list = codeWithoutStrings.slice(open + 1, close);
+	const listSource = code.slice(open + 1, close);
+	const hasStaticCall = targets.some((target) => {
+		const expression = target.split(".").join("\\s*\\.\\s*");
+		return new RegExp(`\\b${expression}\\s*\\(`).test(list);
+	});
+	const requireCallPattern = new RegExp(
+		`\\brequire\\s*\\(\\s*(["'])${escapedPackageName}\\1\\s*\\)` +
+			"\\s*(?:\\.\\s*(?:default|shirones)\\s*)?\\s*\\(",
+		"g",
+	);
+	const hasRequireCall = [...listSource.matchAll(requireCallPattern)].some(
+		(match) => list.slice(match.index, match.index + 7) === "require",
+	);
+	return hasStaticCall || hasRequireCall ? "wired" : "uncertain";
+}
+
 async function ensureAstroConfig(packageName, { force }) {
 	const present = ASTRO_CONFIG_FILENAMES.filter((name) =>
 		existsSync(join(CWD, name)),
@@ -764,15 +966,23 @@ async function ensureAstroConfig(packageName, { force }) {
 
 	for (const name of present) {
 		const current = await readFile(join(CWD, name), "utf8");
-		const wired = current.includes(packageName) || current.includes("shirones");
+		const status = astroConfigThemeStatus(current, packageName);
 
-		if (wired && !force) {
+		if (status === "wired" && !force) {
 			log.skip(`${name} already wires the theme in`);
+			return;
+		}
+		if (status === "uncertain" && !force) {
+			log.warn(
+				`${name} references ${packageName}, but init could not confirm the ` +
+					"integration is in an inline integrations array; left it unchanged — " +
+					"check that the package is actually registered.",
+			);
 			return;
 		}
 
 		const saved = await backup(name);
-		if (wired) {
+		if (status === "wired") {
 			log.ok(
 				`${name} already wires the theme in — replaced with the template (--force), kept a copy at ${saved}`,
 			);
