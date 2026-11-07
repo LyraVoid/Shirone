@@ -22,6 +22,7 @@ jobs:
     outputs:
       comments: ${{ steps.filter.outputs.comments }}
       styles: ${{ steps.filter.outputs.styles }}
+      shirones: ${{ steps.filter.outputs.shirones }}
     steps:
       - name: Checkout history for path detection
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -43,6 +44,7 @@ jobs:
           if [[ "$EVENT_NAME" == "workflow_dispatch" || "$BEFORE_SHA" == "0000000000000000000000000000000000000000" ]]; then
             echo "comments=true" >> "$GITHUB_OUTPUT"
             echo "styles=true" >> "$GITHUB_OUTPUT"
+            echo "shirones=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
@@ -124,6 +126,9 @@ jobs:
 
       - name: Validate atom manifest
         run: pnpm check:manifest
+
+      - name: Validate package runtime manifest
+        run: pnpm check:package-manifest
 
       - name: Run unit tests
         run: node --test "tests/**/*.test.mjs"
@@ -360,12 +365,30 @@ jobs:
 
   shirones-pipeline-tests:
     name: Shirones full package validation
+    needs: changes
+    if: >-
+      always() &&
+      (needs.changes.result != 'success' || needs.changes.outputs.shirones != 'false')
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     env:
       CI: true
 
     steps:
+      - name: Verify package-mode path selection
+        env:
+          CHANGES_RESULT: ${{ needs.changes.result }}
+          SHIRONES_SHOULD_RUN: ${{ needs.changes.outputs.shirones }}
+        run: |
+          if [[ "$CHANGES_RESULT" != "success" ]]; then
+            echo "::error::Changed-path detection did not succeed ($CHANGES_RESULT)."
+            exit 1
+          fi
+          if [[ "$SHIRONES_SHOULD_RUN" != "true" ]]; then
+            echo "::error::Package-mode path detection produced an invalid result ($SHIRONES_SHOULD_RUN)."
+            exit 1
+          fi
+
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 

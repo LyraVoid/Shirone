@@ -8,8 +8,9 @@
  *   npx shirones init --force    replace template files after backing them up
  *   npx shirones info            detailed status and drift report
  *
- * The command does not rely on dependencies in the user's project. Its only
- * parser dependency, `jsonc-parser`, ships with this package.
+ * The command does not rely on dependencies in the user's project. Its
+ * `jsonc-parser` dependency ships with this package and loads only when init
+ * validates or edits an existing JSONC tsconfig.
  */
 
 import { spawnSync } from "node:child_process";
@@ -22,17 +23,12 @@ import {
 	rename,
 	writeFile,
 } from "node:fs/promises";
-import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { basename, dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 // Shared with `src/integration/verify-peers.ts`. See `version-range.mjs`
 // for why it is a `.mjs` and not a `.ts`.
 import { rangesIntersect } from "./version-range.mjs";
-
-const { applyEdits, modify, parse } = createRequire(import.meta.url)(
-	"jsonc-parser",
-);
 
 const PACKAGE_ROOT = resolve(fileURLToPath(import.meta.url), "../..");
 const TEMPLATE_DIR = join(PACKAGE_ROOT, "template");
@@ -645,21 +641,119 @@ async function installDependencies() {
  * Write a tsconfig that teaches the editor about the theme's path aliases, so
  * `@/types/config` resolves while editing files under `shirones/config/`.
  */
+async function readJsoncTsConfig(tsconfigPath) {
+	const original = await readFile(tsconfigPath, "utf8");
+	const hasBom = original.startsWith("\uFEFF");
+	const source = hasBom ? original.slice(1) : original;
+	let jsonc;
+	try {
+		// This is used only when init edits an existing tsconfig. Help/info and
+		// creation of a missing tsconfig do not load the parser at CLI startup.
+		jsonc = await import("jsonc-parser");
+	} catch (error) {
+		if (
+			error?.code === "ERR_MODULE_NOT_FOUND" &&
+			error.message.includes("jsonc-parser")
+		) {
+			throw new Error(
+				"The installed shirones package is missing its jsonc-parser runtime dependency; reinstall the package and retry.",
+				{ cause: error },
+			);
+		}
+		throw error;
+	}
+
+	const parseErrors = [];
+	const value = jsonc.parse(source, parseErrors, { allowTrailingComma: true });
+	if (parseErrors.length > 0) {
+		const { error, offset } = parseErrors[0];
+		throw new Error(
+			`Could not parse tsconfig.json (JSONC error ${error} at offset ${offset}); ` +
+				"fix the file and run `shirones init` again.",
+		);
+	}
+	if (!value || typeof value !== "object" || Array.isArray(value)) {
+		throw new Error("tsconfig.json must contain a JSON object.");
+	}
+
+	const compilerOptions = value.compilerOptions;
+	if (
+		compilerOptions !== undefined &&
+		(compilerOptions === null ||
+			typeof compilerOptions !== "object" ||
+			Array.isArray(compilerOptions))
+	) {
+		throw new Error("tsconfig.json compilerOptions must be an object.");
+	}
+	const currentPaths = compilerOptions?.paths;
+	if (
+		currentPaths !== undefined &&
+		(currentPaths === null ||
+			typeof currentPaths !== "object" ||
+			Array.isArray(currentPaths))
+	) {
+		throw new Error("tsconfig.json compilerOptions.paths must be an object.");
+	}
+	const baseUrl = compilerOptions?.baseUrl;
+	if (baseUrl != null && typeof baseUrl !== "string") {
+		throw new Error("tsconfig.json compilerOptions.baseUrl must be a string.");
+	}
+
+	return {
+		original,
+		source,
+		hasBom,
+		value,
+		compilerOptions,
+		currentPaths,
+		jsonc,
+	};
+}
+
+async function validateExistingTsConfig() {
+	const tsconfigPath = join(CWD, "tsconfig.json");
+	if (existsSync(tsconfigPath)) await readJsoncTsConfig(tsconfigPath);
+}
+
+function inferJsoncFormattingOptions(source) {
+	const indentation =
+		/(?:^|\r?\n)([ \t]+)"[^"\r\n]+"\s*:/.exec(source)?.[1] ?? "";
+	const insertSpaces = !indentation.includes("\t");
+	return {
+		insertSpaces,
+		tabSize: insertSpaces ? Math.max(indentation.length, 2) : 2,
+		eol: source.includes("\r\n") ? "\r\n" : "\n",
+	};
+}
+
+function getThemeTsConfigPaths(packageName, baseUrl) {
+	const baseDirectory = resolve(CWD, baseUrl);
+	const themeSource = resolve(CWD, "node_modules", packageName, "src");
+	const relativeSource = relative(baseDirectory, themeSource).replaceAll(
+		"\\",
+		"/",
+	);
+	const themeSourcePrefix = relativeSource
+		? relativeSource.startsWith(".")
+			? relativeSource
+			: `./${relativeSource}`
+		: ".";
+	const themeSrc = `${themeSourcePrefix}/`;
+	return {
+		"@/*": [`${themeSrc}*`],
+		"@components/*": [`${themeSrc}components/*`],
+		"@utils/*": [`${themeSrc}utils/*`],
+		"@layouts/*": [`${themeSrc}layouts/*`],
+		"@i18n/*": [`${themeSrc}i18n/*`],
+		"@constants/*": [`${themeSrc}constants/*`],
+		"@assets/*": [`${themeSrc}assets/*`],
+	};
+}
+
 async function ensureTsConfig(packageName, { force }) {
 	const tsconfigPath = join(CWD, "tsconfig.json");
-	const themeSrc = `./node_modules/${packageName}/src`;
-
-	const desiredPaths = {
-		"@/*": [`${themeSrc}/*`],
-		"@components/*": [`${themeSrc}/components/*`],
-		"@utils/*": [`${themeSrc}/utils/*`],
-		"@layouts/*": [`${themeSrc}/layouts/*`],
-		"@i18n/*": [`${themeSrc}/i18n/*`],
-		"@constants/*": [`${themeSrc}/constants/*`],
-		"@assets/*": [`${themeSrc}/assets/*`],
-	};
-
 	if (!existsSync(tsconfigPath)) {
+		const desiredPaths = getThemeTsConfigPaths(packageName, ".");
 		const tsconfig = {
 			extends: "astro/tsconfigs/strict",
 			include: [".astro/types.d.ts", "**/*"],
@@ -679,49 +773,16 @@ async function ensureTsConfig(packageName, { force }) {
 		return;
 	}
 
-	const original = await readFile(tsconfigPath, "utf8");
-	const parseErrors = [];
-	const tsconfig = parse(original, parseErrors, { allowTrailingComma: true });
-	if (parseErrors.length > 0) {
-		const { error, offset } = parseErrors[0];
-		throw new Error(
-			`Could not parse tsconfig.json (JSONC error ${error} at offset ${offset}); ` +
-				"fix the file and run `shirones init` again.",
-		);
-	}
-	if (!tsconfig || typeof tsconfig !== "object" || Array.isArray(tsconfig)) {
-		throw new Error("tsconfig.json must contain a JSON object.");
-	}
-
-	const compilerOptions = tsconfig.compilerOptions;
-	if (
-		compilerOptions !== undefined &&
-		(compilerOptions === null ||
-			typeof compilerOptions !== "object" ||
-			Array.isArray(compilerOptions))
-	) {
-		throw new Error("tsconfig.json compilerOptions must be an object.");
-	}
-	const currentPaths = compilerOptions?.paths;
-	if (
-		currentPaths !== undefined &&
-		(currentPaths === null ||
-			typeof currentPaths !== "object" ||
-			Array.isArray(currentPaths))
-	) {
-		throw new Error("tsconfig.json compilerOptions.paths must be an object.");
-	}
-
-	const formattingOptions = {
-		insertSpaces: true,
-		tabSize: 2,
-		eol: original.includes("\r\n") ? "\r\n" : "\n",
-	};
-	let updated = original;
+	const { source, hasBom, compilerOptions, currentPaths, jsonc } =
+		await readJsoncTsConfig(tsconfigPath);
+	const baseUrl = compilerOptions?.baseUrl ?? ".";
+	const desiredPaths = getThemeTsConfigPaths(packageName, baseUrl);
+	const formattingOptions = inferJsoncFormattingOptions(source);
+	let updated = source;
 	const setJsoncValue = (path, value) => {
-		updated = applyEdits(
+		updated = jsonc.applyEdits(
 			updated,
-			modify(updated, path, value, { formattingOptions }),
+			jsonc.modify(updated, path, value, { formattingOptions }),
 		);
 	};
 
@@ -734,12 +795,12 @@ async function ensureTsConfig(packageName, { force }) {
 		}
 	}
 
-	if (updated === original) {
+	if (updated === source) {
 		log.skip("tsconfig.json already configured");
 		return;
 	}
 	if (force) await backup("tsconfig.json");
-	await writeFile(tsconfigPath, updated, "utf8");
+	await writeFile(tsconfigPath, `${hasBom ? "\uFEFF" : ""}${updated}`, "utf8");
 	log.ok(
 		force
 			? "tsconfig.json (theme path aliases; previous copy backed up)"
@@ -856,7 +917,10 @@ function maskJavaScriptStrings(source) {
 	let output = "";
 	let quote = null;
 	let escaped = false;
-	for (const char of source) {
+	// Regex matches later use offsets from `source`, so iterate UTF-16 code
+	// units rather than Unicode code points (for...of would shrink emoji).
+	for (let index = 0; index < source.length; index += 1) {
+		const char = source[index];
 		if (quote) {
 			output += char === "\n" ? "\n" : " ";
 			if (escaped) escaped = false;
@@ -868,6 +932,9 @@ function maskJavaScriptStrings(source) {
 		} else {
 			output += char;
 		}
+	}
+	if (output.length !== source.length) {
+		throw new Error("Astro config string mask changed the source length.");
 	}
 	return output;
 }
@@ -898,15 +965,36 @@ function astroConfigThemeStatus(source, packageName) {
 	const codeWithoutStrings = maskJavaScriptStrings(code);
 	const targets = [];
 	let referencesPackage = false;
-	const importPattern = /\bimport\s+([\s\S]*?)\s+from\s*(["'])([^"']+)\2/g;
+	let referencesLocalModule = false;
+	const isLocalSpecifier = (specifier) =>
+		specifier.startsWith(".") ||
+		specifier.startsWith("/") ||
+		specifier.startsWith("@/") ||
+		specifier.startsWith("~/") ||
+		specifier.startsWith("#");
+	const modulePattern =
+		/\b(import|export)\s+([\s\S]*?)\s+from\s*(["'])([^"']+)\3/g;
 
-	for (const match of code.matchAll(importPattern)) {
-		if (codeWithoutStrings.slice(match.index, match.index + 6) !== "import")
+	for (const match of code.matchAll(modulePattern)) {
+		const keyword = match[1];
+		if (
+			codeWithoutStrings.slice(match.index, match.index + keyword.length) !==
+			keyword
+		)
 			continue;
-		if (match[3] !== packageName) continue;
-		const clause = match[1];
+		const clause = match[2];
+		const specifier = match[4];
 		if (/^\s*type\s+(?=[A-Za-z_$*{])/.test(clause)) continue;
+		if (specifier !== packageName) {
+			if (isLocalSpecifier(specifier)) referencesLocalModule = true;
+			continue;
+		}
+
 		referencesPackage = true;
+		// Re-exports make the package visible but do not reveal whether an
+		// integration value is registered in this config.
+		if (keyword === "export") continue;
+
 		const defaultBinding = /^\s*([A-Za-z_$][\w$]*)/.exec(clause);
 		if (defaultBinding) targets.push(defaultBinding[1]);
 		const named = /\{([^}]*)\}/.exec(clause)?.[1];
@@ -924,6 +1012,22 @@ function astroConfigThemeStatus(source, packageName) {
 		}
 	}
 
+	const sideEffectImportPattern = /\bimport\s*(["'])([^"']+)\1/g;
+	for (const match of code.matchAll(sideEffectImportPattern)) {
+		if (codeWithoutStrings.slice(match.index, match.index + 6) !== "import")
+			continue;
+		if (match[2] === packageName) referencesPackage = true;
+		else if (isLocalSpecifier(match[2])) referencesLocalModule = true;
+	}
+
+	const dynamicImportPattern = /\bimport\s*\(\s*(["'])([^"']+)\1\s*\)/g;
+	for (const match of code.matchAll(dynamicImportPattern)) {
+		if (codeWithoutStrings.slice(match.index, match.index + 6) !== "import")
+			continue;
+		if (match[2] === packageName) referencesPackage = true;
+		else if (isLocalSpecifier(match[2])) referencesLocalModule = true;
+	}
+
 	const escapedPackageName = escapeRegExp(packageName);
 	const requirePattern = new RegExp(
 		`\\brequire\\s*\\(\\s*(["'])${escapedPackageName}\\1\\s*\\)`,
@@ -934,8 +1038,17 @@ function astroConfigThemeStatus(source, packageName) {
 			continue;
 		referencesPackage = true;
 	}
+	const localRequirePattern =
+		/\brequire\s*\(\s*(["'])(\.{1,2}\/[^"']+|\/[^"']+|@\/[^"']+|~\/[^"']+|#[^"']+)\1\s*\)/g;
+	for (const match of code.matchAll(localRequirePattern)) {
+		if (codeWithoutStrings.slice(match.index, match.index + 7) === "require") {
+			referencesLocalModule = true;
+		}
+	}
 
-	if (!referencesPackage) return "not-wired";
+	if (!referencesPackage) {
+		return referencesLocalModule ? "uncertain" : "not-wired";
+	}
 	const integrations = /\bintegrations\s*:\s*\[/.exec(codeWithoutStrings);
 	if (!integrations) return "uncertain";
 	const open = codeWithoutStrings.indexOf("[", integrations.index);
@@ -974,9 +1087,8 @@ async function ensureAstroConfig(packageName, { force }) {
 		}
 		if (status === "uncertain" && !force) {
 			log.warn(
-				`${name} references ${packageName}, but init could not confirm the ` +
-					"integration is in an inline integrations array; left it unchanged — " +
-					"check that the package is actually registered.",
+				`${name} may wire ${packageName} indirectly, but init could not confirm ` +
+					"its registration; left it unchanged — check that the theme is registered.",
 			);
 			return;
 		}
@@ -1488,6 +1600,10 @@ async function init(args) {
 		process.exitCode = 1;
 		return;
 	}
+
+	// Validate user JSONC before any scaffold or backup changes, so a malformed
+	// config cannot leave the project half-initialised.
+	await validateExistingTsConfig();
 
 	// Already initialised? Report drift from the template instead of
 	// re-scaffolding; `--update` repairs the safe bits (never overwrites the

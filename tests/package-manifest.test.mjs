@@ -10,8 +10,8 @@ const SCRIPT = fileURLToPath(
 	new URL("../scripts/check-package-manifest.mjs", import.meta.url),
 );
 
-/** Runs the check in a throwaway theme root: it reads `package.json` and `src/` from the cwd. */
-function checkManifest(sources) {
+/** Runs the check in a throwaway theme root: it reads package.json and src/ from the cwd. */
+function checkManifest(sources, extraDependencies = {}) {
 	const root = mkdtempSync(join(tmpdir(), "shirone-package-manifest-"));
 	try {
 		const files = {
@@ -20,7 +20,7 @@ function checkManifest(sources) {
 				compilerOptions: { paths: { "@/*": ["src/*"] } },
 			}),
 			"src/integration/package.manifest.json": JSON.stringify({
-				extraDependencies: {},
+				extraDependencies,
 			}),
 			...sources,
 		};
@@ -66,4 +66,25 @@ test("undeclared runtime imports still fail, type-only imports do not", () => {
 	assert.match(result.stderr, /left-pad/);
 	assert.match(result.stderr, /lazy-package/);
 	assert.doesNotMatch(result.stderr, /type-only-package/);
+});
+
+test("package manifest check rejects an undeclared dynamic runtime import", () => {
+	const result = checkManifest({
+		"src/integration/cli.mjs":
+			'export async function loadParser() { return import("jsonc-parser"); }\n',
+	});
+	assert.equal(result.status, 1);
+	assert.match(result.stderr, /jsonc-parser/);
+});
+
+test("package manifest check accepts a dynamic import shipped via extraDependencies", () => {
+	const result = checkManifest(
+		{
+			"src/integration/cli.mjs":
+				'export async function loadParser() { return import("jsonc-parser"); }\n',
+		},
+		{ "jsonc-parser": "^3.3.1" },
+	);
+	assert.equal(result.status, 0, result.stderr);
+	assert.match(result.stdout, /every bare import/);
 });

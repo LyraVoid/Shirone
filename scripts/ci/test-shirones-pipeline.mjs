@@ -15,7 +15,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 
 const THEME_DIR = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const PIPELINE_REPO = "https://github.com/yCENzh/shirones.git";
-const PIPELINE_REF = "work";
+const PIPELINE_COMMIT = "38346f1dea9ea9e2c30e87551807a9ba58707bbf";
 const TEMP_BASE = process.env.RUNNER_TEMP || tmpdir();
 const TEMP_DIR = await mkdtemp(join(TEMP_BASE, "shirones-pipeline-tests-"));
 const PIPELINE_DIR = join(TEMP_DIR, "shirones");
@@ -47,21 +47,31 @@ try {
 	run("git", ["branch", "--force", THEME_REF, "HEAD"], { cwd: THEME_DIR });
 	themeRefCreated = true;
 
-	console.log(`[shirones-validation] cloning ${PIPELINE_REPO}@${PIPELINE_REF}`);
+	console.log(
+		`[shirones-validation] fetching ${PIPELINE_REPO}@${PIPELINE_COMMIT}`,
+	);
+	run("git", ["init", "--quiet", PIPELINE_DIR], { cwd: TEMP_DIR });
+	run("git", ["-C", PIPELINE_DIR, "remote", "add", "origin", PIPELINE_REPO], {
+		cwd: TEMP_DIR,
+	});
 	run(
 		"git",
-		[
-			"clone",
-			"--depth",
-			"1",
-			"--single-branch",
-			"--branch",
-			PIPELINE_REF,
-			PIPELINE_REPO,
-			PIPELINE_DIR,
-		],
+		["-C", PIPELINE_DIR, "fetch", "--depth=1", "origin", PIPELINE_COMMIT],
 		{ cwd: TEMP_DIR },
 	);
+	run("git", ["-C", PIPELINE_DIR, "checkout", "--detach", "FETCH_HEAD"], {
+		cwd: TEMP_DIR,
+	});
+	const fetchedCommit = execFileSync(
+		"git",
+		["-C", PIPELINE_DIR, "rev-parse", "HEAD"],
+		{ encoding: "utf8" },
+	).trim();
+	if (fetchedCommit !== PIPELINE_COMMIT) {
+		throw new Error(
+			`Expected Shirones ${PIPELINE_COMMIT}, fetched ${fetchedCommit}`,
+		);
+	}
 
 	console.log("[shirones-validation] installing pipeline dependencies");
 	run("pnpm", ["install", "--frozen-lockfile"], { cwd: PIPELINE_DIR });

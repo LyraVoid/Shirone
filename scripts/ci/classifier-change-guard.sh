@@ -11,8 +11,8 @@ head="$2"
 output_file="$3"
 
 # Every script that decides which suites run is part of the trust chain: an
-# edit to the orchestrator can skip both suites just as an edit to the
-# classifier can.
+# edit to the orchestrator can skip any downstream regression suite just as an
+# edit to the classifier can.
 protected_scripts=(
   scripts/ci/classify-browser-suites.sh
   scripts/ci/detect-browser-suites.sh
@@ -25,10 +25,11 @@ else
 fi
 
 if [[ "$diff_status" -eq 1 ]]; then
-  echo "::warning::Changed-path classifier or orchestrator changed; forcing both browser suites."
+  echo "::warning::Changed-path classifier or orchestrator changed; forcing all regression suites."
   {
     printf 'comments=true\n'
     printf 'styles=true\n'
+    printf 'shirones=true\n'
   } >> "$output_file"
   exit 0
 fi

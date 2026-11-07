@@ -15,32 +15,35 @@ This project runs unit tests directly with Node. CI uses Node 26.13.0. Astro/Vit
 The independent `shirones-pipeline-tests` job in `.github/workflows/ci.yml`
 checks out the exact Shirone revision under test (including a PR merge commit),
 sets up Node 26.13.0 and pnpm 11.28.2, then runs
-`scripts/ci/test-shirones-pipeline.mjs`. That Node script clones
-`yCENzh/shirones`'s `work` branch, creates a temporary local ref for the theme
-checkout, installs the pipeline's locked dependencies, and runs `pnpm all`
-against that exact theme ref. The pipeline suite runs its JavaScript tests,
-syncs templates, builds the package, installs and exercises the packed tarball
-through `shirones init`, `init --force`, and `info`, performs the scaffolded
-Astro production-build and dev-server smoke checks, then runs the override
-suite. The temporary clone/ref is removed afterward. This job validates but
-never publishes an npm package.
+`scripts/ci/test-shirones-pipeline.mjs`. The runner fetches the immutable
+`yCENzh/shirones` commit
+`38346f1dea9ea9e2c30e87551807a9ba58707bbf` (not the moving `work` ref), creates
+a temporary local ref for the tested theme revision, installs the pipeline's
+locked dependencies, and runs `pnpm all` against it. That suite runs its
+JavaScript tests, syncs templates, builds the package, installs and exercises
+the packed tarball through `shirones init`, `init --force`, and `info`, performs
+the scaffolded Astro production-build and dev-server smoke checks, then runs
+the override suite. The temporary clone/ref is removed afterward. It validates
+but never publishes an npm package. The job is path-gated: package source,
+manifests, build scripts, public assets, workflow changes, and unknown paths
+run it; documentation-only and test-only changes skip this expensive check.
 
 The `Shirone CI` triggers remain pushes to `main`, pull requests targeting
-`main`, and manual dispatches. A normal push to `work` does not start it
+`main`, and manual dispatches. A direct push to `work` does not start it
 automatically; use **workflow_dispatch** on that branch when an immediate run
 is needed.
 
 ## Browser regression path selection
 
-The main `ci.yml` runs quality checks, diagnostics, Node unit tests, and a Node 26.13.0 production build for every PR and push. Only the Playwright browser suites are path-gated.
+The main `ci.yml` runs quality checks, diagnostics, Node unit tests, and a Node 26.13.0 production build for every PR and push. Playwright browser suites and the cross-repository package-mode validation are path-gated.
 
-- For a PR, changed paths are computed from the base SHA to the PR merge commit; for a push, from the event's `before` SHA to the current commit. Manual dispatches and new-branch pushes select both browser suites.
-- `tests/fixtures/**` selects the comment suite. Source, site-browser tests, dependencies, runtime/build config, scripts, public assets, and workflow changes select both comment and style suites. Fast paths are limited to explicit documentation/Markdown patterns and the Node-test globs (`tests/*.test.mjs`, `tests/*/*.test.mjs`). Bash `*` can match `/`, so the second pattern also matches deeper paths such as `tests/plugins/markdown/katex-version.test.mjs`; these globs are not limited to one directory level. Unrecognized paths fall back to both suites, and mixed changes take the most conservative selection.
-- Unknown paths select both suites; a failed diff or invalid output must fail the stable regression checks rather than silently skip tests. The classifier reads NUL-delimited Git paths, so spaces, Unicode, and newlines are not split or quoted incorrectly.
-- The workflow calls `scripts/ci/detect-browser-suites.sh`, which runs `scripts/ci/classifier-change-guard.sh` and `scripts/ci/classify-browser-suites.sh` into separate temporary output files. If the classifier or the orchestrator changed, the guard's `comments=true` and `styles=true` values are authoritative; only the selected result is appended to `GITHUB_OUTPUT`, so a later classifier result cannot overwrite the guard. `git diff --quiet` status 1 means a protected script changed; statuses greater than 1 are Git errors and fail closed. `tests/ci-path-filter.test.mjs` runs the detector on temporary Git histories, including a classifier that reports false after changing, and asserts the final output; it also tests changed classifier, changed orchestrator, unchanged, and invalid-base guard cases.
+- For a PR, changed paths are computed from the base SHA to the PR merge commit; for a push, from the event's `before` SHA to the current commit. Manual dispatches and new-branch pushes select both browser suites and the package-mode job.
+- `tests/fixtures/**` selects the comment suite. Source, dependencies, runtime/build config, scripts, public assets, and workflow changes select both browser suites; package source/manifests/build inputs and unknown paths also select the Shirones package-mode job. Browser-only tests/config select the browser suites without invoking the package job. Fast paths are limited to explicit documentation/Markdown patterns and the Node-test globs (`tests/*.test.mjs`, `tests/*/*.test.mjs`). Bash `*` can match `/`, so the second pattern also matches deeper paths such as `tests/plugins/markdown/katex-version.test.mjs`; these globs are not limited to one directory level. Unrecognized paths fail closed and select all suites; mixed changes take the most conservative selection.
+- Unknown paths select all suites; a failed diff or invalid output must fail the stable regression checks rather than silently skip tests. The classifier reads NUL-delimited Git paths, so spaces, Unicode, and newlines are not split or quoted incorrectly.
+- The workflow calls `scripts/ci/detect-browser-suites.sh`, which runs `scripts/ci/classifier-change-guard.sh` and `scripts/ci/classify-browser-suites.sh` into separate temporary output files. If the classifier or orchestrator changed, the guard's `comments=true`, `styles=true`, and `shirones=true` values are authoritative; only the selected result is appended to `GITHUB_OUTPUT`, so a later classifier result cannot overwrite the guard. `git diff --quiet` status 1 means a protected script changed; statuses greater than 1 are Git errors and fail closed. `tests/ci-path-filter.test.mjs` runs the detector on temporary Git histories, including a classifier that reports false after changing, and asserts the final outputs; it also tests changed classifier, changed orchestrator, unchanged, and invalid-base guard cases.
 - The classifier integration tests run Bash on POSIX hosts when it is available. Native Windows is skipped because the tests pass POSIX paths and temporary Git paths to Bash without Windows path translation; use WSL/Linux to run them locally. CI runs them on Ubuntu.
 
-The Biome step in `ci.yml` currently has `continue-on-error: true`; a green required check does not itself make Biome blocking. Run `pnpm exec biome ci ./src` locally for source changes and review formatter edits rather than assuming CI status enforces them.
+The `Diagnostics and tests` job runs the package runtime manifest check (`pnpm check:package-manifest`) on every CI run, even when the expensive cross-repository tarball validation is path-skipped. The Biome step in `ci.yml` currently has `continue-on-error: true`; a green required check does not itself make Biome blocking. Run `pnpm exec biome ci ./src` locally for source changes and review formatter edits rather than assuming CI status enforces them.
 
 The Node 26.13.0 production build exercises source mode. The 30-minute Style regressions check is a stable aggregate over four parallel Playwright shards. `scripts/ci/list-style-regression-specs.mjs` selects every top-level `tests/site/*.spec.ts` except `comments.spec.ts` and `waline.spec.ts` (kept in the separate disabled/Waline/Twikoo mode matrix) and `visual.spec.ts` (its golden screenshots are ignored and local-only). `tests/style-regression-specs.test.mjs` checks this selection against the filesystem and the four-shard workflow matrix. The prior 14-spec focused suite took about 21.5 minutes in the 2-GiB local review sandbox (147 passed, 2 intentionally skipped); the expanded all-applicable suite is now divided across four shards. The cross-repository Shirones job now builds and validates the npm tarball, including its CLI lifecycle and Astro build/dev smoke checks. Changes under `src/integration/` or other package-mode wiring should still follow [npm package mode](./npm-package-mode.md) and the [packaging contract](./packaging-contract.md); source-mode checks alone are not package-mode evidence.
 
