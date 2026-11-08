@@ -136,10 +136,12 @@ recognizes dynamic imports and must fail if that shipped dependency is removed.
 **Release validation must use the actual archive.** The publisher should derive
 or explicitly maintain the CLI sibling list, inspect the `npm pack` tarball,
 install that tarball in a clean temporary project, and invoke the CLI paths that
-use the range engine and JSONC parser (including `init --update` with an
-existing tsconfig). A source-only manifest check or a successful import from
-the repository does not prove that the published package contains the runtime
-files and dependencies.
+use the range engine and JSONC parser. The pinned pipeline currently runs
+`init`, `init --force` and `info` against a project that has no tsconfig yet, so
+`init --update` against an existing JSONC tsconfig is still a manual release
+step rather than something the pipeline proves. A source-only manifest check or
+a successful import from the repository does not prove that the published
+package contains the runtime files and dependencies.
 
 ### What the range engine does and does not decide
 

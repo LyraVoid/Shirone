@@ -14,7 +14,7 @@ This project runs unit tests directly with Node. CI uses Node 26.13.0. Astro/Vit
 
 The independent `shirones-pipeline-tests` job in `.github/workflows/ci.yml`
 checks out the exact Shirone revision under test (including a PR merge commit),
-sets up Node 26.13.0 and pnpm 11.28.2, then runs
+sets up Node 26.13.0 and the pnpm version pinned by `packageManager`, then runs
 `scripts/ci/test-shirones-pipeline.mjs`. The runner fetches the immutable
 `yCENzh/shirones` commit
 `38346f1dea9ea9e2c30e87551807a9ba58707bbf` (not the moving `work` ref), creates
