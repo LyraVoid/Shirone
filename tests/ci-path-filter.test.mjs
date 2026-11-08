@@ -113,13 +113,15 @@ test("workflow delegates changed-path outputs to the tested detector", () => {
 		/scripts\/ci\/(?:classifier-change-guard|classify-browser-suites)\.sh/,
 		"workflow must not append either intermediate result directly to GITHUB_OUTPUT",
 	);
-	assert.equal(
-		workflow.jobs.changes.outputs.shirones,
-		"$" + "{{ steps.filter.outputs.shirones }}",
-	);
 	const packageJob = workflow.jobs["shirones-pipeline-tests"];
-	assert.equal(packageJob.needs, "changes");
-	assert.match(packageJob.if, /needs\.changes\.outputs\.shirones/);
+	assert.equal(packageJob.needs, undefined);
+	assert.equal(packageJob.if, undefined);
+	assert.ok(
+		packageJob.steps.some(
+			(step) => step.run === "node scripts/ci/test-shirones-pipeline.mjs",
+		),
+		"full package validation must run unconditionally through the Node runner",
+	);
 	const manifestCheck = workflow.jobs.checks.steps.find(
 		(step) => step.name === "Validate package runtime manifest",
 	);
@@ -185,10 +187,7 @@ test("workflow detector keeps guard outputs authoritative after the classifier r
 			output,
 		);
 		assert.equal(docsResult.result.status, 0, docsResult.result.stderr);
-		assert.equal(
-			docsResult.output,
-			"comments=false\nstyles=false\nshirones=false\n",
-		);
+		assert.equal(docsResult.output, "comments=false\nstyles=false\n");
 
 		// Simulate a classifier edit that now reports false for its own change.
 		// The guard and classifier both run, but only the guard's true values
@@ -200,7 +199,7 @@ test("workflow detector keeps guard outputs authoritative after the classifier r
 				"#!/usr/bin/env bash",
 				"set -euo pipefail",
 				"printf 'ran\\n' > classifier-ran.txt",
-				"printf 'comments=false\\nstyles=false\\nshirones=false\\n' >> \"$3\"",
+				"printf 'comments=false\\nstyles=false\\n' >> \"$3\"",
 				"",
 			].join("\n"),
 		);
@@ -219,10 +218,7 @@ test("workflow detector keeps guard outputs authoritative after the classifier r
 			0,
 			changedClassifier.result.stderr,
 		);
-		assert.equal(
-			changedClassifier.output,
-			"comments=true\nstyles=true\nshirones=true\n",
-		);
+		assert.equal(changedClassifier.output, "comments=true\nstyles=true\n");
 		assert.equal(
 			readFileSync(join(repo, "classifier-ran.txt"), "utf8"),
 			"ran\n",
@@ -277,7 +273,6 @@ test("classifier guard distinguishes a classifier diff from a git error", {
 		assert.equal(changed.result.status, 0, changed.result.stderr);
 		assert.deepEqual(changed.output.trim().split("\n").sort(), [
 			"comments=true",
-			"shirones=true",
 			"styles=true",
 		]);
 
@@ -313,7 +308,6 @@ test("classifier guard distinguishes a classifier diff from a git error", {
 		);
 		assert.deepEqual(changedDetector.output.trim().split("\n").sort(), [
 			"comments=true",
-			"shirones=true",
 			"styles=true",
 		]);
 	} finally {
@@ -324,14 +318,9 @@ test("classifier guard distinguishes a classifier diff from a git error", {
 test("changed-path browser classifier handles Git paths and fails closed", {
 	skip: !CAN_RUN_BASH_PATH_TESTS,
 }, async (t) => {
-	const both = { comments: "true", styles: "true", shirones: "true" };
-	const browserOnly = { comments: "true", styles: "true", shirones: "false" };
-	const commentsOnly = {
-		comments: "true",
-		styles: "false",
-		shirones: "false",
-	};
-	const none = { comments: "false", styles: "false", shirones: "false" };
+	const both = { comments: "true", styles: "true" };
+	const commentsOnly = { comments: "true", styles: "false" };
+	const none = { comments: "false", styles: "false" };
 	const cases = [
 		["Unicode content paths", ["src/content/posts/中文文章.md"], both],
 		["Unicode component paths", ["src/components/示例.svelte"], both],
@@ -349,8 +338,8 @@ test("changed-path browser classifier handles Git paths and fails closed", {
 		["package manifest", ["package.json"], both],
 		["pnpm lockfile", ["pnpm-lock.yaml"], both],
 		["pnpm workspace config", ["pnpm-workspace.yaml"], both],
-		["site browser tests", ["tests/site/comments.spec.ts"], browserOnly],
-		["Playwright config", ["playwright.config.ts"], browserOnly],
+		["site browser tests", ["tests/site/comments.spec.ts"], both],
+		["Playwright config", ["playwright.config.ts"], both],
 		["nested CI scripts", ["scripts/ci/another-classifier.sh"], both],
 		["package manifest checker", ["scripts/check-package-manifest.mjs"], both],
 		["classifier self-change", ["scripts/ci/classify-browser-suites.sh"], both],
@@ -368,7 +357,7 @@ test("changed-path browser classifier handles Git paths and fails closed", {
 		],
 		["documentation-only change", ["docs/guide.md"], none],
 		[
-			"package documentation does not run E2E",
+			"package documentation skips browser E2E",
 			["docs/packaging-contract.md"],
 			none,
 		],
