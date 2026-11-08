@@ -120,8 +120,10 @@ cached against a hash of the collected charset, so repeat builds skip the work.
 
 ## Things to keep in sync
 
-- `routes.ts` and the pipeline's `generate-manifest.mjs` both derive route
-  patterns from filenames. Change one, change the other.
+- Route patterns have one implementation: the pipeline bundles and calls
+  `src/integration/routes.ts` when it generates `dist/manifest.json` in
+  `build-package.mjs`. Change `routes.ts`; the manifest follows automatically.
+  `docs/packaging-contract.md` still governs the other source/template contracts.
 - Anything imported by a page must be in `dependencies`, never
   `devDependencies` — the package build fails the release if it finds an
   undeclared bare import. `@iconify-json/simple-icons` was exactly this trap.

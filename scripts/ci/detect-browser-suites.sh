@@ -24,7 +24,8 @@ classifier_output="$temp_dir/classifier-output"
 "$script_dir/classifier-change-guard.sh" "$base" "$head" "$guard_output"
 "$script_dir/classify-browser-suites.sh" "$base" "$head" "$classifier_output"
 
-if grep -Fxq 'comments=true' "$guard_output" && grep -Fxq 'styles=true' "$guard_output"; then
+if grep -Fxq 'comments=true' "$guard_output" &&
+  grep -Fxq 'styles=true' "$guard_output"; then
   cat "$guard_output" >> "$output_file"
 else
   cat "$classifier_output" >> "$output_file"

@@ -26,6 +26,9 @@ const GUARD = fileURLToPath(
 const DETECTOR = fileURLToPath(
 	new URL("../scripts/ci/detect-browser-suites.sh", import.meta.url),
 );
+const PIPELINE_SCRIPT = fileURLToPath(
+	new URL("../scripts/ci/test-shirones-pipeline.mjs", import.meta.url),
+);
 const CAN_RUN_BASH_PATH_TESTS =
 	process.platform !== "win32" &&
 	spawnSync("bash", ["--version"], { stdio: "ignore" }).status === 0;
@@ -110,6 +113,19 @@ test("workflow delegates changed-path outputs to the tested detector", () => {
 		/scripts\/ci\/(?:classifier-change-guard|classify-browser-suites)\.sh/,
 		"workflow must not append either intermediate result directly to GITHUB_OUTPUT",
 	);
+	const packageJob = workflow.jobs["shirones-pipeline-tests"];
+	assert.equal(packageJob.needs, undefined);
+	assert.equal(packageJob.if, undefined);
+	assert.ok(
+		packageJob.steps.some(
+			(step) => step.run === "node scripts/ci/test-shirones-pipeline.mjs",
+		),
+		"full package validation must run unconditionally through the Node runner",
+	);
+	const manifestCheck = workflow.jobs.checks.steps.find(
+		(step) => step.name === "Validate package runtime manifest",
+	);
+	assert.equal(manifestCheck?.run, "pnpm check:package-manifest");
 });
 
 function runWorkflowDetector(cwd, detector, base, head, outputFile) {
@@ -120,6 +136,14 @@ function runWorkflowDetector(cwd, detector, base, head, outputFile) {
 	});
 	return { result, output: readFileSync(outputFile, "utf8") };
 }
+
+test("cross-repository package validation fetches the pinned Shirones commit", () => {
+	const source = readFileSync(PIPELINE_SCRIPT, "utf8");
+	const pin = /const PIPELINE_COMMIT = "([0-9a-f]{40})"/.exec(source)?.[1];
+	assert.equal(pin, "38346f1dea9ea9e2c30e87551807a9ba58707bbf");
+	assert.match(source, /"fetch", "--depth=1", "origin", PIPELINE_COMMIT/);
+	assert.doesNotMatch(source, /PIPELINE_REF|"--branch"/);
+});
 
 test("workflow detector keeps guard outputs authoritative after the classifier runs", {
 	skip: !CAN_RUN_BASH_PATH_TESTS,
@@ -295,9 +319,12 @@ test("changed-path browser classifier handles Git paths and fails closed", {
 	skip: !CAN_RUN_BASH_PATH_TESTS,
 }, async (t) => {
 	const both = { comments: "true", styles: "true" };
+	const commentsOnly = { comments: "true", styles: "false" };
+	const none = { comments: "false", styles: "false" };
 	const cases = [
 		["Unicode content paths", ["src/content/posts/中文文章.md"], both],
 		["Unicode component paths", ["src/components/示例.svelte"], both],
+		["package integration source", ["src/integration/cli.mjs"], both],
 		["TypeScript config", ["tsconfig.json"], both],
 		["additional TypeScript config", ["tsconfig.build.json"], both],
 		["npm install config", [".npmrc"], both],
@@ -312,32 +339,32 @@ test("changed-path browser classifier handles Git paths and fails closed", {
 		["pnpm lockfile", ["pnpm-lock.yaml"], both],
 		["pnpm workspace config", ["pnpm-workspace.yaml"], both],
 		["site browser tests", ["tests/site/comments.spec.ts"], both],
+		["Playwright config", ["playwright.config.ts"], both],
 		["nested CI scripts", ["scripts/ci/another-classifier.sh"], both],
+		["package manifest checker", ["scripts/check-package-manifest.mjs"], both],
 		["classifier self-change", ["scripts/ci/classify-browser-suites.sh"], both],
-		[
-			"fixture-only change",
-			["tests/fixtures/waline-options.ts"],
-			{ comments: "true", styles: "false" },
-		],
+		["CLI test-only change", ["tests/cli-package-init.test.mjs"], none],
+		["fixture-only change", ["tests/fixtures/waline-options.ts"], commentsOnly],
 		[
 			"fixture config remains comment-only",
 			["tests/fixtures/content/waline/config/site.config.ts"],
-			{ comments: "true", styles: "false" },
+			commentsOnly,
 		],
 		[
 			"fixture plus docs still selects comments only",
 			["tests/fixtures/waline-options.ts", "docs/guide.md"],
-			{ comments: "true", styles: "false" },
+			commentsOnly,
 		],
+		["documentation-only change", ["docs/guide.md"], none],
 		[
-			"documentation-only change",
-			["docs/guide.md"],
-			{ comments: "false", styles: "false" },
+			"package documentation skips browser E2E",
+			["docs/packaging-contract.md"],
+			none,
 		],
 		[
 			"documentation config-like path is still skipped",
 			["docs/site.config.ts"],
-			{ comments: "false", styles: "false" },
+			none,
 		],
 		["unknown future config fails closed", ["config/new-runtime.json"], both],
 		[
@@ -345,15 +372,11 @@ test("changed-path browser classifier handles Git paths and fails closed", {
 			["docs/guide.md", "config/new-runtime.json"],
 			both,
 		],
-		[
-			"unrelated unit test",
-			["tests/version-range.test.mjs"],
-			{ comments: "false", styles: "false" },
-		],
+		["unrelated unit test", ["tests/version-range.test.mjs"], none],
 		[
 			"nested Node unit test",
 			["tests/plugins/markdown/katex-version.test.mjs"],
-			{ comments: "false", styles: "false" },
+			none,
 		],
 	];
 

@@ -10,9 +10,9 @@ base="$1"
 head="$2"
 output_file="$3"
 
-# Every script that decides which suites run is part of the trust chain: an
-# edit to the orchestrator can skip both suites just as an edit to the
-# classifier can.
+# Every script that decides which browser suites run is part of the trust
+# chain: an edit to the orchestrator can skip regressions just as an edit to
+# the classifier can. The package validation job is unconditional.
 protected_scripts=(
   scripts/ci/classify-browser-suites.sh
   scripts/ci/detect-browser-suites.sh

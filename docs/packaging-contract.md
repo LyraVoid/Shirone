@@ -115,7 +115,7 @@ dependency. Keep the stylesheet on that same dependency and retain
 `tests/plugins/markdown/katex-package-mode.test.mjs`; a clean consumer install
 must not split renderer and CSS versions.
 
-### Every relative import used by the copied CLI must be in the package archive
+### Every import used by the copied CLI must be in the package archive
 
 The package publisher copies the CLI rather than bundling it. A relative import
 that works in the source tree is not automatically present in the published
@@ -126,15 +126,20 @@ payload. A missing sibling is discovered only after a successful install, when
 `src/integration/version-range.mjs` is shared with `verify-peers.ts` so peer
 validation and `init --update` use the same range logic. The integration bundle
 can inline that import; the standalone CLI still needs the sibling at its
-published relative path (or a packaging step that bundles the CLI without
-changing its dependency-free startup contract).
+published relative path. External runtime imports need the same explicit
+packaging contract: `jsonc-parser` is loaded lazily with `import()` only when
+`init` edits an existing JSONC tsconfig, and is shipped through
+`extraDependencies` in `src/integration/package.manifest.json`. The lazy import
+keeps `help` and `info` usable before project setup; `scripts/check-package-manifest.mjs`
+recognizes dynamic imports and must fail if that shipped dependency is removed.
 
 **Release validation must use the actual archive.** The publisher should derive
 or explicitly maintain the CLI sibling list, inspect the `npm pack` tarball,
-install that tarball in a clean temporary project, and invoke the CLI path that
-imports the range engine (including `init --update`). A source-only manifest
-check or a successful import from the repository does not prove that the
-published package contains the file.
+install that tarball in a clean temporary project, and invoke the CLI paths that
+use the range engine and JSONC parser (including `init --update` with an
+existing tsconfig). A source-only manifest check or a successful import from
+the repository does not prove that the published package contains the runtime
+files and dependencies.
 
 ### What the range engine does and does not decide
 
