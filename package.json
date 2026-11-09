@@ -123,9 +123,9 @@
 	"devDependencies": {
 		"@astrojs/ts-plugin": "^1.10.12",
 		"@axe-core/playwright": "^4.14.0",
-		"@biomejs/biome": "2.5.15",
+		"@biomejs/biome": "2.6.5",
 		"@lhci/cli": "0.16.0",
-		"@playwright/test": "^1.64.1",
+		"@playwright/test": "^1.65.0",
 		"@rollup/plugin-yaml": "^5.0.1",
 		"@swup/scroll-plugin": "4.0.0",
 		"@types/hast": "^3.0.5",
