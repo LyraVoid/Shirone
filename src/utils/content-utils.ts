@@ -207,6 +207,8 @@ type MomentItemBase = {
 	location: string;
 	/** 心情 Iconify 图标名 */
 	mood: string;
+	/** 标签筛选使用的公开元数据；加密动态的展示标签仍保留在密文中。 */
+	filterTags: string[];
 	tags: string[];
 	images: MomentImage[];
 };
@@ -307,6 +309,7 @@ export async function getSortedMoments(): Promise<MomentItem[]> {
 					pinned: entry.data.pinned,
 					location: "",
 					mood: "",
+					filterTags: entry.data.tags,
 					tags: [],
 					images: [],
 					encrypted: true,
@@ -318,6 +321,7 @@ export async function getSortedMoments(): Promise<MomentItem[]> {
 				id: entry.id,
 				published: new Date(entry.data.published).toISOString(),
 				...content,
+				filterTags: content.tags,
 				pinned: entry.data.pinned,
 				encrypted: false,
 				passwordHint: "",

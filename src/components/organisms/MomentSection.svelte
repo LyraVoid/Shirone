@@ -45,7 +45,7 @@ let phase = $state<FilterPhase>("idle");
 let phaseTimers: ReturnType<typeof setTimeout>[] = [];
 
 const tagItems = $derived(
-	Array.from(new Set(moments.flatMap((moment) => moment.tags)))
+	Array.from(new Set(moments.flatMap((moment) => moment.filterTags)))
 		.sort((a, b) => a.localeCompare(b))
 		.map((tag) => ({ value: tag, label: tag })),
 );
@@ -67,7 +67,7 @@ const filtered = $derived.by(() => {
 	const normalizedQuery = query.trim().toLowerCase();
 
 	return moments.filter((moment) => {
-		if (selectedTag && !moment.tags.includes(selectedTag)) return false;
+		if (selectedTag && !moment.filterTags.includes(selectedTag)) return false;
 		if (!normalizedQuery) return true;
 		return (searchTexts.get(moment.id) ?? "").includes(normalizedQuery);
 	});
