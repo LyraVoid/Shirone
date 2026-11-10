@@ -85,7 +85,7 @@
 
 ### 受保护动态
 
-Moments frontmatter 可使用 `encrypted`、`password` 与 `passwordHint`。设置非空密码后，构建期会把正文 HTML、图片清单、位置、心情和标签序列化为 JSON，再复用全站 AES-GCM/PBKDF2 加密链路；页面 SSR 和 Svelte 水合数据只携带密文、发布日期、置顶状态与密码提示。加密动态不会进入前端搜索文本或标签筛选，解锁后由 `ProtectedMoment` 恢复标准 `MomentCard`，并重新初始化 Markdown 与图片运行时。动态页不会缓存解锁后的明文，刷新或重新进入页面时必须再次输入密码；文章和相册仍沿用标签页级解锁缓存。显式声明 `encrypted: true` 却未提供有效密码时构建失败，禁止降级成明文。
+Moments frontmatter 可使用 `encrypted`、`password` 与 `passwordHint`。设置非空密码后，构建期会把正文 HTML、图片清单、位置、心情和标签序列化为 JSON，再复用全站 AES-GCM/PBKDF2 加密链路；页面 SSR 和 Svelte 水合数据只携带密文、发布日期、置顶状态、密码提示与用于标签筛选的公开 `filterTags`。加密动态会参与标签列表和标签筛选，但锁定卡片不提前展示标签，正文、位置、心情、图片和展示标签仍需解锁；加密内容也不会进入前端全文搜索。解锁后由 `ProtectedMoment` 恢复标准 `MomentCard`，并重新初始化 Markdown 与图片运行时。动态页不会缓存解锁后的明文，刷新或重新进入页面时必须再次输入密码；文章和相册仍沿用标签页级解锁缓存。显式声明 `encrypted: true` 却未提供有效密码时构建失败，禁止降级成明文。
 
 原子层通用件（`Button` / `Card` / `IconButton` / `Avatar` / `AccentBar` / `FAB` 等）见 `m3e-standard.md` §4。
 
