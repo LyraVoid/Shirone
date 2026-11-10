@@ -88,6 +88,7 @@ async function unlock(serialized: string) {
 			scope={moment.payload.scope}
 			hint={moment.passwordHint}
 			variant="compact"
+			cacheSession={false}
 			onunlocked={(content) => void unlock(content)}
 		/>
 	</MomentCard>

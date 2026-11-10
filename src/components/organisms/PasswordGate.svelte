@@ -7,6 +7,7 @@ import { i18n } from "@i18n/translation";
 import Icon from "@iconify/svelte";
 import { decryptProtectedContent } from "@utils/password-protection";
 import {
+	clearProtectedSession,
 	protectedPayloadId,
 	readProtectedSession,
 	writeProtectedSession,
@@ -22,6 +23,7 @@ let {
 	description = "",
 	headingIcon = "",
 	variant = "default",
+	cacheSession = true,
 	onunlocked,
 }: {
 	payload: ProtectedPayload;
@@ -31,6 +33,8 @@ let {
 	description?: string;
 	headingIcon?: string;
 	variant?: "default" | "compact";
+	/** 是否缓存当前标签页的解锁内容。 */
+	cacheSession?: boolean;
 	onunlocked: (content: string) => void;
 } = $props();
 
@@ -97,6 +101,10 @@ const expectedContentType =
 	contentKind === "post" ? "text/html" : "application/json";
 
 onMount(() => {
+	if (!cacheSession) {
+		clearProtectedSession(scope);
+		return;
+	}
 	if (payload.contentType !== expectedContentType) return;
 	const session = readProtectedSession(scope, payloadId);
 	if (session) onunlocked(session.content);
@@ -116,7 +124,7 @@ async function unlock() {
 	try {
 		if (payload.contentType !== expectedContentType) throw new Error();
 		const content = await decryptProtectedContent(payload, password, scope);
-		writeProtectedSession(scope, payloadId, content);
+		if (cacheSession) writeProtectedSession(scope, payloadId, content);
 		onunlocked(content);
 	} catch {
 		error = i18n(copy.invalid);
