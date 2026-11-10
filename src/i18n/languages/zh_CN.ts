@@ -23,6 +23,16 @@ export const zh_CN: Translation = {
 	[Key.momentsBanner]: "随手记录的碎碎念 —— 生活、折腾与一切小确幸。",
 	[Key.momentsCount]: "条动态",
 	[Key.momentsCounts]: "条动态",
+	[Key.momentPasswordTitle]: "受保护的动态",
+	[Key.momentPasswordDescription]:
+		"该动态已被加密保护，请输入访问密码以解锁内容。",
+	[Key.momentPasswordLabel]: "访问密码",
+	[Key.momentPasswordShow]: "显示密码",
+	[Key.momentPasswordHide]: "隐藏密码",
+	[Key.momentPasswordRequired]: "请输入密码",
+	[Key.momentPasswordInvalid]: "密码错误，请重新输入",
+	[Key.momentPasswordUnlock]: "解锁动态",
+	[Key.momentPasswordUnlocking]: "正在解密…",
 	[Key.pinned]: "置顶",
 	[Key.loadMore]: "加载更多",
 
