@@ -14,6 +14,7 @@ import MomentCard, {
 	type MomentAuthor,
 } from "@components/molecules/MomentCard.svelte";
 import PageHeader from "@components/molecules/PageHeader.svelte";
+import ProtectedMoment from "@components/organisms/ProtectedMoment.svelte";
 import I18nKey from "@i18n/i18nKey";
 import { i18n } from "@i18n/translation";
 import type { MomentItem } from "@utils/content-utils";
@@ -187,7 +188,11 @@ onMount(() => {
 		{#key `${query}|${selectedTag}`}
 			<div class="moment-section__list">
 				{#each visibleMoments as moment, i (moment.id)}
-					<MomentCard {moment} {author} delay={Math.min(i, 7) * 45} />
+					{#if moment.encrypted}
+						<ProtectedMoment {moment} {author} delay={Math.min(i, 7) * 45} />
+					{:else}
+						<MomentCard {moment} {author} delay={Math.min(i, 7) * 45} />
+					{/if}
 				{/each}
 			</div>
 		{/key}
