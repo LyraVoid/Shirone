@@ -113,6 +113,9 @@
 
 ## 6. 当前分层清单（2026-08）
 
+`Pagination` 包含 `.astro` 静态链接版与 `.svelte` 交互版，两者共享样式和页码窗口；
+`createListHistory` 是有机体使用的路由工具，分子只通过回调通知页码变更。
+
 | 层 | 组件 |
 |---|---|
 | atoms/ | 63 个原子组件（Button、Chip、IconButton、FAB、FABMenu、Slider、SegmentedButton、TextField、Switch、Checkbox、RadioButton、Dialog、Menu、Badge、Divider、Snackbar、Tabs、Select、DataTable、SearchView、Autocomplete、SheetSide、Carousel、PullToRefresh、DatePicker、TimePicker、Chips、Banner、Tooltip、Card、AppBar、NavigationBar/Rail/Drawer、ExposedDropdownMenu、ListItem、LoadingIndicator、ProgressIndicator、AlertDialog、BadgedBox、SplitButton、ToggleButton、ButtonGroup、SearchBar、DateInput、FloatingToolbar、BottomSheet 等；完整清单与 tier 见 `atoms/manifest.json`） |

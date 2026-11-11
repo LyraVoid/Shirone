@@ -264,6 +264,7 @@ export const th: Translation = {
 	[Key.paginationNext]: "หน้าถัดไป",
 	[Key.paginationPage]: "หน้า {page}",
 	[Key.paginationJump]: "ไปที่หน้า",
+	[Key.paginationLabel]: "การเปลี่ยนหน้า",
 	[Key.tagsViewAll]: "ดูแท็กทั้งหมด",
 
 	[Key.author]: "ผู้เขียน",

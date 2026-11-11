@@ -4,6 +4,15 @@
   "description": "Shirone anime config schema generated from @/types/animeConfig.AnimeConfig",
   "type": "object",
   "properties": {
+    "pageSize": {
+      "anyOf": [
+        {},
+        {
+          "type": "number"
+        }
+      ],
+      "description": "页面每页条数；省略或无效值回退 12，与提供方请求批量大小无关。"
+    },
     "enable": {
       "type": "boolean",
       "description": "是否启用番剧页面。关闭后隐藏导航入口并将 /anime/ 重定向到 404。"

@@ -278,6 +278,7 @@ export const id: Translation = {
 	[Key.paginationNext]: "Halaman berikutnya",
 	[Key.paginationPage]: "Halaman {page}",
 	[Key.paginationJump]: "Lompat ke halaman",
+	[Key.paginationLabel]: "Navigasi halaman",
 	[Key.tagsViewAll]: "Lihat semua tag",
 
 	[Key.author]: "Penulis",

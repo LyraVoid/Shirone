@@ -265,6 +265,7 @@ export const zh_TW: Translation = {
 	[Key.paginationNext]: "下一頁",
 	[Key.paginationPage]: "第 {page} 頁",
 	[Key.paginationJump]: "跳轉到頁面",
+	[Key.paginationLabel]: "分頁導覽",
 	[Key.tagsViewAll]: "查看全部標籤",
 
 	[Key.author]: "作者",

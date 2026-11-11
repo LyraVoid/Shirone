@@ -276,6 +276,7 @@ export const vi: Translation = {
 	[Key.paginationNext]: "Trang sau",
 	[Key.paginationPage]: "Trang {page}",
 	[Key.paginationJump]: "Đi tới trang",
+	[Key.paginationLabel]: "Phân trang",
 	[Key.tagsViewAll]: "Xem tất cả thẻ",
 
 	[Key.author]: "Tác giả",

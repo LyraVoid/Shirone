@@ -276,6 +276,7 @@ export const es: Translation = {
 	[Key.paginationNext]: "Página siguiente",
 	[Key.paginationPage]: "Página {page}",
 	[Key.paginationJump]: "Ir a la página",
+	[Key.paginationLabel]: "Paginación",
 	[Key.tagsViewAll]: "Ver todas las etiquetas",
 
 	[Key.author]: "Autor",

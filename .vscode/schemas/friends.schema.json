@@ -4,6 +4,15 @@
   "description": "Shirone friends config schema generated from @/types/friendsConfig.FriendsConfig",
   "type": "object",
   "properties": {
+    "pageSize": {
+      "anyOf": [
+        {},
+        {
+          "type": "number"
+        }
+      ],
+      "description": "每页条数；省略或无效值回退 12。"
+    },
     "enable": {
       "anyOf": [
         {},
