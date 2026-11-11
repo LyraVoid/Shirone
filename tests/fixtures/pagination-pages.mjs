@@ -10,9 +10,11 @@ let owned = false;
 export async function createPaginationPages() {
 	await mkdir(directory); // Fail if a developer already owns this path.
 	owned = true;
-	for (const [name, anime, pageSize] of [
+	for (const [name, anime, pageSize, delayed] of [
 		["friends", false, 12],
 		["anime", true, 12],
+		["friends-delayed", false, 12, true],
+		["anime-delayed", true, 12, true],
 		["small", false, 5],
 		["invalid", false, 0],
 		["window", false, 10],
@@ -39,7 +41,9 @@ export async function createPaginationPages() {
 				(anime ? "animes" : "friends") +
 				"={items} pageSize={" +
 				pageSize +
-				"} client:visible />",
+				(delayed
+					? '} client:media="(min-width: 1600px)" />'
+					: "} client:visible />"),
 			"</MainGridLayout>",
 		].join("\n");
 		await writeFile(new URL(`${name}.astro`, directory), source);

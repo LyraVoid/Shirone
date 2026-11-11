@@ -21,7 +21,15 @@ const next = (page: Page) =>
 		.filter({ visible: true });
 
 async function ready(page: Page, domain: string, query = "") {
-	await page.goto(`${root + domain}/${query}`);
+	// Image-gate tests intentionally keep requests pending. Wait for the document
+	// and island readiness, rather than the unrelated window load event.
+	await page.goto(`${root + domain}/${query}`, {
+		waitUntil: "domcontentloaded",
+	});
+	await waitForList(page, domain);
+}
+
+async function waitForList(page: Page, domain: string) {
 	await expect(
 		page
 			.locator("astro-island[ssr]")
@@ -36,6 +44,38 @@ async function ready(page: Page, domain: string, query = "") {
 			.trim()
 			.startsWith("#"),
 	);
+	await page.waitForFunction(() =>
+		[...document.querySelectorAll<HTMLElement>(".onload-animation")].every(
+			(element) =>
+				element.offsetParent === null ||
+				getComputedStyle(element).opacity === "1",
+		),
+	);
+}
+
+async function mockExternalRequests(page: Page) {
+	await page.route(/^https?:\/\//, (route) => {
+		const { hostname } = new URL(route.request().url());
+		return hostname === "localhost" || hostname === "127.0.0.1"
+			? route.fallback()
+			: route.abort();
+	});
+}
+
+async function expectToolsBelowNavbar(page: Page, prefix: string) {
+	await expect
+		.poll(() =>
+			page.evaluate((domain) => {
+				const tools = document.querySelector(`.${domain}-section__tools`);
+				const navbar = document.querySelector("#navbar");
+				if (!tools || !navbar) return Number.NEGATIVE_INFINITY;
+				return (
+					tools.getBoundingClientRect().top -
+					navbar.getBoundingClientRect().bottom
+				);
+			}, prefix),
+		)
+		.toBeGreaterThanOrEqual(-1);
 }
 
 test.beforeAll(async () => {
@@ -45,6 +85,7 @@ test.afterAll(async () => {
 	await removePaginationPages();
 });
 test.beforeEach(async ({ page }) => {
+	await mockExternalRequests(page);
 	await page.route("**/pagination-media/**", (route) =>
 		route.fulfill({ contentType: "image/svg+xml", body: media }),
 	);
@@ -53,7 +94,43 @@ test.beforeEach(async ({ page }) => {
 for (const domain of ["friends", "anime"]) {
 	const prefix = domain === "friends" ? "friend" : "anime";
 	const title = domain === "friends" ? "Friend" : "Anime";
-	test(`${domain}: page replacement, deep links, filters and same-path history`, async ({
+	test(`${domain}: local history works when Swup starts before hydration`, async ({
+		page,
+	}) => {
+		// The media-hydrated fixture keeps the island dormant until Swup owns
+		// its native history listener, making registration order deterministic.
+		await page.setViewportSize({ width: 1280, height: 900 });
+		await page.goto(`${root + domain}-delayed/`, {
+			waitUntil: "domcontentloaded",
+		});
+		await page.waitForFunction(() => Boolean(window.swup?.hooks));
+		await expect(
+			page.locator("astro-island[ssr]").filter({
+				has: page.locator(`.${prefix}-section`),
+			}),
+		).toHaveCount(1);
+		await page.setViewportSize({ width: 1800, height: 1000 });
+		await waitForList(page, domain);
+		await page.evaluate(() => {
+			window.listVisits = 0;
+			document.addEventListener("swup:visit:start", () => window.listVisits++);
+		});
+		await next(page).click();
+		await expect(page.locator(`.${prefix}-card__title`).first()).toHaveText(
+			`${title} 013`,
+		);
+		await page.goBack();
+		await expect(page.locator(`.${prefix}-card__title`).first()).toHaveText(
+			`${title} 001`,
+		);
+		await page.goForward();
+		await expect(page.locator(`.${prefix}-card__title`).first()).toHaveText(
+			`${title} 013`,
+		);
+		expect(await page.evaluate(() => window.listVisits)).toBe(0);
+	});
+
+	test(`${domain}: page replacement, reload, deep links and same-path history`, async ({
 		page,
 	}) => {
 		await page.setViewportSize({ width: 1800, height: 1000 });
@@ -70,6 +147,7 @@ for (const domain of ["friends", "anime"]) {
 			`${title} 013`,
 		);
 		await expect(page.locator(`.${prefix}-section__tools`)).toBeFocused();
+		await expectToolsBelowNavbar(page, prefix);
 		await expect(pager(page).locator('[aria-current="page"]')).toHaveText("2");
 		await expect.poll(() => page.evaluate(() => window.listVisits)).toBe(0);
 		await expect
@@ -85,10 +163,19 @@ for (const domain of ["friends", "anime"]) {
 			`${title} 013`,
 		);
 		await expect.poll(() => page.evaluate(() => window.listVisits)).toBe(0);
-		await page.reload();
+		await page.reload({ waitUntil: "domcontentloaded" });
 		await expect(page.locator(`.${prefix}-card__title`).first()).toHaveText(
 			`${title} 013`,
 		);
+	});
+
+	test(`${domain}: search and filter changes reset pagination`, async ({
+		page,
+	}) => {
+		await page.setViewportSize({ width: 1800, height: 1000 });
+		await ready(page, domain);
+		await next(page).click();
+		await expectToolsBelowNavbar(page, prefix);
 		await page.locator(`.${prefix}-section__search input`).fill("085");
 		await expect(page).not.toHaveURL(/page=/);
 		await expect(page.locator(`.${prefix}-card`)).toHaveCount(1);
@@ -98,6 +185,7 @@ for (const domain of ["friends", "anime"]) {
 		).toBeFocused();
 		await page.locator(`.${prefix}-section__search input`).fill("");
 		await next(page).click();
+		await expectToolsBelowNavbar(page, prefix);
 		await page
 			.getByRole("button", {
 				name: domain === "friends" ? "Alpha" : "Watching",
@@ -148,6 +236,7 @@ for (const domain of ["friends", "anime"]) {
 			`${title} 085`,
 		);
 		await expect(next(page)).toBeDisabled();
+		await expectToolsBelowNavbar(page, prefix);
 		await page.locator("[data-pagination-peer]").click();
 		await expect(page).toHaveURL(
 			new RegExp(`${root + (domain === "friends" ? "anime" : "friends")}/$`),
@@ -162,7 +251,9 @@ for (const domain of ["friends", "anime"]) {
 		await expect(page.locator(`.${prefix}-card`)).toHaveCount(12);
 		await page.goForward();
 		await expect(page.locator(`.${prefix}-card`)).toHaveCount(1);
-		await page.goto(`${root + domain}/?page=999&utm_source=test#results`);
+		await page.goto(`${root + domain}/?page=999&utm_source=test#results`, {
+			waitUntil: "domcontentloaded",
+		});
 		await expect(page).toHaveURL(/page=8/);
 		await expect(page).toHaveURL(/utm_source=test/);
 		await expect(page).toHaveURL(/#results$/);
@@ -175,7 +266,7 @@ for (const domain of ["friends", "anime"]) {
 }
 
 test("pageSize config and missing/invalid defaults", async ({ page }) => {
-	await page.goto(`${root}small/`);
+	await page.goto(`${root}small/`, { waitUntil: "domcontentloaded" });
 	await expect(page.locator(".friend-card")).toHaveCount(5);
 	await ready(page, "invalid");
 });
@@ -307,7 +398,7 @@ test("pager fits wide and narrow columns without horizontal overflow", async ({
 	page,
 }, testInfo) => {
 	await ready(page, "friends");
-	await page.goto(`${root}window/?page=5`);
+	await page.goto(`${root}window/?page=5`, { waitUntil: "domcontentloaded" });
 	await expect(page.locator(".friend-card__title").first()).toHaveText(
 		"Friend 041",
 	);
@@ -344,7 +435,8 @@ test("static blog pager keeps links and mobile jump working", async ({
 	const errors: string[] = [];
 	page.on("pageerror", (error) => errors.push(error.message));
 	await page.setViewportSize({ width: 1800, height: 1000 });
-	await page.goto("/");
+	// This pager uses a deferred delegated script rather than a hydrated island.
+	await page.goto("/", { waitUntil: "load" });
 	const staticPager = page.locator(".m3-blog-pagination");
 	await expect(staticPager.locator('[aria-current="page"]')).toHaveText("1");
 	await staticPager
@@ -352,6 +444,10 @@ test("static blog pager keeps links and mobile jump working", async ({
 		.click();
 	await expect(page).toHaveURL(/\/2\/$/);
 	await expect(staticPager.locator('[aria-current="page"]')).toHaveText("2");
+	// Swup is idle-loaded; this link can still perform a full navigation.
+	// Wait for the new document's delegated handler before clicking its jump.
+	await page.waitForLoadState("load");
+	await expect(page.locator("html")).not.toHaveClass(/is-changing/);
 	await page.setViewportSize({ width: 390, height: 844 });
 	await staticPager.getByRole("button", { name: "Jump to page" }).click();
 	const input = staticPager.getByRole("textbox", { name: "Jump to page" });
@@ -373,8 +469,12 @@ test("SSR keeps every entry accessible without JavaScript", async ({
 	const context = await browser.newContext({ javaScriptEnabled: false });
 	const page = await context.newPage();
 	try {
+		await mockExternalRequests(page);
+		await page.route("**/pagination-media/**", (route) =>
+			route.fulfill({ contentType: "image/svg+xml", body: media }),
+		);
 		for (const domain of ["friends", "anime"]) {
-			await page.goto(`${root + domain}/`);
+			await page.goto(`${root + domain}/`, { waitUntil: "domcontentloaded" });
 			const prefix = domain === "friends" ? "friend" : "anime";
 			await expect(page.locator(`.${prefix}-card`)).toHaveCount(85);
 			await expect(page.locator(`.${prefix}-card__title`).last()).toBeVisible();
@@ -388,7 +488,7 @@ test("SSR keeps every entry accessible without JavaScript", async ({
 test("pager renders localized names and page placeholders", async ({
 	page,
 }) => {
-	await page.goto("/");
+	await page.goto("/", { waitUntil: "domcontentloaded" });
 	await page.evaluate(async () => {
 		const target = document.createElement("div");
 		target.id = "pagination-locale-probe";

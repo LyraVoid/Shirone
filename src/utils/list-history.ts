@@ -57,9 +57,13 @@ export function createListHistory(options: {
 			frame = requestAnimationFrame(() => {
 				const element = options.element();
 				if (!element?.isConnected) return;
-				const header =
-					document.querySelector("#top-row")?.getBoundingClientRect().height ??
-					64;
+				// The fixed app bar obscures the viewport; #top-row is a banner
+				// spacer and can have zero height in the compact layout.
+				const header = Math.max(
+					0,
+					document.querySelector("#navbar")?.getBoundingClientRect().bottom ??
+						0,
+				);
 				window.scrollTo({
 					top: Math.max(
 						0,
@@ -73,6 +77,28 @@ export function createListHistory(options: {
 		connect: () => {
 			pathname = window.location.pathname;
 			options.read(new URLSearchParams(window.location.search));
+			const isLocalEntry = (event: PopStateEvent) =>
+				window.location.pathname === pathname &&
+				event.state?.shironeListPath === pathname &&
+				Boolean(options.element()?.isConnected);
+			let releaseSwup = () => {};
+			const bindSwup = () => {
+				const swup = window.swup;
+				if (!swup) return;
+				const previous = swup.options.skipPopStateHandling;
+				const skip = (event: PopStateEvent) =>
+					(isLocalEntry(event) && swup.location.pathname === pathname) ||
+					previous(event);
+				// Native window popstate listeners can run in registration order, even
+				// with capture. Use Swup's explicit opt-out when it starts before this island.
+				swup.options.skipPopStateHandling = skip;
+				releaseSwup = () => {
+					if (swup.options.skipPopStateHandling === skip)
+						swup.options.skipPopStateHandling = previous;
+				};
+			};
+			if (window.swup) bindSwup();
+			else document.addEventListener("swup:enable", bindSwup, { once: true });
 			const onScroll = () => {
 				clearTimeout(scrollTimer);
 				scrollTimer = setTimeout(() => {
@@ -80,14 +106,8 @@ export function createListHistory(options: {
 				}, 100);
 			};
 			const onPopState = (event: PopStateEvent) => {
-				if (
-					window.location.pathname !== pathname ||
-					event.state?.shironeListPath !== pathname ||
-					!options.element()?.isConnected
-				)
-					return;
-				// Sync before Swup reads location: it sees an already handled URL and skips
-				// the visit. Other popstate listeners still receive the event. Local entries
+				if (!isLocalEntry(event)) return;
+				// Other popstate listeners still receive the event. Local entries
 				// retain the shell visit's history index; cross-path visits remain Swup-owned.
 				clearTimeout(scrollTimer);
 				restoring = true;
@@ -110,6 +130,8 @@ export function createListHistory(options: {
 			return () => {
 				cancelAnimationFrame(frame);
 				clearTimeout(scrollTimer);
+				releaseSwup();
+				document.removeEventListener("swup:enable", bindSwup);
 				window.removeEventListener("popstate", onPopState, true);
 				window.removeEventListener("scroll", onScroll);
 				document.removeEventListener("swup:visit:start", remember);
