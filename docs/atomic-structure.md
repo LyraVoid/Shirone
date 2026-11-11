@@ -113,7 +113,7 @@
 
 ## 6. 当前分层清单（2026-08）
 
-`Pagination` 包含 `.astro` 静态链接版与 `.svelte` 交互版，两者共享样式和页码窗口；
+`Pagination.astro` 静态链接版与 `ListPagination.svelte` 交互列表版共享样式和页码窗口；
 `createListHistory` 是有机体使用的路由工具，分子只通过回调通知页码变更。
 
 | 层 | 组件 |

@@ -12,8 +12,8 @@ import Card from "@components/atoms/display/Card.svelte";
 import Icon from "@components/atoms/display/Icon.svelte";
 import TextField from "@components/atoms/input/TextField.svelte";
 import AnimeCard from "@components/molecules/AnimeCard.svelte";
+import ListPagination from "@components/molecules/ListPagination.svelte";
 import PageHeader from "@components/molecules/PageHeader.svelte";
-import Pagination from "@components/molecules/Pagination.svelte";
 import I18nKey from "@i18n/i18nKey";
 import { i18n } from "@i18n/translation";
 import { ANIME_STATUS_META } from "@utils/anime/status";
@@ -268,7 +268,7 @@ onMount(() => {
 	{/if}
 	{#if totalPages > 1}
 		<div class="anime-section__pagination">
-			<Pagination {currentPage} {totalPages} onpagechange={changePage} />
+			<ListPagination {currentPage} {totalPages} onpagechange={changePage} />
 		</div>
 	{/if}
 </Card>

@@ -5,7 +5,7 @@ import { i18n } from "@i18n/translation";
 import { paginationPages } from "@utils/pagination";
 import { onMount, tick } from "svelte";
 
-/** Interactive counterpart of PagePagination. The organism owns URL and scrolling. */
+/** Interactive list pager. A distinct basename preserves package-mode overrides. */
 let {
 	currentPage,
 	totalPages,

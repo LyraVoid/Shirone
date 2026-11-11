@@ -2,7 +2,7 @@ import { mount, tick } from "svelte";
 import Icon from "../../../src/components/atoms/display/Icon.svelte";
 import AnimeCard from "../../../src/components/molecules/AnimeCard.svelte";
 import CalendarView from "../../../src/components/molecules/CalendarView.svelte";
-import Pagination from "../../../src/components/molecules/Pagination.svelte";
+import ListPagination from "../../../src/components/molecules/ListPagination.svelte";
 import { siteConfig } from "../../../src/config/siteConfig.ts";
 import type { AnimeItem } from "../../../src/data/anime.ts";
 
@@ -45,7 +45,7 @@ export async function mountPaginationProbe(target: HTMLElement) {
 	const previousLang = siteConfig.lang;
 	try {
 		siteConfig.lang = "zh_CN";
-		const component = mount(Pagination, {
+		const component = mount(ListPagination, {
 			target,
 			props: { currentPage: 2, totalPages: 8, onpagechange: () => {} },
 		});

@@ -71,7 +71,7 @@
 | `FriendCard` | 友链卡片（头像 + 站名 + 描述 + 标签，整卡链接） |
 | `MomentCard` | 动态卡片（`<article>` 语义：头像/作者/时间/置顶/心情/正文/位置/标签） |
 | `MomentGallery` | 动态图片画廊（两段式：自适应网格瓦片 → 内联查看器主舞台/缩略图条/键盘导航 → Fancybox 灯箱） |
-| `Pagination.astro` / `Pagination.svelte` | 静态链接 / 交互分页，共享页码窗口与 `styles/pagination.styl`；宽容器显示页码，窄容器显示当前/总页和原地跳转。交互版仅发出 `onpagechange`，URL、滚动和历史由 organism 管理 |
+| `Pagination.astro` / `ListPagination.svelte` | 静态链接 / 交互分页，共享页码窗口与 `styles/pagination.styl`；宽容器显示页码，窄容器显示当前/总页和原地跳转。交互版仅发出 `onpagechange`，URL、滚动和历史由 organism 管理 |
 | `SearchBar` | 搜索输入（分子层，docked 视觉） |
 | `WidgetLayout` | 侧栏卡片容器（折叠标题 + 内容） |
 | `Announcement` | 公告侧栏 widget（Banner 原子 round 形态，无标题外壳；内容源 `announcementConfig`） |
