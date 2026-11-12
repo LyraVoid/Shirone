@@ -157,9 +157,9 @@ function resolveBangumiCover(coverUrl, subjectId, coverConfig) {
 		};
 	}
 
-	// remote（默认）：可选镜像前缀改写（如自建反代/加速域名）
+	// remote（默认）：mirror 与完整 URL 纯前缀拼接（同 Bilibili 语义，支持路径式/查询式代理）
 	if (coverConfig.mirror) {
-		cover = `${coverConfig.mirror.replace(/\/+$/, "")}/${cover.replace(/^https?:\/\//, "")}`;
+		cover = `${coverConfig.mirror}${cover}`;
 	}
 	return { cover };
 }
