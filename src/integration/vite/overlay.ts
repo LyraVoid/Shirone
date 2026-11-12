@@ -30,6 +30,15 @@ const ALIAS_MAP: [string, string][] = [
 	["@/", ""],
 ];
 
+/**
+ * `ALIAS_MAP` as bare specifier prefixes (`@components`, `@utils`, … , `@`).
+ * Vite's dep optimizer calls the overlay plugin never, so package mode lists
+ * these under `optimizeDeps.exclude`; see the comment in `index.ts`.
+ */
+export const ALIAS_NAMESPACES: string[] = ALIAS_MAP.map(([prefix]) =>
+	prefix.replace(/\/$/, ""),
+);
+
 /** Split a Vite id into its path and query (`?raw`, `?url`, `?astro&type=…`). */
 function splitQuery(id: string): [string, string] {
 	const index = id.indexOf("?");

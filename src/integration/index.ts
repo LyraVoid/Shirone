@@ -39,7 +39,7 @@ import {
 } from "./verify-peers.ts";
 import { shironesFallbackResolver } from "./vite/fallback-resolver.ts";
 import { shironesIconRegeneration } from "./vite/icon/regeneration.ts";
-import { shironesOverlay } from "./vite/overlay.ts";
+import { ALIAS_NAMESPACES, shironesOverlay } from "./vite/overlay.ts";
 import { shironesSsrNodeShims } from "./vite/ssr-node-shims.ts";
 import { shironesThumbnailsRegeneration } from "./vite/thumbnails/regeneration.ts";
 
@@ -407,6 +407,8 @@ export function shirones(options: ShironesOptions = {}): AstroIntegration {
 							// inside the package, and listing an unresolvable id makes
 							// Vite log a warning for every one of them on every build.
 							include: prebundleCandidates(paths, prebundleSpecifiers),
+							// Package mode only — see `prebundleExclude`.
+							exclude: prebundleExclude(paths),
 						},
 						// `viteBuildShared` deliberately omits any console-stripping
 						// config: stripping console.log from a user's own code in
@@ -526,6 +528,22 @@ export function prebundleCandidates(
 	// dependencies, installed under the root Vite resolves from, so the hint is
 	// both visible and useful.
 	return specifiers;
+}
+
+/**
+ * Theme alias namespaces to keep out of Vite's dev dependency pre-bundle.
+ *
+ * In package mode `@components/…`, `@/config/…` and friends resolve into
+ * `node_modules`, so Vite's dep scanner treats them as dependencies and
+ * pre-bundles them. That bundle is built without the plugin pipeline, so
+ * `shirones:overlay` never runs for it: every hydrated island then reads the
+ * package's own config (`lang: "en"`, no user overrides) while SSR reads the
+ * user's copy, and `astro build` skips pre-bundling — which is why only dev
+ * disagrees. Source mode resolves the same aliases inside the project, where
+ * the scanner never sees a dependency, so it needs no exclusion.
+ */
+export function prebundleExclude(paths: ResolvedShironesPaths): string[] {
+	return paths.isThemeRepo ? [] : ALIAS_NAMESPACES;
 }
 
 /**
