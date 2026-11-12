@@ -25,6 +25,16 @@ export const id: Translation = {
 		"Catatan singkat — kehidupan, karya, dan kebahagiaan kecil.",
 	[Key.momentsCount]: "momen",
 	[Key.momentsCounts]: "momen",
+	[Key.momentPasswordTitle]: "Momen terlindungi",
+	[Key.momentPasswordDescription]:
+		"Momen ini dienkripsi. Masukkan kata sandi untuk membuka kontennya.",
+	[Key.momentPasswordLabel]: "Kata sandi",
+	[Key.momentPasswordShow]: "Tampilkan kata sandi",
+	[Key.momentPasswordHide]: "Sembunyikan kata sandi",
+	[Key.momentPasswordRequired]: "Masukkan kata sandi",
+	[Key.momentPasswordInvalid]: "Kata sandi salah",
+	[Key.momentPasswordUnlock]: "Buka momen",
+	[Key.momentPasswordUnlocking]: "Mendekripsi…",
 	[Key.pinned]: "Disematkan",
 	[Key.loadMore]: "Muat lainnya",
 

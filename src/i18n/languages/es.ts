@@ -24,6 +24,16 @@ export const es: Translation = {
 	[Key.momentsBanner]: "Notas cortas — vida, trabajo y pequeñas alegrías.",
 	[Key.momentsCount]: "momento",
 	[Key.momentsCounts]: "momentos",
+	[Key.momentPasswordTitle]: "Momento protegido",
+	[Key.momentPasswordDescription]:
+		"Este momento está cifrado. Introduce la contraseña para desbloquear su contenido.",
+	[Key.momentPasswordLabel]: "Contraseña",
+	[Key.momentPasswordShow]: "Mostrar contraseña",
+	[Key.momentPasswordHide]: "Ocultar contraseña",
+	[Key.momentPasswordRequired]: "Introduce una contraseña",
+	[Key.momentPasswordInvalid]: "Contraseña incorrecta",
+	[Key.momentPasswordUnlock]: "Desbloquear momento",
+	[Key.momentPasswordUnlocking]: "Descifrando…",
 	[Key.pinned]: "Fijado",
 	[Key.loadMore]: "Cargar más",
 

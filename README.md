@@ -61,7 +61,7 @@ The theme is designed for long-form writing as well as personal collections such
 - Smooth Swup navigation with a persistent shell, route progress, and reduced-motion support
 - Markdown and MDX content with math, Mermaid, admonitions, enhanced code blocks, and image galleries
 - Full-text search powered by Pagefind, plus RSS and sitemap output
-- Article table of contents, related posts, sharing, encryption, and optional comments
+- Article table of contents, related posts, sharing, optional comments, and password protection for posts, moments, and albums
 - Dedicated pages for archives, categories, tags, friends, moments, anime, albums, projects, skills, devices, games, series, and timelines
 - Ten built-in interface locales
 - SSR-first output, keyboard-friendly interactions, and accessibility testing
