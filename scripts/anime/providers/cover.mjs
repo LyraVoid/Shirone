@@ -72,6 +72,23 @@ export function detectImageExtension(buffer, contentType) {
 }
 
 /**
+ * 把封面 URL 拼到镜像前缀后面。
+ *
+ * 查询式代理（如 `https://wsrv.nl/?url=`）原样接收完整 URL；路径式镜像
+ * （如 `https://proxy.example.com/`）保证前缀与 URL 之间恰好一个 `/`，
+ * 避免 `https://proxy.example.com` 拼出 `…comhttps://…` 这种非法地址。
+ *
+ * @param {string} coverUrl 完整封面 URL（已升级到 https）
+ * @param {string | undefined} mirror 用户配置的镜像前缀
+ * @returns {string} 拼接后的 URL；未配置镜像时原样返回
+ */
+export function applyMirror(coverUrl, mirror) {
+	if (!coverUrl || !mirror) return coverUrl;
+	if (mirror.includes("?")) return `${mirror}${coverUrl}`;
+	return `${mirror.replace(/\/+$/, "")}/${coverUrl}`;
+}
+
+/**
  * 下载单张封面到站内静态目录（cover.mode = "local" 的共享实现）。
  *
  * @param {string} coverUrl 已完成协议升级与参数拼接的最终图片 URL

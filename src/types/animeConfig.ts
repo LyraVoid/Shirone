@@ -85,8 +85,10 @@ export interface BangumiProviderConfig {
 	cover?: {
 		mode: AnimeCoverMode;
 		/**
-		 * 可选封面镜像前缀，与完整封面 URL 纯拼接（remote 模式生效）。
-		 * 路径式反代（如 "https://proxy.example.com/"）与查询式图片代理（如 "https://wsrv.nl/?url="）均可。
+		 * 可选封面镜像前缀（remote 模式生效），拼接完整封面 URL：
+		 * 查询式图片代理（如 "https://wsrv.nl/?url="）原样拼接；
+		 * 路径式镜像（如 "https://proxy.example.com/"）会规范为单个 `/` 后再拼接。
+		 * 注意：旧版本会去掉协议并把 host 作为路径拼接，按旧语义配置的 mirror 需相应调整。
 		 */
 		mirror?: string;
 	};
@@ -111,8 +113,10 @@ export interface BilibiliProviderConfig {
 	cover?: {
 		mode: AnimeCoverMode;
 		/**
-		 * 可选封面镜像前缀，与完整封面 URL 纯拼接（remote 模式生效）。
-		 * 路径式反代（如 "https://proxy.example.com/"）与查询式图片代理（如 "https://wsrv.nl/?url="）均可。
+		 * 可选封面镜像前缀（remote 模式生效），拼接完整封面 URL：
+		 * 查询式图片代理（如 "https://wsrv.nl/?url="）原样拼接；
+		 * 路径式镜像（如 "https://proxy.example.com/"）会规范为单个 `/` 后再拼接。
+		 * 注意：旧版本会去掉协议并把 host 作为路径拼接，按旧语义配置的 mirror 需相应调整。
 		 */
 		mirror?: string;
 		/** 是否使用 WebP 图片优化参数（默认 true） */

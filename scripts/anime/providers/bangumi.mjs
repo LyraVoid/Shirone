@@ -1,4 +1,4 @@
-import { downloadCoverLocally } from "./cover.mjs";
+import { applyMirror, downloadCoverLocally } from "./cover.mjs";
 
 const BANGUMI_API_BASE = "https://api.bgm.tv";
 const USER_AGENT = "Shirone/1.0 (https://github.com/shirone; AnimeSync)";
@@ -157,10 +157,8 @@ function resolveBangumiCover(coverUrl, subjectId, coverConfig) {
 		};
 	}
 
-	// remote（默认）：mirror 与完整 URL 纯前缀拼接（同 Bilibili 语义，支持路径式/查询式代理）
-	if (coverConfig.mirror) {
-		cover = `${coverConfig.mirror}${cover}`;
-	}
+	// remote（默认）：查询式代理原样拼接，路径式镜像补足分隔符（同 Bilibili 语义）
+	cover = applyMirror(cover, coverConfig.mirror);
 	return { cover };
 }
 

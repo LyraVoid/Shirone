@@ -1,4 +1,4 @@
-import { downloadCoverLocally } from "./cover.mjs";
+import { applyMirror, downloadCoverLocally } from "./cover.mjs";
 
 const API_BASE = "https://api.bilibili.com/x/space/bangumi/follow/list";
 const USER_AGENT =
@@ -212,10 +212,7 @@ export async function fetchBilibiliData(bilibiliConfig) {
 			if (coverConfig.useWebp !== false && !cover.includes("@")) {
 				cover = `${cover}@220w_280h.webp`;
 			}
-			// mirror 与完整 URL 纯前缀拼接：路径式反代（https://proxy/）与查询式代理（https://wsrv.nl/?url=）均可用
-			if (coverConfig.mirror) {
-				cover = `${coverConfig.mirror}${cover}`;
-			}
+			cover = applyMirror(cover, coverConfig.mirror);
 		} else if (coverConfig.mode === "none") {
 			cover = "";
 		}
