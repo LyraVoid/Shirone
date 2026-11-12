@@ -64,6 +64,9 @@ export const animeConfig: AnimeConfig = withUserConfig("anime", {
 		bangumi: {
 			enable: false,
 			userId: "", // 填入你的 Bangumi 数字 UID 或公开用户名（测试可填 "sai"）
+			cover: {
+				mode: "remote", // "remote" 远程直链（默认，bgm.tv 无防盗链）| "local" 站内下载缓存 | "none"
+			},
 			request: {
 				pageSize: 50,
 				maxItems: 300,

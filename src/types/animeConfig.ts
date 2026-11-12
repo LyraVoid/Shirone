@@ -22,9 +22,11 @@ export type AnimeSourceKind = "local" | "snapshot";
 export type AnimeFallbackKind = "local" | "empty";
 
 /**
- * 封面资源策略：
- * - `"local"`：由同步脚本下载封面至站内 `public/assets/anime/covers/`，页面零第三方 CDN 外链请求（推荐）；
- * - `"remote"`：页面加载清洗后的 HTTPS 封面图片；
+ * 封面资源策略（默认值因 provider 而异：Bilibili 为 "local"（获 WebP 压缩与零第三方依赖；
+ * 其图床虽有防盗链，但前端 img 的 no-referrer 已可绕过，remote 亦可用），Bangumi 为 "remote"
+ * （lain.bgm.tv 无防盗链，直链可直接展示））：
+ * - `"local"`：由同步脚本下载封面至站内 `public/assets/anime/covers/`，页面零第三方 CDN 外链请求；
+ * - `"remote"`：页面加载清洗后的 HTTPS 封面图片（快照仅存 URL 字符串，图片依赖源站在线）；
  * - `"none"`：不使用封面，卡片呈现主题渐变占位。
  */
 export type AnimeCoverMode = "local" | "remote" | "none";
@@ -76,6 +78,18 @@ export interface BangumiProviderConfig {
 	enable: boolean;
 	/** Bangumi 用户 ID 或公开个性域名（必填，未填时自动禁用） */
 	userId: string;
+	/**
+	 * 封面处理策略（默认 remote：lain.bgm.tv 无防盗链，直链可直接展示）。
+	 * 与 Bilibili 对齐，但不提供 useWebp——bgm.tv 图床无服务端格式转换参数。
+	 */
+	cover?: {
+		mode: AnimeCoverMode;
+		/**
+		 * 可选封面镜像前缀，与完整封面 URL 纯拼接（remote 模式生效）。
+		 * 路径式反代（如 "https://proxy.example.com/"）与查询式图片代理（如 "https://wsrv.nl/?url="）均可。
+		 */
+		mirror?: string;
+	};
 	/** 可选网络请求参数 */
 	request?: AnimeRequestOptions;
 }
@@ -96,7 +110,10 @@ export interface BilibiliProviderConfig {
 	/** 封面处理策略 */
 	cover?: {
 		mode: AnimeCoverMode;
-		/** 可选封面镜像前缀（如加速 CDN 或反代前缀） */
+		/**
+		 * 可选封面镜像前缀，与完整封面 URL 纯拼接（remote 模式生效）。
+		 * 路径式反代（如 "https://proxy.example.com/"）与查询式图片代理（如 "https://wsrv.nl/?url="）均可。
+		 */
 		mirror?: string;
 		/** 是否使用 WebP 图片优化参数（默认 true） */
 		useWebp?: boolean;
