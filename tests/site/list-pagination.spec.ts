@@ -352,6 +352,10 @@ test("real Swup wait shows route progress and all failure exits clear it", async
 	release();
 	await expect(page.locator(".anime-card")).toHaveCount(12);
 	await expect(page.locator(".route-progress")).toHaveCSS("opacity", "0");
+	// The real visit ends after `page:view`, and `visit:end` clears the shell
+	// classes by hiding the bar; wait for that before synthesising events, or a
+	// late hide can race the synthetic `visit:start` and keep opacity at 0.
+	await expect(page.locator("html")).not.toHaveClass(/is-changing/);
 	for (const name of [
 		"visit:abort",
 		"visit:fail",
