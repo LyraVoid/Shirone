@@ -43,6 +43,8 @@ export const animeConfig: AnimeConfig = withUserConfig("anime", {
 	enable: true,
 	title: "$t:anime",
 	description: "$t:animeBanner",
+	/** 页面每页条数（正整数），默认 12；省略或无效值回退 12。 */
+	pageSize: 12,
 
 	/** 主数据源选择 */
 	source: {

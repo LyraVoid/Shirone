@@ -276,6 +276,7 @@ export const tr: Translation = {
 	[Key.paginationNext]: "Sonraki sayfa",
 	[Key.paginationPage]: "Sayfa {page}",
 	[Key.paginationJump]: "Sayfaya git",
+	[Key.paginationLabel]: "Sayfalandırma",
 	[Key.tagsViewAll]: "Tüm etiketleri gör",
 
 	[Key.author]: "Yazar",

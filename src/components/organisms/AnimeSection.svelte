@@ -1,24 +1,25 @@
 <script lang="ts">
 /**
- * 番剧页主体（有机体）：页头 + 状态筛选 chips + 实时搜索 + 双布局（grid/list）+ 加载更多。
+ * 番剧页主体（有机体）：页头 + 状态筛选 chips + 实时搜索 + 双布局（grid/list）+ 分页。
  * 数据由页面层经 utils/anime-data.getAnimeList() 构建期取得后以 props 传入；
  * 筛选状态与搜索同步 URL（?status= / ?q=），与友链/动态/相册页同一交互语言。
  *
  * 布局形态：番剧页独立偏好（localStorage `shirone:anime-layout-mode`，默认 grid 海报网格），
  * 不与博客文章列表偏好耦合；工具栏提供快速切换按钮，切类后逐卡 FLIP 平移。
  */
-import Button from "@components/atoms/action/Button.svelte";
 import Chips from "@components/atoms/action/Chips.svelte";
 import Card from "@components/atoms/display/Card.svelte";
-import LoadingIndicator from "@components/atoms/feedback/LoadingIndicator.svelte";
+import Icon from "@components/atoms/display/Icon.svelte";
 import TextField from "@components/atoms/input/TextField.svelte";
 import AnimeCard from "@components/molecules/AnimeCard.svelte";
+import ListPagination from "@components/molecules/ListPagination.svelte";
 import PageHeader from "@components/molecules/PageHeader.svelte";
 import I18nKey from "@i18n/i18nKey";
 import { i18n } from "@i18n/translation";
-import Icon from "@iconify/svelte";
 import { ANIME_STATUS_META } from "@utils/anime/status";
+import { createListHistory } from "@utils/list-history";
 import { flipFromRect } from "@utils/motion";
+import { normalizePage, normalizePageSize } from "@utils/pagination";
 import { onMount } from "svelte";
 import type { AnimeItem } from "../../data/anime";
 
@@ -28,23 +29,21 @@ let {
 	animes = [] as AnimeItem[],
 	title = i18n(I18nKey.anime),
 	subtitle = i18n(I18nKey.animeBanner),
+	pageSize = 12,
 }: {
 	animes?: AnimeItem[];
 	title?: string;
 	subtitle?: string;
+	pageSize?: number;
 } = $props();
 
-const ANIME_PAGE_SIZE = 12;
 const ANIME_LAYOUT_KEY = "shirone:anime-layout-mode";
 
 let query = $state("");
 let selectedStatus = $state("");
-let shownCount = $state(ANIME_PAGE_SIZE);
-let initialized = false;
-/** 状态筛选过渡三段态：loading 展示指示器 → out 指示器淡出 → idle 列表 stagger 揭幕 */
-type FilterPhase = "idle" | "loading" | "out";
-let phase = $state<FilterPhase>("idle");
-let phaseTimers: ReturnType<typeof setTimeout>[] = [];
+let page = $state(1);
+let mounted = $state(false);
+let toolsEl = $state<HTMLElement | null>(null);
 
 /** 布局形态：番剧页专属独立偏好，默认海报网格 (grid) */
 let listMode = $state<AnimeLayoutMode>("grid");
@@ -79,21 +78,47 @@ const filtered = $derived.by(() => {
 	});
 });
 
-const visibleAnimes = $derived(filtered.slice(0, shownCount));
-const hasMore = $derived(filtered.length > shownCount);
+const size = $derived(normalizePageSize(pageSize));
+const totalPages = $derived(Math.ceil(filtered.length / size));
+const currentPage = $derived(normalizePage(page, totalPages));
+const visibleItems = $derived(
+	filtered.slice((currentPage - 1) * size, currentPage * size),
+);
 
 function countLabel(count: number) {
 	return `${count} ${i18n(I18nKey.animeCounts)}`;
 }
 
-/** 状态筛选：指示器展示 → 淡出 → 网格 stagger 揭幕 */
-function onStatusChange() {
-	phaseTimers.forEach(clearTimeout);
-	phase = "loading";
-	phaseTimers = [
-		setTimeout(() => (phase = "out"), 300),
-		setTimeout(() => (phase = "idle"), 300 + 150),
-	];
+const listHistory = createListHistory({
+	read: (params) => {
+		query = params.get("q") || "";
+		selectedStatus = params.get("status") || "";
+		page = normalizePage(params.get("page"), totalPages);
+	},
+	write: (params) => {
+		for (const key of ["q", "status", "page"]) params.delete(key);
+		if (query.trim()) params.set("q", query.trim());
+		if (selectedStatus) params.set("status", selectedStatus);
+		if (currentPage > 1) params.set("page", String(currentPage));
+	},
+	element: () => toolsEl,
+});
+function setQuery(value: string) {
+	query = value;
+	page = 1;
+	listHistory.replace();
+}
+function setFilter(value: string) {
+	selectedStatus = value;
+	page = 1;
+	listHistory.replace();
+}
+function changePage(value: number) {
+	const next = normalizePage(value, totalPages);
+	if (next === currentPage) return;
+	page = next;
+	listHistory.push();
+	listHistory.scroll();
 }
 
 function readStoredLayoutMode(): AnimeLayoutMode {
@@ -126,41 +151,12 @@ function switchLayoutMode(mode: AnimeLayoutMode) {
 	});
 }
 
-// 筛选/搜索变化时重置已加载数
-$effect(() => {
-	const s = selectedStatus;
-	const q = query;
-	if (!initialized) return;
-	shownCount = ANIME_PAGE_SIZE;
-});
-
-// 筛选状态与搜索词同步到 URL（?status= / ?q=），刷新/分享/回退保留
-$effect(() => {
-	const s = selectedStatus;
-	const q = query;
-	if (!initialized) return;
-	const params = new URLSearchParams(window.location.search);
-	params.delete("status");
-	params.delete("q");
-	if (s) params.set("status", s);
-	if (q.trim()) params.set("q", q.trim());
-	const qs = params.toString();
-	history.replaceState(
-		history.state,
-		"",
-		qs ? `?${qs}` : window.location.pathname,
-	);
-});
-
 onMount(() => {
-	const params = new URLSearchParams(window.location.search);
-	selectedStatus = params.get("status") || "";
-	query = params.get("q") || "";
+	mounted = true;
 	listMode = readStoredLayoutMode();
-	initialized = true;
-	return () => {
-		phaseTimers.forEach(clearTimeout);
-	};
+	const disconnect = listHistory.connect();
+	listHistory.replace();
+	return disconnect;
 });
 </script>
 
@@ -172,12 +168,12 @@ onMount(() => {
 	/>
 
 	{#if animes.length > 0}
-		<div class="anime-section__tools">
+		<div class="anime-section__tools" bind:this={toolsEl} tabindex="-1">
 			<div class="anime-section__search-row">
 				<div class="anime-section__search">
 					<TextField
 						type="search"
-						bind:value={query}
+						bind:value={() => query, setQuery}
 						placeholder={i18n(I18nKey.search)}
 						label={i18n(I18nKey.search)}
 						hideLabel
@@ -191,7 +187,7 @@ onMount(() => {
 							type="button"
 							class="anime-section__search-clear"
 							aria-label={i18n(I18nKey.clear)}
-							onclick={() => (query = "")}
+							onclick={() => setQuery("")}
 						>
 							<Icon icon="material-symbols:close-rounded" aria-hidden="true" />
 						</button>
@@ -230,8 +226,7 @@ onMount(() => {
 						<Chips
 							items={statusItems}
 							variant="filter"
-							bind:value={selectedStatus}
-							onchange={onStatusChange}
+							bind:value={() => selectedStatus, setFilter}
 						/>
 					</div>
 				{/if}
@@ -243,31 +238,22 @@ onMount(() => {
 		</div>
 	{/if}
 
-	{#if phase !== "idle"}
-		<!-- 状态筛选过渡：contained 指示器展示后淡出，再由网格 stagger 揭幕 -->
-		<div
-			class="anime-section__loading"
-			class:anime-section__loading--out={phase === "out"}
-		>
-			<LoadingIndicator contained size={64} />
-		</div>
-	{:else if visibleAnimes.length > 0}
-		{#key `${selectedStatus}|${query}`}
+	{#if visibleItems.length > 0}
+		{#key JSON.stringify([query, selectedStatus, currentPage])}
 			<div class="anime-list {LIST_MODE_CLASS[listMode]}" bind:this={listEl}>
-				{#each visibleAnimes as anime, i (anime.title)}
-					<AnimeCard {anime} delay={Math.min(i, 7) * 45} />
+				{#each visibleItems as anime, i (anime.title)}
+					<AnimeCard {anime} delay={Math.min(i, 3) * 25} />
 				{/each}
 			</div>
 		{/key}
-		{#if hasMore}
-			<div class="anime-section__more">
-				<Button
-					variant="outlined"
-					icon="material-symbols:expand-more-rounded"
-					label={i18n(I18nKey.loadMore)}
-					onclick={() => (shownCount += ANIME_PAGE_SIZE)}
-				/>
-			</div>
+		{#if !mounted && filtered.length > size}
+			<noscript>
+				<div class="anime-list anime-list--grid">
+					{#each filtered.slice(size) as anime (anime.title)}
+						<AnimeCard {anime} />
+					{/each}
+				</div>
+			</noscript>
 		{/if}
 	{:else}
 		<div class="anime-section__empty">
@@ -278,6 +264,11 @@ onMount(() => {
 				<Icon icon="material-symbols:search-off-outline-rounded" aria-hidden="true" />
 				<span>{i18n(I18nKey.animeNoResults)}</span>
 			{/if}
+		</div>
+	{/if}
+	{#if totalPages > 1}
+		<div class="anime-section__pagination">
+			<ListPagination {currentPage} {totalPages} onpagechange={changePage} />
 		</div>
 	{/if}
 </Card>
@@ -350,15 +341,14 @@ onMount(() => {
 		width: 100%
 
 	&__chips
-		flex: 1
+		/* Let the count wrap before squeezing a wrapping Chips group. */
+		flex: 0 1 auto
 		min-width: 0
-		overflow-x: auto
-		scrollbar-width: none
-		&::-webkit-scrollbar
-			display: none
+		max-width: 100%
 
 	&__count
 		margin: 0
+		margin-inline-start: auto
 		color: var(--on-surface-variant)
 		font: var(--m3e-type-body-small)
 		white-space: nowrap
@@ -401,21 +391,9 @@ onMount(() => {
 				background: var(--primary-container)
 				color: var(--on-primary-container)
 
-	/* 状态筛选过渡：区块位置的大号 contained LoadingIndicator（out = 淡出退场） */
-	&__loading
-		display: flex
-		align-items: center
-		justify-content: center
-		min-height: 11rem
-		padding-top: 1.5rem
-
-		&--out
-			animation: anime-loading-out var(--m3e-duration-short) var(--m3e-easing-emphasized-accelerate) both
-
-	&__more
-		display: flex
-		justify-content: center
-		margin-top: 1.5rem
+	&__pagination
+		margin-top: var(--m3e-space-6)
+		min-height: 3rem
 
 	&__empty
 		display: flex
@@ -477,12 +455,4 @@ onMount(() => {
 	:global(.anime-card__desc)
 		-webkit-line-clamp: 3
 
-/* 指示器退场：淡出 + 轻微收拢（reduced-motion 由全局规则压至终态） */
-@keyframes anime-loading-out
-	from
-		opacity: 1
-		transform: none
-	to
-		opacity: 0
-		transform: scale(0.96)
 </style>

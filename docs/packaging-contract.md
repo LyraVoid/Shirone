@@ -107,6 +107,14 @@ CSS file, so it resolves to the theme's own `src/` in both modes.
   dynamic `import()` outside the bundle) must be a **peer** dependency, because
   pnpm's strict layout hides the theme's own copy from the project root.
 
+New overridable components must have distinct path stems, even across source
+extensions. The override registry and explicit component map strip extensions
+so users can replace an Astro component with a Svelte component. Adding
+`Pagination.svelte` beside `Pagination.astro` would therefore merge their
+override keys and redirect the static pager to the interactive one. Use
+`ListPagination.svelte` for the interactive list pager; an explicit `.astro`
+or `.svelte` import alone does not prevent an override-key collision.
+
 **KaTeX is version-coupled.** The theme imports `katex/dist/katex.css` directly,
 while `rehype-katex@7` declares KaTeX `^0.16.0`.
 The workspace override is not published, so package-mode's `loadPackageModule`

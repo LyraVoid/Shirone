@@ -3,6 +3,9 @@
  * M3E 通用原子 — Avatar 头像。
  * 图片加载失败或未提供时回退为文字（首字母 / 自定义 fallback）。
  */
+import Skeleton from "@components/atoms/display/Skeleton.svelte";
+import { imageFeedback } from "@utils/image-feedback";
+
 let {
 	src = "",
 	srcset,
@@ -18,6 +21,8 @@ let {
 	shape = "circle",
 	/** 无图 / 加载失败时的回退文字（默认取 alt 首字符） */
 	fallback = "",
+	/** 可选局部加载占位与淡入；不阻塞父列表。 */
+	loadingFeedback = false,
 	class: className = "",
 }: {
 	src?: string;
@@ -31,10 +36,16 @@ let {
 	size?: number;
 	shape?: "circle" | "rounded" | "square";
 	fallback?: string;
+	loadingFeedback?: boolean;
 	class?: string;
 } = $props();
 
 let failed = $state(false);
+let image = $state<HTMLImageElement>();
+$effect(() => {
+	if (loadingFeedback && image?.complete && image.naturalWidth === 0)
+		failed = true;
+});
 const style = `--m3e-avatar-size: ${size}px`;
 const initial = fallback || (alt.trim() ? alt.trim()[0] : "?");
 </script>
@@ -47,6 +58,7 @@ const initial = fallback || (alt.trim() ? alt.trim()[0] : "?");
 >
 	{#if src && !failed}
 		<img
+			bind:this={image}
 			src={src}
 			{srcset}
 			{sizes}
@@ -57,7 +69,13 @@ const initial = fallback || (alt.trim() ? alt.trim()[0] : "?");
 			fetchpriority={fetchPriority}
 			decoding="async"
 			onerror={() => (failed = true)}
+			use:imageFeedback={loadingFeedback ? src : undefined}
 		/>
+		{#if loadingFeedback}
+			<span class="m3-avatar__loading" aria-hidden="true">
+				<Skeleton width="100%" height="100%" radius="0" />
+			</span>
+		{/if}
 	{:else}
 		<span class="m3-avatar__fallback">{initial}</span>
 	{/if}
@@ -65,6 +83,7 @@ const initial = fallback || (alt.trim() ? alt.trim()[0] : "?");
 
 <style lang="stylus">
 .m3-avatar
+	position: relative
 	display: flex
 	align-items: center
 	justify-content: center
@@ -90,6 +109,20 @@ const initial = fallback || (alt.trim() ? alt.trim()[0] : "?");
 		width: 100%
 		height: 100%
 		object-fit: cover
+		/* The action owns this runtime attribute; exclude it from CSS pruning. */
+		&:global([data-image-state])
+			transition: opacity var(--m3e-duration-short) var(--m3e-easing-standard)
+		&:global([data-image-state="pending"])
+			opacity: 0
+
+	&__loading
+		display: none
+		position: absolute
+		inset: 0
+		pointer-events: none
+
+	&:has(:global(img[data-image-state="pending"])) .m3-avatar__loading
+		display: block
 
 	&__fallback
 		font: var(--m3e-type-title-medium)

@@ -3,12 +3,13 @@
  * M3E 博客原子 — PagePagination 分页器（数据驱动）。
  * currentPage / totalPages / buildUrl(page) 生成页码窗口（省略号折叠），
  * 响应式双形态：
- * - 移动端（< lg）：简化版 —— 上一页 + 「当前 / 总页」（点击原地变输入框
+ * - 窄容器（< 640px）：简化版 —— 上一页 + 「当前 / 总页」（点击原地变输入框
  *   跳转）+ 下一页，避免窄屏塞满页码按钮；
- * - 桌面端（≥ lg）：完整页码行（箭头 + 页码窗口 + 省略号折叠）。
+ * - 宽容器（≥ 640px）：完整页码行（箭头 + 页码窗口 + 省略号折叠）。
  * 激活页 primary 实底；文案由消费方传 i18n 结果（不硬编码）。
  */
-import Icon from "@iconify/svelte";
+import Icon from "@components/atoms/display/Icon.svelte";
+import { paginationPages } from "@utils/pagination";
 
 interface Props {
 	currentPage: number;
@@ -39,33 +40,7 @@ const {
 } = Astro.props as Props;
 
 const HIDDEN = -1;
-const VISIBLE = adjacent * 2 + 1;
-
-let count = 1;
-let l = currentPage;
-let r = currentPage;
-while (0 < l - 1 && r + 1 <= totalPages && count + 2 <= VISIBLE) {
-	count += 2;
-	l--;
-	r++;
-}
-while (0 < l - 1 && count < VISIBLE) {
-	count++;
-	l--;
-}
-while (r + 1 <= totalPages && count < VISIBLE) {
-	count++;
-	r++;
-}
-
-const pages: (number | typeof HIDDEN)[] = [];
-if (l > 1) pages.push(1);
-if (l === 3) pages.push(2);
-if (l > 3) pages.push(HIDDEN);
-for (let i = l; i <= r; i++) pages.push(i);
-if (r < totalPages - 2) pages.push(HIDDEN);
-if (r === totalPages - 2) pages.push(totalPages - 1);
-if (r < totalPages) pages.push(totalPages);
+const pages = paginationPages(currentPage, totalPages, adjacent);
 
 const prevUrl = currentPage > 1 ? buildUrl(currentPage - 1) : undefined;
 const nextUrl =
@@ -92,7 +67,8 @@ const pageLabel = (p: number) => labels.page.replace("{page}", String(p));
 		<button
 			type="button"
 			class="m3-blog-pagination__jump m3-state-layer"
-			aria-label={jumpLabel}
+			aria-label={`${jumpLabel} ${currentPage} / ${totalPages}`}
+			data-static-page-jump
 			data-current={currentPage}
 			data-total={totalPages}
 			data-href-template={jumpTemplate}
@@ -162,142 +138,7 @@ const pageLabel = (p: number) => labels.page.replace("{page}", String(p));
 </div>
 
 <style lang="stylus">
-.m3-blog-pagination
-	display: flex
-	align-items: center
-	justify-content: center
-	gap: var(--m3e-space-3)
-
-	&__mobile
-		display: flex
-		align-items: center
-		gap: var(--m3e-space-3)
-
-	&__desktop
-		display: none
-
-	@media (min-width: 1024px)
-		&__mobile
-			display: none
-		&__desktop
-			display: flex
-			align-items: center
-			gap: var(--m3e-space-3)
-
-	&__arrow
-		display: inline-flex
-		align-items: center
-		justify-content: center
-		width: 2.5rem
-		height: 2.5rem
-		border-radius: var(--shape-corner-m)
-		background: var(--surface-container-low)
-		color: var(--primary)
-		text-decoration: none
-		--m3e-state-color: var(--primary)
-		transition:
-			background-color var(--m3e-duration-short) var(--m3e-easing-standard),
-			transform var(--m3e-duration-short) var(--m3e-easing-standard)
-		> :global(svg)
-			width: 1.5rem
-			height: 1.5rem
-		&:hover:not(.m3-blog-pagination__arrow--disabled)
-			background: var(--surface-container-high)
-
-		&--disabled
-			opacity: 0.38
-			pointer-events: none
-
-	/* 移动端跳转徽标：点击原地变输入框（脚本见下） */
-	&__jump
-		display: inline-flex
-		align-items: center
-		justify-content: center
-		gap: var(--m3e-space-1)
-		min-width: 5rem
-		height: 2.5rem
-		padding: 0 var(--m3e-space-3)
-		border: none
-		border-radius: var(--shape-corner-m)
-		background: var(--surface-container-low)
-		color: var(--on-surface)
-		font: var(--m3e-type-label-large)
-		--m3e-state-color: var(--on-surface)
-		cursor: pointer
-		transition:
-			background-color var(--m3e-duration-short) var(--m3e-easing-standard),
-			transform var(--m3e-duration-short) var(--m3e-easing-standard)
-		&:hover
-			background: var(--surface-container-high)
-
-		&-current
-			font-weight: 700
-			color: var(--primary)
-
-		&-sep
-			color: var(--on-surface-variant)
-
-		&-total
-			color: var(--on-surface-variant)
-			font-variant-numeric: tabular-nums
-
-	/* 跳转输入框（脚本动态替换按钮） */
-	&__jump-input
-		width: 5rem
-		height: 2.5rem
-		padding: 0 var(--m3e-space-2)
-		border: none
-		border-radius: var(--shape-corner-m)
-		background: var(--surface-container-low)
-		color: var(--on-surface)
-		font: var(--m3e-type-label-large)
-		font-weight: 700
-		text-align: center
-		font-variant-numeric: tabular-nums
-		outline: 2px solid var(--primary)
-		outline-offset: -2px
-
-	&__nums
-		display: flex
-		align-items: center
-		gap: var(--m3e-space-2)
-
-	&__num
-		display: inline-flex
-		align-items: center
-		justify-content: center
-		width: 2.5rem
-		height: 2.5rem
-		border-radius: var(--shape-corner-m)
-		background: var(--surface-container-low)
-		font: var(--m3e-type-label-large)
-		font-weight: 700
-		text-decoration: none
-		color: var(--on-surface-variant)
-		--m3e-state-color: var(--on-surface)
-		transition:
-			background-color var(--m3e-duration-short) var(--m3e-easing-standard),
-			color var(--m3e-duration-short) var(--m3e-easing-standard)
-		&:hover
-			background: var(--surface-container-high)
-
-		&--active
-			background: var(--primary)
-			color: var(--on-primary)
-			--m3e-state-color: var(--on-primary)
-			&:hover
-				background: var(--primary)
-
-	&__ellipsis
-		display: inline-flex
-		align-items: center
-		justify-content: center
-		width: 1.5rem
-		height: 2.5rem
-		color: var(--on-surface-variant)
-		> :global(svg)
-			width: 1.25rem
-			height: 1.25rem
+@import "../../../styles/pagination.styl"
 </style>
 
 <script>
@@ -307,7 +148,7 @@ const pageLabel = (p: number) => labels.page.replace("{page}", String(p));
 	// 事件委托挂在 document 上：分页器在 Swup 容器内，导航替换 DOM 后委托依然有效。
 	document.addEventListener("click", (event) => {
 		const btn = (event.target as HTMLElement | null)?.closest<HTMLElement>(
-			".m3-blog-pagination__jump",
+			".m3-blog-pagination__jump[data-static-page-jump]",
 		);
 		if (!btn) return;
 
@@ -326,6 +167,8 @@ const pageLabel = (p: number) => labels.page.replace("{page}", String(p));
 		input.setAttribute("aria-label", btnLabel);
 
 		const restore = () => {
+			// Replacing a focused input fires blur; detach before mutating its DOM.
+			input.removeEventListener("blur", restore);
 			if (input.parentElement) {
 				input.replaceWith(btn);
 			}

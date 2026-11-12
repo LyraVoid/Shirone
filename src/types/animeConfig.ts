@@ -124,6 +124,8 @@ export interface AnimeSnapshotConfig {
  * 番剧模块全局完整配置契约
  */
 export interface AnimeConfig extends PageMeta {
+	/** 页面每页条数；省略或无效值回退 12，与提供方请求批量大小无关。 */
+	pageSize?: number;
 	/**
 	 * 是否启用番剧页面。关闭后隐藏导航入口并将 /anime/ 重定向到 404。
 	 */
