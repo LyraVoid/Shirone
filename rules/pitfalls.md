@@ -121,6 +121,18 @@ svelte({
 
 ---
 
+### 1.9 npm 包模式下 dev 的依赖预打包绕过 overlay
+
+**现象**：`shirones` 包模式项目里 `astro dev` 的水合文案回落英文（搜索框 `Search`、友链 `1 friend`），而同一页的 SSR 文案和 `astro build` + `preview` 都是中文。
+
+**根因**：`@components/…`、`@/config/…`、`@i18n/…` 在包模式下解析到 `node_modules/shirones/src/…`，Vite 的依赖扫描器因此把它们当成第三方依赖预打包（`node_modules/.vite/deps/@i18n_translation.js` 等）。预打包由 esbuild 独立构成，不走插件管道 —— `shirones:overlay` 从未作用其上，水合后的 island 读到的是包内默认配置（`lang: "en"`、无用户覆盖），而 SSR 走正常解析读到用户的 `shirones/config/`。`astro build` 不做预打包，所以只有 dev 不一致。
+
+**解法**（已落地）：`src/integration/index.ts` 在包模式下把 `ALIAS_NAMESPACES`（由 `vite/overlay.ts` 的 `ALIAS_MAP` 派生）写进 `optimizeDeps.exclude`，让主题别名始终走插件管道；源码模式的别名解析在项目内，扫描器本就不会当作依赖。回归断言见 `tests/paths.test.mjs` 的 `prebundleExclude`。
+
+**教训**：别名、包模式、dev 预打包三者互不知情。以后新增别名前缀时同步 `ALIAS_MAP` 即可（排除清单由它派生），但别在该命名空间里依赖 overlay 之外的解析捷径。
+
+---
+
 ## 2. CSS / Stylus
 
 ### 2.1 Stylus 嵌套同名子元素会拼错类名
