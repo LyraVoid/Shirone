@@ -232,6 +232,7 @@ test("skips the pre-bundle hint for a linked install too", () => {
 
 // ── The exclusion that keeps the overlay out of the dep pre-bundle ──────────
 import { prebundleExclude } from "../src/integration/index.ts";
+import { THEME_ALIASES } from "../src/integration/aliases.ts";
 
 test("excludes the theme aliases from the package-mode pre-bundle", () => {
 	// Vite's dep scanner resolves aliases without running plugins, so a
@@ -261,4 +262,12 @@ test("leaves the theme repository's own aliases pre-bundlable", () => {
 		url(join(themeRoot, "src", "integration", "index.ts")),
 	);
 	assert.deepEqual(prebundleExclude(paths), []);
+});
+
+test("alias sub-directories carry no trailing slash", () => {
+	// The alias table appends its own separator; `src/components//` builds, but
+	// misses Astro's compile-metadata cache and fails the CSS virtual module.
+	for (const [prefix, sub] of THEME_ALIASES) {
+		assert.ok(!sub.endsWith("/"), prefix);
+	}
 });
