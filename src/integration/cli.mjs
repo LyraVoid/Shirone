@@ -242,7 +242,9 @@ async function ensurePnpmWorkspace() {
 	const original = await readFile(file, "utf8");
 	let lines = original.split("\n");
 
-	const allowIndex = lines.findIndex((line) => /^allowBuilds:\s*$/.test(line));
+	const allowIndex = lines.findIndex((line) =>
+		/^allowBuilds:\s*(?:#.*)?$/.test(line),
+	);
 	if (allowIndex === -1) {
 		lines = [
 			...lines.join("\n").trimEnd().split("\n"),
@@ -266,7 +268,7 @@ async function ensurePnpmWorkspace() {
 		];
 	}
 
-	if (!lines.some((line) => /^onlyBuiltDependencies:\s*$/.test(line))) {
+	if (!lines.some((line) => /^onlyBuiltDependencies:\s*(?:#.*)?$/.test(line))) {
 		lines = [
 			...lines.join("\n").trimEnd().split("\n"),
 			...onlyBlock.split("\n"),
@@ -1456,7 +1458,17 @@ async function checkState() {
 		}
 	}
 
-	return { missing, stale, fieldDiffs, missingRoot: missingRootFiles() };
+	const tplPublic = await listRelative(join(TEMPLATE_DIR, "public"));
+	const usrPublic = new Set(await listRelative(join(CWD, "public")));
+	const missingPublic = tplPublic.filter((file) => !usrPublic.has(file)).sort();
+
+	return {
+		missing,
+		stale,
+		fieldDiffs,
+		missingRoot: missingRootFiles(),
+		missingPublic,
+	};
 }
 
 /**
@@ -1471,13 +1483,15 @@ async function checkState() {
  */
 async function checkAndUpdate(packageName, { apply }) {
 	const usrConfig = join(CWD, CONTENT_ROOT, "config");
-	const { missing, stale, fieldDiffs, missingRoot } = await checkState();
+	const { missing, stale, fieldDiffs, missingRoot, missingPublic } =
+		await checkState();
 
 	const clean =
 		missing.length === 0 &&
 		stale.length === 0 &&
 		fieldDiffs.length === 0 &&
-		missingRoot.length === 0;
+		missingRoot.length === 0 &&
+		missingPublic.length === 0;
 
 	if (clean) {
 		console.log(
@@ -1486,7 +1500,11 @@ async function checkAndUpdate(packageName, { apply }) {
 		if (!apply) return;
 	} else {
 		const total =
-			missing.length + stale.length + fieldDiffs.length + missingRoot.length;
+			missing.length +
+			stale.length +
+			fieldDiffs.length +
+			missingRoot.length +
+			missingPublic.length;
 		console.log(
 			`\n${colours.bold}Found ${total} difference(s) from the template:${colours.reset}\n`,
 		);
@@ -1501,6 +1519,11 @@ async function checkAndUpdate(packageName, { apply }) {
 		if (missingRoot.length) {
 			log.warn(
 				`${missingRoot.length} root file(s) missing: ${missingRoot.join(", ")}`,
+			);
+		}
+		if (missingPublic.length) {
+			log.warn(
+				`${missingPublic.length} public asset(s) missing: ${missingPublic.join(", ")}`,
 			);
 		}
 		if (stale.length) {
@@ -1852,7 +1875,8 @@ async function info() {
 		drift.missing.length +
 		drift.stale.length +
 		drift.fieldDiffs.length +
-		drift.missingRoot.length;
+		drift.missingRoot.length +
+		drift.missingPublic.length;
 	section("Drift");
 	if (total === 0) {
 		row("status", `${colours.green}up to date${colours.reset}`);
@@ -1865,6 +1889,7 @@ async function info() {
 			drift.fieldDiffs.map((item) => item.rel),
 		);
 		listPreview("missing root", drift.missingRoot);
+		listPreview("missing public", drift.missingPublic);
 		console.log(
 			`    ${colours.dim}Run \`npx shirones init --update\` to restore safe missing files.${colours.reset}`,
 		);

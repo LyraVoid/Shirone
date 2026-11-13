@@ -233,6 +233,69 @@ test("init does not add a package type to an existing project that omitted it", 
 	assert.equal(Object.hasOwn(pkg, "type"), false);
 });
 
+test("init --update recognizes pnpm YAML keys with inline comments", (t) => {
+	const fixture = createFixture();
+	t.after(() => fixture.cleanup());
+
+	const initial = fixture.runInit();
+	assert.equal(initial.status, 0, initial.stderr);
+	const workspaceFile = join(fixture.project, "pnpm-workspace.yaml");
+	writeFileSync(
+		workspaceFile,
+		[
+			"allowBuilds: # retain the pnpm 11 comment",
+			"  esbuild: set this to true or false",
+			"  custom-native: true",
+			"onlyBuiltDependencies: # retain the pnpm 10 comment",
+			"  - custom-native",
+			"",
+		].join("\n"),
+	);
+
+	const updated = fixture.runCli(["init", "--update"]);
+	assert.equal(updated.status, 0, updated.stderr);
+	const workspace = readFileSync(workspaceFile, "utf8");
+	assert.equal((workspace.match(/^allowBuilds:/gm) ?? []).length, 1);
+	assert.equal((workspace.match(/^onlyBuiltDependencies:/gm) ?? []).length, 1);
+	assert.match(workspace, /^allowBuilds: # retain the pnpm 11 comment$/m);
+	assert.match(workspace, /^ {2}esbuild: true$/m);
+	assert.match(workspace, /^ {2}sharp: true$/m);
+	assert.match(workspace, /^ {2}custom-native: true$/m);
+	assert.match(
+		workspace,
+		/^onlyBuiltDependencies: # retain the pnpm 10 comment$/m,
+	);
+	assert.match(workspace, /^ {2}- custom-native$/m);
+
+	const repeated = fixture.runCli(["init", "--update"]);
+	assert.equal(repeated.status, 0, repeated.stderr);
+	assert.equal(readFileSync(workspaceFile, "utf8"), workspace);
+});
+
+test("info reports missing public assets and init --update restores them", (t) => {
+	const fixture = createFixture();
+	t.after(() => fixture.cleanup());
+
+	const initial = fixture.runInit();
+	assert.equal(initial.status, 0, initial.stderr);
+	const asset = join(fixture.project, "public/favicon.svg");
+	assert.equal(existsSync(asset), true);
+	rmSync(asset);
+
+	const info = fixture.runCli(["info"]);
+	assert.equal(info.status, 0, info.stderr);
+	assert.match(info.stdout, /1 difference\(s\)/);
+	assert.match(info.stdout, /missing public: favicon\.svg/);
+	assert.doesNotMatch(info.stdout, /up to date/);
+
+	const updated = fixture.runCli(["init", "--update"]);
+	assert.equal(updated.status, 0, updated.stderr);
+	assert.equal(existsSync(asset), true);
+	const after = fixture.runCli(["info"]);
+	assert.equal(after.status, 0, after.stderr);
+	assert.match(after.stdout, /up to date/);
+});
+
 test("init adds aliases to JSONC tsconfig and preserves comments", (t) => {
 	const fixture = createFixture({
 		tsconfig: `{
