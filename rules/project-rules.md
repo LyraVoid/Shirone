@@ -156,7 +156,7 @@ Shirone 以两种形态运行：**源码模式**（本仓库 checkout，`astro.c
    - 新增 vite 插件 → 同步进 `updateConfig` 的 `vite.plugins` 数组（按 `paths.isThemeRepo` 判断是否两种模式都需要）；
    - svelte `compilerOptions`（cssHash / warningFilter 等）→ 同步；
    - `markdown.processor` 来自 `src/utils/markdown-processor.mjs`，两种模式共用，改插件顺序/集合会自动生效。
-2. **路径别名三处一致**：`@/`、`@components/` 等别名出现在 `index.ts#createAliases`、`overlay.ts#ALIAS_MAP`、`load-config.ts#ALIAS_MAP` 三处，新增/改名要三处同步。
+2. **路径别名单一来源**：`@/`、`@components/` 等别名只写在 `src/integration/aliases.ts#THEME_ALIASES`，`createAliases`、Vite overlay、Node-side esbuild 镜像和 dev 预打包排除都从它派生；新增/改名只改这一处。
 3. **禁用 `process.cwd()` 读主题自有文件**：包模式下 cwd 是用户项目根，读不到 `src/`。主题自有文件用 bundler 内联（`import.meta.glob(..., { query: "?raw" })`、`?url`）或基于 `import.meta.url`/`findPackageRoot()` 定位；只有「读取用户项目内容」的代码才允许 `process.cwd()`。
 4. **新增组件/config/layout 要遵守 overlay 规则**（`src/integration/vite/overlay.ts`）：`src/components/**`、`src/layouts/**`、`src/config/*`、`src/data/*` 允许用户同路径覆写；`index.*` barrel 不可覆写。
 5. **新增 Markdown 语法要登记 manifest**：`src/plugins/markdown/manifest.json` 的 `syntaxes` 与 `stylesheetPacks` 都要加；packs 引用的样式必须是 `src/styles/**/*.css`（`markdown-assets.ts` 只 glob `*.css`，`.styl` 会让构建抛错）。
