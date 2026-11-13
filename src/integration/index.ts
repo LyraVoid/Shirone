@@ -16,6 +16,7 @@ import {
 	TRAILING_SLASH,
 	viteBuildShared,
 } from "../config/integrationsConfig.ts";
+import { ALIAS_NAMESPACES, aliasPattern, THEME_ALIASES } from "./aliases.ts";
 import { buildFontDeclarations } from "./fonts.ts";
 import { indexPagefindDirectory } from "./pagefind.ts";
 import {
@@ -39,7 +40,7 @@ import {
 } from "./verify-peers.ts";
 import { shironesFallbackResolver } from "./vite/fallback-resolver.ts";
 import { shironesIconRegeneration } from "./vite/icon/regeneration.ts";
-import { ALIAS_NAMESPACES, shironesOverlay } from "./vite/overlay.ts";
+import { shironesOverlay } from "./vite/overlay.ts";
 import { shironesSsrNodeShims } from "./vite/ssr-node-shims.ts";
 import { shironesThumbnailsRegeneration } from "./vite/thumbnails/regeneration.ts";
 
@@ -95,14 +96,10 @@ function createAliases(paths: ResolvedShironesPaths) {
 			find: /^@iconify\/svelte$/,
 			replacement: join(src, "components/atoms/display/Icon.svelte"),
 		},
-		{ find: /^@components\//, replacement: `${join(src, "components")}/` },
-		{ find: /^@utils\//, replacement: `${join(src, "utils")}/` },
-		{ find: /^@layouts\//, replacement: `${join(src, "layouts")}/` },
-		{ find: /^@i18n\//, replacement: `${join(src, "i18n")}/` },
-		{ find: /^@constants\//, replacement: `${join(src, "constants")}/` },
-		{ find: /^@assets\//, replacement: `${join(src, "assets")}/` },
-		// Keep `@/` last: it is the broadest pattern.
-		{ find: /^@\//, replacement: `${src}/` },
+		...THEME_ALIASES.map(([prefix, sub]) => ({
+			find: new RegExp(`^${aliasPattern(prefix)}`),
+			replacement: sub ? `${join(src, sub)}/` : `${src}/`,
+		})),
 	];
 }
 
@@ -530,18 +527,8 @@ export function prebundleCandidates(
 	return specifiers;
 }
 
-/**
- * Theme alias namespaces to keep out of Vite's dev dependency pre-bundle.
- *
- * In package mode `@components/…`, `@/config/…` and friends resolve into
- * `node_modules`, so Vite's dep scanner treats them as dependencies and
- * pre-bundles them. That bundle is built without the plugin pipeline, so
- * `shirones:overlay` never runs for it: every hydrated island then reads the
- * package's own config (`lang: "en"`, no user overrides) while SSR reads the
- * user's copy, and `astro build` skips pre-bundling — which is why only dev
- * disagrees. Source mode resolves the same aliases inside the project, where
- * the scanner never sees a dependency, so it needs no exclusion.
- */
+/** Package mode only: alias imports resolve into `node_modules`, where Vite's
+ * dep scanner would pre-bundle them without the overlay. See pitfalls §1.9. */
 export function prebundleExclude(paths: ResolvedShironesPaths): string[] {
 	return paths.isThemeRepo ? [] : ALIAS_NAMESPACES;
 }
