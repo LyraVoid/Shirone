@@ -121,6 +121,16 @@ svelte({
 
 ---
 
+### 1.9 npm 包模式下 dev 的依赖预打包绕过 overlay
+
+**现象**：包模式项目 `astro dev` 的水合文案回落英文（`Search`、`1 friend`），同一页的 SSR 与 `astro build` 却是中文。
+
+**根因**：`@components/…`、`@/config/…` 在包模式解析到 `node_modules`，Vite 依赖扫描器把它们当第三方依赖预打包；预打包不走插件管道，`shirones:overlay` 从未生效，island 读到包内默认配置。`astro build` 不预打包，所以只有 dev 不一致。
+
+**解法**：包模式下把 `ALIAS_NAMESPACES`（由 `src/integration/aliases.ts#THEME_ALIASES` 派生）写进 `optimizeDeps.exclude`；源码模式不需要。回归见 `tests/paths.test.mjs` 的 `prebundleExclude`。
+
+---
+
 ## 2. CSS / Stylus
 
 ### 2.1 Stylus 嵌套同名子元素会拼错类名

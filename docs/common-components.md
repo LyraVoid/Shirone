@@ -69,9 +69,9 @@
 | `ButtonLink` / `ButtonTag` | 链接/标签形态的按钮（atoms 组合） |
 | `PostMeta` | 文章元信息（日期/分类/标签） |
 | `FriendCard` | 友链卡片（头像 + 站名 + 描述 + 标签，整卡链接） |
-| `MomentCard` | 动态卡片（`<article>` 语义：头像/作者/时间/置顶/心情/正文/位置/标签） |
+| `MomentCard` | 动态卡片（`<article>` 语义：头像/作者/时间/置顶/心情/正文/位置/标签）；受保护动态由上层通过 snippet 注入密码门控 |
 | `MomentGallery` | 动态图片画廊（两段式：自适应网格瓦片 → 内联查看器主舞台/缩略图条/键盘导航 → Fancybox 灯箱） |
-| `Pagination` | 分页控件 |
+| `Pagination.astro` / `ListPagination.svelte` | 静态链接 / 交互分页，共享页码窗口与 `styles/pagination.styl`；宽容器显示页码，窄容器显示当前/总页和原地跳转。交互版仅发出 `onpagechange`，URL、滚动和历史由 organism 管理 |
 | `SearchBar` | 搜索输入（分子层，docked 视觉） |
 | `WidgetLayout` | 侧栏卡片容器（折叠标题 + 内容） |
 | `Announcement` | 公告侧栏 widget（Banner 原子 round 形态，无标题外壳；内容源 `announcementConfig`） |
@@ -83,7 +83,16 @@
 | `FloatingActionButton` | 右下角浮动操作按钮包装器（响应式设备类受控 + 页面范围过滤属性） |
 | `FloatingTOCPanel` | 移动端/平板浮动大纲目录卡片分子（M3 Surface Container High 风格、平滑滚动定位与隐藏滚动条） |
 
+### 受保护动态
+
+Moments frontmatter 可使用 `encrypted`、`password` 与 `passwordHint`。设置非空密码后，构建期会把正文 HTML、图片清单、位置、心情和标签序列化为 JSON，再复用全站 AES-GCM/PBKDF2 加密链路；页面 SSR 和 Svelte 水合数据只携带密文、发布日期、置顶状态、密码提示与用于标签筛选的公开 `filterTags`。加密动态会参与标签列表和标签筛选，但锁定卡片不提前展示标签，正文、位置、心情、图片和展示标签仍需解锁；加密内容也不会进入前端全文搜索。图片文件本身仍是 `public/` 下的普通静态资源,加密只保护引用与文案,敏感图片不要用加密动态承载。解锁后由 `ProtectedMoment` 恢复标准 `MomentCard`，并重新初始化 Markdown 与图片运行时。动态页不会缓存解锁后的明文，刷新或重新进入页面时必须再次输入密码；文章和相册仍沿用标签页级解锁缓存。显式声明 `encrypted: true` 却未提供有效密码时构建失败，禁止降级成明文。
+
 原子层通用件（`Button` / `Card` / `IconButton` / `Avatar` / `AccentBar` / `FAB` 等）见 `m3e-standard.md` §4。
+
+友链与番剧的 `pageSize` 在各自配置域中可选，默认 12，无效值回退 12；与番剧数据源的
+`provider.request.pageSize`（同步批量大小）相互独立。先筛选再分页，修改搜索或筛选回到
+第 1 页；翻页同步 `?page=` 并支持浏览器历史。禁用 JavaScript 时，SSR 的 `noscript`
+继续提供剩余条目，不显示不可操作的分页按钮。
 
 ---
 

@@ -24,6 +24,16 @@ export const ko: Translation = {
 	[Key.momentsBanner]: "일상과 작업, 그리고 사소한 행복을 짧게 기록합니다.",
 	[Key.momentsCount]: "개",
 	[Key.momentsCounts]: "개",
+	[Key.momentPasswordTitle]: "보호된 모먼트",
+	[Key.momentPasswordDescription]:
+		"이 모먼트는 암호화되어 있습니다. 비밀번호를 입력해 내용을 잠금 해제하세요.",
+	[Key.momentPasswordLabel]: "비밀번호",
+	[Key.momentPasswordShow]: "비밀번호 표시",
+	[Key.momentPasswordHide]: "비밀번호 숨기기",
+	[Key.momentPasswordRequired]: "비밀번호를 입력하세요",
+	[Key.momentPasswordInvalid]: "비밀번호가 올바르지 않습니다",
+	[Key.momentPasswordUnlock]: "모먼트 잠금 해제",
+	[Key.momentPasswordUnlocking]: "복호화 중…",
 	[Key.pinned]: "고정됨",
 	[Key.loadMore]: "더 보기",
 
@@ -273,6 +283,7 @@ export const ko: Translation = {
 	[Key.paginationNext]: "다음 페이지",
 	[Key.paginationPage]: "{page} 페이지",
 	[Key.paginationJump]: "페이지로 이동",
+	[Key.paginationLabel]: "페이지 탐색",
 	[Key.tagsViewAll]: "모든 태그 보기",
 
 	[Key.author]: "저자",

@@ -240,7 +240,7 @@ variables.styl  --mc-* → 语义令牌（--primary、--surface-container-low…
 | TagList | `blog/TagList.astro` | 标签列表：`tags`（`{name,href}[]`）渲染为 tonal Chip 链接组（复用 action/Chip），flex-wrap 自动换行 | btn-regular 系 / primary | 原创 |
 | CategoryList | `blog/CategoryList.astro` | 分类列表：`categories`（`{name,href,count?}[]`）渲染为 text Button 行（align between）+ 数量徽标（surface-container-high 圆角，label-medium 加粗） | on-surface / surface-container-high | 原创 |
 | TocList | `blog/TocList.astro` | 目录列表（静态 SSR 版）：`headings`（`{depth,text,slug}[]`）、`maxDepth`（默认 3）；顶级编号徽标（secondary-container）+ 子级小圆点按层级缩进，hover 状态层，锚点链接；激活态由调用方叠加 | secondary-container / on-secondary-container / on-surface-variant | 原创 |
-| PagePagination | `blog/PagePagination.astro` | 分页器（数据驱动）：`currentPage`/`totalPages`/`buildUrl(page)`/`adjacent`（默认 2）；页码窗口 + 首尾省略号折叠，激活页 primary 实底 + `aria-current`，前后箭头（首/尾页渲染为 `aria-hidden` span 禁用，避免无 href 的 a） | primary / on-primary / surface-container-low | 原创 |
+| PagePagination | `blog/PagePagination.astro` | 分页器（数据驱动）：`currentPage`/`totalPages`/`buildUrl(page)`/`adjacent`（默认 2）；页码窗口 + 首尾省略号折叠，激活页 primary 实底 + `aria-current`，前后箭头（首/尾页渲染为 `aria-hidden` span 禁用，避免无 href 的 a）。与 `molecules/ListPagination.svelte` 共用样式和窗口算法，触摸目标 48px，以容器宽度切换页码/跳转形态 | primary / on-primary / surface-container-low | 原创 |
 | ArchiveList | `blog/ArchiveList.svelte` | 归档列表：`groups`（`{year, items:{title,href,date,tags?}}[]`）按年份分组；年份头 + primary 节点环 + 时间轴小圆点，条目 hover 标题变 primary 并右移；tags 桌面端显示 | primary / on-surface / on-surface-variant | 原创 |
 | SearchPanel | `blog/SearchPanel.svelte` | 搜索结果面板（Svelte，数据驱动）：`results`（{url,title,excerpt}[]，excerpt 可含 `<mark>` 高亮）、`query`（$bindable）、`placeholder`（传则渲染面板内胶囊搜索输入，`hideInputOnDesktop` 时 lg+ 隐藏）、`id`/`class` 透传；面板 float-panel 视觉（bg/圆角/阴影/滚动），开合由调用方 classList 控制（`float-panel-closed`，与 DisplaySettings 同款，Layout 点击外部关闭可复用）；结果项标题 hover primary + 箭头、摘要 on-surface-variant | `--float-panel-bg` / primary | 原创 |
 | FooterBar | `blog/FooterBar.astro` | 页脚栏：`name`/`year`/`links`/`poweredBy`；顶部虚线分隔 + 居中文本（on-surface-variant），链接 primary；`external` 链接自动补 `target=_blank` + rel | on-surface-variant / primary | 原创 |
@@ -320,6 +320,7 @@ variables.styl  --mc-* → 语义令牌（--primary、--surface-container-low…
 | `src/components/organisms/DisplaySettings.svelte` | 色相/风格/规范控制面板 |
 | `src/components/molecules/PageHeader.svelte` | 页面级标题（图标 + 标题 + 副标题），见 `docs/common-components.md` |
 | `src/components/molecules/SectionTitle.svelte` | 区块级标题（可选图标 + 标题 + 副标题），见 `docs/common-components.md` |
+| `src/components/molecules/Pagination.astro` / `ListPagination.svelte` | 静态文章链接 / 交互列表分页，共用 `styles/pagination.styl` 与 `utils/pagination.ts`，URL 与历史由页面编排层管理 |
 | `src/components/molecules/MomentCard.svelte` | 动态卡片（正文 + 画廊挂载点），见 `docs/common-components.md` |
 | `src/components/molecules/MomentGallery.svelte` | 动态图片画廊（网格 + 内联查看器两段式，编程式 Fancybox 灯箱） |
 | `src/components/molecules/Announcement.astro` | 公告侧栏 widget（Banner round，内容源 `announcementConfig`），见 `docs/common-components.md` §3.1 |
@@ -331,6 +332,7 @@ variables.styl  --mc-* → 语义令牌（--primary、--surface-container-low…
 | `src/components/organisms/ArticleShare.svelte` | 文章主 Card 内的分享编排：链接复制、海报生成中状态、预览与下载 |
 | `src/utils/share-poster.ts` | 分享海报生成底层工具：动态按需加载 qrcode、读取当前主题色快照、Canvas 2D 绘制固定宽度、内容高度的海报并输出 PNG Blob |
 | `src/components/organisms/MomentSection.svelte` | 动态页主体（搜索/标签筛选/加载更多 + Fancybox 接线） |
+| `src/components/organisms/ProtectedMoment.svelte` | 受保护动态编排：复用 PasswordGate 解密 JSON 载荷，解锁后恢复 MomentCard 与 Markdown/图片运行时 |
 | `src/components/molecules/SkillCard.svelte` | 技能单项展示：图标、说明、离散等级标签与四段语义化 meter，不使用伪精确百分比 |
 | `src/components/organisms/SkillSection.svelte` | 技能页编排：消费传入的技能数据与分类清单，过滤关闭项并提供分类 chips 筛选 |
 | `src/components/molecules/AlbumCard.astro` / `AlbumCard.svelte` | 相册索引卡片（静态 SSR / 交互增强版本） |

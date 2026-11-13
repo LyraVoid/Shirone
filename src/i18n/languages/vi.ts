@@ -25,6 +25,16 @@ export const vi: Translation = {
 		"Ghi chú ngắn — cuộc sống, công việc và những niềm vui nhỏ.",
 	[Key.momentsCount]: "khoảnh khắc",
 	[Key.momentsCounts]: "khoảnh khắc",
+	[Key.momentPasswordTitle]: "Khoảnh khắc được bảo vệ",
+	[Key.momentPasswordDescription]:
+		"Khoảnh khắc này đã được mã hóa. Nhập mật khẩu để mở khóa nội dung.",
+	[Key.momentPasswordLabel]: "Mật khẩu",
+	[Key.momentPasswordShow]: "Hiện mật khẩu",
+	[Key.momentPasswordHide]: "Ẩn mật khẩu",
+	[Key.momentPasswordRequired]: "Hãy nhập mật khẩu",
+	[Key.momentPasswordInvalid]: "Mật khẩu không đúng",
+	[Key.momentPasswordUnlock]: "Mở khóa khoảnh khắc",
+	[Key.momentPasswordUnlocking]: "Đang giải mã…",
 	[Key.pinned]: "Ghim",
 	[Key.loadMore]: "Tải thêm",
 
@@ -276,6 +286,7 @@ export const vi: Translation = {
 	[Key.paginationNext]: "Trang sau",
 	[Key.paginationPage]: "Trang {page}",
 	[Key.paginationJump]: "Đi tới trang",
+	[Key.paginationLabel]: "Phân trang",
 	[Key.tagsViewAll]: "Xem tất cả thẻ",
 
 	[Key.author]: "Tác giả",

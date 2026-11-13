@@ -1,4 +1,25 @@
-import { expect, test } from "@playwright/test";
+import { expect, type Page, test } from "@playwright/test";
+
+/**
+ * Album fixtures use picsum.photos for their remote images. Answer them with a
+ * local SVG of the requested aspect ratio so layout assertions do not depend on
+ * an external host being reachable or fast.
+ */
+async function mockRemoteAlbumImages(page: Page) {
+	await page.route("https://picsum.photos/**", (route) => {
+		const match = /\/(\d+)\/(\d+)$/.exec(new URL(route.request().url()).pathname);
+		const width = Number(match?.[1] ?? 800);
+		const height = Number(match?.[2] ?? 600);
+		return route.fulfill({
+			contentType: "image/svg+xml",
+			body: `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><rect width="100%" height="100%" fill="#8a8a8a"/></svg>`,
+		});
+	});
+}
+
+test.beforeEach(async ({ page }) => {
+	await mockRemoteAlbumImages(page);
+});
 
 test.describe("相册页响应式滚动", () => {
 	test("从手机视口切换到桌面视口后仍可滚动", async ({ page }) => {
@@ -31,7 +52,11 @@ test.describe("相册页响应式滚动", () => {
 
 test.describe("受保护相册", () => {
 	test("提供完整的密码输入与解锁反馈", async ({ page }) => {
-		await page.goto("/albums/EncryptedExample/", { waitUntil: "networkidle" });
+		// The gate renders before its media; waiting for network idle would make
+		// this test depend on picsum.photos being reachable and fast.
+		await page.goto("/albums/EncryptedExample/", {
+			waitUntil: "domcontentloaded",
+		});
 
 		const input = page.getByRole("textbox", { name: "Password" });
 		const submit = page.getByRole("button", { name: "Unlock album" });

@@ -63,7 +63,7 @@ hideHomeContent: true   # 加密内容在首页隐藏(默认 true)
 
 ## 动态(moments)frontmatter
 
-`published`(必填)、`pinned`、`location`、`mood`(Iconify 图标名,如 `material-symbols:sentiment-excited-outline-rounded`)、`tags: []`、`images: [{src, alt}]`、`draft`。
+`published`(必填)、`pinned`、`location`、`mood`(Iconify 图标名,如 `material-symbols:sentiment-excited-outline-rounded`)、`tags: []`、`images: [{src, alt}]`、`draft`。动态也支持 `encrypted`、`password` 与 `passwordHint`:设置非空 `password` 即启用加密;显式写 `encrypted: true` 却没有有效密码会拒绝构建,避免正文意外明文发布。加密只覆盖正文、位置、心情与展示用标签:标签会以公开的 `filterTags` 参与筛选,图片文件本身仍是 `public/` 下的普通静态资源,敏感图片不要用加密动态承载。
 
 ## 工作流
 

@@ -4,6 +4,15 @@
   "description": "Shirone anime config schema generated from @/types/animeConfig.AnimeConfig",
   "type": "object",
   "properties": {
+    "pageSize": {
+      "anyOf": [
+        {},
+        {
+          "type": "number"
+        }
+      ],
+      "description": "页面每页条数；省略或无效值回退 12，与提供方请求批量大小无关。"
+    },
     "enable": {
       "type": "boolean",
       "description": "是否启用番剧页面。关闭后隐藏导航入口并将 /anime/ 重定向到 404。"
@@ -115,6 +124,49 @@
               "type": "string",
               "description": "Bangumi 用户 ID 或公开个性域名（必填，未填时自动禁用）"
             },
+            "cover": {
+              "anyOf": [
+                {},
+                {
+                  "type": "object",
+                  "properties": {
+                    "mode": {
+                      "anyOf": [
+                        {
+                          "type": "string",
+                          "enum": [
+                            "none"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "local"
+                          ]
+                        },
+                        {
+                          "type": "string",
+                          "enum": [
+                            "remote"
+                          ]
+                        }
+                      ]
+                    },
+                    "mirror": {
+                      "anyOf": [
+                        {},
+                        {
+                          "type": "string"
+                        }
+                      ],
+                      "description": "可选封面镜像前缀（remote 模式生效），拼接完整封面 URL：\n查询式图片代理（如 \"https://wsrv.nl/?url=\"）原样拼接；\n路径式镜像（如 \"https://proxy.example.com/\"）会规范为单个 `/` 后再拼接。\n注意：旧版本会去掉协议并把 host 作为路径拼接，按旧语义配置的 mirror 需相应调整。"
+                    }
+                  },
+                  "additionalProperties": false
+                }
+              ],
+              "description": "封面处理策略（默认 remote：lain.bgm.tv 无防盗链，直链可直接展示）。\n与 Bilibili 对齐，但不提供 useWebp——bgm.tv 图床无服务端格式转换参数。"
+            },
             "request": {
               "anyOf": [
                 {},
@@ -212,7 +264,7 @@
                           "type": "string"
                         }
                       ],
-                      "description": "可选封面镜像前缀（如加速 CDN 或反代前缀）"
+                      "description": "可选封面镜像前缀（remote 模式生效），拼接完整封面 URL：\n查询式图片代理（如 \"https://wsrv.nl/?url=\"）原样拼接；\n路径式镜像（如 \"https://proxy.example.com/\"）会规范为单个 `/` 后再拼接。\n注意：旧版本会去掉协议并把 host 作为路径拼接，按旧语义配置的 mirror 需相应调整。"
                     },
                     "useWebp": {
                       "anyOf": [

@@ -1,5 +1,5 @@
 <script lang="ts">
-import Icon from "@iconify/svelte";
+import Icon from "@components/atoms/display/Icon.svelte";
 
 /**
  * M3E Chips — M3 标签组原子（官方 Chip 移植，token 对齐 v0.192 md-comp-{assist,filter,input,suggestion}-chip）：
@@ -155,6 +155,7 @@ function handleRemove(item: ChipItem) {
 
 .m3-chip
 	display: inline-flex
+	flex-shrink: 0
 	align-items: center
 	box-sizing: border-box
 	height: 2rem /* 32px */
@@ -165,6 +166,7 @@ function handleRemove(item: ChipItem) {
 	background: transparent
 	color: var(--on-surface)
 	font: var(--m3e-type-label-large)
+	white-space: nowrap
 	cursor: pointer
 	user-select: none
 	--m3e-state-color: var(--on-surface)

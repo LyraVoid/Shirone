@@ -1,9 +1,5 @@
-import { existsSync, mkdirSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { applyMirror, downloadCoverLocally } from "./cover.mjs";
 
-// Package mode runs this provider from node_modules, so the user's project
-// root must come from the process rather than the module's own location.
-const projectRoot = process.cwd();
 const API_BASE = "https://api.bilibili.com/x/space/bangumi/follow/list";
 const USER_AGENT =
 	"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
@@ -29,104 +25,22 @@ function parseBiliProgress(rawProgress) {
 	return undefined;
 }
 
-function detectImageExtension(buffer, contentType) {
-	if (buffer && buffer.length >= 4) {
-		// JPEG: FF D8 FF
-		if (buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) {
-			return "jpg";
-		}
-		// PNG: 89 50 4E 47
-		if (
-			buffer[0] === 0x89 &&
-			buffer[1] === 0x50 &&
-			buffer[2] === 0x4e &&
-			buffer[3] === 0x47
-		) {
-			return "png";
-		}
-		// WebP: RIFF ... WEBP (52 49 46 46 .... 57 45 42 50)
-		if (
-			buffer.length >= 12 &&
-			buffer[0] === 0x52 &&
-			buffer[1] === 0x49 &&
-			buffer[2] === 0x46 &&
-			buffer[3] === 0x46 &&
-			buffer[8] === 0x57 &&
-			buffer[9] === 0x45 &&
-			buffer[10] === 0x42 &&
-			buffer[11] === 0x50
-		) {
-			return "webp";
-		}
-		// GIF: 47 49 46 38
-		if (
-			buffer[0] === 0x47 &&
-			buffer[1] === 0x49 &&
-			buffer[2] === 0x46 &&
-			buffer[3] === 0x38
-		) {
-			return "gif";
-		}
-		// AVIF: ....ftypavif
-		if (buffer.length >= 12) {
-			const sub = buffer.subarray(4, 12).toString("binary");
-			if (sub === "ftypavif" || sub === "ftypavis") {
-				return "avif";
-			}
-		}
+async function downloadBilibiliCover(coverUrl, id, coverConfig = {}) {
+	if (!coverUrl || !coverUrl.startsWith("https://")) return undefined;
+
+	// 若启用了 useWebp（默认 true），B站图片 URL 追加裁剪尺寸与 webp 转换参数，避免 2MB 原图直落盘
+	let targetUrl = coverUrl;
+	if (coverConfig.useWebp !== false && !targetUrl.includes("@")) {
+		targetUrl = `${targetUrl}@220w_280h.webp`;
 	}
 
-	if (contentType) {
-		const ct = contentType.toLowerCase();
-		if (ct.includes("image/webp")) return "webp";
-		if (ct.includes("image/png")) return "png";
-		if (ct.includes("image/jpeg") || ct.includes("image/jpg")) return "jpg";
-		if (ct.includes("image/gif")) return "gif";
-		if (ct.includes("image/avif")) return "avif";
-	}
-
-	return "webp";
-}
-
-async function downloadCoverLocally(coverUrl, id, coverConfig = {}) {
-	if (!coverUrl || !coverUrl.startsWith("http")) return undefined;
-
-	try {
-		const coversDir = join(projectRoot, "public/assets/anime/covers");
-		if (!existsSync(coversDir)) {
-			mkdirSync(coversDir, { recursive: true });
-		}
-
-		let targetUrl = coverUrl;
-		// 若启用了 useWebp（默认 true），B站图片 URL 追加裁剪尺寸与 webp 转换参数，避免 2MB 原图直落盘
-		if (coverConfig.useWebp !== false && !targetUrl.includes("@")) {
-			targetUrl = `${targetUrl}@220w_280h.webp`;
-		}
-
-		const res = await fetch(targetUrl, {
-			headers: {
-				"User-Agent": USER_AGENT,
-				Referer: "https://www.bilibili.com/",
-			},
-			signal: AbortSignal.timeout(10000),
-		});
-
-		if (res.ok) {
-			const arrayBuf = await res.arrayBuffer();
-			const buffer = Buffer.from(arrayBuf);
-			const ext = detectImageExtension(buffer, res.headers.get("content-type"));
-			const fileName = `bili_${id}.${ext}`;
-			const filePath = join(coversDir, fileName);
-
-			writeFileSync(filePath, buffer);
-			return `/assets/anime/covers/${fileName}`;
-		}
-	} catch (error) {
-		console.warn(
-			`[Bilibili] Failed to download cover locally for ${id}: ${error.message}`,
-		);
-	}
-	return undefined;
+	return downloadCoverLocally(targetUrl, `bili_${id}`, {
+		headers: {
+			"User-Agent": USER_AGENT,
+			Referer: "https://www.bilibili.com/",
+		},
+		tag: "Bilibili",
+	});
 }
 
 /**
@@ -288,15 +202,17 @@ export async function fetchBilibiliData(bilibiliConfig) {
 		}
 
 		if (coverConfig.mode === "local" && cover) {
-			const localCover = await downloadCoverLocally(cover, idKey, coverConfig);
+			const localCover = await downloadBilibiliCover(
+				cover,
+				idKey,
+				coverConfig,
+			);
 			cover = localCover || cover;
 		} else if (coverConfig.mode === "remote" && cover) {
 			if (coverConfig.useWebp !== false && !cover.includes("@")) {
 				cover = `${cover}@220w_280h.webp`;
 			}
-			if (coverConfig.mirror) {
-				cover = `${coverConfig.mirror.replace(/\/+$/, "")}/${cover.replace(/^https?:\/\//, "")}`;
-			}
+			cover = applyMirror(cover, coverConfig.mirror);
 		} else if (coverConfig.mode === "none") {
 			cover = "";
 		}

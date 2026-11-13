@@ -134,9 +134,14 @@ function createFixture({
 			: '#!/bin/sh\nif [ "$1" = "--version" ]; then printf "11.28.2\\n"; fi\nexit 0\n',
 	);
 	if (process.platform !== "win32") chmodSync(pnpmCommand, 0o755);
+	// Windows environment names are case-insensitive but the object can still
+	// carry both `Path` and `PATH`; reuse the existing key so the fake bin wins.
+	const pathKey =
+		Object.keys(process.env).find((name) => name.toLowerCase() === "path") ??
+		"PATH";
 	const env = {
 		...process.env,
-		PATH: `${fakeBin}${delimiter}${process.env.PATH ?? ""}`,
+		[pathKey]: `${fakeBin}${delimiter}${process.env[pathKey] ?? ""}`,
 	};
 
 	return {

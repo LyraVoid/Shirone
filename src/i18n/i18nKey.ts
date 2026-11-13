@@ -24,6 +24,15 @@ enum I18nKey {
 	momentsBanner = "momentsBanner",
 	momentsCount = "momentsCount",
 	momentsCounts = "momentsCounts",
+	momentPasswordTitle = "momentPasswordTitle",
+	momentPasswordDescription = "momentPasswordDescription",
+	momentPasswordLabel = "momentPasswordLabel",
+	momentPasswordShow = "momentPasswordShow",
+	momentPasswordHide = "momentPasswordHide",
+	momentPasswordRequired = "momentPasswordRequired",
+	momentPasswordInvalid = "momentPasswordInvalid",
+	momentPasswordUnlock = "momentPasswordUnlock",
+	momentPasswordUnlocking = "momentPasswordUnlocking",
 	pinned = "pinned",
 	loadMore = "loadMore",
 
@@ -290,6 +299,7 @@ enum I18nKey {
 	paginationNext = "paginationNext",
 	paginationPage = "paginationPage",
 	paginationJump = "paginationJump",
+	paginationLabel = "paginationLabel",
 
 	author = "author",
 	publishedAt = "publishedAt",

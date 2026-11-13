@@ -25,6 +25,16 @@ export const ja: Translation = {
 		"ふとした瞬間を気軽に記録 —— 日々、制作、そして小さな幸せ。",
 	[Key.momentsCount]: "件",
 	[Key.momentsCounts]: "件",
+	[Key.momentPasswordTitle]: "保護されたモーメント",
+	[Key.momentPasswordDescription]:
+		"このモーメントは暗号化されています。パスワードを入力して内容を解除してください。",
+	[Key.momentPasswordLabel]: "パスワード",
+	[Key.momentPasswordShow]: "パスワードを表示",
+	[Key.momentPasswordHide]: "パスワードを隠す",
+	[Key.momentPasswordRequired]: "パスワードを入力してください",
+	[Key.momentPasswordInvalid]: "パスワードが正しくありません",
+	[Key.momentPasswordUnlock]: "モーメントを解除",
+	[Key.momentPasswordUnlocking]: "復号中…",
 	[Key.pinned]: "ピン留め",
 	[Key.loadMore]: "もっと見る",
 
@@ -273,6 +283,7 @@ export const ja: Translation = {
 	[Key.paginationNext]: "次のページ",
 	[Key.paginationPage]: "{page} ページ",
 	[Key.paginationJump]: "ページへ移動",
+	[Key.paginationLabel]: "ページ切り替え",
 	[Key.tagsViewAll]: "すべてのタグを見る",
 
 	[Key.author]: "作者",

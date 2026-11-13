@@ -43,6 +43,8 @@ export const animeConfig: AnimeConfig = withUserConfig("anime", {
 	enable: true,
 	title: "$t:anime",
 	description: "$t:animeBanner",
+	/** 页面每页条数（正整数），默认 12；省略或无效值回退 12。 */
+	pageSize: 12,
 
 	/** 主数据源选择 */
 	source: {
@@ -62,6 +64,9 @@ export const animeConfig: AnimeConfig = withUserConfig("anime", {
 		bangumi: {
 			enable: false,
 			userId: "", // 填入你的 Bangumi 数字 UID 或公开用户名（测试可填 "sai"）
+			cover: {
+				mode: "remote", // "remote" 远程直链（默认，bgm.tv 无防盗链）| "local" 站内下载缓存 | "none"
+			},
 			request: {
 				pageSize: 50,
 				maxItems: 300,

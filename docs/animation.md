@@ -78,6 +78,13 @@ enterers.forEach((el, i) => revealIn(el, { delay: i * 50 }));
 
 ## 5. 回归测试
 
+友链与番剧分页复用 `.m3-state-layer` 的 hover / focus / pressed 反馈、短时颜色过渡和
+`reveal` 入场；本地筛选与翻页立即更新，不人为延迟或显示全列表 loading。跨路由等待
+继续使用 `RouteProgress`，在成功、取消、失败、超时出口清理。头像和封面复用 `Skeleton`
+提供固定尺寸的局部占位，图片成功后短时淡入，失败后显示原有占位；不阻塞文字和分页。
+系统与站点的 Reduce Motion 均直接到位。分页相关场景在
+`tests/site/list-pagination.spec.ts` 覆盖。
+
 `tests/site/motion.spec.ts` 锁定：
 
 - **归档页折叠动画**（`collapse`）：正常模式展开/收起播放高度过渡（动画期间为中间值）；

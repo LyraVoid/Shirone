@@ -229,3 +229,45 @@ test("skips the pre-bundle hint for a linked install too", () => {
 	);
 	assert.deepEqual(prebundleCandidates(paths, SPECIFIERS), []);
 });
+
+// ── The exclusion that keeps the overlay out of the dep pre-bundle ──────────
+import { prebundleExclude } from "../src/integration/index.ts";
+import { THEME_ALIASES } from "../src/integration/aliases.ts";
+
+test("excludes the theme aliases from the package-mode pre-bundle", () => {
+	// Vite's dep scanner resolves aliases without running plugins, so a
+	// pre-bundled `@/config/siteConfig` skips `shirones:overlay` and every
+	// hydration reads the package defaults (`lang: "en"`) instead of the
+	// user's config. `@` is the broadest prefix and covers `@/…`.
+	const paths = resolvePaths(
+		{},
+		rootUrl(siteRoot),
+		url(join(installedRoot, "index.js")),
+	);
+	assert.deepEqual(prebundleExclude(paths), [
+		"@components",
+		"@utils",
+		"@layouts",
+		"@i18n",
+		"@constants",
+		"@assets",
+		"@",
+	]);
+});
+
+test("leaves the theme repository's own aliases pre-bundlable", () => {
+	const paths = resolvePaths(
+		{},
+		rootUrl(themeRoot),
+		url(join(themeRoot, "src", "integration", "index.ts")),
+	);
+	assert.deepEqual(prebundleExclude(paths), []);
+});
+
+test("alias sub-directories carry no trailing slash", () => {
+	// The alias table appends its own separator; `src/components//` builds, but
+	// misses Astro's compile-metadata cache and fails the CSS virtual module.
+	for (const [prefix, sub] of THEME_ALIASES) {
+		assert.ok(!sub.endsWith("/"), prefix);
+	}
+});
