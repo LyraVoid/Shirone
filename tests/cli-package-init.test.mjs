@@ -272,7 +272,10 @@ test("init --update recognizes pnpm YAML keys with inline comments", (t) => {
 	assert.equal(readFileSync(workspaceFile, "utf8"), workspace);
 });
 
-test("info reports missing public assets and init --update restores them", (t) => {
+// `public/` belongs to the user once the project is scaffolded: the real
+// template ships tens of megabytes of demo media, and deleting it must neither
+// show up as drift nor be undone by `--update`. Only `--public` re-adds it.
+function createPrunedPublicFixture(t) {
 	const fixture = createFixture();
 	t.after(() => fixture.cleanup());
 
@@ -281,19 +284,64 @@ test("info reports missing public assets and init --update restores them", (t) =
 	const asset = join(fixture.project, "public/favicon.svg");
 	assert.equal(existsSync(asset), true);
 	rmSync(asset);
+	const own = join(fixture.project, "public/own.txt");
+	writeFileSync(own, "mine\n");
+	return { fixture, asset, own };
+}
+
+test("a template asset deleted from public is not reported as drift", (t) => {
+	const { fixture, asset } = createPrunedPublicFixture(t);
 
 	const info = fixture.runCli(["info"]);
 	assert.equal(info.status, 0, info.stderr);
-	assert.match(info.stdout, /1 difference\(s\)/);
-	assert.match(info.stdout, /missing public: favicon\.svg/);
-	assert.doesNotMatch(info.stdout, /up to date/);
+	assert.match(info.stdout, /up to date/);
+	assert.doesNotMatch(info.stdout, /difference\(s\)/);
+	assert.doesNotMatch(info.stdout, /favicon\.svg/);
+
+	const check = fixture.runCli(["init"]);
+	assert.equal(check.status, 0, check.stderr);
+	assert.match(check.stdout, /Up to date\./);
+	assert.doesNotMatch(check.stdout, /favicon\.svg/);
+	assert.equal(existsSync(asset), false);
+});
+
+test("init --update does not re-add assets deleted from public", (t) => {
+	const { fixture, asset, own } = createPrunedPublicFixture(t);
 
 	const updated = fixture.runCli(["init", "--update"]);
 	assert.equal(updated.status, 0, updated.stderr);
-	assert.equal(existsSync(asset), true);
-	const after = fixture.runCli(["info"]);
-	assert.equal(after.status, 0, after.stderr);
-	assert.match(after.stdout, /up to date/);
+	assert.equal(existsSync(asset), false);
+	assert.equal(readFileSync(own, "utf8"), "mine\n");
+	assert.match(updated.stdout, /init --public/);
+});
+
+test("init --public re-adds missing public assets and touches nothing else", (t) => {
+	const { fixture, asset, own } = createPrunedPublicFixture(t);
+	const example = join(fixture.project, "shirones/content/posts/example.md");
+	rmSync(example);
+
+	const restored = fixture.runCli(["init", "--public"]);
+	assert.equal(restored.status, 0, restored.stderr);
+	assert.equal(readFileSync(asset, "utf8"), "<svg/>\n");
+	assert.equal(readFileSync(own, "utf8"), "mine\n");
+	assert.equal(existsSync(example), false);
+
+	writeFileSync(asset, "<svg>edited</svg>\n");
+	const repeated = fixture.runCli(["init", "--public"]);
+	assert.equal(repeated.status, 0, repeated.stderr);
+	assert.equal(readFileSync(asset, "utf8"), "<svg>edited</svg>\n");
+	assert.equal(existsSync(join(fixture.project, ".shirones-backup")), false);
+});
+
+test("init --update --public refreshes the scaffold and re-adds public assets", (t) => {
+	const { fixture, asset, own } = createPrunedPublicFixture(t);
+	rmSync(join(fixture.project, "src/icons"), { recursive: true });
+
+	const updated = fixture.runCli(["init", "--update", "--public"]);
+	assert.equal(updated.status, 0, updated.stderr);
+	assert.equal(readFileSync(asset, "utf8"), "<svg/>\n");
+	assert.equal(readFileSync(own, "utf8"), "mine\n");
+	assert.equal(existsSync(join(fixture.project, "src/icons")), true);
 });
 
 test("init adds aliases to JSONC tsconfig and preserves comments", (t) => {

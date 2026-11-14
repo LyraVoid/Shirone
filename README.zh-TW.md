@@ -101,7 +101,7 @@ npx shirones init   # 寫入 package.json，安裝 astro、主題及其 peer 依
 pnpm dev
 ```
 
-`init` 會建立 `astro.config.mjs`、`shirones/` 下的型別化設定、範例內容與靜態資源；你依然可以透過 `src/components/` 與 `src/layouts/` 覆寫主題元件。隨時重新執行 `npx shirones init` 檢查漂移（只報告、不修改）；執行 `npx shirones init --update` 還原缺失檔案，或 `--force` 從範本重新初始化。詳見 [shirones wiki](https://github.com/yCENzh/shirones/wiki)、[npm 套件模式](./docs/npm-package-mode.md) 與 [shirones 儲存庫](https://github.com/yCENzh/shirones)。
+`init` 會建立 `astro.config.mjs`、`shirones/` 下的型別化設定、範例內容與靜態資源；你依然可以透過 `src/components/` 與 `src/layouts/` 覆寫主題元件。隨時重新執行 `npx shirones init` 檢查漂移（只報告、不修改）；執行 `npx shirones init --update` 還原缺失檔案，或 `--force` 從範本重新初始化。`public/` 由你自行取捨：刪掉的檔案既不會被報告，也不會被還原；需要找回範本資源時執行 `npx shirones init --public`。詳見 [shirones wiki](https://github.com/yCENzh/shirones/wiki)、[npm 套件模式](./docs/npm-package-mode.md) 與 [shirones 儲存庫](https://github.com/yCENzh/shirones)。
 
 ### 自訂網站
 

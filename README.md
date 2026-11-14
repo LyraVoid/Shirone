@@ -114,7 +114,9 @@ example content and static assets; `src/components/` and `src/layouts/` still
 work for overriding theme components. Re-run `npx shirones init` anytime to
 check for drift — it reports without changing anything. Run `npx shirones
 init --update` to restore missing files, or `--force` to re-scaffold from the
-template. See the [shirones wiki](https://github.com/yCENzh/shirones/wiki),
+template. `public/` is yours to prune: files you delete there are neither
+reported nor restored, unless you ask for the template assets back with
+`npx shirones init --public`. See the [shirones wiki](https://github.com/yCENzh/shirones/wiki),
 [npm package mode](./docs/npm-package-mode.md) and the
 [shirones repository](https://github.com/yCENzh/shirones) for details.
 

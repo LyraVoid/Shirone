@@ -101,7 +101,7 @@ npx shirones init   # package.json を書き、astro・テーマ・peer 依存�
 pnpm dev
 ```
 
-`init` は `astro.config.mjs`、`shirones/` 配下の型付き設定、サンプルコンテンツと静的アセットを生成します。`src/components/` と `src/layouts/` でテーマのコンポーネントを上書きすることもできます。いつでも `npx shirones init` を再実行して差分を確認できます（報告のみで何も変更しません）。`npx shirones init --update` で不足ファイルを復元し、`--force` でテンプレートから再初期化します。詳しくは [shirones wiki](https://github.com/yCENzh/shirones/wiki)、[npm パッケージモード](./docs/npm-package-mode.md) と [shirones リポジトリ](https://github.com/yCENzh/shirones) を参照してください。
+`init` は `astro.config.mjs`、`shirones/` 配下の型付き設定、サンプルコンテンツと静的アセットを生成します。`src/components/` と `src/layouts/` でテーマのコンポーネントを上書きすることもできます。いつでも `npx shirones init` を再実行して差分を確認できます（報告のみで何も変更しません）。`npx shirones init --update` で不足ファイルを復元し、`--force` でテンプレートから再初期化します。`public/` の中身は自由に整理できます。削除したファイルは報告も復元もされません。テンプレートのアセットを戻したいときは `npx shirones init --public` を実行してください。詳しくは [shirones wiki](https://github.com/yCENzh/shirones/wiki)、[npm パッケージモード](./docs/npm-package-mode.md) と [shirones リポジトリ](https://github.com/yCENzh/shirones) を参照してください。
 
 ### サイトをカスタマイズする
 

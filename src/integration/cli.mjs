@@ -5,6 +5,7 @@
  *
  *   npx shirones init            scaffold config, content and static assets
  *   npx shirones init --update   restore missing files on an existing project
+ *   npx shirones init --public   re-add missing static assets under public/
  *   npx shirones init --force    replace template files after backing them up
  *   npx shirones info            detailed status and drift report
  *
@@ -169,6 +170,22 @@ async function mergeDirectory(from, to, { force }) {
 		log.ok(`${label} (${added} files${kept ? `, ${kept} kept` : ""})`);
 	}
 	return { added, kept };
+}
+
+/**
+ * Re-add the template's static assets that are absent from `public/`, keeping
+ * every file that is already there.
+ *
+ * Only a first `init` and an explicit `init --public` do this. `public/` is the
+ * user's to prune: the template ships tens of megabytes of demo albums, music
+ * and banners, and deleting them is ordinary housekeeping rather than drift. So
+ * the drift report does not look at `public/`, and `--update` does not put the
+ * deleted files back.
+ */
+function restorePublicAssets() {
+	return mergeDirectory(join(TEMPLATE_DIR, "public"), join(CWD, "public"), {
+		force: false,
+	});
 }
 
 async function countFiles(dir) {
@@ -1458,16 +1475,12 @@ async function checkState() {
 		}
 	}
 
-	const tplPublic = await listRelative(join(TEMPLATE_DIR, "public"));
-	const usrPublic = new Set(await listRelative(join(CWD, "public")));
-	const missingPublic = tplPublic.filter((file) => !usrPublic.has(file)).sort();
-
+	// `public/` is deliberately not compared; see `restorePublicAssets`.
 	return {
 		missing,
 		stale,
 		fieldDiffs,
 		missingRoot: missingRootFiles(),
-		missingPublic,
 	};
 }
 
@@ -1477,21 +1490,20 @@ async function checkState() {
  *
  * By default it only *reports* — nothing is changed. Pass `apply: true`
  * (the `--update` flag) to repair the safe bits: missing config files are
- * restored, deleted root files and `public/` assets are re-added, and the
- * remaining scaffold pieces are brought up to date. Either way nothing the
- * user wrote is overwritten.
+ * restored, deleted root files are re-added, and the remaining scaffold pieces
+ * are brought up to date. Either way nothing the user wrote is overwritten.
+ *
+ * `public/` is left alone unless `restorePublic` (the `--public` flag) is set.
  */
-async function checkAndUpdate(packageName, { apply }) {
+async function checkAndUpdate(packageName, { apply, restorePublic }) {
 	const usrConfig = join(CWD, CONTENT_ROOT, "config");
-	const { missing, stale, fieldDiffs, missingRoot, missingPublic } =
-		await checkState();
+	const { missing, stale, fieldDiffs, missingRoot } = await checkState();
 
 	const clean =
 		missing.length === 0 &&
 		stale.length === 0 &&
 		fieldDiffs.length === 0 &&
-		missingRoot.length === 0 &&
-		missingPublic.length === 0;
+		missingRoot.length === 0;
 
 	if (clean) {
 		console.log(
@@ -1500,11 +1512,7 @@ async function checkAndUpdate(packageName, { apply }) {
 		if (!apply) return;
 	} else {
 		const total =
-			missing.length +
-			stale.length +
-			fieldDiffs.length +
-			missingRoot.length +
-			missingPublic.length;
+			missing.length + stale.length + fieldDiffs.length + missingRoot.length;
 		console.log(
 			`\n${colours.bold}Found ${total} difference(s) from the template:${colours.reset}\n`,
 		);
@@ -1519,11 +1527,6 @@ async function checkAndUpdate(packageName, { apply }) {
 		if (missingRoot.length) {
 			log.warn(
 				`${missingRoot.length} root file(s) missing: ${missingRoot.join(", ")}`,
-			);
-		}
-		if (missingPublic.length) {
-			log.warn(
-				`${missingPublic.length} public asset(s) missing: ${missingPublic.join(", ")}`,
 			);
 		}
 		if (stale.length) {
@@ -1581,17 +1584,21 @@ async function checkAndUpdate(packageName, { apply }) {
 	}
 
 	// The remaining pieces are idempotent: they only add what is missing.
-	// Run on `--update` even when the config is clean, so deleted root files,
-	// public assets and `src/icons/` come back too.
+	// Run on `--update` even when the config is clean, so deleted root files
+	// and `src/icons/` come back too.
 	await ensureAstroConfig(packageName, { force: false });
 	await copyEntry(
 		join(TEMPLATE_DIR, "src/content.config.ts"),
 		join(CWD, "src/content.config.ts"),
 		{ force: false },
 	);
-	await mergeDirectory(join(TEMPLATE_DIR, "public"), join(CWD, "public"), {
-		force: false,
-	});
+	if (restorePublic) {
+		await restorePublicAssets();
+	} else {
+		log.skip(
+			"public left as is (run `npx shirones init --public` to re-add missing template assets)",
+		);
+	}
 	await mkdir(join(CWD, "src/icons"), { recursive: true });
 	await installRootFiles({ force: false });
 	await ensureTsConfig(packageName, { force: false });
@@ -1613,6 +1620,7 @@ async function checkAndUpdate(packageName, { apply }) {
 async function init(args) {
 	const force = args.includes("--force") || args.includes("-f");
 	const apply = args.includes("--update") || args.includes("-u");
+	const restorePublic = args.includes("--public");
 	const packageName = await readPackageName();
 
 	if (!existsSync(TEMPLATE_DIR)) {
@@ -1630,9 +1638,14 @@ async function init(args) {
 
 	// Already initialised? Report drift from the template instead of
 	// re-scaffolding; `--update` repairs the safe bits (never overwrites the
-	// user's files).
+	// user's files). `--public` on its own only re-adds static assets;
+	// combined with `--update` it does both.
 	if (existsSync(join(CWD, CONTENT_ROOT)) && !force) {
-		return checkAndUpdate(packageName, { apply });
+		if (restorePublic && !apply) {
+			await restorePublicAssets();
+			return;
+		}
+		return checkAndUpdate(packageName, { apply, restorePublic });
 	}
 
 	console.log(
@@ -1662,9 +1675,7 @@ async function init(args) {
 	if (force) {
 		await replaceDirectory(join(TEMPLATE_DIR, "public"), join(CWD, "public"));
 	} else {
-		await mergeDirectory(join(TEMPLATE_DIR, "public"), join(CWD, "public"), {
-			force: false,
-		});
+		await restorePublicAssets();
 	}
 
 	// 2b. Project root files (.env.example, .gitignore, README, editor hints, …).
@@ -1875,8 +1886,7 @@ async function info() {
 		drift.missing.length +
 		drift.stale.length +
 		drift.fieldDiffs.length +
-		drift.missingRoot.length +
-		drift.missingPublic.length;
+		drift.missingRoot.length;
 	section("Drift");
 	if (total === 0) {
 		row("status", `${colours.green}up to date${colours.reset}`);
@@ -1889,7 +1899,6 @@ async function info() {
 			drift.fieldDiffs.map((item) => item.rel),
 		);
 		listPreview("missing root", drift.missingRoot);
-		listPreview("missing public", drift.missingPublic);
 		console.log(
 			`    ${colours.dim}Run \`npx shirones init --update\` to restore safe missing files.${colours.reset}`,
 		);
@@ -1903,6 +1912,7 @@ ${colours.bold}Shirone CLI${colours.reset}
 
   ${colours.cyan}init${colours.reset}                 Scaffold the project — or report drift on an existing one
   ${colours.cyan}init${colours.reset} ${colours.dim}--update${colours.reset}        Restore missing files and refresh the scaffold (never overwrites your files)
+  ${colours.cyan}init${colours.reset} ${colours.dim}--public${colours.reset}        Re-add template assets missing from public/ (never overwrites your files)
   ${colours.cyan}init${colours.reset} ${colours.dim}--force${colours.reset}         Replace template files after backing up the previous copy
   ${colours.cyan}info${colours.reset}                 Detailed status and drift report
   ${colours.cyan}help${colours.reset}                 Show this message
