@@ -116,6 +116,13 @@ export function shironesIconRegeneration(
 
 	return {
 		name: "shirone:icon-regeneration",
+		// `pre` is what makes the `resolveId` redirect below take effect. Vite
+		// runs its own resolver ahead of ordinary plugins, and the copy shipped
+		// in the package always exists, so without `pre` Vite resolved the
+		// specifier to that copy and this hook was never asked. The collection
+		// written to the user's project was then generated but never read:
+		// any icon the theme itself does not use rendered as nothing.
+		enforce: "pre",
 
 		configResolved(config) {
 			isBuild = config.command === "build";
@@ -130,7 +137,8 @@ export function shironesIconRegeneration(
 		// rewritten: to the package path in package mode, and to
 		// `projectRoot/src/...` in source mode. Both forms are listed, along with
 		// the bare specifier, because which one shows up depends on how the
-		// theme is being consumed.
+		// theme is being consumed. The package path only reaches this hook
+		// because the plugin is `enforce: "pre"`; see the note above.
 		resolveId(source) {
 			// Same separator hazard as the hot-update guard below: Vite hands
 			// paths through with posix separators on every platform, while the

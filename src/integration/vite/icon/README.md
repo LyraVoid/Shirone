@@ -92,19 +92,31 @@ for the packaging step's local-import check anyway.
 
 `regeneration.ts` writes the file and adds a `resolveId` that points
 `Icon.svelte` at it, falling back to the copy shipped in the package. That
-fallback is what makes the two modes behave the same: in package mode the alias
-resolves into `node_modules`, where this plugin must not write, so without the
-redirect a user's own posts would never reach the collection.
+redirect is what makes the two modes behave the same: in package mode the alias
+resolves into `node_modules`, where this plugin must not write, so without it
+nothing the user wrote would ever reach a rendered icon.
+
+The plugin is `enforce: "pre"` for the sake of that hook. Vite's own resolver
+runs before ordinary plugins and the shipped copy always exists, so an ordinary
+plugin is never asked about this specifier: Vite resolves it to the shipped copy
+and stops. The project's collection was then generated correctly and never read,
+and every icon the theme itself does not use rendered as nothing, on the server
+and in the browser alike.
 
 ### Verifying the redirect
 
-Delete the packaged copy and build — if it still succeeds, the user's file is
-what got read:
+Keep the shipped copy in place; deleting it first hides exactly the failure
+above, because Vite then has nothing to resolve and falls through to the plugin.
 
-```
-mv node_modules/shirones/src/generated/local-icon-collections.ts{,.bak}
-pnpm build   # must succeed
-```
+Use an icon the theme does not use anywhere (so the shipped copy lacks it), for
+example a new brand icon in `shirones/config/profileConfig.ts`, and confirm it
+renders. (No concrete name is given here on purpose: this file is under `src/`
+and `.md` is scanned, so naming an icon would add it to every collection.) In `astro dev` the browser side can be read off directly: the
+transformed `Icon.svelte` must import `/src/generated/local-icon-collections.ts`,
+not a path under `node_modules`.
+
+`tests/icon-regen-hot-update.test.mjs` runs the same check against a real Vite
+server for both the server and the browser environment.
 
 Confirm the consumer actually has the change first. `pnpm build` in the
 packaging repo only rewrites `dist/`; a throwaway consumer keeps the tarball it

@@ -10,6 +10,9 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
+import { build, createServer } from "vite";
+import { ALIAS_NAMESPACES } from "../src/integration/aliases.ts";
+import { normalisePath } from "../src/integration/resolve/paths.ts";
 import { ICON_COLLECTIONS_SPECIFIER } from "../src/integration/vite/icon/collections.ts";
 import { shironesIconRegeneration } from "../src/integration/vite/icon/regeneration.ts";
 
@@ -377,6 +380,116 @@ test("the project's generated directory is never fed back into the scan", (t) =>
 	assert.ok(hasIcon(collections, "fa7-brands:steam"));
 	assert.equal(hasIcon(collections, "fa7-brands:telegram"), false);
 });
+
+// Scanning only fills the collection written to the user's project; the icon
+// renders only if `Icon.svelte` then reads that copy. The copy shipped in the
+// package always exists, and Vite's own resolver runs ahead of ordinary
+// plugins, so the redirect has to be checked against a real Vite server with
+// the shipped copy in place. Calling the plugin's `resolveId` directly, or
+// deleting the shipped copy first, both pass even when Vite never asks.
+test("Vite resolves the icon collection to the project's copy, not the one shipped in the package", async (t) => {
+	const project = createPackageProject();
+	t.after(project.cleanup);
+	const { packageSrc } = project.overrides;
+	const packageCopy = join(
+		packageSrc,
+		"generated",
+		"local-icon-collections.ts",
+	);
+	mkdirSync(join(packageSrc, "generated"), { recursive: true });
+	writeFileSync(packageCopy, "export const localIconCollections = [];\n");
+	const importer = join(packageSrc, "components/atoms/display/Icon.svelte");
+	project.write("src/pages/index.astro", '<Icon icon="fa7-brands:steam" />\n');
+
+	const plugin = makePlugin(project.projectRoot, project.overrides);
+	const server = await createServer({
+		configFile: false,
+		root: project.projectRoot,
+		logLevel: "silent",
+		plugins: [plugin],
+		// The same two settings the integration applies in package mode.
+		resolve: { alias: [{ find: /^@\//, replacement: `${packageSrc}/` }] },
+		optimizeDeps: { exclude: ALIAS_NAMESPACES },
+		server: { middlewareMode: true },
+		appType: "custom",
+	});
+	t.after(() => server.close());
+	const resolveIn = async (environmentName) => {
+		const resolved = await server.environments[
+			environmentName
+		].pluginContainer.resolveId(ICON_COLLECTIONS_SPECIFIER, importer, {
+			ssr: environmentName === "ssr",
+		});
+		return normalisePath(resolved?.id ?? "");
+	};
+
+	plugin.buildStart();
+	assert.ok(hasIcon(readCollections(project.output), "fa7-brands:steam"));
+	for (const environmentName of ["client", "ssr"]) {
+		assert.equal(
+			await resolveIn(environmentName),
+			normalisePath(project.output),
+			`${environmentName}: the project's copy must win once it exists`,
+		);
+	}
+
+	// Without a generated copy the shipped one is the fallback.
+	rmSync(project.output);
+	for (const environmentName of ["client", "ssr"]) {
+		assert.equal(
+			await resolveIn(environmentName),
+			normalisePath(packageCopy),
+			`${environmentName}: the shipped copy is the fallback`,
+		);
+	}
+});
+
+// The dev server and a production build resolve through different code paths
+// (the build goes through the bundler), so the build is checked on its own:
+// what ends up in the bundle must be the project's collection.
+for (const ssr of [false, true]) {
+	test(`a ${ssr ? "server" : "browser"} build bundles the project's icon collection`, async (t) => {
+		const project = createPackageProject();
+		t.after(project.cleanup);
+		const { packageSrc } = project.overrides;
+		mkdirSync(join(packageSrc, "generated"), { recursive: true });
+		writeFileSync(
+			join(packageSrc, "generated", "local-icon-collections.ts"),
+			'export const localIconCollections = ["shipped-copy-marker"];\n',
+		);
+		const entry = join(packageSrc, "entry.ts");
+		writeFileSync(
+			entry,
+			'import { localIconCollections } from "@/generated/local-icon-collections";\n' +
+				"console.log(JSON.stringify(localIconCollections));\n",
+		);
+		project.write(
+			"src/pages/index.astro",
+			'<Icon icon="fa7-brands:steam" />\n',
+		);
+
+		const result = await build({
+			configFile: false,
+			root: project.projectRoot,
+			logLevel: "silent",
+			plugins: [makePlugin(project.projectRoot, project.overrides)],
+			resolve: { alias: [{ find: /^@\//, replacement: `${packageSrc}/` }] },
+			build: {
+				write: false,
+				minify: false,
+				ssr,
+				rollupOptions: { input: entry },
+			},
+		});
+		const code = [result]
+			.flat()
+			.flatMap((output) => output.output)
+			.map((chunk) => chunk.code ?? "")
+			.join("\n");
+		assert.match(code, /fa7-brands/, "the project's collection is bundled");
+		assert.doesNotMatch(code, /shipped-copy-marker/);
+	});
+}
 
 function readOutput(path) {
 	return existsSync(path) ? readFileSync(path, "utf8") : "";
