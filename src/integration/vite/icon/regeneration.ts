@@ -55,9 +55,12 @@ export function shironesIconRegeneration(
 		"local-icon-collections.ts",
 	);
 
-	// `packageSrc` covers the theme's own components; `contentDir` covers a
-	// user's posts in package mode and does not exist in source mode.
-	const roots = [paths.packageSrc, paths.contentDir];
+	// `packageSrc` covers the theme's source; `contentDir` covers user posts;
+	// `configDir` covers package-mode TS config/data overrides such as
+	// `shirones/config/profileConfig.ts`, where users commonly add brand icons.
+	// In source mode `configDir` is already under `packageSrc`; duplicate reads
+	// are harmless because requested icon names are accumulated in Sets.
+	const roots = [paths.packageSrc, paths.contentDir, paths.configDir];
 	// The project's own `src/icons/`, emitted as the `local` collection. It is
 	// the only icon source owned by the user, so it is resolved from
 	// `projectRoot` rather than from the package.

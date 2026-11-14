@@ -28,15 +28,15 @@ import { shironesIconRegeneration } from "../src/integration/vite/icon/regenerat
 // The regression below feeds both separator styles of each path, which only
 // a normalizing comparison can recognize on every platform.
 
-function makePlugin(root) {
+function makePlugin(root, overrides = {}) {
 	return shironesIconRegeneration(
 		{
 			projectRoot: root,
-			packageRoot: root,
-			packageSrc: join(root, "src"),
-			configDir: join(root, "config"),
-			dataDir: join(root, "data"),
-			contentDir: join(root, "content"),
+			packageRoot: overrides.packageRoot ?? root,
+			packageSrc: overrides.packageSrc ?? join(root, "src"),
+			configDir: overrides.configDir ?? join(root, "config"),
+			dataDir: overrides.dataDir ?? join(root, "data"),
+			contentDir: overrides.contentDir ?? join(root, "content"),
 			cacheDir: join(root, ".shirones"),
 			isThemeRepo: false,
 		},
@@ -121,6 +121,64 @@ test("path comparisons survive separator styles", async () => {
 		await waitFor(() => readOutput(output).includes("tag-rounded"), 2_000);
 	} finally {
 		rmSync(root, { recursive: true, force: true });
+	}
+});
+
+test("package-mode profile config overrides contribute brand icons", () => {
+	const projectRoot = mkdtempSync(join(tmpdir(), "shirones-icon-config-"));
+	const packageRoot = join(projectRoot, "node_modules", "shirones");
+	const packageSrc = join(packageRoot, "src");
+	const configDir = join(projectRoot, "shirones", "config");
+	const contentDir = join(projectRoot, "shirones", "content");
+	const output = join(
+		projectRoot,
+		"src",
+		"generated",
+		"local-icon-collections.ts",
+	);
+	mkdirSync(packageSrc, { recursive: true });
+	mkdirSync(configDir, { recursive: true });
+	writeFileSync(
+		join(configDir, "profileConfig.ts"),
+		[
+			"export const profileConfig = {",
+			"  links: [",
+			'    { name: "Bilibili", icon: "fa7-brands:bilibili" },',
+			'    { name: "Discord", icon: "fa7-brands:discord" },',
+			'    { name: "Bilibili Simple", icon: "simple-icons:bilibili" },',
+			'    { name: "Discord Simple", icon: "simple-icons:discord" },',
+			"  ],",
+			"};",
+		].join("\n"),
+	);
+
+	const plugin = makePlugin(projectRoot, {
+		packageRoot,
+		packageSrc,
+		configDir,
+		dataDir: join(configDir, "data"),
+		contentDir,
+	});
+	try {
+		plugin.buildStart();
+		const generated = readOutput(output);
+		const match = generated.match(/localIconCollections = (.+) as const;/);
+		assert.ok(match, "buildStart should write the generated icon collection");
+		const collections = JSON.parse(match[1]);
+		for (const [prefix, name] of [
+			["fa7-brands", "bilibili"],
+			["fa7-brands", "discord"],
+			["simple-icons", "bilibili"],
+			["simple-icons", "discord"],
+		]) {
+			const collection = collections.find((item) => item.prefix === prefix);
+			assert.ok(
+				collection?.icons?.[name] || collection?.aliases?.[name],
+				`${prefix}:${name} from profileConfig.ts should be in the offline collection`,
+			);
+		}
+	} finally {
+		rmSync(projectRoot, { recursive: true, force: true });
 	}
 });
 
