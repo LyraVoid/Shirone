@@ -174,7 +174,7 @@ export const renderedClasses = classes;
 		"utf8",
 	);
 
-	assert.match(directManifest.version, /^0\.18\./);
+	assert.match(directManifest.version, /^0\.19\.\d+$/);
 	assert.equal(
 		JSON.parse(readFileSync(join(nestedKatex, "package.json"), "utf8")).version,
 		"0.16.47",
