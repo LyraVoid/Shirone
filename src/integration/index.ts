@@ -1,6 +1,6 @@
 import { existsSync } from "node:fs";
 import { createRequire } from "node:module";
-import { dirname, join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import type { AstroIntegration } from "astro";
 import {
@@ -392,7 +392,16 @@ export function shirones(options: ShironesOptions = {}): AstroIntegration {
 										}),
 									]),
 							shironesFallbackResolver(paths),
-							shironesIconRegeneration(paths, logger),
+							shironesIconRegeneration(
+								paths,
+								logger,
+								// Explicit overrides only apply where the overlay runs.
+								paths.isThemeRepo
+									? []
+									: Object.values(options.components ?? {}).map((target) =>
+											resolve(paths.projectRoot, target),
+										),
+							),
 							shironesThumbnailsRegeneration(paths),
 							shironesSsrNodeShims(),
 							createMusicSidebarPlugin(paths, musicEnabled),

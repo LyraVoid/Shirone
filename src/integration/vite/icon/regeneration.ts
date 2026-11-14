@@ -42,6 +42,12 @@ const pending = new Map<string, ReturnType<typeof setTimeout>>();
 export function shironesIconRegeneration(
 	paths: ResolvedShironesPaths,
 	logger?: { warn: (message: string) => void },
+	/**
+	 * Extra files or directories to scan, as absolute paths. The integration
+	 * passes the targets of `ShironesOptions.components` here: an explicit
+	 * override may live outside every directory listed below.
+	 */
+	extraSources: string[] = [],
 ): Plugin {
 	const userCopy = join(
 		paths.projectRoot,
@@ -55,12 +61,28 @@ export function shironesIconRegeneration(
 		"local-icon-collections.ts",
 	);
 
-	// `packageSrc` covers the theme's source; `contentDir` covers user posts;
-	// `configDir` covers package-mode TS config/data overrides such as
-	// `shirones/config/profileConfig.ts`, where users commonly add brand icons.
-	// In source mode `configDir` is already under `packageSrc`; duplicate reads
-	// are harmless because requested icon names are accumulated in Sets.
-	const roots = [paths.packageSrc, paths.contentDir, paths.configDir];
+	// Everything that can end up rendered, in either mode:
+	//
+	// - `packageSrc`: the theme's own source.
+	// - the project's `src/`: component and layout overrides, and the project's
+	//   own pages. In source mode this is the same directory as `packageSrc`.
+	// - `contentDir`, `configDir`, `dataDir`: posts and the TS config/data
+	//   overrides (`shirones/config/profileConfig.ts` is where users commonly
+	//   add brand icons). Listed on their own because `options.paths` can move
+	//   any of them outside `src/`, and in package mode they default to
+	//   `shirones/`.
+	//
+	// The list carries no mode check so that an icon which works in a source
+	// checkout also works in a project that installs the package. Overlapping
+	// roots are fine: the generator reads each file once.
+	const roots = [
+		paths.packageSrc,
+		join(paths.projectRoot, "src"),
+		paths.contentDir,
+		paths.configDir,
+		paths.dataDir,
+		...extraSources,
+	];
 	// The project's own `src/icons/`, emitted as the `local` collection. It is
 	// the only icon source owned by the user, so it is resolved from
 	// `projectRoot` rather than from the package.

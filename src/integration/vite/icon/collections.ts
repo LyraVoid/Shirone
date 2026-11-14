@@ -29,6 +29,7 @@ import {
 	readdirSync,
 	readFileSync,
 	renameSync,
+	statSync,
 	writeFileSync,
 } from "node:fs";
 import { createRequire } from "node:module";
@@ -223,8 +224,24 @@ const SOURCE_EXTENSIONS: ReadonlySet<string> = new Set<string>([
 /** `prefix:name`, e.g. `material-symbols:home-rounded`. */
 const ICON_PATTERN = /\b(?<prefix>[a-z][a-z0-9-]*):(?<name>[a-z0-9-]+)\b/g;
 
+/**
+ * List the scannable files under a root.
+ *
+ * A root is usually a directory, but may be a single file: an explicit
+ * component override (`ShironesOptions.components`) can live anywhere in the
+ * project, and scanning its whole parent directory would pull in files the
+ * theme never renders.
+ */
 function collectSourceFiles(directory: string): string[] {
-	if (!existsSync(directory)) return [];
+	let stats: ReturnType<typeof statSync>;
+	try {
+		stats = statSync(directory);
+	} catch {
+		return [];
+	}
+	if (!stats.isDirectory()) {
+		return SOURCE_EXTENSIONS.has(extname(directory)) ? [directory] : [];
+	}
 	const files: string[] = [];
 	for (const entry of readdirSync(directory, { withFileTypes: true })) {
 		const absolute = join(directory, entry.name);
@@ -241,7 +258,10 @@ function collectSourceFiles(directory: string): string[] {
 }
 
 export interface GenerateIconCollectionsOptions {
-	/** Directories to scan for `prefix:name` references. */
+	/**
+	 * Directories (or single files) to scan for `prefix:name` references.
+	 * Roots may overlap or repeat; each file is read once.
+	 */
 	roots: string[];
 	/** Where to write the generated module. */
 	outputPath: string;
@@ -264,19 +284,32 @@ export function generateIconCollections({
 	outputPath,
 	localIconDir,
 }: GenerateIconCollectionsOptions): number {
-	const requested = new Map<string, Set<string>>();
+	// Roots overlap by design: in source mode the project's `src/` *is* the
+	// theme source and already contains the config, data and content
+	// directories. Collect paths into a Set so each file is read once.
+	const files = new Set<string>();
 	for (const root of roots) {
-		for (const file of collectSourceFiles(root)) {
-			const source = readFileSync(file, "utf8");
-			for (const match of source.matchAll(ICON_PATTERN)) {
-				const { prefix, name } = match.groups as {
-					prefix: string;
-					name: string;
-				};
-				if (!ICON_PREFIXES.has(prefix) || name === "xxx") continue;
-				if (!requested.has(prefix)) requested.set(prefix, new Set());
-				requested.get(prefix)?.add(name);
+		for (const file of collectSourceFiles(root)) files.add(file);
+	}
+
+	// prefix -> icon name -> the first file that mentions it. The file is only
+	// used to say where a bad name came from: the scan covers the user's own
+	// pages and components, so "Unknown icon x" alone leaves them grepping.
+	const requested = new Map<string, Map<string, string>>();
+	for (const file of files) {
+		const source = readFileSync(file, "utf8");
+		for (const match of source.matchAll(ICON_PATTERN)) {
+			const { prefix, name } = match.groups as {
+				prefix: string;
+				name: string;
+			};
+			if (!ICON_PREFIXES.has(prefix) || name === "xxx") continue;
+			let names = requested.get(prefix);
+			if (!names) {
+				names = new Map();
+				requested.set(prefix, names);
 			}
+			if (!names.has(name)) names.set(name, file);
 		}
 	}
 
@@ -290,7 +323,7 @@ export function generateIconCollections({
 		const iconSetPath = resolveIconSetPath(prefix);
 		if (!iconSetPath) {
 			throw new Error(
-				`[local-icons] Missing installed icon set @iconify-json/${prefix} for ${[...names][0]}`,
+				`[local-icons] Missing installed icon set @iconify-json/${prefix} for ${[...names.keys()][0]}`,
 			);
 		}
 		const set = JSON.parse(readFileSync(iconSetPath, "utf8"));
@@ -299,7 +332,7 @@ export function generateIconCollections({
 
 		// Follow the alias chain so an alias the theme asked for resolves to the
 		// same glyph as the concrete icon it points at.
-		function include(name: string, chain: string[] = []): void {
+		function include(name: string, file: string, chain: string[] = []): void {
 			if (icons[name] || aliases[name]) return;
 			if (set.icons?.[name]) {
 				icons[name] = set.icons[name];
@@ -307,7 +340,9 @@ export function generateIconCollections({
 			}
 			const alias = set.aliases?.[name];
 			if (!alias) {
-				throw new Error(`[local-icons] Unknown icon ${prefix}:${name}`);
+				throw new Error(
+					`[local-icons] Unknown icon ${prefix}:${name} (referenced in ${file})`,
+				);
 			}
 			if (chain.includes(name)) {
 				throw new Error(
@@ -315,10 +350,12 @@ export function generateIconCollections({
 				);
 			}
 			aliases[name] = alias;
-			include(alias.parent, [...chain, name]);
+			include(alias.parent, file, [...chain, name]);
 		}
 
-		for (const name of [...names].sort()) include(name);
+		for (const name of [...names.keys()].sort()) {
+			include(name, names.get(name) as string);
+		}
 		collections.push({
 			prefix,
 			...(set.width ? { width: set.width } : {}),

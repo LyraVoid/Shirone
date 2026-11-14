@@ -38,10 +38,25 @@ There is deliberately no CLI wrapper. An earlier version exposed
 
 ## What gets scanned
 
-`packageSrc` (the theme's own components) and `contentDir` (a user's posts,
-absent in source mode). Together those cover both modes without a mode check:
-in source mode the theme *is* the project, so `packageSrc` already contains
-`src/content`.
+Every place an icon name can be written and end up rendered:
+
+| root | covers |
+|---|---|
+| `packageSrc` | the theme's own source |
+| `<project>/src` | component and layout overrides, the project's own pages |
+| `contentDir` | posts, moments, spec pages |
+| `configDir`, `dataDir` | TS config and data overrides, e.g. `profileConfig.ts` |
+| targets of `ShironesOptions.components` | explicit overrides, scanned as single files |
+
+The list has no mode check, so an icon that works in a source checkout also
+works in a project that installs the package. In source mode `<project>/src` is
+`packageSrc` and already contains the other three; in package mode they default
+to `shirones/`. `options.paths` can move any of them outside `src/`, which is
+why they are listed on their own. Roots overlap freely: each file is read once.
+
+Only `<project>/src/generated/` is skipped, so the generator never reads its own
+output. A file elsewhere in the project (a `lib/` next to `src/`, say) is not
+scanned unless one of the roots above contains it.
 
 `ICON_PREFIXES` in `collections.ts` is the allow-list of usable sets. A new set
 needs adding there, and a `@iconify-json/<set>` entry in the theme's
@@ -107,6 +122,10 @@ records:
   A typo in one post should cost one icon, not take the dev server down.
 - `astro build` **throws**. An icon that fails to resolve renders as nothing at
   runtime, which is exactly the silent breakage worth failing a deploy on.
+
+The message names the first file that mentions the bad icon
+(`Unknown icon fa7-brands:… (referenced in /path/to/file)`), because the scan
+covers the user's own files as well as the theme's.
 
 So a blank icon in `dist/` means the build did not run this plugin, not that the
 error was swallowed. If an icon is missing in dev, check the warning first, then
