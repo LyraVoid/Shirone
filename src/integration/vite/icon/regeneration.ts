@@ -42,6 +42,12 @@ const pending = new Map<string, ReturnType<typeof setTimeout>>();
 export function shironesIconRegeneration(
 	paths: ResolvedShironesPaths,
 	logger?: { warn: (message: string) => void },
+	/**
+	 * Extra files or directories to scan, as absolute paths. The integration
+	 * passes the targets of `ShironesOptions.components` here: an explicit
+	 * override may live outside every directory listed below.
+	 */
+	extraSources: string[] = [],
 ): Plugin {
 	const userCopy = join(
 		paths.projectRoot,
@@ -55,9 +61,28 @@ export function shironesIconRegeneration(
 		"local-icon-collections.ts",
 	);
 
-	// `packageSrc` covers the theme's own components; `contentDir` covers a
-	// user's posts in package mode and does not exist in source mode.
-	const roots = [paths.packageSrc, paths.contentDir];
+	// Everything that can end up rendered, in either mode:
+	//
+	// - `packageSrc`: the theme's own source.
+	// - the project's `src/`: component and layout overrides, and the project's
+	//   own pages. In source mode this is the same directory as `packageSrc`.
+	// - `contentDir`, `configDir`, `dataDir`: posts and the TS config/data
+	//   overrides (`shirones/config/profileConfig.ts` is where users commonly
+	//   add brand icons). Listed on their own because `options.paths` can move
+	//   any of them outside `src/`, and in package mode they default to
+	//   `shirones/`.
+	//
+	// The list carries no mode check so that an icon which works in a source
+	// checkout also works in a project that installs the package. Overlapping
+	// roots are fine: the generator reads each file once.
+	const roots = [
+		paths.packageSrc,
+		join(paths.projectRoot, "src"),
+		paths.contentDir,
+		paths.configDir,
+		paths.dataDir,
+		...extraSources,
+	];
 	// The project's own `src/icons/`, emitted as the `local` collection. It is
 	// the only icon source owned by the user, so it is resolved from
 	// `projectRoot` rather than from the package.
@@ -91,6 +116,13 @@ export function shironesIconRegeneration(
 
 	return {
 		name: "shirone:icon-regeneration",
+		// `pre` is what makes the `resolveId` redirect below take effect. Vite
+		// runs its own resolver ahead of ordinary plugins, and the copy shipped
+		// in the package always exists, so without `pre` Vite resolved the
+		// specifier to that copy and this hook was never asked. The collection
+		// written to the user's project was then generated but never read:
+		// any icon the theme itself does not use rendered as nothing.
+		enforce: "pre",
 
 		configResolved(config) {
 			isBuild = config.command === "build";
@@ -105,7 +137,8 @@ export function shironesIconRegeneration(
 		// rewritten: to the package path in package mode, and to
 		// `projectRoot/src/...` in source mode. Both forms are listed, along with
 		// the bare specifier, because which one shows up depends on how the
-		// theme is being consumed.
+		// theme is being consumed. The package path only reaches this hook
+		// because the plugin is `enforce: "pre"`; see the note above.
 		resolveId(source) {
 			// Same separator hazard as the hot-update guard below: Vite hands
 			// paths through with posix separators on every platform, while the

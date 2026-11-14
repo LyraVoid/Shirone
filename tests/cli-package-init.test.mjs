@@ -233,6 +233,117 @@ test("init does not add a package type to an existing project that omitted it", 
 	assert.equal(Object.hasOwn(pkg, "type"), false);
 });
 
+test("init --update recognizes pnpm YAML keys with inline comments", (t) => {
+	const fixture = createFixture();
+	t.after(() => fixture.cleanup());
+
+	const initial = fixture.runInit();
+	assert.equal(initial.status, 0, initial.stderr);
+	const workspaceFile = join(fixture.project, "pnpm-workspace.yaml");
+	writeFileSync(
+		workspaceFile,
+		[
+			"allowBuilds: # retain the pnpm 11 comment",
+			"  esbuild: set this to true or false",
+			"  custom-native: true",
+			"onlyBuiltDependencies: # retain the pnpm 10 comment",
+			"  - custom-native",
+			"",
+		].join("\n"),
+	);
+
+	const updated = fixture.runCli(["init", "--update"]);
+	assert.equal(updated.status, 0, updated.stderr);
+	const workspace = readFileSync(workspaceFile, "utf8");
+	assert.equal((workspace.match(/^allowBuilds:/gm) ?? []).length, 1);
+	assert.equal((workspace.match(/^onlyBuiltDependencies:/gm) ?? []).length, 1);
+	assert.match(workspace, /^allowBuilds: # retain the pnpm 11 comment$/m);
+	assert.match(workspace, /^ {2}esbuild: true$/m);
+	assert.match(workspace, /^ {2}sharp: true$/m);
+	assert.match(workspace, /^ {2}custom-native: true$/m);
+	assert.match(
+		workspace,
+		/^onlyBuiltDependencies: # retain the pnpm 10 comment$/m,
+	);
+	assert.match(workspace, /^ {2}- custom-native$/m);
+
+	const repeated = fixture.runCli(["init", "--update"]);
+	assert.equal(repeated.status, 0, repeated.stderr);
+	assert.equal(readFileSync(workspaceFile, "utf8"), workspace);
+});
+
+// `public/` belongs to the user once the project is scaffolded: the real
+// template ships tens of megabytes of demo media, and deleting it must neither
+// show up as drift nor be undone by `--update`. Only `--public` re-adds it.
+function createPrunedPublicFixture(t) {
+	const fixture = createFixture();
+	t.after(() => fixture.cleanup());
+
+	const initial = fixture.runInit();
+	assert.equal(initial.status, 0, initial.stderr);
+	const asset = join(fixture.project, "public/favicon.svg");
+	assert.equal(existsSync(asset), true);
+	rmSync(asset);
+	const own = join(fixture.project, "public/own.txt");
+	writeFileSync(own, "mine\n");
+	return { fixture, asset, own };
+}
+
+test("a template asset deleted from public is not reported as drift", (t) => {
+	const { fixture, asset } = createPrunedPublicFixture(t);
+
+	const info = fixture.runCli(["info"]);
+	assert.equal(info.status, 0, info.stderr);
+	assert.match(info.stdout, /up to date/);
+	assert.doesNotMatch(info.stdout, /difference\(s\)/);
+	assert.doesNotMatch(info.stdout, /favicon\.svg/);
+
+	const check = fixture.runCli(["init"]);
+	assert.equal(check.status, 0, check.stderr);
+	assert.match(check.stdout, /Up to date\./);
+	assert.doesNotMatch(check.stdout, /favicon\.svg/);
+	assert.equal(existsSync(asset), false);
+});
+
+test("init --update does not re-add assets deleted from public", (t) => {
+	const { fixture, asset, own } = createPrunedPublicFixture(t);
+
+	const updated = fixture.runCli(["init", "--update"]);
+	assert.equal(updated.status, 0, updated.stderr);
+	assert.equal(existsSync(asset), false);
+	assert.equal(readFileSync(own, "utf8"), "mine\n");
+	assert.match(updated.stdout, /init --public/);
+});
+
+test("init --public re-adds missing public assets and touches nothing else", (t) => {
+	const { fixture, asset, own } = createPrunedPublicFixture(t);
+	const example = join(fixture.project, "shirones/content/posts/example.md");
+	rmSync(example);
+
+	const restored = fixture.runCli(["init", "--public"]);
+	assert.equal(restored.status, 0, restored.stderr);
+	assert.equal(readFileSync(asset, "utf8"), "<svg/>\n");
+	assert.equal(readFileSync(own, "utf8"), "mine\n");
+	assert.equal(existsSync(example), false);
+
+	writeFileSync(asset, "<svg>edited</svg>\n");
+	const repeated = fixture.runCli(["init", "--public"]);
+	assert.equal(repeated.status, 0, repeated.stderr);
+	assert.equal(readFileSync(asset, "utf8"), "<svg>edited</svg>\n");
+	assert.equal(existsSync(join(fixture.project, ".shirones-backup")), false);
+});
+
+test("init --update --public refreshes the scaffold and re-adds public assets", (t) => {
+	const { fixture, asset, own } = createPrunedPublicFixture(t);
+	rmSync(join(fixture.project, "src/icons"), { recursive: true });
+
+	const updated = fixture.runCli(["init", "--update", "--public"]);
+	assert.equal(updated.status, 0, updated.stderr);
+	assert.equal(readFileSync(asset, "utf8"), "<svg/>\n");
+	assert.equal(readFileSync(own, "utf8"), "mine\n");
+	assert.equal(existsSync(join(fixture.project, "src/icons")), true);
+});
+
 test("init adds aliases to JSONC tsconfig and preserves comments", (t) => {
 	const fixture = createFixture({
 		tsconfig: `{

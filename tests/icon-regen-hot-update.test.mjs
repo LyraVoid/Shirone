@@ -10,6 +10,9 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
+import { build, createServer } from "vite";
+import { ALIAS_NAMESPACES } from "../src/integration/aliases.ts";
+import { normalisePath } from "../src/integration/resolve/paths.ts";
 import { ICON_COLLECTIONS_SPECIFIER } from "../src/integration/vite/icon/collections.ts";
 import { shironesIconRegeneration } from "../src/integration/vite/icon/regeneration.ts";
 
@@ -28,15 +31,15 @@ import { shironesIconRegeneration } from "../src/integration/vite/icon/regenerat
 // The regression below feeds both separator styles of each path, which only
 // a normalizing comparison can recognize on every platform.
 
-function makePlugin(root) {
+function makePlugin(root, overrides = {}) {
 	return shironesIconRegeneration(
 		{
 			projectRoot: root,
-			packageRoot: root,
-			packageSrc: join(root, "src"),
-			configDir: join(root, "config"),
-			dataDir: join(root, "data"),
-			contentDir: join(root, "content"),
+			packageRoot: overrides.packageRoot ?? root,
+			packageSrc: overrides.packageSrc ?? join(root, "src"),
+			configDir: overrides.configDir ?? join(root, "config"),
+			dataDir: overrides.dataDir ?? join(root, "data"),
+			contentDir: overrides.contentDir ?? join(root, "content"),
 			cacheDir: join(root, ".shirones"),
 			isThemeRepo: false,
 		},
@@ -123,6 +126,370 @@ test("path comparisons survive separator styles", async () => {
 		rmSync(root, { recursive: true, force: true });
 	}
 });
+
+test("package-mode profile config overrides contribute brand icons", () => {
+	const projectRoot = mkdtempSync(join(tmpdir(), "shirones-icon-config-"));
+	const packageRoot = join(projectRoot, "node_modules", "shirones");
+	const packageSrc = join(packageRoot, "src");
+	const configDir = join(projectRoot, "shirones", "config");
+	const contentDir = join(projectRoot, "shirones", "content");
+	const output = join(
+		projectRoot,
+		"src",
+		"generated",
+		"local-icon-collections.ts",
+	);
+	mkdirSync(packageSrc, { recursive: true });
+	mkdirSync(configDir, { recursive: true });
+	writeFileSync(
+		join(configDir, "profileConfig.ts"),
+		[
+			"export const profileConfig = {",
+			"  links: [",
+			'    { name: "Bilibili", icon: "fa7-brands:bilibili" },',
+			'    { name: "Discord", icon: "fa7-brands:discord" },',
+			'    { name: "Bilibili Simple", icon: "simple-icons:bilibili" },',
+			'    { name: "Discord Simple", icon: "simple-icons:discord" },',
+			"  ],",
+			"};",
+		].join("\n"),
+	);
+
+	const plugin = makePlugin(projectRoot, {
+		packageRoot,
+		packageSrc,
+		configDir,
+		dataDir: join(configDir, "data"),
+		contentDir,
+	});
+	try {
+		plugin.buildStart();
+		const generated = readOutput(output);
+		const match = generated.match(/localIconCollections = (.+) as const;/);
+		assert.ok(match, "buildStart should write the generated icon collection");
+		const collections = JSON.parse(match[1]);
+		for (const [prefix, name] of [
+			["fa7-brands", "bilibili"],
+			["fa7-brands", "discord"],
+			["simple-icons", "bilibili"],
+			["simple-icons", "discord"],
+		]) {
+			const collection = collections.find((item) => item.prefix === prefix);
+			assert.ok(
+				collection?.icons?.[name] || collection?.aliases?.[name],
+				`${prefix}:${name} from profileConfig.ts should be in the offline collection`,
+			);
+		}
+	} finally {
+		rmSync(projectRoot, { recursive: true, force: true });
+	}
+});
+
+// The scan list carries no mode check: an icon that works in a source checkout
+// must work in a project that installs the package, wherever the user wrote it.
+// Before, package mode only looked at the package source, `shirones/content`
+// and `shirones/config`, so an icon used only in the project's own components,
+// layouts or pages rendered as nothing.
+
+/** A package-mode layout: the theme under `node_modules`, user files outside. */
+function createPackageProject() {
+	const projectRoot = mkdtempSync(join(tmpdir(), "shirones-icon-parity-"));
+	const packageRoot = join(projectRoot, "node_modules", "shirones");
+	const packageSrc = join(packageRoot, "src");
+	const configDir = join(projectRoot, "shirones", "config");
+	mkdirSync(packageSrc, { recursive: true });
+	mkdirSync(configDir, { recursive: true });
+	return {
+		projectRoot,
+		output: join(projectRoot, "src", "generated", "local-icon-collections.ts"),
+		overrides: {
+			packageRoot,
+			packageSrc,
+			configDir,
+			dataDir: join(configDir, "data"),
+			contentDir: join(projectRoot, "shirones", "content"),
+		},
+		write(relativePath, content) {
+			const file = join(projectRoot, relativePath);
+			mkdirSync(join(file, ".."), { recursive: true });
+			writeFileSync(file, content);
+			return file;
+		},
+		cleanup: () => rmSync(projectRoot, { recursive: true, force: true }),
+	};
+}
+
+function readCollections(output) {
+	const match = readOutput(output).match(
+		/localIconCollections = (.+) as const;/,
+	);
+	assert.ok(match, "the generated icon collection should exist");
+	return JSON.parse(match[1]);
+}
+
+function hasIcon(collections, id) {
+	const [prefix, name] = id.split(":");
+	const collection = collections.find((item) => item.prefix === prefix);
+	return Boolean(collection?.icons?.[name] || collection?.aliases?.[name]);
+}
+
+test("package mode scans the project's own components, layouts and pages", (t) => {
+	const project = createPackageProject();
+	t.after(project.cleanup);
+	project.write(
+		"src/components/atoms/Badge.svelte",
+		'<Icon icon="fa7-brands:telegram" />\n',
+	);
+	project.write(
+		"src/layouts/MainLayout.astro",
+		'<Icon icon="fa7-brands:steam" />\n',
+	);
+	project.write(
+		"src/pages/about/index.astro",
+		'<Icon icon="simple-icons:mastodon" />\n',
+	);
+	project.write(
+		"src/lib/links.ts",
+		'export const link = { icon: "fa7-solid:paw" };\n',
+	);
+
+	makePlugin(project.projectRoot, project.overrides).buildStart();
+	const collections = readCollections(project.output);
+	for (const id of [
+		"fa7-brands:telegram",
+		"fa7-brands:steam",
+		"simple-icons:mastodon",
+		"fa7-solid:paw",
+	]) {
+		assert.ok(hasIcon(collections, id), `${id} should be bundled`);
+	}
+});
+
+test("a data directory outside src is scanned in both modes", (t) => {
+	for (const isThemeRepo of [false, true]) {
+		const root = mkdtempSync(join(tmpdir(), "shirones-icon-data-"));
+		t.after(() => rmSync(root, { recursive: true, force: true }));
+		const dataDir = join(root, "my-data");
+		mkdirSync(join(root, "src"), { recursive: true });
+		mkdirSync(dataDir, { recursive: true });
+		writeFileSync(
+			join(dataDir, "friends.ts"),
+			'export const friends = [{ icon: "fa7-brands:twitch" }];\n',
+		);
+
+		const plugin = shironesIconRegeneration(
+			{
+				projectRoot: root,
+				packageRoot: root,
+				packageSrc: join(root, "src"),
+				configDir: join(root, "src", "config"),
+				dataDir,
+				contentDir: join(root, "src", "content"),
+				cacheDir: join(root, ".shirones"),
+				isThemeRepo,
+			},
+			{ warn: () => {} },
+		);
+		plugin.buildStart();
+		assert.ok(
+			hasIcon(
+				readCollections(
+					join(root, "src", "generated", "local-icon-collections.ts"),
+				),
+				"fa7-brands:twitch",
+			),
+			`custom data directory should be scanned (isThemeRepo=${isThemeRepo})`,
+		);
+	}
+});
+
+test("an explicit component override outside src is scanned as a single file", (t) => {
+	const project = createPackageProject();
+	t.after(project.cleanup);
+	const override = project.write(
+		"custom/PostCard.astro",
+		'<Icon icon="simple-icons:codeberg" />\n',
+	);
+	// A neighbour the theme never renders. It names an icon that does not
+	// exist, so scanning the whole directory would also fail the generation.
+	project.write(
+		"custom/notes.ts",
+		'export const note = "fa7-brands:not-a-real-icon";\n',
+	);
+
+	shironesIconRegeneration(
+		{
+			projectRoot: project.projectRoot,
+			...project.overrides,
+			cacheDir: join(project.projectRoot, ".shirones"),
+			isThemeRepo: false,
+		},
+		{ warn: () => {} },
+		[override],
+	).buildStart();
+	const collections = readCollections(project.output);
+	assert.ok(hasIcon(collections, "simple-icons:codeberg"));
+	assert.equal(hasIcon(collections, "fa7-brands:not-a-real-icon"), false);
+});
+
+test("an unknown icon in a project page names the file, fails a build and only warns in dev", (t) => {
+	const project = createPackageProject();
+	t.after(project.cleanup);
+	const page = project.write(
+		"src/pages/links.astro",
+		'<Icon icon="fa7-brands:not-a-real-icon" />\n',
+	);
+	const paths = {
+		projectRoot: project.projectRoot,
+		...project.overrides,
+		cacheDir: join(project.projectRoot, ".shirones"),
+		isThemeRepo: false,
+	};
+
+	const build = shironesIconRegeneration(paths, { warn: () => {} });
+	build.configResolved({ command: "build" });
+	assert.throws(
+		() => build.buildStart(),
+		(error) =>
+			error.message.includes("Unknown icon fa7-brands:not-a-real-icon") &&
+			error.message.includes(page),
+	);
+
+	const warnings = [];
+	const dev = shironesIconRegeneration(paths, {
+		warn: (message) => warnings.push(message),
+	});
+	dev.configResolved({ command: "serve" });
+	dev.buildStart();
+	assert.equal(warnings.length, 1);
+	assert.ok(warnings[0].includes(page), warnings[0]);
+});
+
+test("the project's generated directory is never fed back into the scan", (t) => {
+	const project = createPackageProject();
+	t.after(project.cleanup);
+	// A stale output naming an icon nothing references any more.
+	project.write(
+		"src/generated/local-icon-collections.ts",
+		'export const stale = "fa7-brands:telegram";\n',
+	);
+	project.write("src/pages/index.astro", '<Icon icon="fa7-brands:steam" />\n');
+
+	makePlugin(project.projectRoot, project.overrides).buildStart();
+	const collections = readCollections(project.output);
+	assert.ok(hasIcon(collections, "fa7-brands:steam"));
+	assert.equal(hasIcon(collections, "fa7-brands:telegram"), false);
+});
+
+// Scanning only fills the collection written to the user's project; the icon
+// renders only if `Icon.svelte` then reads that copy. The copy shipped in the
+// package always exists, and Vite's own resolver runs ahead of ordinary
+// plugins, so the redirect has to be checked against a real Vite server with
+// the shipped copy in place. Calling the plugin's `resolveId` directly, or
+// deleting the shipped copy first, both pass even when Vite never asks.
+test("Vite resolves the icon collection to the project's copy, not the one shipped in the package", async (t) => {
+	const project = createPackageProject();
+	t.after(project.cleanup);
+	const { packageSrc } = project.overrides;
+	const packageCopy = join(
+		packageSrc,
+		"generated",
+		"local-icon-collections.ts",
+	);
+	mkdirSync(join(packageSrc, "generated"), { recursive: true });
+	writeFileSync(packageCopy, "export const localIconCollections = [];\n");
+	const importer = join(packageSrc, "components/atoms/display/Icon.svelte");
+	project.write("src/pages/index.astro", '<Icon icon="fa7-brands:steam" />\n');
+
+	const plugin = makePlugin(project.projectRoot, project.overrides);
+	const server = await createServer({
+		configFile: false,
+		root: project.projectRoot,
+		logLevel: "silent",
+		plugins: [plugin],
+		// The same two settings the integration applies in package mode.
+		resolve: { alias: [{ find: /^@\//, replacement: `${packageSrc}/` }] },
+		optimizeDeps: { exclude: ALIAS_NAMESPACES },
+		server: { middlewareMode: true },
+		appType: "custom",
+	});
+	t.after(() => server.close());
+	const resolveIn = async (environmentName) => {
+		const resolved = await server.environments[
+			environmentName
+		].pluginContainer.resolveId(ICON_COLLECTIONS_SPECIFIER, importer, {
+			ssr: environmentName === "ssr",
+		});
+		return normalisePath(resolved?.id ?? "");
+	};
+
+	plugin.buildStart();
+	assert.ok(hasIcon(readCollections(project.output), "fa7-brands:steam"));
+	for (const environmentName of ["client", "ssr"]) {
+		assert.equal(
+			await resolveIn(environmentName),
+			normalisePath(project.output),
+			`${environmentName}: the project's copy must win once it exists`,
+		);
+	}
+
+	// Without a generated copy the shipped one is the fallback.
+	rmSync(project.output);
+	for (const environmentName of ["client", "ssr"]) {
+		assert.equal(
+			await resolveIn(environmentName),
+			normalisePath(packageCopy),
+			`${environmentName}: the shipped copy is the fallback`,
+		);
+	}
+});
+
+// The dev server and a production build resolve through different code paths
+// (the build goes through the bundler), so the build is checked on its own:
+// what ends up in the bundle must be the project's collection.
+for (const ssr of [false, true]) {
+	test(`a ${ssr ? "server" : "browser"} build bundles the project's icon collection`, async (t) => {
+		const project = createPackageProject();
+		t.after(project.cleanup);
+		const { packageSrc } = project.overrides;
+		mkdirSync(join(packageSrc, "generated"), { recursive: true });
+		writeFileSync(
+			join(packageSrc, "generated", "local-icon-collections.ts"),
+			'export const localIconCollections = ["shipped-copy-marker"];\n',
+		);
+		const entry = join(packageSrc, "entry.ts");
+		writeFileSync(
+			entry,
+			'import { localIconCollections } from "@/generated/local-icon-collections";\n' +
+				"console.log(JSON.stringify(localIconCollections));\n",
+		);
+		project.write(
+			"src/pages/index.astro",
+			'<Icon icon="fa7-brands:steam" />\n',
+		);
+
+		const result = await build({
+			configFile: false,
+			root: project.projectRoot,
+			logLevel: "silent",
+			plugins: [makePlugin(project.projectRoot, project.overrides)],
+			resolve: { alias: [{ find: /^@\//, replacement: `${packageSrc}/` }] },
+			build: {
+				write: false,
+				minify: false,
+				ssr,
+				rollupOptions: { input: entry },
+			},
+		});
+		const code = [result]
+			.flat()
+			.flatMap((output) => output.output)
+			.map((chunk) => chunk.code ?? "")
+			.join("\n");
+		assert.match(code, /fa7-brands/, "the project's collection is bundled");
+		assert.doesNotMatch(code, /shipped-copy-marker/);
+	});
+}
 
 function readOutput(path) {
 	return existsSync(path) ? readFileSync(path, "utf8") : "";
