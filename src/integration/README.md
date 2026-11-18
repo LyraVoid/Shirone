@@ -67,14 +67,16 @@ repositories at once. Everything else is free to reorganise.
 **Vite resolves aliases before any plugin.** A `resolveId` here receives the
 already-rewritten path, not the specifier a component imported. `enforce: "pre"`
 does not change that. Plugins that need to intercept a specifier have to match
-the post-alias form as well — see `vite/icon-regeneration.ts`, which lists all
-three shapes.
+the post-alias form as well — see `vite/icon/regeneration.ts`, which matches
+the tail of the rewritten path.
 
 **`astro:config:setup` runs before Vite resolves anything.** Work that must
 finish before the first import resolves belongs there — an import of a generated
 module, for instance. Work that only has to beat a file copy can use
 `buildStart` instead, which keeps it out of `astro sync`. Either way, `handleHotUpdate`
-covers edits made while the dev server is already up.
+covers edits made while the dev server is already up — but only edits: Vite does
+not call it for a file that was just created. `vite/icon/regeneration.ts`
+listens to `server.watcher` for that reason.
 
 ## Adding a Vite plugin
 

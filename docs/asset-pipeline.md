@@ -12,7 +12,7 @@
 | `src/assets/` | 受 Astro/Vite 管理的原始资产，如 banner、头像、文章封面和本地音乐封面 | 提交原始文件 | 通过 import、`resolveImageAsset()` 或 `astro:assets` 引用 |
 | `public/images/` | 必须保留稳定公开 URL 的原始内容，如动态原图 | 提交原始文件 | 可以直接引用 `/images/...` |
 | `public/assets/<domain>/` | 可重复生成的派生文件，如动态响应式缩略图 | 忽略生成文件，只提交 `.gitkeep` | 可以引用稳定的派生 URL |
-| `src/generated/` | 构建前生成、参与编译的源码数据，如本地图标集合 | 按具体生成器约定提交 | 只能由代码导入，不能作为公开 URL |
+| `src/generated/` | 构建前生成、参与编译的源码数据（目前没有生成器使用；图标集合已改为虚拟模块） | 按具体生成器约定提交 | 只能由代码导入，不能作为公开 URL |
 | `.astro/`、`dist/`、`artifacts/` | 框架缓存、最终构建产物和本地审计报告 | 全部忽略 | 禁止写入配置或内容数据 |
 
 生成文件必须满足以下约束：
@@ -26,7 +26,7 @@
 
 图标集合与说说缩略图都已改为自动生成，不再需要手动命令：
 
-- 图标集合在 `astro:config:setup` 重算（`dev` / `build` / `sync` 都覆盖），dev 期间新增图标还会触发 HMR 重算。
+- 图标集合在 `buildStart` 重算（`dev` / `build` / `sync` 都覆盖），dev 期间新建、修改或删除文件都会触发重算。
 - 缩略图在 `buildStart` 重算（`dev` / `build` 覆盖），dev 期间新增图片也会触发 HMR 重算。
 
 ---
@@ -81,11 +81,11 @@ Astro 图片优化有两类输入，不能混为一谈：
 
 图标统一走 `atoms/display/Icon.svelte`，不按渲染生命周期分叉：
 
-- 它在构建期从 `src/generated/local-icon-collections.ts`（摇树后的本地集合）输出内联服务端 SVG，无论页面有没有 hydration 岛，HTML 里都有成品图标。
+- 它在构建期从虚拟模块 `virtual:shirone-icons`（摇树后的本地集合）输出内联服务端 SVG，无论页面有没有 hydration 岛，HTML 里都有成品图标。
 - 裸名（无 `prefix:`）指向项目自己的 `src/icons/*.svg`，由该组件回退 `local:` 前缀，调用方无需关心。
 - 禁止业务组件直接导入在线 Iconify 组件，避免首屏访问 Iconify API，也避免 SSR 阶段输出空图标。
 
-`src/integration/vite/icon/collections.ts` 会扫描项目实际使用的图标名，从已安装的 `@iconify-json/*` 集合生成最小本地数据，产物写入 `src/generated/local-icon-collections.ts`。该文件在 `astro:config:setup` 自动重算，无需手动命令；但**图标名拼错不会自动修复**——生成器只在报错时跳过，Material Symbols 的错误名称不会因本地化而纠正。
+`src/integration/vite/icon/collections.ts` 会扫描项目实际使用的图标名，从已安装的 `@iconify-json/*` 集合生成最小本地数据，由 `src/integration/vite/icon/regeneration.ts` 以虚拟模块 `virtual:shirone-icons` 提供，不写入磁盘，源码模式与 npm 包模式走同一条路径。无需手动命令；但**图标名拼错不会自动修复**——未知图标名只会输出一条警告（指出图标名和所在文件）并被跳过，该图标渲染为空，构建不会失败。
 
 图标回归至少应覆盖：
 

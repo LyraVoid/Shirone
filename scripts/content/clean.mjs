@@ -45,7 +45,6 @@ import {
 	writeFileSync,
 } from "node:fs";
 import { dirname, join, relative } from "node:path";
-import { generateIconCollections } from "../../src/integration/vite/icon/collections.ts";
 import {
 	FOOTER_HTML_TARGET,
 	GENERATED_CONFIG_FILE,
@@ -467,7 +466,6 @@ function reportPlan() {
 			`  [Content repo working copy] ${WORKING_COPY_DIR}${options.keepWorkingCopy ? " (--keep-working-copy, kept)" : " (removed)"}`,
 		);
 	}
-	console.log("  [Regenerate] Offline icon collections, moments thumbnails");
 	if (options.backup && toBackup.length > 0) {
 		log(
 			`A snapshot backup will be created first: ${toBackup.length} files, approx ${formatBytes(backupBytes)}, located in .content-backup/`,
@@ -696,73 +694,7 @@ if (workingCopyExists && !options.keepWorkingCopy) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 7. 重新生成派生产物（图标集合与说说缩略图）
-// ─────────────────────────────────────────────────────────────────────────────
-
-async function regenerate(step, label) {
-	try {
-		if (typeof step === "string") {
-			execFileSync("node", [step], {
-				cwd: ROOT,
-				encoding: "utf8",
-				stdio: ["ignore", "pipe", "pipe"],
-			});
-		} else {
-			await step();
-		}
-		return true;
-	} catch (error) {
-		const detail = `${error.stderr ?? ""}${error.stdout ?? ""}`.trim();
-		const hint =
-			typeof step === "string"
-				? `please run 'node ${step}' manually`
-				: "please re-run the build";
-		warn(
-			`Failed to regenerate ${label}, ${hint} after cleaning. Reason: ${detail || error.message}`,
-		);
-		return false;
-	}
-}
-
-// 图标集合与缩略图都是「内容的派生产物」：内容变了必须重算，
-// 否则前台会出现图标空白或指向已删除图片的缩略图。
-//
-// The icon collection is generated in-process rather than through a CLI
-// script: `astro:config:setup` already regenerates it on dev/build/sync, and
-// the logic lives in `src/integration/vite/icon/collections.ts`.
-const iconRegenerate = () =>
-	generateIconCollections({
-		projectRoot: ROOT,
-		roots: [join(ROOT, "src")],
-		outputPath: join(ROOT, "src", "generated", "local-icon-collections.ts"),
-	});
-
-if (await regenerate(iconRegenerate, "Offline icon collections")) {
-	// 图标集合是被跟踪的生成物，且生成器一律写 LF。在 core.autocrlf=true 的
-	// Windows 检出上，内容完全一致的重写也会让 git status 显示 M。
-	// 内容没变就还原成检出时的形态，保证「清理后 git status 干净」这条承诺成立。
-	const iconFile = "src/generated/local-icon-collections.ts";
-	const unchanged =
-		runGit(
-			["diff", "--quiet", "--", iconFile],
-			"Compare icon collections artifact",
-			{
-				allowFailure: true,
-			},
-		) !== null;
-	if (unchanged) {
-		runGit(
-			["restore", "--", iconFile],
-			"Normalize icon collections line endings",
-			{
-				allowFailure: true,
-			},
-		);
-	}
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// 8. 收尾体检
+// 7. 收尾体检
 // ─────────────────────────────────────────────────────────────────────────────
 
 log(

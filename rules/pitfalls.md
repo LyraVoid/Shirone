@@ -77,8 +77,8 @@ svelte({
 
 **解法**：
 - 静态 SSR 场景：一律用 `<Icon icon="prefix:name" />`（`atoms/display/Icon.svelte`，别名 `@iconify/svelte`），**禁止**直接导入 `@iconify/svelte/dist/Icon.svelte` 这类在线组件；
-- 需要水合的 Svelte 场景：同一个 `Icon.svelte` 照样可用，它经 `OfflineIcon` 消费 `src/generated/local-icon-collections.ts`，禁止业务组件直接导入在线 Iconify 组件；
-- 新增或改名图标后确认图标名真实存在（`src/generated/local-icon-collections.ts` 会自动重算），无效图标名必须修正，不能依赖网络回退；
+- 需要水合的 Svelte 场景：同一个 `Icon.svelte` 照样可用，它经 `OfflineIcon` 消费虚拟模块 `virtual:shirone-icons`，禁止业务组件直接导入在线 Iconify 组件；
+- 新增或改名图标后确认图标名真实存在（图标集合会自动重算）。无效图标名只会得到一条警告并渲染为空，不会让构建失败，所以必须自己修正，不能依赖网络回退；主题自身 `src/` 下的无效图标名由 `tests/local-icons.test.mjs` 拦截；
 - 组件 scoped CSS 里 `> :global(svg)` 会强制覆盖 children 图标的尺寸（如强制 24px 覆盖调用方 `text-[1.25rem]`）——尺寸规则只应作用于 `icon` prop 模式的图标容器（`.m3-icon-button__icon`），children 图标尺寸由调用方 class 控制。
 
 **防回归**：`tests/site/icons.spec.ts` 断言真实页面（首页/侧栏/文章页）SSR 输出 svg 可见，并检查初始页面不请求 Iconify API；静态场景改回 `icon` prop 或交互场景绕过离线包装都会变红。

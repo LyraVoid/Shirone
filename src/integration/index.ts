@@ -395,12 +395,9 @@ export function shirones(options: ShironesOptions = {}): AstroIntegration {
 							shironesIconRegeneration(
 								paths,
 								logger,
-								// Explicit overrides only apply where the overlay runs.
-								paths.isThemeRepo
-									? []
-									: Object.values(options.components ?? {}).map((target) =>
-											resolve(paths.projectRoot, target),
-										),
+								Object.values(options.components ?? {}).map((target) =>
+									resolve(paths.projectRoot, target),
+								),
 							),
 							shironesThumbnailsRegeneration(paths),
 							shironesSsrNodeShims(),

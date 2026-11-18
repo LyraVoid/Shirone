@@ -36,7 +36,7 @@ Add an action in this order:
 1. Extend `ContextMenuAction` in `src/types/contextMenuConfig.ts`.
 2. Add the default id to `contextMenuConfig.actions` only when the action is part of the product default. Keep the array as the user-controlled display order.
 3. Add one i18n key and translations in all ten locale modules. The menu must never contain literal UI copy.
-4. Add the icon to the `icons` map in `ContextMenu.svelte`. Use a local icon name already covered by `src/generated/local-icon-collections.ts`. That file is regenerated automatically on every `astro:config:setup`, so a new name only needs a dev-server reload.
+4. Add the icon to the `icons` map in `ContextMenu.svelte`. Use an icon name from one of the bundled sets (see `ICON_PREFIXES` in `src/integration/vite/icon/collections.ts`). The icon collection is regenerated automatically when the file is saved; an unknown name is reported as a warning and renders as nothing.
 5. Add the action's eligibility rule to `availableActions()`. An action that has no valid target must not render a disabled-looking row.
 6. Add the smallest handler branch in `run()`. Keep route state, browser APIs, and Swup lifecycle work in the organism or an explicitly named utility.
 7. Add a focused Playwright assertion for order, visibility, keyboard behavior, effect, and the disabled configuration. Run `npx.cmd astro check` and the relevant site tests.

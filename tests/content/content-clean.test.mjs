@@ -96,9 +96,6 @@ function createFixture({ ejected = false } = {}) {
 			"!public/assets/anime/covers/.gitkeep",
 			"src/assets/fonts/.subset/",
 			"src/data/anime-snapshots/*.json",
-			// 真实仓库把生成的图标集合也 ignore 掉（.gitignore 第 45 行）；
-			// fixture 必须复刻这一点，否则清理后 git status 会出现 ?? src/generated/。
-			"src/generated/local-icon-collections.ts",
 			"",
 		].join("\n"),
 	);

@@ -8,6 +8,10 @@ declare module "virtual:shirone-music-sidebar" {
 	export default component;
 }
 
+declare module "virtual:shirone-icons" {
+	export const localIconCollections: unknown[];
+}
+
 declare module "*scripts/anime/providers/bangumi.mjs" {
 	export function fetchBangumiData(config: unknown): Promise<{
 		provider: "bangumi";
