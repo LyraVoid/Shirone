@@ -19,21 +19,15 @@ test("security override pins affected postcss-selector-parser v6 without downgra
 	assert.equal(lockfile.overrides["postcss-selector-parser"], undefined);
 });
 
-test("KaTeX keeps one non-deprecated patched version across manifest, override and lockfile", () => {
-	// 0.18.2 fixes GHSA-238p-pmpm-9mq7. 0.18.11 was published with accidental
-	// breaking changes and is deprecated, so the pin stays exact instead of a
-	// caret range that would resolve it.
+test("KaTeX keeps one current patched version across manifest, override and lockfile", () => {
+	// 0.18.2 fixes GHSA-238p-pmpm-9mq7. Keep the pin exact so the stylesheet
+	// assets and the renderer cannot drift across dependency refreshes.
 	const manifestSpecifier = packageManifest.dependencies.katex;
 	const overrideSpecifier = workspace.overrides.katex;
 	const lockedDependency = lockfile.importers["."].dependencies.katex;
 	const version = lockedDependency.version;
 
-	assert.match(version, /^0\.18\.\d+$/, `unexpected KaTeX version: ${version}`);
-	assert.ok(
-		Number(version.split(".")[2]) >= 2,
-		"KaTeX must stay above the GHSA-238p-pmpm-9mq7 floor",
-	);
-	assert.notEqual(version, "0.18.11", "0.18.11 is deprecated for breaking changes");
+	assert.match(version, /^0\.19\.\d+$/, `unexpected KaTeX version: ${version}`);
 	assert.equal(
 		overrideSpecifier,
 		manifestSpecifier,

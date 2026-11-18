@@ -11,6 +11,7 @@ import { join } from "node:path";
 import test, { after } from "node:test";
 import { fileURLToPath } from "node:url";
 import {
+	buildIconCollections,
 	collectLocalIcons,
 	ICON_PREFIXES,
 } from "../src/integration/vite/icon/collections.ts";
@@ -47,6 +48,14 @@ test("the allow-list is exactly the four sets the theme references", () => {
 		"material-symbols",
 		"simple-icons",
 	]);
+});
+
+test("every icon the theme references exists in an installed set", () => {
+	// An unknown name only warns at build time, because in a user's project
+	// the textual scan cannot tell a reference from a mention. The theme's own
+	// source has no such excuse, so a typo here fails this test instead.
+	const { unknown } = buildIconCollections({ roots: [join(ROOT, "src")] });
+	assert.deepEqual(unknown, []);
 });
 
 test("a missing directory yields no collection", () => {

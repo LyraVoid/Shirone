@@ -15,7 +15,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 
 const THEME_DIR = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const PIPELINE_REPO = "https://github.com/yCENzh/shirones.git";
-const PIPELINE_COMMIT = "38346f1dea9ea9e2c30e87551807a9ba58707bbf";
+const PIPELINE_COMMIT = "4291a59d63b3aa3e4b9a5e954c9b518598573724";
 const TEMP_BASE = process.env.RUNNER_TEMP || tmpdir();
 const TEMP_DIR = await mkdtemp(join(TEMP_BASE, "shirones-pipeline-tests-"));
 const PIPELINE_DIR = join(TEMP_DIR, "shirones");

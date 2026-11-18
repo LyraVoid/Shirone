@@ -1,8 +1,8 @@
 /**
  * Icon collection generation.
  *
- * `Icon.svelte` imports `@/generated/local-icon-collections`, a tree-shaken
- * subset of the installed `@iconify-json/*` sets. Tree-shaking is the point:
+ * `Icon.svelte` imports `virtual:shirone-icons`, a tree-shaken subset of the
+ * installed `@iconify-json/*` sets. Tree-shaking is the point:
  * the full sets are 30407 icons / 14.4 MB, while a typical theme uses ~200 of
  * them. The alternative — loading the Iconify API at runtime — would put a
  * network request on every first paint, and one chunk per icon would mean one
@@ -16,21 +16,13 @@
  * sets ship as ordinary dependencies of the theme and the user declares none
  * of them.
  *
- * The logic lives here rather than in the old standalone script so the Vite
- * plugin in `regeneration.ts` can call it directly, and so the integration
- * stays bundled into the published package: package-mode projects get the
- * same behaviour without shipping `scripts/`.
+ * Nothing is written to disk: the Vite plugin in `regeneration.ts` calls this
+ * and serves the result from memory, in a source checkout and in a project
+ * that installs the package alike.
  */
 
 import type { Dirent } from "node:fs";
-import {
-	existsSync,
-	mkdirSync,
-	readdirSync,
-	readFileSync,
-	renameSync,
-	writeFileSync,
-} from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { createRequire } from "node:module";
 import { dirname, extname, join, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -208,8 +200,8 @@ function collectLocalIconsFrom(
 	}
 }
 
-/** The specifier `Icon.svelte` imports; see `regeneration.ts` for how it resolves. */
-export const ICON_COLLECTIONS_SPECIFIER = "@/generated/local-icon-collections";
+/** The virtual module `Icon.svelte` imports; `regeneration.ts` serves it. */
+export const ICON_COLLECTIONS_ID = "virtual:shirone-icons";
 
 const SOURCE_EXTENSIONS: ReadonlySet<string> = new Set<string>([
 	".astro",
@@ -223,14 +215,24 @@ const SOURCE_EXTENSIONS: ReadonlySet<string> = new Set<string>([
 /** `prefix:name`, e.g. `material-symbols:home-rounded`. */
 const ICON_PATTERN = /\b(?<prefix>[a-z][a-z0-9-]*):(?<name>[a-z0-9-]+)\b/g;
 
-function collectSourceFiles(directory: string): string[] {
-	if (!existsSync(directory)) return [];
+/**
+ * List the scannable files under a root.
+ *
+ * A root is usually a directory, but may be a single file: an explicit
+ * component override (`ShironesOptions.components`) can live anywhere in the
+ * project, and scanning its whole parent directory would pull in files the
+ * theme never renders.
+ */
+function collectSourceFiles(root: string): string[] {
+	const stats = statSync(root, { throwIfNoEntry: false });
+	if (!stats) return [];
+	if (stats.isFile()) return SOURCE_EXTENSIONS.has(extname(root)) ? [root] : [];
 	const files: string[] = [];
-	for (const entry of readdirSync(directory, { withFileTypes: true })) {
-		const absolute = join(directory, entry.name);
+	for (const entry of readdirSync(root, { withFileTypes: true })) {
+		const absolute = join(root, entry.name);
 		if (entry.isDirectory()) {
-			// `generated/` holds previous output; scanning it would feed the
-			// generator its own icon names back in.
+			// `generated/` is where the collection used to be written. A
+			// project may still have that file; it is not a source.
 			if (entry.name !== "generated")
 				files.push(...collectSourceFiles(absolute));
 		} else if (SOURCE_EXTENSIONS.has(extname(entry.name))) {
@@ -240,11 +242,12 @@ function collectSourceFiles(directory: string): string[] {
 	return files;
 }
 
-export interface GenerateIconCollectionsOptions {
-	/** Directories to scan for `prefix:name` references. */
+export interface IconCollectionsOptions {
+	/**
+	 * Directories (or single files) to scan for `prefix:name` references.
+	 * Roots may overlap or repeat; each file is read once.
+	 */
 	roots: string[];
-	/** Where to write the generated module. */
-	outputPath: string;
 	/**
 	 * Directory holding a project's own `*.svg` icons, emitted as the `local`
 	 * collection. Absent, empty or unreadable means no `local` entry at all.
@@ -252,34 +255,45 @@ export interface GenerateIconCollectionsOptions {
 	localIconDir?: string;
 }
 
+export interface IconCollections {
+	/** Source of the `virtual:shirone-icons` module. */
+	code: string;
+	/** Names that are in no installed set, with a file that mentions each. */
+	unknown: { icon: string; file: string }[];
+}
+
 /**
- * Scan `roots`, resolve each referenced glyph, and write the collection module.
+ * Scan `roots`, resolve each referenced glyph, and return the collection module.
  *
- * Throws on an unknown icon name or a missing icon set: a collection that
- * silently drops a glyph is harder to notice than a failure. Callers running
- * inside the dev server are expected to catch — see `shironesIconRegeneration`.
+ * An unknown icon name is reported and skipped rather than thrown: the scan is
+ * textual, so a name in a comment or a post about icons is indistinguishable
+ * from a real reference, and neither should cost the build. A missing icon set
+ * still throws; that is a broken install, not a typo.
  */
-export function generateIconCollections({
+export function buildIconCollections({
 	roots,
-	outputPath,
 	localIconDir,
-}: GenerateIconCollectionsOptions): number {
-	const requested = new Map<string, Set<string>>();
-	for (const root of roots) {
-		for (const file of collectSourceFiles(root)) {
-			const source = readFileSync(file, "utf8");
-			for (const match of source.matchAll(ICON_PATTERN)) {
-				const { prefix, name } = match.groups as {
-					prefix: string;
-					name: string;
-				};
-				if (!ICON_PREFIXES.has(prefix) || name === "xxx") continue;
-				if (!requested.has(prefix)) requested.set(prefix, new Set());
-				requested.get(prefix)?.add(name);
-			}
+}: IconCollectionsOptions): IconCollections {
+	// Roots overlap (in source mode the project's `src/` is the theme source),
+	// so dedupe: each file is read once.
+	const files = new Set(roots.flatMap(collectSourceFiles));
+
+	// prefix -> icon name -> a file that mentions it, for the report.
+	const requested = new Map<string, Map<string, string>>();
+	for (const file of files) {
+		const source = readFileSync(file, "utf8");
+		for (const match of source.matchAll(ICON_PATTERN)) {
+			const { prefix, name } = match.groups as {
+				prefix: string;
+				name: string;
+			};
+			if (!ICON_PREFIXES.has(prefix) || name === "xxx") continue;
+			if (!requested.has(prefix)) requested.set(prefix, new Map());
+			requested.get(prefix)?.set(name, file);
 		}
 	}
 
+	const unknown: IconCollections["unknown"] = [];
 	const collections: Record<string, unknown>[] = [];
 	for (const [prefix, names] of [...requested].sort(([a], [b]) =>
 		a.localeCompare(b),
@@ -290,7 +304,7 @@ export function generateIconCollections({
 		const iconSetPath = resolveIconSetPath(prefix);
 		if (!iconSetPath) {
 			throw new Error(
-				`[local-icons] Missing installed icon set @iconify-json/${prefix} for ${[...names][0]}`,
+				`[local-icons] Missing installed icon set @iconify-json/${prefix} for ${[...names.keys()][0]}`,
 			);
 		}
 		const set = JSON.parse(readFileSync(iconSetPath, "utf8"));
@@ -307,7 +321,9 @@ export function generateIconCollections({
 			}
 			const alias = set.aliases?.[name];
 			if (!alias) {
-				throw new Error(`[local-icons] Unknown icon ${prefix}:${name}`);
+				throw new Error(
+					`[local-icons] Broken alias ${prefix}:${[...chain, name].join(" -> ")}`,
+				);
 			}
 			if (chain.includes(name)) {
 				throw new Error(
@@ -318,7 +334,12 @@ export function generateIconCollections({
 			include(alias.parent, [...chain, name]);
 		}
 
-		for (const name of [...names].sort()) include(name);
+		for (const [name, file] of [...names].sort(([a], [b]) =>
+			a < b ? -1 : 1,
+		)) {
+			if (set.icons?.[name] || set.aliases?.[name]) include(name);
+			else unknown.push({ icon: `${prefix}:${name}`, file });
+		}
 		collections.push({
 			prefix,
 			...(set.width ? { width: set.width } : {}),
@@ -334,24 +355,10 @@ export function generateIconCollections({
 	const local = localIconDir ? collectLocalIcons(localIconDir) : null;
 	if (local) collections.push(local);
 
-	const output = [
-		"// Generated by src/integration/vite/icon/collections.ts. Do not edit.",
-		`export const localIconCollections = ${JSON.stringify(collections)} as const;`,
-		"",
-	].join("\n");
-	// Write-then-rename so a dev server reading mid-write never sees a partial file.
-	const temporaryPath = `${outputPath}.tmp`;
-	mkdirSync(dirname(outputPath), { recursive: true });
-	writeFileSync(temporaryPath, output, "utf8");
-	renameSync(temporaryPath, outputPath);
-
-	return collections.reduce(
-		(total, collection) =>
-			total +
-			Object.keys(collection.icons as object).length +
-			Object.keys((collection.aliases as object) ?? {}).length,
-		0,
-	);
+	return {
+		code: `export const localIconCollections = ${JSON.stringify(collections)};\n`,
+		unknown,
+	};
 }
 
 export { ICON_PREFIXES, SOURCE_EXTENSIONS };

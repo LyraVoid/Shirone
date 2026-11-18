@@ -17,7 +17,7 @@ checks out the exact Shirone revision under test (including a PR merge commit),
 sets up Node 26.13.0 and the pnpm version pinned by `packageManager`, then runs
 `scripts/ci/test-shirones-pipeline.mjs`. The runner fetches the immutable
 `yCENzh/shirones` commit
-`38346f1dea9ea9e2c30e87551807a9ba58707bbf` (not the moving `work` ref), creates
+`4291a59d63b3aa3e4b9a5e954c9b518598573724` (not the moving `work` ref), creates
 a temporary local ref for the tested theme revision, installs the pipeline's
 locked dependencies, and runs `pnpm all` against it. That suite runs its
 JavaScript tests, syncs templates, builds the package, installs and exercises
