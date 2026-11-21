@@ -32,6 +32,12 @@ export interface ShironesPaths {
 	 * @default "<root>/content"
 	 */
 	content?: string;
+	/**
+	 * Plugin scripts directory, relative to the project root. Every script
+	 * directly inside it is loaded when Astro starts.
+	 * @default "<root>/scripts"
+	 */
+	scripts?: string;
 }
 
 export interface ShironesFontOptions {
@@ -109,6 +115,12 @@ export interface ResolvedShironesPaths {
 	dataDir: string;
 	/** Absolute path to the user's content directory. */
 	contentDir: string;
+	/**
+	 * Absolute path to the plugin scripts directory. The same place in both
+	 * modes, `<root>/scripts`, unlike the three directories above: the theme's
+	 * own repository has no earlier location to stay compatible with.
+	 */
+	scriptsDir: string;
 	/** Absolute path to the package-managed cache dir (`<root>/.shirones`). */
 	cacheDir: string;
 	/**

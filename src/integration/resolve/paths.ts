@@ -128,6 +128,10 @@ export function resolvePaths(
 			? join(packageSrc, "content")
 			: join(contentRoot, "content");
 
+	const scriptsDir = options.paths?.scripts
+		? toAbsolute(projectRoot, options.paths.scripts)
+		: join(contentRoot, "scripts");
+
 	return {
 		projectRoot,
 		packageRoot,
@@ -135,6 +139,7 @@ export function resolvePaths(
 		configDir,
 		dataDir,
 		contentDir,
+		scriptsDir,
 		cacheDir: join(projectRoot, CACHE_DIR_NAME),
 		isThemeRepo,
 	};

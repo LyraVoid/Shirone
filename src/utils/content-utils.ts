@@ -5,6 +5,7 @@ import {
 	comparePublicationEntries,
 	validatePublicationMetadata,
 } from "@utils/content-date";
+import { assertMarkdownExtensionsVisible } from "@utils/markdown-extensions.mjs";
 import { siteMarkdownProcessor } from "@utils/markdown-processor";
 import { isEncryptedMoment } from "@utils/moment-encryption";
 import { encryptProtectedContent } from "@utils/password-protection";
@@ -275,6 +276,13 @@ export async function getSortedMoments(): Promise<MomentItem[]> {
 
 	const sorted = entries.sort(comparePublicationEntries);
 
+	// This body is rendered here rather than by Astro, so make sure it gets the
+	// same plugin-script extensions (see markdown-extensions.mjs).
+	assertMarkdownExtensionsVisible(
+		typeof __SHIRONES_MARKDOWN_DIGEST__ === "string"
+			? __SHIRONES_MARKDOWN_DIGEST__
+			: undefined,
+	);
 	momentsRendererPromise ??= siteMarkdownProcessor.createRenderer({});
 	const renderer = await momentsRendererPromise;
 
