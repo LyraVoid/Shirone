@@ -1,14 +1,50 @@
-import { expect, test } from "@playwright/test";
+import { type APIRequestContext, expect, test } from "@playwright/test";
 import {
 	createEncryptedMoment,
 	removeEncryptedMoment,
+	touchEncryptedMoment,
 } from "../fixtures/moments-encrypted.mjs";
 
-test.beforeAll(async () => {
+async function isServed(request: APIRequestContext) {
+	const response = await request.get("/moments/");
+	return (
+		response.ok() &&
+		(await response.text()).includes('id="moment-zz-encrypted-probe"')
+	);
+}
+
+// The fixture is written while the dev server is running, and the test used to
+// open /moments/ straight away. Two things then went wrong now and then:
+// - If the server compiles /moments/ for the first time while it is syncing
+//   the new entry, it keeps serving the page without the entry until the
+//   content changes again.
+// - The server tells connected browsers to reload once after the sync. A page
+//   rendered before the sync whose HMR socket connects after that message
+//   stays stale.
+// No wait inside the test can recover from either. So render the page once
+// before the fixture exists, then wait until the server itself serves the
+// entry, and write the file again if it does not.
+test.beforeAll(async ({ request }) => {
+	test.setTimeout(120_000);
+	await request.get("/moments/");
 	await createEncryptedMoment();
+	for (let attempt = 1; ; attempt++) {
+		try {
+			await expect
+				.poll(() => isServed(request), { timeout: 15_000 })
+				.toBe(true);
+			return;
+		} catch (error) {
+			if (attempt === 5) throw error;
+			await touchEncryptedMoment();
+		}
+	}
 });
-test.afterAll(async () => {
+// Wait for the removal as well, so its reload cannot land in the next spec.
+test.afterAll(async ({ request }) => {
+	test.setTimeout(90_000);
 	await removeEncryptedMoment();
+	await expect.poll(() => isServed(request), { timeout: 60_000 }).toBe(false);
 });
 
 test.describe("encrypted moments", () => {
@@ -36,9 +72,7 @@ test.describe("encrypted moments", () => {
 		);
 
 		const card = page.locator("#moment-zz-encrypted-probe");
-		// The fixture is written in beforeAll; Astro dev needs a moment to pick
-		// the new content entry up on a cold content store.
-		await expect(card).toHaveCount(1, { timeout: 20_000 });
+		await expect(card).toHaveCount(1);
 		const gate = card.locator(".password-gate");
 		await expect(gate).toBeVisible();
 		await expect(card.locator(".moment-card__badge--encrypted")).toBeVisible();

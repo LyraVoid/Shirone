@@ -237,12 +237,19 @@ for (const domain of ["friends", "anime"]) {
 		);
 		await expect(next(page)).toBeDisabled();
 		await expectToolsBelowNavbar(page, prefix);
+		const peer = domain === "friends" ? "anime" : "friends";
 		await page.locator("[data-pagination-peer]").click();
-		await expect(page).toHaveURL(
-			new RegExp(`${root + (domain === "friends" ? "anime" : "friends")}/$`),
-		);
+		await expect(page).toHaveURL(new RegExp(`${root + peer}/$`));
+		// Swup updates the URL when a visit starts, long before the new page is
+		// in place. Going back at that point aborts the visit, and a second
+		// step back then races the reload of `?page=8`: when that reload lands
+		// it rewrites the URL and the list is back on the last page. Let each
+		// visit finish (peer list hydrated, then this list hydrated on its last
+		// page) before the next history step.
+		await waitForList(page, peer);
 		await page.goBack();
 		await expect(page).toHaveURL(/page=8/);
+		await expect(page.locator(`.${prefix}-card`)).toHaveCount(1);
 		await expect(page.locator(`.${prefix}-card__title`)).toHaveText(
 			`${title} 085`,
 		);
