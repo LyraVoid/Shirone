@@ -13,9 +13,9 @@ const workspace = parse(
 const lockfile = parse(readFileSync(new URL("pnpm-lock.yaml", ROOT), "utf8"));
 
 test("security override pins affected postcss-selector-parser v6 without downgrading v7", () => {
-	assert.equal(workspace.overrides["postcss-selector-parser@6"], "6.1.5");
+	assert.equal(workspace.overrides["postcss-selector-parser@6"], "6.1.6");
 	assert.equal(workspace.overrides["postcss-selector-parser"], undefined);
-	assert.equal(lockfile.overrides["postcss-selector-parser@6"], "6.1.5");
+	assert.equal(lockfile.overrides["postcss-selector-parser@6"], "6.1.6");
 	assert.equal(lockfile.overrides["postcss-selector-parser"], undefined);
 });
 
