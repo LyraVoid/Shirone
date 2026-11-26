@@ -224,6 +224,8 @@ export const tr: Translation = {
 	[Key.calendarPrevMonth]: "Önceki ay",
 	[Key.calendarNextMonth]: "Sonraki ay",
 
+	[Key.markdownTableExpand]: "Tabloyu genişlet",
+	[Key.markdownTablePreview]: "Tablo önizlemesi",
 	[Key.mermaidControls]: "Diyagram denetimleri",
 	[Key.mermaidZoomIn]: "Yakınlaştır",
 	[Key.mermaidZoomOut]: "Uzaklaştır",
