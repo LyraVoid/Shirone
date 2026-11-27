@@ -420,11 +420,7 @@ class MermaidInteractionControllerImpl implements MermaidInteractionController {
 		viewport.before(this.uiRoot);
 
 		const diagramName =
-			viewport.getAttribute("aria-label") ??
-			(document
-				.getElementById(viewport.getAttribute("aria-labelledby") ?? "")
-				?.textContent?.trim() ||
-				i18n(I18nKey.mermaidControls));
+			viewport.getAttribute("aria-label") ?? i18n(I18nKey.mermaidControls);
 		const fullscreenDiagram = i18n(I18nKey.mermaidFullscreenDiagram).replace(
 			"{diagram}",
 			diagramName,

@@ -403,6 +403,31 @@ test.describe("Mermaid diagrams", () => {
 		).toEqual([]);
 	});
 
+	test("names a diagram after its heading without the anchor glyph", async ({
+		page,
+	}) => {
+		await page.goto("/posts/mdx-showcase/", { waitUntil: "domcontentloaded" });
+		const diagram = page.locator(".markdown-mermaid").first();
+		await expect(diagram).toHaveAttribute("data-mermaid-state", "ready", {
+			timeout: 15_000,
+		});
+		const region = diagram.locator(".markdown-mermaid__diagram");
+		const label = await region.getAttribute("aria-label");
+		// `rehype-autolink-headings` appends a "#" glyph to the heading, and the
+		// region name is derived from that heading.
+		expect(label).toBeTruthy();
+		expect(label).not.toMatch(/#\s*$/);
+		expect(label).toContain("Mermaid Architecture Diagrams");
+
+		await diagram.getByRole("button", { name: "Diagram controls" }).click();
+		await diagram.getByRole("button", { name: "Open fullscreen" }).click();
+		const dialog = page.getByRole("dialog", {
+			name: `Fullscreen diagram: ${label}`,
+		});
+		await expect(dialog).toBeVisible();
+		await expect(dialog.locator(".m3-dialog__title")).not.toContainText("#");
+	});
+
 	test("renders an HTML line break inside a label", async ({ page }) => {
 		await page.goto(DEMO_PATH, { waitUntil: "domcontentloaded" });
 		const diagram = page
