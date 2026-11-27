@@ -57,6 +57,7 @@ function showTable(viewport: HTMLElement) {
 				label={expandLabel}
 				variant="tonal"
 				size="xsmall"
+				ariaHaspopup="dialog"
 				onclick={() => (open = true)}
 			/>
 		</Tooltip>

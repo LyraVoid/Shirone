@@ -3,6 +3,11 @@ import { mount, unmount } from "svelte";
 
 const viewers = new Map<HTMLElement, () => void>();
 
+/**
+ * Owns the teardown for every mounted viewer. The runtime descriptor only runs
+ * when the incoming page still has tables, so leaving a table page needs this
+ * document-level signal; the listener is dropped once no viewer remains.
+ */
 function removeDisconnectedViewers(): void {
 	for (const [scroller, dispose] of viewers) {
 		if (scroller.isConnected) continue;

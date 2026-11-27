@@ -385,6 +385,38 @@ test.describe("MDX Support and M3E Integration", () => {
 		await expect(dialog.getByRole("table")).toBeVisible();
 	});
 
+	test.describe("touch input", () => {
+		test.use({
+			viewport: { width: 390, height: 844 },
+			hasTouch: true,
+			isMobile: true,
+		});
+
+		test("keeps the expand trigger visible without hover and opens on tap", async ({
+			page,
+		}) => {
+			await page.goto("/posts/mdx-showcase/", {
+				waitUntil: "domcontentloaded",
+			});
+			const frame = page.locator(".markdown-table-preview").first();
+			const action = frame.locator(".m3-markdown-table-viewer__action");
+			// No hover on a coarse pointer, so the reveal rule must not apply and the
+			// trigger keeps a full touch target.
+			await expect(action).toHaveCSS("opacity", "1");
+			await expect(action).toHaveCSS("pointer-events", "auto");
+			const trigger = frame.getByRole("button", { name: "Expand table" });
+			await expect(trigger).toHaveAttribute("aria-haspopup", "dialog");
+			const box = await trigger.boundingBox();
+			expect(box?.width ?? 0).toBeGreaterThanOrEqual(48);
+			expect(box?.height ?? 0).toBeGreaterThanOrEqual(48);
+
+			await trigger.tap();
+			await expect(
+				page.getByRole("dialog", { name: "Table preview" }),
+			).toBeVisible();
+		});
+	});
+
 	test("filled text field stays distinguishable from the article card in light and dark modes", async ({
 		page,
 	}) => {
