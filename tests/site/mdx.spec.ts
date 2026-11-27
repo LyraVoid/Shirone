@@ -301,6 +301,122 @@ test.describe("MDX Support and M3E Integration", () => {
 			.not.toBe("none");
 	});
 
+	test("previews an overflowing table and restores it on close and Swup navigation", async ({
+		page,
+	}) => {
+		await page.setViewportSize({ width: 390, height: 844 });
+		await page.emulateMedia({ reducedMotion: "reduce" });
+		await page.goto("/posts/mdx-showcase/", { waitUntil: "domcontentloaded" });
+		const scroller = page.locator(".markdown-table-scroll").first();
+		const action = page.locator(".m3-markdown-table-viewer__action").first();
+		const trigger = page
+			.locator(".markdown-table-preview")
+			.first()
+			.getByRole("button", { name: "Expand table" });
+		const dialog = page.getByRole("dialog", { name: "Table preview" });
+
+		await expect(trigger).toHaveText("");
+		await expect(action).toHaveCSS("opacity", "0");
+		await expect(action).toHaveCSS("pointer-events", "none");
+		await scroller.hover();
+		await expect(action).toHaveCSS("opacity", "1");
+		const { endInset, blockOffset, fullWidth } = await trigger.evaluate(
+			(button) => {
+				const frame = button.closest(".markdown-table-preview");
+				const scroller = frame?.querySelector(".markdown-table-scroll");
+				if (!scroller) throw new Error("The table scroll container is missing");
+				const tableBounds = scroller.getBoundingClientRect();
+				const buttonBounds = button.getBoundingClientRect();
+				return {
+					endInset: tableBounds.right - buttonBounds.right,
+					blockOffset: buttonBounds.top - tableBounds.top,
+					fullWidth: scroller.clientWidth === frame?.clientWidth,
+				};
+			},
+		);
+		expect(endInset).toBeGreaterThanOrEqual(0);
+		expect(endInset).toBeLessThan(16);
+		expect(blockOffset).toBeGreaterThanOrEqual(0);
+		expect(blockOffset).toBeLessThan(16);
+		expect(fullWidth).toBe(true);
+		await page.mouse.move(0, 0);
+		await expect(action).toHaveCSS("opacity", "0");
+		await trigger.focus();
+		await expect(action).toHaveCSS("opacity", "1");
+
+		const scrollLeft = await scroller.evaluate((element) => {
+			element.scrollLeft = 80;
+			element.querySelector("table")?.setAttribute("data-preview-original", "");
+			return element.scrollLeft;
+		});
+		expect(scrollLeft).toBeGreaterThan(0);
+		await trigger.press("Enter");
+		await expect(dialog).toBeVisible();
+		const viewport = dialog.getByRole("region", { name: "Table preview" });
+		const table = viewport.getByRole("table");
+		await expect(table).toHaveAttribute("data-preview-original", "");
+		await expect(table.getByRole("cell").first()).toHaveCSS(
+			"white-space",
+			"normal",
+		);
+		await expect(scroller.getByRole("table")).toHaveCount(0);
+
+		await page.keyboard.press("Escape");
+		await expect(dialog).toHaveCount(0);
+		await expect(trigger).toBeFocused();
+		await expect(scroller.getByRole("table")).toHaveAttribute(
+			"data-preview-original",
+			"",
+		);
+		expect(await scroller.evaluate((element) => element.scrollLeft)).toBe(
+			scrollLeft,
+		);
+
+		await trigger.click();
+		await expect(dialog).toBeVisible();
+		await page.waitForFunction(() => Boolean(window.swup?.navigate));
+		await page.evaluate(() => window.swup?.navigate("/archive/"));
+		await expect(page).toHaveURL(/\/archive\//);
+		await expect(dialog).toHaveCount(0);
+		await page.evaluate(() => window.swup?.navigate("/posts/mdx-showcase/"));
+		await scroller.hover();
+		await expect(action).toHaveCSS("opacity", "1");
+		await trigger.click();
+		await expect(dialog.getByRole("table")).toBeVisible();
+	});
+
+	test.describe("touch input", () => {
+		test.use({
+			viewport: { width: 390, height: 844 },
+			hasTouch: true,
+			isMobile: true,
+		});
+
+		test("keeps the expand trigger visible without hover and opens on tap", async ({
+			page,
+		}) => {
+			await page.goto("/posts/mdx-showcase/", {
+				waitUntil: "domcontentloaded",
+			});
+			const frame = page.locator(".markdown-table-preview").first();
+			const action = frame.locator(".m3-markdown-table-viewer__action");
+			// No hover on a coarse pointer, so the reveal rule must not apply and the
+			// trigger keeps a full touch target.
+			await expect(action).toHaveCSS("opacity", "1");
+			await expect(action).toHaveCSS("pointer-events", "auto");
+			const trigger = frame.getByRole("button", { name: "Expand table" });
+			await expect(trigger).toHaveAttribute("aria-haspopup", "dialog");
+			const box = await trigger.boundingBox();
+			expect(box?.width ?? 0).toBeGreaterThanOrEqual(48);
+			expect(box?.height ?? 0).toBeGreaterThanOrEqual(48);
+
+			await trigger.tap();
+			await expect(
+				page.getByRole("dialog", { name: "Table preview" }),
+			).toBeVisible();
+		});
+	});
+
 	test("filled text field stays distinguishable from the article card in light and dark modes", async ({
 		page,
 	}) => {

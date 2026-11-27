@@ -89,6 +89,15 @@ const runtimeDescriptors: MarkdownRuntimeDescriptor[] = [
 		},
 	},
 	{
+		selector: ".custom-md .markdown-table-scroll",
+		initialize: async (root) => {
+			const { initMarkdownTablePreviews } = await import(
+				"./markdown-table-preview"
+			);
+			initMarkdownTablePreviews(root);
+		},
+	},
+	{
 		selector: ".markdown-mermaid[data-mermaid]",
 		initialize: async () => {
 			const { initMermaidDiagrams } = await import("./mermaid");

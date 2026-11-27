@@ -213,6 +213,7 @@ for (const domain of ["friends", "anime"]) {
 	}) => {
 		await page.setViewportSize({ width: 390, height: 844 });
 		await ready(page, domain);
+		await page.waitForFunction(() => Boolean(window.swup?.hooks));
 		await expect(
 			pager(page).getByRole("button", { name: "Jump to page" }),
 		).toHaveAccessibleName("Jump to page 1 / 8");
@@ -240,12 +241,7 @@ for (const domain of ["friends", "anime"]) {
 		const peer = domain === "friends" ? "anime" : "friends";
 		await page.locator("[data-pagination-peer]").click();
 		await expect(page).toHaveURL(new RegExp(`${root + peer}/$`));
-		// Swup updates the URL when a visit starts, long before the new page is
-		// in place. Going back at that point aborts the visit, and a second
-		// step back then races the reload of `?page=8`: when that reload lands
-		// it rewrites the URL and the list is back on the last page. Let each
-		// visit finish (peer list hydrated, then this list hydrated on its last
-		// page) before the next history step.
+		// Swup changes the URL before replacing the outgoing list.
 		await waitForList(page, peer);
 		await page.goBack();
 		await expect(page).toHaveURL(/page=8/);

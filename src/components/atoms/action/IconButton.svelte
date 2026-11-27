@@ -29,6 +29,14 @@ let {
 	id = undefined,
 	ariaExpanded = undefined as boolean | undefined,
 	ariaControls = undefined as string | undefined,
+	ariaHaspopup = undefined as
+		| "dialog"
+		| "menu"
+		| "listbox"
+		| "tree"
+		| "grid"
+		| boolean
+		| undefined,
 	href = undefined,
 	target = undefined,
 	rel = undefined,
@@ -62,6 +70,8 @@ let {
 	ariaExpanded?: boolean;
 	/** 控制的目标元素 ID（aria-controls） */
 	ariaControls?: string;
+	/** 弹出层类型（aria-haspopup），如打开对话框时用 "dialog" */
+	ariaHaspopup?: "dialog" | "menu" | "listbox" | "tree" | "grid" | boolean;
 	/** 提供时渲染为 <a>（导航/外部链接，遵循「href → <a>」原生语义） */
 	href?: string;
 	/** 链接 target（仅 href 时生效） */
@@ -98,6 +108,7 @@ function handleClick() {
 		aria-pressed={toggle ? checked : undefined}
 		aria-expanded={ariaExpanded}
 		aria-controls={ariaControls}
+		aria-haspopup={ariaHaspopup}
 		onclick={handleClick}
 	>
 		{#if icon}
@@ -118,6 +129,7 @@ function handleClick() {
 		aria-pressed={toggle ? checked : undefined}
 		aria-expanded={ariaExpanded}
 		aria-controls={ariaControls}
+		aria-haspopup={ariaHaspopup}
 		disabled={disabled}
 		onclick={handleClick}
 	>

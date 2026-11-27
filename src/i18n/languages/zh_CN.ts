@@ -214,6 +214,8 @@ export const zh_CN: Translation = {
 	[Key.calendarPrevMonth]: "上一月",
 	[Key.calendarNextMonth]: "下一月",
 
+	[Key.markdownTableExpand]: "放大表格",
+	[Key.markdownTablePreview]: "表格预览",
 	[Key.mermaidControls]: "图表控件",
 	[Key.mermaidZoomIn]: "放大",
 	[Key.mermaidZoomOut]: "缩小",

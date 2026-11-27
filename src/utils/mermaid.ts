@@ -421,6 +421,17 @@ function findDiagramHeading(diagram: HTMLElement): HTMLElement | null {
 	return null;
 }
 
+/** Heading text without the autolink glyph appended by `rehype-autolink-headings`. */
+function readHeadingText(heading: HTMLElement): string {
+	const clone = heading.cloneNode(true) as HTMLElement;
+	for (const noise of clone.querySelectorAll(
+		".anchor, [data-pagefind-ignore]",
+	)) {
+		noise.remove();
+	}
+	return (clone.textContent ?? "").trim();
+}
+
 async function renderDiagrams() {
 	if (rendering) {
 		rerenderRequested = true;
@@ -552,9 +563,10 @@ async function renderDiagrams() {
 					output.removeAttribute("aria-labelledby");
 				} else {
 					const heading = findDiagramHeading(diagram);
-					if (heading?.id) {
-						output.setAttribute("aria-labelledby", heading.id);
-						output.removeAttribute("aria-label");
+					const label = heading ? readHeadingText(heading) : "";
+					if (label) {
+						output.setAttribute("aria-label", label);
+						output.removeAttribute("aria-labelledby");
 					}
 				}
 				const controller = interactionControllers.get(diagram);

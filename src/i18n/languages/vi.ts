@@ -224,6 +224,8 @@ export const vi: Translation = {
 	[Key.calendarPrevMonth]: "Tháng trước",
 	[Key.calendarNextMonth]: "Tháng sau",
 
+	[Key.markdownTableExpand]: "Mở rộng bảng",
+	[Key.markdownTablePreview]: "Xem trước bảng",
 	[Key.mermaidControls]: "Điều khiển sơ đồ",
 	[Key.mermaidZoomIn]: "Phóng to",
 	[Key.mermaidZoomOut]: "Thu nhỏ",
