@@ -339,6 +339,11 @@ test("a running dev server picks up new, changed and deleted files, and reloads 
 	await settle();
 	assert.ok(!serves(plugin, "fa7-brands:gitlab"));
 
+	const outside = project.write("other/unrelated.ts", "export const x = 1;\n");
+	emit("change", outside);
+	await settle();
+	assert.ok(!serves(plugin, "fa7-brands:gitlab"));
+
 	// The same edit, reported for the file that changed.
 	emit("change", page);
 	await waitFor(() => serves(plugin, "fa7-brands:gitlab"));

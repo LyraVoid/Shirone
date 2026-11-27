@@ -14,6 +14,7 @@
 
 import { extname, join } from "node:path";
 import type { Plugin, ViteDevServer } from "vite";
+import { normalisePath } from "../../resolve/paths.ts";
 import type { ResolvedShironesPaths } from "../../types.ts";
 import {
 	buildIconCollections,
@@ -69,6 +70,9 @@ export function shironesIconRegeneration(
 	// the only icon source owned by the user, so it is resolved from
 	// `projectRoot` rather than from the package.
 	const localIconDir = join(paths.projectRoot, "src", "icons");
+	const watchedRoots = [...roots, localIconDir].map((root) =>
+		normalisePath(root),
+	);
 
 	// Set by `configResolved`; see the thumbnails plugin for the rationale.
 	let isBuild = false;
@@ -146,6 +150,13 @@ export function shironesIconRegeneration(
 				// Only a scanned source or a project icon can change the result.
 				const extension = extname(file);
 				if (extension !== ".svg" && !SOURCE_EXTENSIONS.has(extension)) return;
+				const path = normalisePath(file);
+				if (
+					!watchedRoots.some(
+						(root) => path === root || path.startsWith(`${root}/`),
+					)
+				)
+					return;
 				clearTimeout(pending.get(paths.projectRoot));
 				pending.set(
 					paths.projectRoot,
