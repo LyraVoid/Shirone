@@ -213,6 +213,7 @@ for (const domain of ["friends", "anime"]) {
 	}) => {
 		await page.setViewportSize({ width: 390, height: 844 });
 		await ready(page, domain);
+		await page.waitForFunction(() => Boolean(window.swup?.hooks));
 		await expect(
 			pager(page).getByRole("button", { name: "Jump to page" }),
 		).toHaveAccessibleName("Jump to page 1 / 8");
@@ -237,12 +238,14 @@ for (const domain of ["friends", "anime"]) {
 		);
 		await expect(next(page)).toBeDisabled();
 		await expectToolsBelowNavbar(page, prefix);
+		const peer = domain === "friends" ? "anime" : "friends";
 		await page.locator("[data-pagination-peer]").click();
-		await expect(page).toHaveURL(
-			new RegExp(`${root + (domain === "friends" ? "anime" : "friends")}/$`),
-		);
+		await expect(page).toHaveURL(new RegExp(`${root + peer}/$`));
+		// Swup changes the URL before replacing the outgoing list.
+		await waitForList(page, peer);
 		await page.goBack();
 		await expect(page).toHaveURL(/page=8/);
+		await expect(page.locator(`.${prefix}-card`)).toHaveCount(1);
 		await expect(page.locator(`.${prefix}-card__title`)).toHaveText(
 			`${title} 085`,
 		);

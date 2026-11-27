@@ -226,6 +226,8 @@ export const id: Translation = {
 	[Key.calendarPrevMonth]: "Bulan sebelumnya",
 	[Key.calendarNextMonth]: "Bulan berikutnya",
 
+	[Key.markdownTableExpand]: "Perbesar tabel",
+	[Key.markdownTablePreview]: "Pratinjau tabel",
 	[Key.mermaidControls]: "Kontrol diagram",
 	[Key.mermaidZoomIn]: "Perbesar",
 	[Key.mermaidZoomOut]: "Perkecil",

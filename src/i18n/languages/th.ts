@@ -213,6 +213,8 @@ export const th: Translation = {
 	[Key.calendarPrevMonth]: "เดือนก่อน",
 	[Key.calendarNextMonth]: "เดือนถัดไป",
 
+	[Key.markdownTableExpand]: "ขยายตาราง",
+	[Key.markdownTablePreview]: "ตัวอย่างตาราง",
 	[Key.mermaidControls]: "ตัวควบคุมแผนภาพ",
 	[Key.mermaidZoomIn]: "ขยาย",
 	[Key.mermaidZoomOut]: "ย่อ",

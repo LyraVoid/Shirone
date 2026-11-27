@@ -212,6 +212,8 @@ enum I18nKey {
 	calendarPrevMonth = "calendarPrevMonth",
 	calendarNextMonth = "calendarNextMonth",
 
+	markdownTableExpand = "markdownTableExpand",
+	markdownTablePreview = "markdownTablePreview",
 	mermaidControls = "mermaidControls",
 	mermaidZoomIn = "mermaidZoomIn",
 	mermaidZoomOut = "mermaidZoomOut",

@@ -221,6 +221,8 @@ export const ja: Translation = {
 	[Key.calendarPrevMonth]: "前の月",
 	[Key.calendarNextMonth]: "次の月",
 
+	[Key.markdownTableExpand]: "表を拡大",
+	[Key.markdownTablePreview]: "表のプレビュー",
 	[Key.mermaidControls]: "図のコントロール",
 	[Key.mermaidZoomIn]: "拡大",
 	[Key.mermaidZoomOut]: "縮小",

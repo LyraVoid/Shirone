@@ -221,6 +221,8 @@ export const ko: Translation = {
 	[Key.calendarPrevMonth]: "이전 달",
 	[Key.calendarNextMonth]: "다음 달",
 
+	[Key.markdownTableExpand]: "표 확대",
+	[Key.markdownTablePreview]: "표 미리보기",
 	[Key.mermaidControls]: "다이어그램 컨트롤",
 	[Key.mermaidZoomIn]: "확대",
 	[Key.mermaidZoomOut]: "축소",
