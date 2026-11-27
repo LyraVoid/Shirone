@@ -107,7 +107,8 @@ function isActive(link: (typeof links)[number]): boolean {
 
 	function setTopAppBarNavigation(pageKey: string) {
 		document.querySelectorAll<HTMLElement>("[data-nav-key]").forEach((link) => {
-			const active = (link.dataset.navKey || "") === pageKey;
+			const navKey = link.dataset.navKey || "";
+			const active = Boolean(navKey) && navKey === pageKey;
 			link.classList.toggle("top-app-bar__nav-link--active", active);
 			if (active) link.setAttribute("aria-current", "page");
 			else link.removeAttribute("aria-current");
