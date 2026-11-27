@@ -1,7 +1,7 @@
 import { existsSync } from "node:fs";
 import { createRequire } from "node:module";
-import { dirname, join } from "node:path";
-import { pathToFileURL } from "node:url";
+import { dirname, join, resolve } from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import type { AstroIntegration } from "astro";
 import {
 	expressiveCodeShared,
@@ -16,9 +16,17 @@ import {
 	TRAILING_SLASH,
 	viteBuildShared,
 } from "../config/integrationsConfig.ts";
+import { publishMarkdownExtensions } from "../utils/markdown-extensions.mjs";
 import { ALIAS_NAMESPACES, aliasPattern, THEME_ALIASES } from "./aliases.ts";
 import { buildFontDeclarations } from "./fonts.ts";
 import { indexPagefindDirectory } from "./pagefind.ts";
+import {
+	emptyContributions,
+	loadPluginScripts,
+	type PluginContributions,
+	resolveInjectedRoutes,
+	runPlugins,
+} from "./plugins.ts";
 import {
 	invalidateConfigCache,
 	loadConfigModule,
@@ -160,6 +168,8 @@ export function shirones(options: ShironesOptions = {}): AstroIntegration {
 	// Mutable holder shared by config:setup (which builds the registry) and
 	// server:setup (which rebuilds it when an override file changes in dev).
 	const registryRef: OverrideRegistryRef = { overrides: new Map() };
+	// What the project's plugin scripts registered; read again at build:done.
+	let plugins: PluginContributions = emptyContributions();
 
 	return {
 		name: "shirones",
@@ -315,6 +325,26 @@ export function shirones(options: ShironesOptions = {}): AstroIntegration {
 					addWatchFile(pathToFileURL(paths.configDir));
 				}
 
+				// ── 2.5. Plugin scripts ─────────────────────────────────────────
+				// Before fonts, Markdown, icons and routes: each of them takes
+				// something a script may have registered. See plugins.ts.
+				plugins = await runPlugins(
+					await loadPluginScripts(paths, registryRef),
+					{ paths, command, logger },
+				);
+				if (plugins.names.length > 0) {
+					logger.info(
+						`[plugins] ${plugins.names.length} loaded from ${paths.scriptsDir}: ${plugins.names.join(", ")}`,
+					);
+				}
+				// Restart the dev server when a script changes. Astro restarts
+				// only for the exact paths it is given here, which cannot name a
+				// script that does not exist yet; so the directory is registered,
+				// and server:setup reports a change inside it as a change of it.
+				if (command === "dev") {
+					addWatchFile(pathToFileURL(paths.scriptsDir));
+				}
+
 				// ── 3. Fonts ────────────────────────────────────────────────────
 				const fonts = await buildFontDeclarations(
 					paths,
@@ -323,7 +353,8 @@ export function shirones(options: ShironesOptions = {}): AstroIntegration {
 						// charset scan; `fonts.ts` additionally requires
 						// `fontConfig.subsetting.enable`, so both must hold.
 						subset: options.fonts?.subset ?? command === "build",
-						extraCharacters: options.fonts?.extraCharacters ?? "",
+						extraCharacters:
+							(options.fonts?.extraCharacters ?? "") + plugins.fontCharacters,
 					},
 					{
 						info: (m) => logger.info(`[fonts] ${m}`),
@@ -337,7 +368,16 @@ export function shirones(options: ShironesOptions = {}): AstroIntegration {
 					paths,
 					"utils/markdown-processor.mjs",
 				);
-				const processor = markdownModule.siteMarkdownProcessor;
+				// Published before the site's own code can import the processor:
+				// that copy reads the extensions back (see markdown-extensions.mjs).
+				// Unconditional, so a restart after the last script is deleted
+				// clears what the previous start published.
+				publishMarkdownExtensions(plugins.markdown);
+				const processor = (
+					markdownModule.createSiteMarkdownProcessor as (
+						extensions: PluginContributions["markdown"],
+					) => unknown
+				)(plugins.markdown);
 
 				// ── 5. Bundled integrations ─────────────────────────────────────
 				const integrations =
@@ -368,6 +408,13 @@ export function shirones(options: ShironesOptions = {}): AstroIntegration {
 					integrations,
 					markdown: { processor: processor as never },
 					vite: {
+						// Lets the site's server code check that it sees the same
+						// plugin-script Markdown extensions as this process.
+						define: {
+							__SHIRONES_MARKDOWN_DIGEST__: JSON.stringify(
+								plugins.markdown.digest,
+							),
+						},
 						resolve: {
 							alias: createAliases(paths),
 							// Layout.astro resolves the default color scheme at build
@@ -392,7 +439,12 @@ export function shirones(options: ShironesOptions = {}): AstroIntegration {
 										}),
 									]),
 							shironesFallbackResolver(paths),
-							shironesIconRegeneration(paths, logger),
+							shironesIconRegeneration(paths, logger, [
+								...Object.values(options.components ?? {}).map((target) =>
+									resolve(paths.projectRoot, target),
+								),
+								...plugins.iconSources,
+							]),
 							shironesThumbnailsRegeneration(paths),
 							shironesSsrNodeShims(),
 							createMusicSidebarPlugin(paths, musicEnabled),
@@ -434,17 +486,25 @@ export function shirones(options: ShironesOptions = {}): AstroIntegration {
 				});
 
 				// ── 7. Inject the theme's routes ────────────────────────────────
-				if (!paths.isThemeRepo && options.injectRoutes !== false) {
-					const routes = filterRoutes(
-						collectRoutes(join(paths.packageSrc, "pages")),
-						options.excludeRoutes,
-					);
-					for (const route of routes) {
-						injectRoute({
-							pattern: route.pattern,
-							entrypoint: route.entrypoint,
-						});
-					}
+				// The theme's own routes exist as injected routes only in package
+				// mode; a plugin's `routes.add` is injected in both.
+				const injectsThemeRoutes =
+					!paths.isThemeRepo && options.injectRoutes !== false;
+				const routes = resolveInjectedRoutes(
+					injectsThemeRoutes
+						? filterRoutes(
+								collectRoutes(join(paths.packageSrc, "pages")),
+								options.excludeRoutes,
+							)
+						: null,
+					plugins.routes,
+					logger,
+					paths.isThemeRepo
+						? undefined
+						: "`injectRoutes: false` leaves the theme's pages out altogether",
+				);
+				for (const route of routes) injectRoute(route);
+				if (injectsThemeRoutes || routes.length > 0) {
 					logger.info(`injected ${routes.length} routes`);
 				}
 			},
@@ -458,6 +518,18 @@ export function shirones(options: ShironesOptions = {}): AstroIntegration {
 					// does not also match.
 					if (file.startsWith(`${paths.configDir}/`)) {
 						invalidateConfigCache();
+					}
+				});
+
+				// See "2.5. Plugin scripts": scripts are read once per start.
+				const scriptsDir = normalisePath(paths.scriptsDir);
+				server.watcher.on("all", (event, file) => {
+					if (typeof file !== "string") return;
+					if (event !== "add" && event !== "change" && event !== "unlink") {
+						return;
+					}
+					if (normalisePath(file).startsWith(`${scriptsDir}/`)) {
+						server.watcher.emit("change", paths.scriptsDir);
 					}
 				});
 
@@ -478,6 +550,27 @@ export function shirones(options: ShironesOptions = {}): AstroIntegration {
 			},
 
 			"astro:build:done": async ({ dir, logger }) => {
+				// Plugin scripts first, so a script that rewrites the output is
+				// indexed as it left it. A failing handler fails the build.
+				for (const { plugin, handler } of plugins.buildDone) {
+					try {
+						await handler({
+							dir: fileURLToPath(dir),
+							logger: {
+								info: (message) => logger.info(`[${plugin}] ${message}`),
+								warn: (message) => logger.warn(`[${plugin}] ${message}`),
+							},
+						});
+					} catch (error) {
+						throw new Error(
+							`[shirones] plugin "${plugin}" threw in onBuildDone(): ${
+								error instanceof Error ? error.message : String(error)
+							}`,
+							{ cause: error },
+						);
+					}
+				}
+
 				// The theme's own repository keeps its `pagefind --site dist` CLI
 				// build step, which honours the repository's `pagefind.yml`
 				// (workers, exclusions, ...). Indexing here as well would build

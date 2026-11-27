@@ -1,31 +1,36 @@
 /**
- * Keep `src/generated/local-icon-collections.ts` in step with its sources.
+ * Serve the icon collection as the virtual module `virtual:shirone-icons`.
  *
- * Generation used to live only in the `dev` and `build` script chains, plus a
- * manual command. That made it easy to forget: an icon added to a
- * component or a post never reached the collection until the next chain ran.
- * `buildStart` covers `astro dev` and `astro build` alike, and
- * `handleHotUpdate` covers edits made while the dev server is already up.
+ * The collection used to be a file: written into the project's
+ * `src/generated/`, with a second copy shipped in the package and a redirect
+ * to pick between them. Two files meant two modes that could disagree — the
+ * redirect silently lost to Vite's own resolver, so package-mode projects
+ * rendered only the icons the theme itself uses. A virtual module has one
+ * source in both modes and nothing on disk to go stale.
  *
- * Writing during `buildStart` is safe: it happens before Vite resolves any
- * import of the generated module, so `Icon.svelte` cannot observe a missing
- * file. Verified that `astro dev`, `astro build`, `astro sync` and `astro check`
- * all fire `buildStart`, so every entry point regenerates the collection and
- * none of them needs a step in the script chain.
+ * `buildStart` generates it for `astro dev`, `astro build` and `astro sync`
+ * alike; the file watcher regenerates it while the dev server is up.
  */
 
-import { existsSync } from "node:fs";
-import { join } from "node:path";
-import type { Plugin } from "vite";
+import { extname, join } from "node:path";
+import type { Plugin, ViteDevServer } from "vite";
 import { normalisePath } from "../../resolve/paths.ts";
 import type { ResolvedShironesPaths } from "../../types.ts";
 import {
-	generateIconCollections,
-	ICON_COLLECTIONS_SPECIFIER,
+	buildIconCollections,
+	ICON_COLLECTIONS_ID,
+	SOURCE_EXTENSIONS,
 } from "./collections.ts";
 
-/** Only these can change the collection; everything else is ignored. */
-const SOURCE_EXTENSIONS = /\.(astro|md|mdx|svelte|ts|tsx)$/;
+const RESOLVED_ID = `\0${ICON_COLLECTIONS_ID}`;
+
+/**
+ * The file this module replaced. An `Icon.svelte` override copied from an
+ * older version still imports it; by the time the specifier gets here the `@/`
+ * alias may have rewritten it to an absolute path, with either separator.
+ */
+const LEGACY_SPECIFIER =
+	/(^@|[\\/]src)[\\/]generated[\\/]local-icon-collections(\.ts)?$/;
 
 /** Coalesce the burst of events one save produces. */
 const DEBOUNCE_MS = 150;
@@ -35,114 +40,131 @@ const DEBOUNCE_MS = 150;
  *
  * Module scope rather than a closure variable because the dev server rebuilds
  * this plugin whenever the config changes; a timer captured by a discarded
- * instance would still fire, against a stale path.
+ * instance would still fire.
  */
 const pending = new Map<string, ReturnType<typeof setTimeout>>();
 
 export function shironesIconRegeneration(
 	paths: ResolvedShironesPaths,
 	logger?: { warn: (message: string) => void },
+	/**
+	 * Extra files or directories to scan, as absolute paths. The integration
+	 * passes the targets of `ShironesOptions.components` here: an explicit
+	 * override may live outside every directory listed below.
+	 */
+	extraSources: string[] = [],
 ): Plugin {
-	const userCopy = join(
-		paths.projectRoot,
-		"src",
-		"generated",
-		"local-icon-collections.ts",
-	);
-	const packageCopy = join(
+	// Everywhere an icon name can be written and end up rendered. No mode
+	// check, so both modes scan the same places: in source mode the project's
+	// `src/` is `packageSrc` and contains the other three; in package mode they
+	// default to `shirones/`, and `options.paths` can move them anywhere.
+	const roots = [
 		paths.packageSrc,
-		"generated",
-		"local-icon-collections.ts",
-	);
-
-	// `packageSrc` covers the theme's own components; `contentDir` covers a
-	// user's posts in package mode and does not exist in source mode.
-	const roots = [paths.packageSrc, paths.contentDir];
+		join(paths.projectRoot, "src"),
+		paths.contentDir,
+		paths.configDir,
+		paths.dataDir,
+		...extraSources,
+	];
 	// The project's own `src/icons/`, emitted as the `local` collection. It is
 	// the only icon source owned by the user, so it is resolved from
 	// `projectRoot` rather than from the package.
 	const localIconDir = join(paths.projectRoot, "src", "icons");
-
-	const generate = () => {
-		try {
-			generateIconCollections({
-				roots,
-				outputPath: userCopy,
-				localIconDir,
-			});
-		} catch (error) {
-			// A typo in one post should cost one icon, not take the dev
-			// server down. The previous collection stays in place. Warn
-			// anyway: a swallowed error here means every icon silently
-			// renders blank, which is far harder to diagnose than a log line.
-			const message = `[shirone] icon collection generation failed: ${
-				error instanceof Error ? error.message : String(error)
-			}`;
-			// Dev keeps going; the previous collection stays in place. A build
-			// does not: an icon that fails to resolve renders as nothing at
-			// runtime, which is exactly the silent breakage worth failing on.
-			if (isBuild) throw new Error(message, { cause: error });
-			logger?.warn(message);
-		}
-	};
+	const watchedRoots = [...roots, localIconDir].map((root) =>
+		normalisePath(root),
+	);
 
 	// Set by `configResolved`; see the thumbnails plugin for the rationale.
 	let isBuild = false;
+	let code = "export const localIconCollections = [];\n";
+	// Regeneration runs on every save; say each bad name once.
+	const reported = new Set<string>();
+
+	/** Regenerate; returns whether the module changed. */
+	const generate = (): boolean => {
+		try {
+			const result = buildIconCollections({ roots, localIconDir });
+			for (const { icon, file } of result.unknown) {
+				if (reported.has(icon)) continue;
+				reported.add(icon);
+				logger?.warn(
+					`Unknown icon ${icon} (referenced in ${file}) is skipped and renders as nothing.`,
+				);
+			}
+			const changed = result.code !== code;
+			code = result.code;
+			return changed;
+		} catch (error) {
+			const message = `[shirone] icon collection generation failed: ${
+				error instanceof Error ? error.message : String(error)
+			}`;
+			// What is left to throw is a broken install (a missing icon set),
+			// which would blank every icon: fail a build, keep the dev server
+			// up on the previous collection.
+			if (isBuild) throw new Error(message, { cause: error });
+			logger?.warn(message);
+			return false;
+		}
+	};
+
+	/** Hand the regenerated module to a running dev server. */
+	const refresh = (server: ViteDevServer) => {
+		for (const environment of Object.values(server.environments)) {
+			const module = environment.moduleGraph.getModuleById(RESOLVED_ID);
+			if (module) environment.reloadModule(module);
+		}
+		// Server-rendered icons are plain HTML; only a reload redraws them.
+		server.environments.client.hot.send({ type: "full-reload" });
+	};
 
 	return {
 		name: "shirone:icon-regeneration",
+		// `pre` so the legacy specifier is answered here even where a stale
+		// generated file is still on disk for Vite's own resolver to find.
+		enforce: "pre",
 
 		configResolved(config) {
 			isBuild = config.command === "build";
 		},
 
-		// `Icon.svelte` imports `@/generated/local-icon-collections`, and in
-		// package mode that alias points at `node_modules/shirones/src` — so the
-		// file this plugin writes would never be read. Redirect to the user's copy
-		// when it exists and fall back to the one shipped in the package.
-		//
-		// Vite resolves aliases before any plugin, so `source` arrives already
-		// rewritten: to the package path in package mode, and to
-		// `projectRoot/src/...` in source mode. Both forms are listed, along with
-		// the bare specifier, because which one shows up depends on how the
-		// theme is being consumed.
 		resolveId(source) {
-			// Same separator hazard as the hot-update guard below: Vite hands
-			// paths through with posix separators on every platform, while the
-			// derived copies keep the platform separator. Compare normalized or
-			// the redirect silently misses on Windows.
-			const requested = normalisePath(source);
-			if (
-				requested !== normalisePath(ICON_COLLECTIONS_SPECIFIER) &&
-				requested !== normalisePath(withoutExtension(userCopy)) &&
-				requested !== normalisePath(withoutExtension(packageCopy))
-			) {
-				return null;
-			}
-			return existsSync(userCopy) ? userCopy : packageCopy;
+			return source === ICON_COLLECTIONS_ID || LEGACY_SPECIFIER.test(source)
+				? RESOLVED_ID
+				: null;
+		},
+
+		load(id) {
+			return id === RESOLVED_ID ? code : null;
 		},
 
 		buildStart() {
 			generate();
 		},
 
-		handleHotUpdate({ file }) {
-			// Writing the output re-triggers this handler; regenerating again
-			// would loop. Vite hands `file` through with posix separators on
-			// every platform, while `userCopy` keeps the platform separator, so
-			// a bare `===` never matches on Windows: every write re-entered the
-			// handler and re-ran the generator in a self-sustaining loop, with
-			// one full page reload per write.
-			if (normalisePath(file) === normalisePath(userCopy)) return;
-			if (!SOURCE_EXTENSIONS.test(file)) return;
-
-			clearTimeout(pending.get(paths.projectRoot));
-			pending.set(paths.projectRoot, setTimeout(generate, DEBOUNCE_MS));
+		// The watcher rather than `handleHotUpdate`: Vite calls that hook only
+		// for changed files, so an icon in a newly created file went unnoticed
+		// until something else was saved.
+		configureServer(server) {
+			server.watcher.on("all", (event, file) => {
+				if (event !== "add" && event !== "change" && event !== "unlink") return;
+				// Only a scanned source or a project icon can change the result.
+				const extension = extname(file);
+				if (extension !== ".svg" && !SOURCE_EXTENSIONS.has(extension)) return;
+				const path = normalisePath(file);
+				if (
+					!watchedRoots.some(
+						(root) => path === root || path.startsWith(`${root}/`),
+					)
+				)
+					return;
+				clearTimeout(pending.get(paths.projectRoot));
+				pending.set(
+					paths.projectRoot,
+					setTimeout(() => {
+						if (generate()) refresh(server);
+					}, DEBOUNCE_MS),
+				);
+			});
 		},
 	};
-}
-
-/** Vite hands plugins the specifier without its extension resolved. */
-function withoutExtension(path: string): string {
-	return path.replace(/\.ts$/, "");
 }

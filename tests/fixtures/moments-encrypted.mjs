@@ -1,4 +1,4 @@
-import { rm, writeFile } from "node:fs/promises";
+import { appendFile, rm, writeFile } from "node:fs/promises";
 
 // Created only by this spec and removed afterwards; never ship demo content.
 const file = new URL(
@@ -34,6 +34,12 @@ export async function createEncryptedMoment() {
 	// `wx` fails instead of overwriting a file the developer put there.
 	await writeFile(file, frontmatter, { flag: "wx" });
 	owned = true;
+}
+
+// Changes the file without changing what it renders, so the dev server syncs
+// the entry again.
+export async function touchEncryptedMoment() {
+	if (owned) await appendFile(file, "\n");
 }
 
 export async function removeEncryptedMoment() {

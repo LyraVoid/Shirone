@@ -43,6 +43,21 @@
 
 `remarkAcFun`、`remarkArtPlayer`、`remarkBilibili` 和 `remarkYouTube` 均在 `remarkDirective` 之后、`remarkFeatureProbes` 之前运行。它们分别验证严格的 AcFun 视频 ID、安全的原生视频来源、BV 号与 YouTube 视频 ID，以及非空 `title` 和安全的可选 `poster`；合法输入保留给后续渲染，非法输入还原为普通文本。因此 feature probe 只会为实际可渲染的视频组件声明页面级资源。
 
+### 2.3 脚本插件的插入点
+
+`shirones/scripts/` 里的脚本可以向本链登记 remark 插件（见 [`plugin-scripts.md`](./plugin-scripts.md)）。它们不写进 `siteRemarkPlugins`，而是由 `extendMarkdownPlugins()` 在构造处理器时插入两个固定位置：
+
+| 插入点 | 位置 | 理由 |
+| --- | --- | --- |
+| `before-directive` | 紧邻 `remarkDirective` 之前 | 在主题任何读取 directive 的插件之前 |
+| `after-directive`（默认） | 紧邻 `remarkFeatureProbes` 之前 | 满足规则 4：探针仍在所有会改变语法节点的插件之后 |
+
+没有脚本登记时，处理器使用的就是 `siteRemarkPlugins` 数组本身。有登记时，链的最后还会多一个不做任何事的 `remarkPluginScriptsDigest`，它的选项是脚本内容的摘要，作用是让 Astro 的内容缓存在脚本变化时失效。
+
+移动或删除 `remarkDirective`、`remarkFeatureProbes` 会让插入点失去锚点，`extendMarkdownPlugins()` 会直接抛错，`tests/plugin-scripts.test.mjs` 也会失败。
+
+> 关于 `before-directive`：`remark-directive` 的语法是在解析阶段生效的，解析发生在所有插件的转换函数运行之前。因此在这个位置运行的转换函数看到的 directive 已经是节点而不是文本；它与 `after-directive` 的区别在于主题的 `remarkRestoreBareDirectives` 和视频校验插件还没有运行。
+
 ## 3. Rehype 顺序
 
 | 阶段 | 插件 | 顺序约束 | 责任 |
@@ -61,6 +76,17 @@
 - 不得把 `rehypeAutolinkHeadings` 提前到 `rehypeSlug` 之前，否则锚点可能引用不存在或不稳定的 ID。
 - 不得在 `rehypeComponents` 之后重新运行 directive 解析器或组件渲染器。
 - 只允许最后的表格包装器修改表格外层结构；组件内部表格必须通过明确的跳过条件保持原样。
+
+### 3.2 脚本插件的插入点
+
+脚本登记的 rehype 插件同样只有两个固定位置：
+
+| 插入点 | 位置 | 理由 |
+| --- | --- | --- |
+| `before-components` | 紧邻 `rehypeComponents` 之前 | directive 仍是以自身命名的元素，可在渲染前改写 |
+| `end`（默认） | 链的最后，主题全部 rehype 插件之后 | 只消费稳定的最终 HTML（规则 5） |
+
+脚本登记的 directive 渲染函数并入 `rehypeComponents` 的 `components` 选项，同名时覆盖主题自带的。
 
 ## 4. 新增或调整插件的流程
 

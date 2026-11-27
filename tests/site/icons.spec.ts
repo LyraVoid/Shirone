@@ -4,7 +4,7 @@ import { expect, test } from "@playwright/test";
  * SSR 图标渲染防回归。
  * 背景：@iconify/svelte 的 Icon 依赖客户端运行时加载数据，SSR 无 hydration 时渲染空白。
  * 因此所有图标都必须走 `atoms/display/Icon.svelte`——它在构建期把用到的图标
- * 摇成一棵小树（`src/generated/local-icon-collections.ts`），SSR 直出 svg。
+ * 摇成一棵小树（虚拟模块 `virtual:shirone-icons`），SSR 直出 svg。
  * 若绕过它改成在线 Iconify 组件、或让生成链路拿不到图标集，本文件就会失败。
  */
 test.describe("SSR 图标渲染", () => {

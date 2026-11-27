@@ -58,6 +58,10 @@ import { remarkExcerpt } from "../plugins/remark-excerpt.js";
 import { remarkFeatureProbes } from "../plugins/remark-feature-probes.mjs";
 import { remarkMermaid } from "../plugins/remark-mermaid.mjs";
 import { remarkReadingTime } from "../plugins/remark-reading-time.mjs";
+import {
+	extendMarkdownPlugins,
+	readMarkdownExtensions,
+} from "./markdown-extensions.mjs";
 
 // This processor is executed directly by Node tests, so avoid runtime imports
 // of TypeScript enums (unsupported by Node's strip-only TypeScript loader).
@@ -181,12 +185,35 @@ export const siteRehypePlugins = [
 ];
 
 /**
+ * Build the processor, with the Markdown plugins a project's plugin scripts
+ * registered (`docs/plugin-scripts.md`) inserted at their anchors.
+ *
+ * Without scripts the chains are `siteRemarkPlugins` and `siteRehypePlugins`
+ * themselves. The default argument reads what the integration published, so
+ * `siteMarkdownProcessor` below matches the processor Astro renders content
+ * with; the integration passes its extensions explicitly.
+ */
+export function createSiteMarkdownProcessor(
+	extensions = readMarkdownExtensions(),
+) {
+	return unified(
+		extendMarkdownPlugins(
+			{
+				remarkPlugins: siteRemarkPlugins,
+				rehypePlugins: siteRehypePlugins,
+				directive: remarkDirective,
+				probes: remarkFeatureProbes,
+				components: rehypeComponents,
+			},
+			extensions,
+		),
+	);
+}
+
+/**
  * 站点统一 markdown 处理器（单一事实来源）。
  * astro.config.mjs 的 `markdown.processor` 与构建期离线渲染
  * （如动态页正文 → HTML 字符串）共用同一条 remark/rehype 插件链，
  * 避免两处配置漂移。
  */
-export const siteMarkdownProcessor = unified({
-	remarkPlugins: siteRemarkPlugins,
-	rehypePlugins: siteRehypePlugins,
-});
+export const siteMarkdownProcessor = createSiteMarkdownProcessor();

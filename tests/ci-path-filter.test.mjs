@@ -140,7 +140,7 @@ function runWorkflowDetector(cwd, detector, base, head, outputFile) {
 test("cross-repository package validation fetches the pinned Shirones commit", () => {
 	const source = readFileSync(PIPELINE_SCRIPT, "utf8");
 	const pin = /const PIPELINE_COMMIT = "([0-9a-f]{40})"/.exec(source)?.[1];
-	assert.equal(pin, "38346f1dea9ea9e2c30e87551807a9ba58707bbf");
+	assert.equal(pin, "4291a59d63b3aa3e4b9a5e954c9b518598573724");
 	assert.match(source, /"fetch", "--depth=1", "origin", PIPELINE_COMMIT/);
 	assert.doesNotMatch(source, /PIPELINE_REF|"--branch"/);
 });

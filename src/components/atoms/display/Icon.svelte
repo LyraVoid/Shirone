@@ -1,7 +1,7 @@
 <script lang="ts">
+import { localIconCollections } from "virtual:shirone-icons";
 import OfflineIcon from "@shirone/iconify-offline";
 import { addCollection } from "@shirone/iconify-offline-functions";
-import { localIconCollections } from "@/generated/local-icon-collections";
 
 import type { IconProps } from "./Icon.svelte";
 
