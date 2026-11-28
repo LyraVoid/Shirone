@@ -572,9 +572,23 @@ export function intervalIsEmpty(interval) {
  * @returns {boolean}
  */
 export function rangesIntersect(declared, required) {
-	const declaredInterval = parseInterval(declared);
 	const requiredInterval = parseInterval(required);
-	if (declaredInterval.unreadable || requiredInterval.unreadable) return true;
+	if (requiredInterval.unreadable) return true;
+	const text = typeof declared === "string" ? declared.trim() : "";
+	if (text.includes("||")) {
+		// An OR range is a union of candidates: some candidate must share a
+		// version with the requirement. A candidate the engine cannot read
+		// still fails open, exactly like a wholly unreadable range.
+		const candidates = text.split("||").map((part) => part.trim());
+		if (candidates.some((part) => part === "")) return true;
+		return candidates.some((part) => {
+			const candidate = parseInterval(part);
+			if (candidate.unreadable) return true;
+			return !intervalIsEmpty(intersectIntervals(candidate, requiredInterval));
+		});
+	}
+	const declaredInterval = parseInterval(declared);
+	if (declaredInterval.unreadable) return true;
 	return !intervalIsEmpty(
 		intersectIntervals(declaredInterval, requiredInterval),
 	);

@@ -51,6 +51,11 @@ const BUMP_TABLE = [
 	["", "^7.3.5", false],
 	["workspace:^", "^7.3.5", false],
 	[undefined, "^7.3.5", false],
+	// An OR range is a union of candidates: the theme only rewrites when NO
+	// candidate reaches its requirement (F-59: the whole string used to be
+	// treated as unreadable and never checked).
+	["^5 || ^6 || ^7", "^7.3.5", false],
+	["^5 || ^6", "^7.3.5", true],
 ];
 
 for (const [declared, required, shouldRewrite] of BUMP_TABLE) {
@@ -75,6 +80,17 @@ test("a range the engine cannot read counts as unbounded in both directions", ()
 	]) {
 		assert.equal(intervalIsEmpty(parseInterval(range)), false, String(range));
 	}
+});
+
+test("OR ranges are checked per candidate instead of being unreadable", () => {
+	assert.equal(rangesIntersect("^5 || ^6 || ^7", "^7.3.5"), true);
+	assert.equal(rangesIntersect("^6 || ^7", "^7.3.5"), true);
+	assert.equal(rangesIntersect("^5 || ^6", "^7.3.5"), false);
+	assert.equal(rangesIntersect(">=8.0.0 || ^5", "^7.3.5"), false);
+	// A candidate the engine cannot read still fails open, like any
+	// unreadable range.
+	assert.equal(rangesIntersect("^5 || latest", "^7.3.5"), true);
+	assert.equal(rangesIntersect("^5 || ", "^7.3.5"), true);
 });
 
 test("an installed version is checked against the range itself", () => {
