@@ -167,8 +167,12 @@ const softCategory = !isHome && !isArchive && postCategory ? postCategory : "";
 	if (window.swup?.hooks) {
 		window.swup.hooks.on("content:replace", syncCategoryBar);
 	} else {
-		document.addEventListener("swup:enable", () => {
-			window.swup?.hooks.on("content:replace", syncCategoryBar);
-		});
+		document.addEventListener(
+			"swup:enable",
+			() => {
+				window.swup?.hooks.on("content:replace", syncCategoryBar);
+			},
+			{ once: true },
+		);
 	}
 </script>
