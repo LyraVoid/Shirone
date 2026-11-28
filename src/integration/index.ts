@@ -403,6 +403,9 @@ export function shirones(options: ShironesOptions = {}): AstroIntegration {
 					...(siteConfig?.site ? { site: siteConfig.site } : {}),
 					base: siteConfig?.base ?? "/",
 					trailingSlash: TRAILING_SLASH,
+					// F-123：permalink/alias 与静态页、分页或其他文章路由冲突时，
+					// Astro 默认只告警并静默丢弃后者；构建必须直接失败。
+					prerenderConflictBehavior: "error",
 					image: { endpoint: { route: IMAGE_ENDPOINT_ROUTE } },
 					fonts: fonts as never,
 					integrations,
