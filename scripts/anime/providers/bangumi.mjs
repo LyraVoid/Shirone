@@ -105,10 +105,9 @@ async function fetchCollectionType(userId, type, status, options) {
 				);
 				return [];
 			}
-			console.warn(
-				`   [Bangumi] Request failed for type ${type}: HTTP ${res.status || res.error?.message}`,
+			throw new Error(
+				`Bangumi request failed for type ${type}: HTTP ${res.status || res.error?.message}`,
 			);
-			break;
 		}
 
 		const data = res.data;

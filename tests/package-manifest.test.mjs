@@ -1,6 +1,15 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import {
+	copyFileSync,
+	cpSync,
+	mkdirSync,
+	mkdtempSync,
+	readFileSync,
+	rmSync,
+	writeFileSync,
+} from "node:fs";
+import { createRequire } from "node:module";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import test from "node:test";
@@ -9,8 +18,29 @@ import { fileURLToPath } from "node:url";
 const SCRIPT = fileURLToPath(
 	new URL("../scripts/check-package-manifest.mjs", import.meta.url),
 );
+const require = createRequire(import.meta.url);
 
-/** Runs the check in a throwaway theme root: it reads package.json and src/ from the cwd. */
+/** Real package root of an installed dependency inside pnpm's store layout. */
+function findPackageRoot(entry, expectedName) {
+	let dir = dirname(entry);
+	while (true) {
+		try {
+			const pkg = JSON.parse(readFileSync(join(dir, "package.json"), "utf8"));
+			if (pkg.name === expectedName) return dir;
+		} catch {
+			// Keep walking through pnpm's virtual store layout.
+		}
+		const parent = dirname(dir);
+		if (parent === dir)
+			throw new Error(`Could not find ${expectedName} package root`);
+		dir = parent;
+	}
+}
+
+/** Runs the check against a throwaway theme root. The script reads
+ * package.json, src/ and tsconfig.json relative to its own location, so the
+ * fixture gets a copy of it — and the child runs from an unrelated cwd
+ * (`src/`) to prove the check is cwd-independent. */
 function checkManifest(sources, extraDependencies = {}) {
 	const root = mkdtempSync(join(tmpdir(), "shirone-package-manifest-"));
 	try {
@@ -28,10 +58,18 @@ function checkManifest(sources, extraDependencies = {}) {
 			mkdirSync(dirname(join(root, path)), { recursive: true });
 			writeFileSync(join(root, path), body);
 		}
-		return spawnSync(process.execPath, [SCRIPT], {
-			cwd: root,
-			encoding: "utf8",
-		});
+		mkdirSync(join(root, "scripts"), { recursive: true });
+		copyFileSync(SCRIPT, join(root, "scripts/check-package-manifest.mjs"));
+		cpSync(
+			findPackageRoot(require.resolve("jsonc-parser"), "jsonc-parser"),
+			join(root, "node_modules/jsonc-parser"),
+			{ recursive: true },
+		);
+		return spawnSync(
+			process.execPath,
+			[join(root, "scripts/check-package-manifest.mjs")],
+			{ cwd: join(root, "src"), encoding: "utf8" },
+		);
 	} finally {
 		rmSync(root, { recursive: true, force: true });
 	}
@@ -87,4 +125,18 @@ test("package manifest check accepts a dynamic import shipped via extraDependenc
 	);
 	assert.equal(result.status, 0, result.stderr);
 	assert.match(result.stdout, /every bare import/);
+});
+
+test("package manifest check parses a tsconfig with comments and trailing commas", () => {
+	const result = checkManifest({
+		"tsconfig.json": `{
+	"compilerOptions": {
+		// a real comment line
+		"paths": {
+			"@/*": ["src/*"],
+		},
+	},
+}`,
+	});
+	assert.equal(result.status, 0, result.stderr);
 });

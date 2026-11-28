@@ -5,10 +5,13 @@ import type { GetStaticPaths } from "astro";
 import { postListConfig } from "@/config/postListConfig";
 import MainGridLayout from "../layouts/MainGridLayout.astro";
 import { getSortedPosts } from "../utils/content-utils";
+import { normalizePageSize } from "../utils/pagination";
 
 export const getStaticPaths = (async ({ paginate }) => {
 	const allBlogPosts = await getSortedPosts();
-	return paginate(allBlogPosts, { pageSize: postListConfig.pageSize });
+	return paginate(allBlogPosts, {
+		pageSize: normalizePageSize(postListConfig.pageSize),
+	});
 }) satisfies GetStaticPaths;
 // https://github.com/withastro/astro/issues/6507#issuecomment-1489916992
 

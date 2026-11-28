@@ -2,8 +2,9 @@
  * Shirone Performance Measurement Tool (P3 Observability)
  * Measures LCP, CLS, FCP, TTFB, and DOM ready times across key pages.
  */
-import { chromium } from "@playwright/test";
+
 import { spawn } from "node:child_process";
+import { chromium } from "@playwright/test";
 
 const TEST_PAGES = [
 	{ name: "Home", path: "/" },
@@ -105,6 +106,12 @@ async function main() {
 				shell: isWin,
 			},
 		);
+		serverProcess.on("error", (error) => {
+			console.error(
+				`[perf:measure] Failed to start preview server: ${error.message}`,
+			);
+			process.exit(1);
+		});
 	}
 
 	try {

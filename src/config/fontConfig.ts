@@ -143,7 +143,7 @@ export const fontConfig: FontConfig = withUserConfig("font", {
 		includeI18n: true, // 扫描全部 10 种语言词典
 		includeConfig: true, // 扫描站点配置与导航
 		includeCommon: true, // 包含常用标点与基础字符
-		allowRemoteText: true, // 允许抓取 Meting 云端歌单曲目文本参与字形提取
+		allowRemoteText: false, // 在远端数据契约确立前禁止构建访问外部网络（契约见 types/fontConfig.ts）
 	},
 
 	/**
