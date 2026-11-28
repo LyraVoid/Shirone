@@ -619,3 +619,15 @@ test("a starter asset checked out with CRLF line endings is still moved", (t) =>
 	assert.equal(result.status, 0, result.stderr);
 	assert.equal(existsSync(join(assets, "astro.svg")), false);
 });
+
+test("init leaves a starter asset path it cannot read", (t) => {
+	const fixture = createFixture();
+	t.after(() => fixture.cleanup());
+	const unreadable = join(fixture.project, "src/assets/astro.svg");
+	mkdirSync(unreadable, { recursive: true });
+
+	const result = fixture.runInit();
+	assert.equal(result.status, 0, result.stderr);
+	assert.equal(existsSync(unreadable), true);
+	assert.match(result.stdout, /could not be read/);
+});

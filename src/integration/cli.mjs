@@ -1169,25 +1169,34 @@ async function clearStarterFiles() {
 		const file = join(CWD, relativePath);
 		if (!existsSync(file)) continue;
 
-		if (relativePath.endsWith(".astro")) {
-			const contents = await readFile(file, "utf8");
-			const isStarter =
-				contents.includes("Welcome") || contents.includes("astro.build");
-			if (!isStarter) {
-				log.warn(
-					`${relativePath} is yours — left in place, but it overrides the theme`,
-				);
-				continue;
+		try {
+			if (relativePath.endsWith(".astro")) {
+				const contents = await readFile(file, "utf8");
+				const isStarter =
+					contents.includes("Welcome") || contents.includes("astro.build");
+				if (!isStarter) {
+					log.warn(
+						`${relativePath} is yours — left in place, but it overrides the theme`,
+					);
+					continue;
+				}
+			} else if (STARTER_ASSET_DIGESTS.has(relativePath)) {
+				// Git checks these files out with the platform's line ending.
+				const digest = createHash("sha256")
+					.update((await readFile(file, "utf8")).replaceAll("\r\n", "\n"))
+					.digest("hex");
+				if (digest !== STARTER_ASSET_DIGESTS.get(relativePath)) {
+					log.warn(`${relativePath} is not the starter asset — left in place`);
+					continue;
+				}
 			}
-		} else if (STARTER_ASSET_DIGESTS.has(relativePath)) {
-			// Git checks these files out with the platform's line ending.
-			const digest = createHash("sha256")
-				.update((await readFile(file, "utf8")).replaceAll("\r\n", "\n"))
-				.digest("hex");
-			if (digest !== STARTER_ASSET_DIGESTS.get(relativePath)) {
-				log.warn(`${relativePath} is not the starter asset — left in place`);
-				continue;
-			}
+		} catch (error) {
+			// Unreadable or not a regular file: init cannot judge ownership, and
+			// failing here would abort a step that used to always succeed.
+			log.warn(
+				`${relativePath} could not be read (${error.code ?? error.message}) — left in place`,
+			);
+			continue;
 		}
 
 		moved.push(await backup(relativePath));
