@@ -2,6 +2,7 @@
 
 import fs from "node:fs";
 import path from "node:path";
+import { stringify } from "yaml";
 
 /**
  * 站点时区（IANA 名）解析。
@@ -111,10 +112,12 @@ try {
 	process.exit(1);
 }
 
+// 标题来自命令行参数，可能含 `:`、`#`、引号或首尾空格；交给 YAML 序列化器
+// 决定是否需要引号，否则写出的 frontmatter 不是合法 YAML 或会丢掉这些字符。
+const title = stringify({ title: args[0] });
 // `published` 与 `publishedAt` 出自同一次时区换算，保证在站点时区下同一天
 const content = `---
-title: ${args[0]}
-published: ${zonedNow.date}
+${title}published: ${zonedNow.date}
 publishedAt: ${zonedNow.datetime}
 description: ''
 image: ''

@@ -12,6 +12,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, it } from "node:test";
 import { fileURLToPath } from "node:url";
+import { parse as parseYaml } from "yaml";
 
 /**
  * `scripts/new-post.js` 的时区契约。
@@ -74,7 +75,11 @@ function scaffold(root, { name = "post", env = {} } = {}) {
 	const body = markdown.split("---")[1] ?? "";
 	const read = (key) =>
 		body.match(new RegExp(`^${key}:\\s*(.+)$`, "m"))?.[1]?.trim();
-	return { published: read("published"), publishedAt: read("publishedAt") };
+	return {
+		published: read("published"),
+		publishedAt: read("publishedAt"),
+		frontmatter: parseYaml(body),
+	};
 }
 
 function withProject(options, run) {
@@ -180,4 +185,19 @@ describe("scripts/new-post.js 的时区契约", () => {
 			);
 		});
 	});
+});
+
+describe("scripts/new-post.js 的 frontmatter 序列化契约", () => {
+	// 标题同时是文件路径参数；这些字符在未加引号的 YAML 标量里会改变含义
+	for (const title of ["Release: v2 #notes", "-dash start", " padded "]) {
+		it(`标题 ${JSON.stringify(title)} 原样往返`, () => {
+			withProject({ siteTimeZone: "Asia/Shanghai" }, (root) => {
+				const { frontmatter } = scaffold(root, {
+					name: title,
+					env: { TZ: "UTC" },
+				});
+				assert.equal(frontmatter.title, title);
+			});
+		});
+	}
 });
