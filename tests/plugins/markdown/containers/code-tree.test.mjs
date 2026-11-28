@@ -1,11 +1,14 @@
 import assert from "node:assert/strict";
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { test } from "node:test";
+import { fileURLToPath } from "node:url";
 
+import { CodeTreeComponent } from "../../../../src/plugins/markdown/containers/rehype-code-tree.mjs";
 import { scanLocalDirectory } from "../../../../src/plugins/markdown/code/remark-code-tree.mjs";
 import { siteMarkdownProcessor } from "../../../../src/utils/markdown-processor.mjs";
+import { h } from "hastscript";
 
 const renderer = await siteMarkdownProcessor.createRenderer({});
 
@@ -155,4 +158,125 @@ test("reads local directory source as UTF-8 without corrupting non-ASCII text", 
 test("removes empty code tree container without generating broken DOM", async () => {
 	const html = await render(":::code-tree\n:::");
 	assert.equal(html.trim(), "");
+});
+
+const textOf = (node) =>
+	node.type === "text"
+		? node.value
+		: node.type === "element"
+			? node.children.map(textOf).join("")
+			: "";
+
+function collectNodes(node, out = []) {
+	if (!node || typeof node !== "object") return out;
+	out.push(node);
+	if (Array.isArray(node.children)) {
+		for (const child of node.children) collectNodes(child, out);
+	}
+	return out;
+}
+
+const LABELS = {
+	"label-nav": "NAV",
+	"label-content": "CONTENT",
+	"label-expand": "EXP",
+	"label-collapse": "COL",
+	"label-default-title": "PROJ",
+};
+
+test("F-5: pairs panels with code children by data-file-index, not position", () => {
+	const child = (index, filePath, text) =>
+		h(
+			"pre",
+			{ "data-file-index": String(index), "data-file-path": filePath },
+			[h("code", {}, text)],
+		);
+	const files = JSON.stringify([
+		{ path: "src/a.ts", index: 0 },
+		{ path: "src/b.ts", index: 1 },
+	]);
+	// children deliberately reversed relative to the declared files order
+	const tree = CodeTreeComponent(
+		{ files, ...LABELS },
+		[child(1, "src/b.ts", "BBB"), child(0, "src/a.ts", "AAA")],
+	);
+	const panels = collectNodes(tree).filter((node) =>
+		node.properties?.className?.includes("m3-code-tree__panel"),
+	);
+	assert.equal(panels.length, 2);
+	const textFor = (path) =>
+		textOf(panels.find((p) => p.properties.dataFilePath === path));
+	assert.equal(textFor("src/a.ts"), "AAA");
+	assert.equal(textFor("src/b.ts"), "BBB");
+});
+
+test("F-5: falls back to data-file-path pairing when a code child has no index", () => {
+	const files = JSON.stringify([{ path: "src/only.ts", index: 0 }]);
+	const tree = CodeTreeComponent(
+		{ files, ...LABELS },
+		[h("pre", { "data-file-path": "src/only.ts" }, [h("code", {}, "ONLY")])],
+	);
+	const panel = collectNodes(tree).find((node) =>
+		node.properties?.className?.includes("m3-code-tree__panel"),
+	);
+	assert.equal(textOf(panel), "ONLY");
+});
+
+test("F-112: code tree aria labels come from i18n, no hardcoded Chinese", async () => {
+	const html = await render(
+		`:::code-tree\n\`\`\`ts title="src/a.ts"\nconst a = 1;\n\`\`\`\n:::`,
+	);
+	for (const label of ["文件导航", "代码内容", "放大代码树", "退出放大"]) {
+		assert.ok(!html.includes(label), `hardcoded label leaked: ${label}`);
+	}
+	// default siteConfig.lang is "en"
+	assert.match(html, /data-expand-label="Expand code tree"/);
+	assert.match(html, /data-collapse-label="Collapse code tree"/);
+	assert.match(html, /aria-label="File navigation"/);
+	assert.match(html, /<span class="m3-code-tree__title">Project<\/span>/);
+});
+test("F-5: without attributes (real Astro pipeline), pre children pair positionally and prose is skipped", () => {
+	const files = JSON.stringify([
+		{ path: "src/a.ts", index: 0 },
+		{ path: "src/b.ts", index: 1 },
+	]);
+	// Astro 的处理器把代码块渲染成无属性的 pre，容器里可能夹带散文段落
+	const tree = CodeTreeComponent(
+		{ files, ...LABELS },
+		[
+			h("p", {}, [h("text", {}, "intro prose")]),
+			h("pre", {}, [h("code", {}, "AAA")]),
+			h("pre", {}, [h("code", {}, "BBB")]),
+		],
+	);
+	const panels = collectNodes(tree).filter((node) =>
+		node.properties?.className?.includes("m3-code-tree__panel"),
+	);
+	assert.equal(panels.length, 2);
+	const textFor = (path) =>
+		textOf(panels.find((p) => p.properties.dataFilePath === path));
+	assert.equal(textFor("src/a.ts"), "AAA");
+	assert.equal(textFor("src/b.ts"), "BBB");
+});
+test("F-112: every locale defines the code tree label keys", () => {
+	const dir = fileURLToPath(
+		new URL("../../../../src/i18n/languages/", import.meta.url),
+	);
+	const keys = [
+		"codeTreeFileNav",
+		"codeTreeContent",
+		"codeTreeExpand",
+		"codeTreeCollapse",
+		"codeTreeDefaultTitle",
+	];
+	for (const file of readdirSync(dir).filter((f) => f.endsWith(".ts"))) {
+		const source = readFileSync(path.join(dir, file), "utf8");
+		for (const key of keys) {
+			assert.match(
+				source,
+				new RegExp(`\\[Key\\.${key}\\]:`),
+				`${file} is missing ${key}`,
+			);
+		}
+	}
 });

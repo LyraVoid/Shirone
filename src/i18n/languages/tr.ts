@@ -184,6 +184,9 @@ export const tr: Translation = {
 	[Key.codeBlockCollapse]: "Kod bloğunu daralt",
 	[Key.codeTreeExpand]: "Kod ağacını genişlet",
 	[Key.codeTreeCollapse]: "Genişletilmiş görünümü kapat",
+	[Key.codeTreeFileNav]: "Dosya gezinmesi",
+	[Key.codeTreeContent]: "Kod içeriği",
+	[Key.codeTreeDefaultTitle]: "Proje",
 	[Key.announcement]: "Duyuru",
 	[Key.announcementClose]: "Duyuruyu Kapat",
 

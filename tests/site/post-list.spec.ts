@@ -1,5 +1,17 @@
 import { expect, test } from "@playwright/test";
 
+declare global {
+	interface Window {
+		__roCreated?: number;
+		__roLive?: () => number;
+		__swupMarkerHook?: boolean;
+		__swupContentReplaced?: boolean;
+		swup?: {
+			navigate: (url: string) => void;
+			hooks: { on: (name: string, handler: () => void) => void };
+		};
+	}
+}
 /**
  * 文章列表布局模式（list/grid）锁定：
  * - SSR 输出站点默认模式（postListConfig.layout.mode = list）；
@@ -156,5 +168,117 @@ test.describe("文章列表布局模式", () => {
 		// FLIP 被 reduced-motion 折叠：卡片上无正在播放/待播的动画
 		// （已结束但 fill:forwards 的 onload 动画不计入；页面级常驻动画排除）
 		await expect.poll(() => page.evaluate(runningCardAnimations)).toBe(0);
+	});
+
+	test("swup 导航复用单个 ResizeObserver，不叠加实例（F-26）", async ({
+		page,
+	}) => {
+		// dev server 上首访 /posts/guide/ 需要冷编译，且 Vite 依赖再优化会广播
+		// 整页重载：单次 window.swup.navigate 可能被重载打断、URL 复位到 "/"，
+		// 于是一次性 waitForURL 永远等不到（CI style shard 的 31.1s 超时即此）。
+		// 因此导航用轮询补发，直到 URL 落地。
+		test.setTimeout(120_000);
+		await page.addInitScript(() => {
+			const Native = window.ResizeObserver;
+			let created = 0;
+			// F-26 关注的是"挂在瀑布流容器上的 observer 是否随导航叠加"。
+			// 第三方代码（expressive-code、MarkdownTableViewer）每次页面挂载
+			// 新建自己的实例是正常行为，因此不能按全局实例总数断言；这里只
+			// 跟踪仍活着的、观察 #post-list 的实例集合。
+			const live = new Set<ResizeObserver>();
+			class Tracking extends Native {
+				override observe(
+					target: Element,
+					options?: ResizeObserverOptions,
+				): void {
+					if (target.id === "post-list") live.add(this);
+					super.observe(target, options);
+				}
+				override disconnect(): void {
+					live.delete(this);
+					super.disconnect();
+				}
+				override unobserve(target: Element): void {
+					if (target.id === "post-list") live.delete(this);
+					super.unobserve(target);
+				}
+			}
+			// addInitScript 编译后为 JS：保留 __roCreated 供其他断言/调试使用
+			window.ResizeObserver = class Counting extends Tracking {
+				constructor(
+					...args: ConstructorParameters<typeof ResizeObserver>
+				) {
+					super(...args);
+					window.__roCreated = ++created;
+				}
+			};
+			window.__roLive = () => live.size;
+		});
+		await page.goto("/");
+		await page.waitForFunction(
+			() => (window.__roLive?.() ?? 0) > 0,
+			undefined,
+			{ timeout: 30_000 },
+		);
+		const onHome = await page.evaluate(() => window.__roLive?.() ?? -1);
+		expect(onHome).toBe(1);
+
+		// content:replace 标记须在导航前注册（Swup 4.10 的 content:replace 可能在
+		// URL 落地前就已触发，迟到的一次性监听会永远挂起）；整页重载后 swup 实例
+		// 会被重建，故每次补发导航时都幂等地重新注册。
+		const navigateWithRetry = async (path: string) => {
+			await expect
+				.poll(
+					async () =>
+						page
+							.evaluate((target) => {
+								if (!window.__swupMarkerHook) {
+									window.__swupMarkerHook = true;
+									window.swup?.hooks.on(
+										"content:replace",
+										() => {
+											window.__swupContentReplaced =
+												true;
+										},
+									);
+								}
+								if (window.location.pathname === target) {
+									return true;
+								}
+								window.swup?.navigate(target);
+								return false;
+							}, path)
+							.catch(() => false),
+					{ timeout: 60_000, intervals: [300, 1000, 2000] },
+				)
+				.toBe(true);
+		};
+
+		await navigateWithRetry("/posts/guide/");
+		// 等 content:replace 落地再发起下一次导航；若标记被整页重载擦除则跳过
+		await page
+			.waitForFunction(() => window.__swupContentReplaced === true, undefined, {
+				timeout: 15_000,
+			})
+			.catch(() => {});
+		// guide 页没有 #post-list：旧容器断开后实时观察数应回到 0（或仍是单实例）
+		const onGuide = await page.evaluate(() => window.__roLive?.() ?? -1);
+		expect(onGuide).toBeLessThanOrEqual(1);
+
+		await navigateWithRetry("/");
+		await page
+			.waitForFunction(
+				() =>
+					window.location.pathname === "/" &&
+					Boolean(document.querySelector("#post-list")),
+				undefined,
+				{ timeout: 30_000 },
+			);
+		// 往返导航后 #post-list 上仍只有一个活的 observer（复用，不叠加）
+		await expect
+			.poll(() => page.evaluate(() => window.__roLive?.() ?? -1), {
+				timeout: 15_000,
+			})
+			.toBe(1);
 	});
 });

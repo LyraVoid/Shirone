@@ -153,8 +153,8 @@ function renderNavNode(node, level, iconMode) {
 	);
 }
 
-function renderNav(tree, iconMode, title) {
-	const ariaLabel = title ? `${title} 文件导航` : "文件导航";
+function renderNav(tree, iconMode, title, labels) {
+	const ariaLabel = title ? `${title} ${labels.nav}` : labels.nav;
 	return h("nav", { class: "m3-code-tree__nav", "aria-label": ariaLabel }, [
 		h(
 			"ul",
@@ -168,12 +168,50 @@ function renderNav(tree, iconMode, title) {
 	]);
 }
 
-function renderPanels(files, codeChildren, activePath, title) {
-	const panels = files.map((file, index) => {
-		const child = codeChildren[index] ?? h("pre", {}, "");
+function renderPanels(files, codeChildren, activePath, title, labels) {
+	// 配对策略（重要）：remark 会在每个代码块的 mdast data 上写入
+	// data-file-index / data-file-path（见 src/plugins/markdown/code/remark-code-tree.mjs），
+	// 但这些属性并不会随 Astro 的 Markdown 处理器传到这里——实测到达组件的
+	// 直接子元素是不带任何属性的裸 pre。因此：
+	//   1. 若子元素确实带索引/路径属性（单元测试、其他处理器管线），按
+	//      索引优先、路径回退配对，可容忍子元素与 files 声明顺序不一致；
+	//   2. 否则退回按 pre 元素位置配对。这在真实管线上是正确的：remark
+	//      构建 files[] 与遍历代码子节点用的是同一次循环，files[i].index ===
+	//      第 i 个代码块的位置；只需过滤掉容器里夹带的散文段落，避免整体错位。
+	// hast 属性键为驼峰（dataFileIndex），兼容连字符原始拼写。
+	const childAttr = (child, name) =>
+		child.properties?.[name] ??
+		child.properties?.[name.replace(/-([a-z])/g, (_, c) => c.toUpperCase())];
+	const hasIndexedChildren = codeChildren.some(
+		(child) => childAttr(child, "data-file-index") !== undefined,
+	);
+	const codeBlocks = codeChildren.filter(
+		(child) =>
+			child.tagName === "pre" ||
+			childAttr(child, "data-file-index") !== undefined,
+	);
+	const remaining = [...codeBlocks];
+	const pickChild = (file, cleanPath) => {
+		if (hasIndexedChildren) {
+			let at = remaining.findIndex(
+				(child) =>
+					String(childAttr(child, "data-file-index")) === String(file.index),
+			);
+			if (at === -1) {
+				at = remaining.findIndex(
+					(child) => childAttr(child, "data-file-path") === cleanPath,
+				);
+			}
+			if (at === -1) return h("pre", {}, "");
+			return remaining.splice(at, 1)[0];
+		}
+		return remaining.shift() ?? h("pre", {}, "");
+	};
+	const panels = files.map((file) => {
 		const cleanPath = String(file.path)
 			.replace(/\\/g, "/")
 			.replace(/^\.?\//, "");
+		const child = pickChild(file, cleanPath);
 		const isSelected = cleanPath === activePath;
 		const props = {
 			class: ["m3-code-tree__panel", isSelected ? "" : "hidden"]
@@ -188,7 +226,7 @@ function renderPanels(files, codeChildren, activePath, title) {
 		return h("div", props, [child]);
 	});
 
-	const contentLabel = title ? `${title} 代码` : "代码内容";
+	const contentLabel = title ? `${title} ${labels.content}` : labels.content;
 	return h(
 		"div",
 		{
@@ -200,13 +238,13 @@ function renderPanels(files, codeChildren, activePath, title) {
 	);
 }
 
-function renderHeader(title) {
+function renderHeader(title, labels) {
 	return h("div", { class: "m3-code-tree__header" }, [
 		h("div", { class: "m3-code-tree__header-start" }, [
 			h("span", { class: "m3-code-tree__header-icon", "aria-hidden": "true" }, [
 				createCodeTreeHeaderIcon(),
 			]),
-			h("span", { class: "m3-code-tree__title" }, title || "Project"),
+			h("span", { class: "m3-code-tree__title" }, title || labels.defaultTitle),
 		]),
 		h("div", { class: "m3-code-tree__header-actions" }, [
 			h(
@@ -214,10 +252,10 @@ function renderHeader(title) {
 				{
 					type: "button",
 					class: "m3-code-tree__action-btn m3-code-tree__expand-btn",
-					"aria-label": "放大代码树",
-					"data-expand-label": "放大代码树",
-					"data-collapse-label": "退出放大",
-					title: "放大代码树",
+					"aria-label": labels.expand,
+					"data-expand-label": labels.expand,
+					"data-collapse-label": labels.collapse,
+					title: labels.expand,
 				},
 				[
 					h("span", { class: "m3-code-tree__icon-expand" }, [
@@ -236,7 +274,14 @@ export function CodeTreeComponent(properties, children) {
 	const title = resolveTitle(properties?.title);
 	const height = resolveHeight(properties?.height);
 	const iconMode = resolveIconMode(properties?.icon);
-
+	// 无障碍标签由 markdown-processor 注入（i18n），此处仅为独立调用兜底
+	const labels = {
+		nav: properties?.["label-nav"] ?? "File navigation",
+		content: properties?.["label-content"] ?? "Code content",
+		expand: properties?.["label-expand"] ?? "Expand code tree",
+		collapse: properties?.["label-collapse"] ?? "Collapse code tree",
+		defaultTitle: properties?.["label-default-title"] ?? "Project",
+	};
 	let files = [];
 	if (properties?.files) {
 		try {
@@ -297,9 +342,9 @@ export function CodeTreeComponent(properties, children) {
 	}
 
 	const tree = buildCodeFileTree(files, activePath);
-	const header = renderHeader(title);
-	const nav = renderNav(tree, iconMode, title);
-	const main = renderPanels(files, codeChildren, activePath, title);
+	const header = renderHeader(title, labels);
+	const nav = renderNav(tree, iconMode, title, labels);
+	const main = renderPanels(files, codeChildren, activePath, title, labels);
 
 	const bodyChildren = [nav, main];
 	const containerChildren = [

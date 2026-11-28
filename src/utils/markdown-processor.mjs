@@ -63,6 +63,16 @@ import {
 	readMarkdownExtensions,
 } from "./markdown-extensions.mjs";
 
+// Node tests execute this module directly; string keys avoid importing the
+// TS I18nKey enum (unsupported by Node's strip-only TypeScript loader).
+const codeTreeI18nKeys = {
+	nav: "codeTreeFileNav",
+	content: "codeTreeContent",
+	expand: "codeTreeExpand",
+	collapse: "codeTreeCollapse",
+	defaultTitle: "codeTreeDefaultTitle",
+};
+
 // This processor is executed directly by Node tests, so avoid runtime imports
 // of TypeScript enums (unsupported by Node's strip-only TypeScript loader).
 const fieldI18nKeys = {
@@ -133,7 +143,18 @@ export const siteRehypePlugins = [
 						},
 						children,
 					),
-				"code-tree": CodeTreeComponent,
+				"code-tree": (properties, children) =>
+					CodeTreeComponent(
+						{
+							...properties,
+							"label-nav": i18n(codeTreeI18nKeys.nav),
+							"label-content": i18n(codeTreeI18nKeys.content),
+							"label-expand": i18n(codeTreeI18nKeys.expand),
+							"label-collapse": i18n(codeTreeI18nKeys.collapse),
+							"label-default-title": i18n(codeTreeI18nKeys.defaultTitle),
+						},
+						children,
+					),
 				steps: StepsComponent,
 				github: GithubCardComponent,
 				grid: ImageGridComponent,

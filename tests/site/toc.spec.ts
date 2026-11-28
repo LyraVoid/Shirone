@@ -129,4 +129,28 @@ test.describe("Site TOC", () => {
 		await items.last().click();
 		await expect(items.last()).toHaveClass(/m3-blog-toc__item--active/);
 	});
+
+	test("re-initialization does not stack anchor listeners (F-27)", async ({
+		page,
+	}) => {
+		await page.goto("/posts/guide/", { waitUntil: "networkidle" });
+		await page.waitForFunction(() =>
+			Boolean(document.querySelector("#toc .m3-blog-toc__item")),
+		);
+		const item = page.locator("#toc .m3-blog-toc__item").first();
+		await item.click();
+		await page.waitForTimeout(300);
+
+		// 模拟受保护文章解密后的二次 init()：绑定不得叠加
+		await page.evaluate(() => {
+			const toc = document.querySelector("table-of-contents");
+			toc?.init?.();
+		});
+
+		const historyBefore = await page.evaluate(() => history.length);
+		await item.click();
+		await page.waitForTimeout(300);
+		const historyAfter = await page.evaluate(() => history.length);
+		expect(historyAfter - historyBefore).toBe(1);
+	});
 });

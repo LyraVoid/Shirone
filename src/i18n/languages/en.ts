@@ -183,6 +183,9 @@ export const en: Translation = {
 	[Key.codeBlockCollapse]: "Collapse code block",
 	[Key.codeTreeExpand]: "Expand code tree",
 	[Key.codeTreeCollapse]: "Collapse code tree",
+	[Key.codeTreeFileNav]: "File navigation",
+	[Key.codeTreeContent]: "Code content",
+	[Key.codeTreeDefaultTitle]: "Project",
 	[Key.announcement]: "Announcement",
 	[Key.announcementClose]: "Close Announcement",
 

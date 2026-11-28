@@ -173,6 +173,9 @@ enum I18nKey {
 	codeBlockCollapse = "codeBlockCollapse",
 	codeTreeExpand = "codeTreeExpand",
 	codeTreeCollapse = "codeTreeCollapse",
+	codeTreeFileNav = "codeTreeFileNav",
+	codeTreeContent = "codeTreeContent",
+	codeTreeDefaultTitle = "codeTreeDefaultTitle",
 	announcement = "announcement",
 	announcementClose = "announcementClose",
 

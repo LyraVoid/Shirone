@@ -50,7 +50,7 @@ function setModeClasses(container: HTMLElement, mode: PostListMode): void {
 export function applyStoredLayoutMode(container: HTMLElement | null): void {
 	if (!container) return;
 	setModeClasses(container, getStoredMode());
-	// 新容器需要重新挂接瀑布流（ResizeObserver 绑在旧容器上会随之失效）
+	// 新容器需要重新挂接瀑布流（setupMasonry 复用单个 observer 并断开旧的，防泄漏）
 	setupMasonry(container);
 }
 

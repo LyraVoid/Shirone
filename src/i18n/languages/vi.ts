@@ -185,6 +185,9 @@ export const vi: Translation = {
 	[Key.codeBlockCollapse]: "Thu gọn khối mã",
 	[Key.codeTreeExpand]: "Mở rộng cây mã",
 	[Key.codeTreeCollapse]: "Đóng chế độ mở rộng",
+	[Key.codeTreeFileNav]: "Điều hướng tệp",
+	[Key.codeTreeContent]: "Nội dung mã",
+	[Key.codeTreeDefaultTitle]: "Dự án",
 	[Key.announcement]: "Thông báo",
 	[Key.announcementClose]: "Đóng thông báo",
 

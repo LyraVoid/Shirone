@@ -181,6 +181,9 @@ export const ko: Translation = {
 	[Key.codeBlockCollapse]: "코드 블록 접기",
 	[Key.codeTreeExpand]: "코드 트리 확대",
 	[Key.codeTreeCollapse]: "확대 닫기",
+	[Key.codeTreeFileNav]: "파일 탐색",
+	[Key.codeTreeContent]: "코드 내용",
+	[Key.codeTreeDefaultTitle]: "프로젝트",
 	[Key.announcement]: "공지사항",
 	[Key.announcementClose]: "공지 닫기",
 

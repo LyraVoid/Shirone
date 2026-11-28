@@ -394,5 +394,5 @@ const setup = () => {
 	});
 };
 if (window.swup) setup();
-else document.addEventListener("swup:enable", setup);
+else document.addEventListener("swup:enable", setup, { once: true });
 </script>
