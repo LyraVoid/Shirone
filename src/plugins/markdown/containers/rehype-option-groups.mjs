@@ -74,25 +74,25 @@ function parseMarker(node) {
 	let value = "";
 	const finalText = lastTextNode(title);
 	if (finalText) {
-		const valueMatch = finalText.value.match(/#([^#\n]+)$/);
+		const fullTitle = textContent(title);
+		const valueMatch = fullTitle.match(/(?<=\S)#([^#\n]+)$/);
 		if (valueMatch) {
-			value = valueMatch[1].trim();
-			finalText.value = finalText.value.slice(0, valueMatch.index).trimEnd();
+			const localIndex =
+				valueMatch.index - (fullTitle.length - finalText.value.length);
+			if (localIndex >= 0) {
+				value = valueMatch[1].trim();
+				finalText.value = finalText.value.slice(0, localIndex).trimEnd();
+			}
 		}
 	}
 
 	const titleText = textContent(title).trim();
-	if (!titleText || (valueMatchWasEmpty(value, finalText) && !value))
-		return null;
+	if (!titleText) return null;
 	return {
 		active: rawText.startsWith("@tab:active"),
 		title,
 		value: value || titleText,
 	};
-}
-
-function valueMatchWasEmpty(value, finalText) {
-	return value === "" && Boolean(finalText?.value?.endsWith("#"));
 }
 
 function parseItems(children) {
