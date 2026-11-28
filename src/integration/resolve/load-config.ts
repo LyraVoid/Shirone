@@ -369,6 +369,29 @@ export async function loadConfigModule(
 	return loadModuleFile(paths, entry, `config:${name}`, registryRef);
 }
 
+/**
+ * Read a function export off a loaded config module, naming the file when it is
+ * absent.
+ *
+ * A user override that loads successfully but forgets an export would otherwise
+ * only surface where the value is finally called: the stack then points at the
+ * consuming plugin instead of at the config file that caused it.
+ *
+ * @param file module file name, e.g. `"sitemapFilter.ts"`
+ * @param exportName export that must be a function
+ */
+export function requireConfigExport<T>(
+	module: LoadedModule,
+	file: string,
+	exportName: string,
+): T {
+	const value = module[exportName];
+	if (typeof value !== "function") {
+		throw new Error(`config/${file} must export ${exportName}`);
+	}
+	return value as T;
+}
+
 /** Load a module that ships with the package (never user-provided). */
 export async function loadPackageModule(
 	paths: ResolvedShironesPaths,

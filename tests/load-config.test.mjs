@@ -3,6 +3,7 @@ import {
 	mkdirSync,
 	mkdtempSync,
 	readdirSync,
+	readFileSync,
 	rmSync,
 	writeFileSync,
 } from "node:fs";
@@ -13,6 +14,7 @@ import { pathToFileURL } from "node:url";
 import {
 	invalidateConfigCache,
 	loadConfigModule,
+	requireConfigExport,
 } from "../src/integration/resolve/load-config.ts";
 import { resolvePaths } from "../src/integration/resolve/paths.ts";
 
@@ -186,4 +188,63 @@ test("a mirrored sibling still wins over the package copy", async () => {
 	invalidateConfigCache();
 	const loaded = await loadConfigModule(paths, "sitemapFilter");
 	assert.equal(loaded.isAllowed(), "user:from-user");
+});
+
+// F-50: a user's config/sitemapFilter.ts override that loads fine but omits the
+// predicate used to fail deep inside @astrojs/sitemap at build time.
+test("requireConfigExport names the config file when the export is missing", async () => {
+	const { themeRoot, siteRoot, paths } = world();
+	const userConfig = join(siteRoot, "shirones", "config");
+	mkdirSync(userConfig, { recursive: true });
+	writeFileSync(
+		join(themeRoot, "src", "config", "sitemapFilter.ts"),
+		"export const isSitemapPageAllowed = () => true;\n",
+	);
+	writeFileSync(
+		join(userConfig, "sitemapFilter.ts"),
+		"export const isPageAllowed = () => true;\n",
+	);
+
+	invalidateConfigCache();
+	const loaded = await loadConfigModule(paths, "sitemapFilter");
+	assert.throws(
+		() =>
+			requireConfigExport(loaded, "sitemapFilter.ts", "isSitemapPageAllowed"),
+		{ message: "config/sitemapFilter.ts must export isSitemapPageAllowed" },
+	);
+});
+
+test("requireConfigExport returns the predicate a config does export", async () => {
+	const { themeRoot, paths } = world();
+	writeFileSync(
+		join(themeRoot, "src", "config", "sitemapFilter.ts"),
+		"export const isSitemapPageAllowed = () => true;\n",
+	);
+
+	invalidateConfigCache();
+	const loaded = await loadConfigModule(paths, "sitemapFilter");
+	const checked = requireConfigExport(
+		loaded,
+		"sitemapFilter.ts",
+		"isSitemapPageAllowed",
+	);
+	assert.equal(checked, loaded.isSitemapPageAllowed);
+	assert.equal(checked("anything"), true);
+});
+
+test("the sitemap filter is validated before the integration casts it", () => {
+	const source = readFileSync(
+		new URL("../src/integration/index.ts", import.meta.url),
+		"utf8",
+	);
+	assert.match(
+		source,
+		/requireConfigExport<\(page: string\) => boolean>\(\s*\n\s*sitemapModule,/,
+		"index.ts must validate the export instead of asserting it",
+	);
+	assert.doesNotMatch(
+		source,
+		/isSitemapPageAllowed as \(/,
+		"the bare type assertion is what made the failure unlocatable",
+	);
 });

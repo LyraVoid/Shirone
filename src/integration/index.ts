@@ -31,6 +31,7 @@ import {
 	invalidateConfigCache,
 	loadConfigModule,
 	loadPackageModule,
+	requireConfigExport,
 } from "./resolve/load-config.ts";
 import { normalisePath, resolvePaths } from "./resolve/paths.ts";
 import {
@@ -693,9 +694,11 @@ async function createBundledIntegrations(
 		"sitemapFilter",
 		registryRef,
 	);
-	const sitemapFilter = sitemapModule.isSitemapPageAllowed as (
-		page: string,
-	) => boolean;
+	const sitemapFilter = requireConfigExport<(page: string) => boolean>(
+		sitemapModule,
+		"sitemapFilter.ts",
+		"isSitemapPageAllowed",
+	);
 
 	const badge = await loadPackageModule(
 		paths,
