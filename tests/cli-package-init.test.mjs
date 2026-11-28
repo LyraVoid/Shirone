@@ -574,3 +574,60 @@ test("an inline CommonJS require call in astro.config.cjs is preserved", (t) => 
 		original,
 	);
 });
+test("init moves the starter's src/assets svgs and keeps a user's own", (t) => {
+	const fixture = createFixture();
+	t.after(() => fixture.cleanup());
+	const assets = join(fixture.project, "src/assets");
+	mkdirSync(assets, { recursive: true });
+	const ownSvg =
+		'<svg xmlns="http://www.w3.org/2000/svg"><text>mine</text></svg>\n';
+	writeFileSync(join(assets, "astro.svg"), ownSvg);
+	copyFileSync(
+		join(ROOT, "tests/fixtures/starter-assets/background.svg"),
+		join(assets, "background.svg"),
+	);
+
+	const result = fixture.runInit();
+	assert.equal(result.status, 0, result.stderr);
+
+	assert.equal(readFileSync(join(assets, "astro.svg"), "utf8"), ownSvg);
+	assert.equal(existsSync(join(assets, "background.svg")), false);
+	assert.equal(
+		readFileSync(
+			join(fixture.project, ".shirones-backup/src/assets/background.svg"),
+			"utf8",
+		).length,
+		readFileSync(
+			join(ROOT, "tests/fixtures/starter-assets/background.svg"),
+			"utf8",
+		).length,
+	);
+});
+
+test("a starter asset checked out with CRLF line endings is still moved", (t) => {
+	const fixture = createFixture();
+	t.after(() => fixture.cleanup());
+	const assets = join(fixture.project, "src/assets");
+	mkdirSync(assets, { recursive: true });
+	const starter = readFileSync(
+		join(ROOT, "tests/fixtures/starter-assets/astro.svg"),
+		"utf8",
+	).replaceAll(/\r\n/g, "\n");
+	writeFileSync(join(assets, "astro.svg"), starter.replaceAll("\n", "\r\n"));
+
+	const result = fixture.runInit();
+	assert.equal(result.status, 0, result.stderr);
+	assert.equal(existsSync(join(assets, "astro.svg")), false);
+});
+
+test("init leaves a starter asset path it cannot read", (t) => {
+	const fixture = createFixture();
+	t.after(() => fixture.cleanup());
+	const unreadable = join(fixture.project, "src/assets/astro.svg");
+	mkdirSync(unreadable, { recursive: true });
+
+	const result = fixture.runInit();
+	assert.equal(result.status, 0, result.stderr);
+	assert.equal(existsSync(unreadable), true);
+	assert.match(result.stdout, /could not be read/);
+});

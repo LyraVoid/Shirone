@@ -15,6 +15,7 @@
  */
 
 import { spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import {
 	cp,
@@ -1135,14 +1136,32 @@ async function ensureAstroConfig(packageName, { force }) {
  * looks for user overrides, so the starter versions would silently replace the
  * theme's own layout. None of it is content the user wrote, but we move rather
  * than delete.
+ *
+ * `src/assets/` is the one directory where a user plausibly owns a file under
+ * a name the starter also uses, so the starter's asset names are only moved
+ * when the bytes are the starter's.
  */
+
+// shortcut: exact bytes of the Astro `basics` template assets, compared with
+// CRLF folded to LF because git checks them out with either ending; a copy from
+// an older starter is preserved rather than moved.
+const STARTER_ASSET_DIGESTS = new Map([
+	[
+		"src/assets/astro.svg",
+		"f6acc666531071302a93230b4d36ada513eb3743e5550e136caffb3bb6c50105",
+	],
+	[
+		"src/assets/background.svg",
+		"a2c94dccaf7921a18dcacdbc39137955c827d60befc9490fdbc838fc090ecd84",
+	],
+]);
+
 async function clearStarterFiles() {
 	const suspects = [
 		"src/pages/index.astro",
 		"src/components/Welcome.astro",
 		"src/layouts/Layout.astro",
-		"src/assets/astro.svg",
-		"src/assets/background.svg",
+		...STARTER_ASSET_DIGESTS.keys(),
 	];
 
 	const moved = [];
@@ -1150,16 +1169,34 @@ async function clearStarterFiles() {
 		const file = join(CWD, relativePath);
 		if (!existsSync(file)) continue;
 
-		if (relativePath.endsWith(".astro")) {
-			const contents = await readFile(file, "utf8");
-			const isStarter =
-				contents.includes("Welcome") || contents.includes("astro.build");
-			if (!isStarter) {
-				log.warn(
-					`${relativePath} is yours — left in place, but it overrides the theme`,
-				);
-				continue;
+		try {
+			if (relativePath.endsWith(".astro")) {
+				const contents = await readFile(file, "utf8");
+				const isStarter =
+					contents.includes("Welcome") || contents.includes("astro.build");
+				if (!isStarter) {
+					log.warn(
+						`${relativePath} is yours — left in place, but it overrides the theme`,
+					);
+					continue;
+				}
+			} else if (STARTER_ASSET_DIGESTS.has(relativePath)) {
+				// Git checks these files out with the platform's line ending.
+				const digest = createHash("sha256")
+					.update((await readFile(file, "utf8")).replaceAll("\r\n", "\n"))
+					.digest("hex");
+				if (digest !== STARTER_ASSET_DIGESTS.get(relativePath)) {
+					log.warn(`${relativePath} is not the starter asset — left in place`);
+					continue;
+				}
 			}
+		} catch (error) {
+			// Unreadable or not a regular file: init cannot judge ownership, and
+			// failing here would abort a step that used to always succeed.
+			log.warn(
+				`${relativePath} could not be read (${error.code ?? error.message}) — left in place`,
+			);
+			continue;
 		}
 
 		moved.push(await backup(relativePath));
