@@ -11,8 +11,14 @@
  */
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { dirname, join, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+	applyEdits,
+	modify,
+	parse as parseJsonc,
+	printParseErrorCode,
+} from "jsonc-parser";
 import ts from "typescript";
 import { CONFIG_DOMAINS } from "./config-domains.mjs";
 
@@ -218,22 +224,78 @@ export function generateConfigSchemas() {
 
 	// 更新 .vscode/settings.json 中的 yaml.schemas
 	const settingsPath = join(ROOT, ".vscode/settings.json");
-	let settings = {};
-	if (existsSync(settingsPath)) {
-		try {
-			settings = JSON.parse(readFileSync(settingsPath, "utf8"));
-		} catch {
-			settings = {};
-		}
+	const settingsText = existsSync(settingsPath)
+		? readFileSync(settingsPath, "utf8")
+		: "{}\n";
+	const merged = mergeYamlSchemas(settingsText, schemaMappings);
+	if (merged.error) {
+		console.error(
+			`[schema] Refusing to touch ${relative(ROOT, settingsPath)}: ${merged.error}`,
+		);
+		process.exitCode = 1;
+		return;
 	}
+	writeFileSync(settingsPath, merged.text, "utf8");
+	console.log(
+		`[schema] Generated ${CONFIG_DOMAINS.length} schemas in .vscode/schemas/`,
+	);
+}
 
-	settings["yaml.schemas"] = {
-		...(settings["yaml.schemas"] || {}),
-		...schemaMappings,
-	};
-
-	writeFileSync(settingsPath, `${JSON.stringify(settings, null, 2)}\n`, "utf8");
-	console.log(`[schema] Generated ${CONFIG_DOMAINS.length} schemas in .vscode/schemas/`);
+/**
+ * 把 yaml.schemas 映射合并进 settings.json 文本，其余内容（含映射内部注释）逐字节保留。
+ * 解析失败时返回 error 与原文，由调用方拒绝写入——旧实现会把文件重置成 `{}`。
+ */
+export function mergeYamlSchemas(settingsText, schemaMappings) {
+	const errors = [];
+	const settings = parseJsonc(settingsText, errors, {
+		allowTrailingComma: true,
+	});
+	if (errors.length > 0) {
+		const first = errors[0];
+		return {
+			error: `${printParseErrorCode(first.error)} at offset ${first.offset}`,
+			text: settingsText,
+		};
+	}
+	if (!settings || typeof settings !== "object" || Array.isArray(settings)) {
+		return { error: "the document is not a JSON object", text: settingsText };
+	}
+	const existing = Object.hasOwn(settings, "yaml.schemas")
+		? settings["yaml.schemas"]
+		: {};
+	if (
+		existing === null ||
+		typeof existing !== "object" ||
+		Array.isArray(existing)
+	) {
+		return { error: "yaml.schemas is not an object", text: settingsText };
+	}
+	// 逐个键编辑：整块替换会丢掉映射内部的注释，也会在无变化时重排格式。
+	let text = settingsText;
+	for (const [key, value] of Object.entries(schemaMappings)) {
+		if (JSON.stringify(existing[key]) === JSON.stringify(value)) continue;
+		text = applyEdits(
+			text,
+			modify(text, ["yaml.schemas", key], value, {
+				formattingOptions: { insertSpaces: true, tabSize: 2, eol: "\n" },
+			}),
+		);
+	}
+	// shortcut: 某个键的值本身被改写时，该值内部的注释（如 glob 数组里）仍会丢。
+	if (!text.endsWith("\n")) text += "\n";
+	// 重复键会让 parseJsonc 读到最后一个值、modify 却改第一个，静默失效；
+	// 因此按解析结果校验，不一致就拒绝写入。
+	const effective = parseJsonc(text, [], {
+		allowTrailingComma: true,
+	})["yaml.schemas"];
+	const intended = { ...existing, ...schemaMappings };
+	if (JSON.stringify(effective) !== JSON.stringify(intended)) {
+		return {
+			error: "yaml.schemas does not match after the edit (duplicate keys?)",
+			text: settingsText,
+		};
+	}
+	return { text };
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
