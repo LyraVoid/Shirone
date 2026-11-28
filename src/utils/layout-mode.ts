@@ -37,7 +37,12 @@ export function getStoredMode(): PostListMode {
 }
 
 export function storeMode(mode: PostListMode): void {
-	localStorage.setItem(MODE_KEY, mode);
+	// 存储被禁（隐私模式/企业策略）时静默降级：切换仍生效，只是不持久化
+	try {
+		localStorage.setItem(MODE_KEY, mode);
+	} catch {
+		// ignore
+	}
 }
 
 function setModeClasses(container: HTMLElement, mode: PostListMode): void {
