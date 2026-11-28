@@ -17,8 +17,9 @@ export interface PermalinkDateParts {
 	second: string;
 }
 
-// 缓存按发布时间升序排列的文章 ID -> 序号映射
+// 缓存按发布时间升序排列的文章 ID -> 序号映射（签名比对，内容变更即重建）
 let postIdMap: Map<string, number> | null = null;
+let postIdMapSignature: string | null = null;
 
 export interface PostLikeForIdMap {
 	id: string;
@@ -27,6 +28,15 @@ export interface PostLikeForIdMap {
 		publishedAt?: Date;
 		draft?: boolean;
 	};
+}
+
+function postSetSignature(posts: Array<PostLikeForIdMap>): string {
+	return posts
+		.map((post) => {
+			const instant = post.data.publishedAt ?? post.data.published;
+			return `${post.id}:${instant.getTime()}:${post.data.draft === true ? "draft" : "published"}`;
+		})
+		.join("\n");
 }
 
 /**
@@ -50,7 +60,10 @@ export function comparePublishedDatesAscending(
 export function initPostIdMap(
 	posts: Array<PostLikeForIdMap>,
 ): Map<string, number> {
-	if (postIdMap) {
+	// dev 热重载/内容集合变更后会再次调用：签名比对，集合变化即重建，
+	// 否则 %post_id% 会继续引用上一次构建的陈旧缓存
+	const signature = postSetSignature(posts);
+	if (postIdMap && postIdMapSignature === signature) {
 		return postIdMap;
 	}
 
@@ -61,16 +74,22 @@ export function initPostIdMap(
 	sorted.forEach((post, index) => {
 		postIdMap?.set(post.id, index + 1);
 	});
+	postIdMapSignature = signature;
 
 	return postIdMap;
 }
 
 /**
  * 获取文章的数字序号 ID
+ *
+ * 未初始化时抛错：静默返回 0 会让 %post_id% 渲染成字面 0（错误 slug 且难以发现）。
+ * 初始化后的未知 ID（如 dev 下的草稿）仍返回 0。
  */
 export function getPostNumericId(postId: string): number {
 	if (!postIdMap) {
-		return 0;
+		throw new Error(
+			"initPostIdMap() must run before getPostNumericId(); without it %post_id% would silently render 0.",
+		);
 	}
 	return postIdMap.get(postId) ?? 0;
 }
@@ -80,6 +99,33 @@ export function getPostNumericId(postId: string): number {
  */
 export function clearPostIdMap(): void {
 	postIdMap = null;
+	postIdMapSignature = null;
+}
+
+// F-8：permalink 唯一性登记。构建期的路径去重只在多路由冲突时生效
+// （见集成层 prerenderConflictBehavior），dev 下不会检查；这里在
+// getStaticPaths 生成期立即拒绝被两篇文章同时占用的 permalink。
+const permalinkOwners = new Map<string, string>();
+
+/**
+ * 登记 permalink slug；同一 slug 已被其他文章占用时抛错
+ */
+export function reservePermalinkSlug(slug: string, entryId: string): void {
+	const normalized = slug.replace(/^\/+/, "").replace(/\/+$/, "");
+	const owner = permalinkOwners.get(normalized);
+	if (owner && owner !== entryId) {
+		throw new Error(
+			`Duplicate permalink "/${normalized}/": posts "${owner}" and "${entryId}" both resolve to it. Give one of them a unique custom permalink or alias.`,
+		);
+	}
+	permalinkOwners.set(normalized, entryId);
+}
+
+/**
+ * 清除 permalink 登记表（供测试或热重载）
+ */
+export function clearPermalinkReservations(): void {
+	permalinkOwners.clear();
 }
 
 /**

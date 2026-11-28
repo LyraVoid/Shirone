@@ -2,6 +2,7 @@
 import test from "node:test";
 import { permalinkConfig } from "../src/config/permalinkConfig.ts";
 import {
+	clearPermalinkReservations,
 	clearPostIdMap,
 	comparePublishedDatesAscending,
 	generatePermalinkSlug,
@@ -10,6 +11,7 @@ import {
 	getPostNumericId,
 	hasCustomPermalink,
 	initPostIdMap,
+	reservePermalinkSlug,
 } from "../src/utils/permalink-utils.ts";
 import {
 	getPostUrl,
@@ -75,8 +77,57 @@ test("initPostIdMap assigns 1-based sequential IDs ascending by date, excluding 
 	assert.equal(getPostNumericId("draft-post"), 0);
 	assert.equal(getPostNumericId("unknown-post"), 0);
 
+	assert.throws(() => {
+		clearPostIdMap();
+		getPostNumericId("post-1");
+	}, /initPostIdMap\(\) must run before getPostNumericId/);
+});
+
+test("initPostIdMap rebuilds the map when the post set changes (dev staleness)", () => {
 	clearPostIdMap();
-	assert.equal(getPostNumericId("post-1"), 0);
+	const first = [
+		{ id: "a", data: { published: new Date("2024-01-01T00:00:00Z") } },
+		{ id: "b", data: { published: new Date("2024-02-01T00:00:00Z") } },
+	];
+	initPostIdMap(first);
+	assert.equal(getPostNumericId("b"), 2);
+
+	// 新增文章后同一进程再次初始化：缓存必须重建而不是沿用旧序号
+	const changed = [
+		...first,
+		{ id: "c", data: { published: new Date("2023-12-01T00:00:00Z") } },
+	];
+	initPostIdMap(changed);
+	assert.equal(getPostNumericId("c"), 1);
+	assert.equal(getPostNumericId("a"), 2);
+	assert.equal(getPostNumericId("b"), 3);
+});
+
+test("initPostIdMap keeps the cache when the post set is unchanged", () => {
+	clearPostIdMap();
+	const posts = [
+		{ id: "a", data: { published: new Date("2024-01-01T00:00:00Z") } },
+	];
+	initPostIdMap(posts);
+	// 相同集合再次初始化应命中缓存（行为等价，仅确认不抛错且结果稳定）
+	initPostIdMap([...posts]);
+	assert.equal(getPostNumericId("a"), 1);
+	clearPostIdMap();
+});
+
+test("reservePermalinkSlug rejects the same slug from two posts", () => {
+	clearPermalinkReservations();
+	reservePermalinkSlug("tags", "post-a.md");
+	reservePermalinkSlug("tags", "post-a.md"); // 同一文章重复登记（如 dev 重跑）不抛错
+	assert.throws(
+		() => reservePermalinkSlug("tags", "post-b.md"),
+		/Duplicate permalink "\/tags\/"/,
+	);
+	assert.throws(() => reservePermalinkSlug("tags/", "post-c.md")); // trailing slash 归一化后仍是冲突
+	assert.throws(() => reservePermalinkSlug("/tags", "post-d.md"));
+	clearPermalinkReservations();
+	reservePermalinkSlug("tags", "post-b.md"); // 清空后可重新登记
+	clearPermalinkReservations();
 });
 
 test("getPostDateParts extracts date components in UTC date-only and timezone aware modes", () => {
@@ -102,8 +153,14 @@ test("getPostDateParts extracts date components in UTC date-only and timezone aw
 });
 
 test("hasCustomPermalink recognizes custom permalink in frontmatter", () => {
-	assert.equal(hasCustomPermalink({ data: { permalink: "my-custom-url" } }), true);
-	assert.equal(hasCustomPermalink({ data: { permalink: "/nested/url/" } }), true);
+	assert.equal(
+		hasCustomPermalink({ data: { permalink: "my-custom-url" } }),
+		true,
+	);
+	assert.equal(
+		hasCustomPermalink({ data: { permalink: "/nested/url/" } }),
+		true,
+	);
 	assert.equal(hasCustomPermalink({ data: { permalink: "" } }), false);
 	assert.equal(hasCustomPermalink({ data: {} }), false);
 	assert.equal(hasCustomPermalink({}), false);
@@ -163,7 +220,10 @@ test("generatePermalinkSlug handles custom permalink, aliases, and global templa
 			category: null,
 		},
 	};
-	assert.equal(generatePermalinkSlug(uncategorizedPost), "2024-05-0-uncategorized");
+	assert.equal(
+		generatePermalinkSlug(uncategorizedPost),
+		"2024-05-0-uncategorized",
+	);
 
 	// Restore config
 	permalinkConfig.enable = false;
@@ -191,7 +251,10 @@ test("getPostUrl resolves correct URL according to precedence", () => {
 	initPostIdMap([sample]);
 
 	// Pre-calculated URL takes precedence
-	assert.equal(getPostUrl({ ...sample, url: "/custom-precomputed/" }), "/custom-precomputed/");
+	assert.equal(
+		getPostUrl({ ...sample, url: "/custom-precomputed/" }),
+		"/custom-precomputed/",
+	);
 
 	// Custom permalink
 	assert.equal(
