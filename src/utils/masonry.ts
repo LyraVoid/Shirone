@@ -119,18 +119,34 @@ export function packMasonry(container: HTMLElement): void {
 
 /**
  * 挂接瀑布流生命周期：立即 pack + 容器宽度变化（换列数）时重排。
- * swup 内容替换后容器是新元素，需对新区块重新调用。
+ * swup 内容替换后容器是新元素，需对新区块重新调用；模块只持有一个
+ * observer，观察新容器前断开旧的，避免每次导航泄漏一份 observer + 旧树。
  */
+let masonryObserver: ResizeObserver | null = null;
+let masonryContainer: HTMLElement | null = null;
+let masonryFrameId: number | null = null;
+
 export function setupMasonry(container: HTMLElement): void {
 	packMasonry(container);
 	if (typeof ResizeObserver === "undefined") return;
-	let frameId: number | null = null;
-	const observer = new ResizeObserver(() => {
-		if (frameId !== null) cancelAnimationFrame(frameId);
-		frameId = requestAnimationFrame(() => {
-			frameId = null;
-			packMasonry(container);
+	if (!masonryObserver) {
+		masonryObserver = new ResizeObserver(() => {
+			const target = masonryContainer;
+			if (!target) return;
+			if (!target.isConnected) {
+				// 容器已被 swup 替换丢弃：断开并释放引用，让旧子树整体可回收
+				masonryObserver?.disconnect();
+				masonryContainer = null;
+				return;
+			}
+			if (masonryFrameId !== null) cancelAnimationFrame(masonryFrameId);
+			masonryFrameId = requestAnimationFrame(() => {
+				masonryFrameId = null;
+				packMasonry(target);
+			});
 		});
-	});
-	observer.observe(container);
+	}
+	masonryObserver.disconnect();
+	masonryContainer = container;
+	masonryObserver.observe(container);
 }
