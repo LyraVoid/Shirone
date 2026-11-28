@@ -18,6 +18,7 @@ import {
 	join,
 	relative,
 	resolve,
+	sep,
 } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -64,9 +65,13 @@ function isSymlink(path) {
 	}
 }
 
+/** Only a leading `..` segment escapes `parent`; `..draft` is a child. */
 function isInside(child, parent) {
 	const rel = relative(parent, child);
-	return rel === "" || (!rel.startsWith("..") && !isAbsolute(rel));
+	return (
+		rel === "" ||
+		(!isAbsolute(rel) && rel !== ".." && !rel.startsWith(`..${sep}`))
+	);
 }
 
 /**

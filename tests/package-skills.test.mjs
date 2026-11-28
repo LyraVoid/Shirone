@@ -77,6 +77,17 @@ test("refuses a symlinked ancestor and a symlink into the skills source", (t) =>
 	assert.ok(existsSync(join(fixture.root, ".agents/skills/demo/SKILL.md")));
 });
 
+test("refuses a destination whose name starts with dots but stays inside", (t) => {
+	const fixture = createFixture();
+	t.after(() => fixture.cleanup());
+	const inside = join(fixture.root, ".agents/skills/..draft/package.zip");
+
+	const result = fixture.run("--output", inside);
+	assert.equal(result.status, 1, result.stdout);
+	assert.match(result.stderr, /覆盖技能源目录/);
+	assert.ok(existsSync(join(fixture.root, ".agents/skills/demo/SKILL.md")));
+});
+
 test("refuses a foreign directory even with --force", (t) => {
 	const fixture = createFixture();
 	t.after(() => fixture.cleanup());
