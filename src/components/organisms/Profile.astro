@@ -4,11 +4,10 @@ import Button from "@components/atoms/action/Button.svelte";
 import IconButton from "@components/atoms/action/IconButton.svelte";
 import Avatar from "@components/atoms/display/Avatar.svelte";
 import Card from "@components/atoms/display/Card.svelte";
-import Tooltip from "@components/atoms/overlay/Tooltip.svelte";
 import UmamiStats from "@components/organisms/UmamiStats.astro";
 import I18nKey from "@i18n/i18nKey";
 import { i18n } from "@i18n/translation";
-import Icon from "@iconify/svelte";
+import Icon from "@components/atoms/display/Icon.svelte";
 import { resolveImageAsset } from "@utils/asset-utils";
 import { url } from "@utils/url-utils";
 import { profileConfig } from "@/config";
@@ -85,11 +84,9 @@ if (typeof avatarAsset !== "string") {
         <div class="m3-profile__bio">{config.bio}</div>
         <div class="m3-profile__links flex flex-wrap gap-2 justify-center mb-1">
             {config.links.length > 1 && config.links.map(item =>
-                <Tooltip label={item.name} placement="top" client:load>
-                    <IconButton href={item.url} target="_blank" rel="me" label={item.name}>
-                        <Icon icon={item.icon} class="text-[1.5rem]"></Icon>
-                    </IconButton>
-                </Tooltip>
+                <IconButton href={item.url} target="_blank" rel="me" label={item.name} title={item.name}>
+                    <Icon icon={item.icon} class="text-[1.5rem]"></Icon>
+                </IconButton>
             )}
             {config.links.length == 1 && <Button href={config.links[0].url} target="_blank" ariaLabel={config.links[0].name}
                                                  variant="text" size="small" class="!px-3 !font-bold !text-[var(--on-surface)]">
