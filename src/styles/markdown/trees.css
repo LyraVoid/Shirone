@@ -222,8 +222,8 @@
 	display: inline-flex;
 	align-items: center;
 	justify-content: center;
-	width: var(--m3e-space-7);
-	height: var(--m3e-space-7);
+	width: var(--m3e-space-6);
+	height: var(--m3e-space-6);
 	padding: 0;
 	border: 1px solid transparent;
 	border-radius: var(--shape-corner-s);

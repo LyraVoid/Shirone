@@ -22,16 +22,3 @@ samp,
 .mermaid code {
     font-family: var(--m3e-font-mono-family) !important;
 }
-/* KaTeX font-display swap override for non-blocking formula text rendering */
-@font-face { font-family: 'KaTeX_Main'; font-display: swap; }
-@font-face { font-family: 'KaTeX_Math'; font-display: swap; }
-@font-face { font-family: 'KaTeX_Size1'; font-display: swap; }
-@font-face { font-family: 'KaTeX_Size2'; font-display: swap; }
-@font-face { font-family: 'KaTeX_Size3'; font-display: swap; }
-@font-face { font-family: 'KaTeX_Size4'; font-display: swap; }
-@font-face { font-family: 'KaTeX_AMS'; font-display: swap; }
-@font-face { font-family: 'KaTeX_Caligraphic'; font-display: swap; }
-@font-face { font-family: 'KaTeX_Fraktur'; font-display: swap; }
-@font-face { font-family: 'KaTeX_SansSerif'; font-display: swap; }
-@font-face { font-family: 'KaTeX_Script'; font-display: swap; }
-@font-face { font-family: 'KaTeX_Typewriter'; font-display: swap; }
