@@ -16,6 +16,7 @@ import {
 	resolveSeriesPostCategory,
 	type SeriesEntity,
 } from "@utils/series-utils";
+import { normalizeTags } from "@utils/taxonomy-utils";
 import { getCategoryUrl, getPostUrl, url } from "@utils/url-utils";
 import type { ProtectedPayload } from "@/types/protectedContent";
 
@@ -123,12 +124,11 @@ export async function getTagList(): Promise<Tag[]> {
 		return import.meta.env.PROD ? data.draft !== true : true;
 	});
 
-	const countMap: { [key: string]: number } = {};
+	const countMap = Object.create(null) as { [key: string]: number };
 	allBlogPosts.forEach((post: { data: { tags: string[] } }) => {
-		post.data.tags.forEach((tag: string) => {
-			if (!countMap[tag]) countMap[tag] = 0;
-			countMap[tag]++;
-		});
+		for (const tag of normalizeTags(post.data.tags)) {
+			countMap[tag] = (countMap[tag] ?? 0) + 1;
+		}
 	});
 
 	// sort tags
