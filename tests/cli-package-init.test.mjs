@@ -53,6 +53,7 @@ function createFixture({
 	astroConfigFilename = "astro.config.mjs",
 	createPackageJson = true,
 	includeJsoncParser = true,
+	includeYaml = true,
 } = {}) {
 	const root = mkdtempSync(join(tmpdir(), "shirones-cli-package-init-"));
 	const packageRoot = join(root, "node_modules", "shirones");
@@ -72,6 +73,12 @@ function createFixture({
 			"jsonc-parser",
 		);
 		cpSync(jsoncParserRoot, join(packageRoot, "node_modules/jsonc-parser"), {
+			recursive: true,
+		});
+	}
+	if (includeYaml) {
+		const yamlRoot = findPackageRoot(require.resolve("yaml"), "yaml");
+		cpSync(yamlRoot, join(packageRoot, "node_modules/yaml"), {
 			recursive: true,
 		});
 	}
@@ -270,6 +277,113 @@ test("init --update recognizes pnpm YAML keys with inline comments", (t) => {
 	const repeated = fixture.runCli(["init", "--update"]);
 	assert.equal(repeated.status, 0, repeated.stderr);
 	assert.equal(readFileSync(workspaceFile, "utf8"), workspace);
+});
+
+test("init --update rewrites flow-style pnpm YAML keys instead of duplicating them", (t) => {
+	const fixture = createFixture();
+	t.after(() => fixture.cleanup());
+
+	const initial = fixture.runInit();
+	assert.equal(initial.status, 0, initial.stderr);
+	const workspaceFile = join(fixture.project, "pnpm-workspace.yaml");
+	writeFileSync(
+		workspaceFile,
+		[
+			"allowBuilds: { esbuild: false, custom-native: true }",
+			'onlyBuiltDependencies: ["custom-native"]',
+			"",
+		].join("\n"),
+	);
+
+	const updated = fixture.runCli(["init", "--update"]);
+	assert.equal(updated.status, 0, updated.stderr);
+	const workspace = readFileSync(workspaceFile, "utf8");
+	assert.equal((workspace.match(/^allowBuilds:/gm) ?? []).length, 1);
+	assert.equal((workspace.match(/^onlyBuiltDependencies:/gm) ?? []).length, 1);
+	assert.match(workspace, /^ {2}esbuild: true$/m);
+	assert.match(workspace, /^ {2}sharp: true$/m);
+	assert.match(workspace, /^ {2}custom-native: true$/m);
+	assert.match(workspace, /^ {2}- custom-native$/m);
+	assert.deepEqual(require("yaml").parse(workspace), {
+		allowBuilds: { esbuild: true, sharp: true, "custom-native": true },
+		onlyBuiltDependencies: ["custom-native"],
+	});
+
+	const repeated = fixture.runCli(["init", "--update"]);
+	assert.equal(repeated.status, 0, repeated.stderr);
+	assert.equal(readFileSync(workspaceFile, "utf8"), workspace);
+});
+
+test("init --update repairs empty flow-style pnpm YAML keys", (t) => {
+	const fixture = createFixture();
+	t.after(() => fixture.cleanup());
+
+	const initial = fixture.runInit();
+	assert.equal(initial.status, 0, initial.stderr);
+	const workspaceFile = join(fixture.project, "pnpm-workspace.yaml");
+	writeFileSync(workspaceFile, "allowBuilds: {}\nonlyBuiltDependencies: []\n");
+
+	const updated = fixture.runCli(["init", "--update"]);
+	assert.equal(updated.status, 0, updated.stderr);
+	const workspace = readFileSync(workspaceFile, "utf8");
+	assert.deepEqual(require("yaml").parse(workspace), {
+		allowBuilds: { esbuild: true, sharp: true },
+		onlyBuiltDependencies: [],
+	});
+});
+
+test("init --update leaves a flow-style pnpm value spread over lines unchanged", (t) => {
+	const fixture = createFixture();
+	t.after(() => fixture.cleanup());
+
+	const initial = fixture.runInit();
+	assert.equal(initial.status, 0, initial.stderr);
+	const workspaceFile = join(fixture.project, "pnpm-workspace.yaml");
+	const workspace = [
+		"allowBuilds: {",
+		"  custom-native: true",
+		"}",
+		"onlyBuiltDependencies: [",
+		"  custom-native",
+		"]",
+		"",
+	].join("\n");
+	writeFileSync(workspaceFile, workspace);
+
+	const updated = fixture.runCli(["init", "--update"]);
+	assert.equal(updated.status, 0, updated.stderr);
+	assert.equal(readFileSync(workspaceFile, "utf8"), workspace);
+});
+
+test("init --update leaves an anchored flow-style pnpm value alone", (t) => {
+	const fixture = createFixture();
+	t.after(() => fixture.cleanup());
+
+	const initial = fixture.runInit();
+	assert.equal(initial.status, 0, initial.stderr);
+	const workspaceFile = join(fixture.project, "pnpm-workspace.yaml");
+	writeFileSync(
+		workspaceFile,
+		[
+			"allowBuilds: { esbuild: false }",
+			"onlyBuiltDependencies: &native [custom-native]",
+			"ignoredOptionalDependencies: *native",
+			"",
+		].join("\n"),
+	);
+
+	const updated = fixture.runCli(["init", "--update"]);
+	assert.equal(updated.status, 0, updated.stderr);
+	const workspace = readFileSync(workspaceFile, "utf8");
+	assert.match(
+		workspace,
+		/^onlyBuiltDependencies: &native \[custom-native\]$/m,
+	);
+	assert.match(workspace, /^ignoredOptionalDependencies: \*native$/m);
+	assert.deepEqual(
+		require("yaml").parse(workspace).ignoredOptionalDependencies,
+		["custom-native"],
+	);
 });
 
 // `public/` belongs to the user once the project is scaffolded: the real

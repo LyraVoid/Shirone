@@ -258,17 +258,18 @@ async function ensurePnpmWorkspace() {
 
 	const original = await readFile(file, "utf8");
 	let lines = original.split("\n");
+	const unexpanded = await expandFlowKeys(lines);
 
 	const allowIndex = lines.findIndex((line) =>
 		/^allowBuilds:\s*(?:#.*)?$/.test(line),
 	);
-	if (allowIndex === -1) {
+	if (allowIndex === -1 && !unexpanded.has("allowBuilds")) {
 		lines = [
 			...lines.join("\n").trimEnd().split("\n"),
 			"",
 			...allowBlock.split("\n"),
 		];
-	} else {
+	} else if (allowIndex !== -1) {
 		// Rewrite the whole indented block so placeholders become `true`.
 		let end = allowIndex + 1;
 		while (end < lines.length && /^\s+\S/.test(lines[end])) end += 1;
@@ -285,7 +286,10 @@ async function ensurePnpmWorkspace() {
 		];
 	}
 
-	if (!lines.some((line) => /^onlyBuiltDependencies:\s*(?:#.*)?$/.test(line))) {
+	if (
+		!unexpanded.has("onlyBuiltDependencies") &&
+		!lines.some((line) => /^onlyBuiltDependencies:\s*(?:#.*)?$/.test(line))
+	) {
 		lines = [
 			...lines.join("\n").trimEnd().split("\n"),
 			...onlyBlock.split("\n"),
@@ -299,6 +303,62 @@ async function ensurePnpmWorkspace() {
 	}
 	await writeFile(file, next, "utf8");
 	log.ok("pnpm-workspace.yaml");
+}
+
+/**
+ * pnpm accepts `allowBuilds` and `onlyBuiltDependencies` in flow form too
+ * (`allowBuilds: { esbuild: false }`). `ensurePnpmWorkspace` only rewrites the
+ * block form, so an inline key looks absent and gets appended a second time,
+ * which pnpm rejects as a duplicate mapping key. Rewrite the value as a block
+ * first, keeping every entry: `ensurePnpmWorkspace` then updates it in place.
+ *
+ * shortcut: a flow value continued on later lines is not normalised, so that key
+ * keeps only the entries the user wrote; upgrade if pnpm users start wrapping
+ * the braces.
+ */
+async function expandFlowKeys(lines) {
+	const unexpanded = new Set();
+	for (const key of ["allowBuilds", "onlyBuiltDependencies"]) {
+		const index = lines.findIndex((line) =>
+			new RegExp(`^${key}:[ \\t]*[^\\s#]`).test(line),
+		);
+		if (index === -1) continue;
+		const { parse, stringify } = await import("yaml");
+		let value;
+		try {
+			value = parse(lines[index])?.[key];
+		} catch {
+			// The value continues below; `ensurePnpmWorkspace` must not treat the
+			// key as absent and append a duplicate.
+			unexpanded.add(key);
+			continue;
+		}
+		// An anchor on the flow value is dropped by `stringify`, and any `*alias`
+		// elsewhere then points at nothing; leave the line alone instead.
+		if (new RegExp(`^${key}:[ \\t]*&`).test(lines[index])) {
+			unexpanded.add(key);
+			continue;
+		}
+		// `key: []` keeps its meaning as an indented flow body; `key: {}` needs a
+		// bare header so the block rewrite can add approvals below it.
+		if (Array.isArray(value) && value.length === 0) {
+			lines.splice(index, 1, `${key}:`, "  []");
+			continue;
+		}
+		const body =
+			value === null ||
+			typeof value !== "object" ||
+			Object.keys(value).length === 0
+				? ""
+				: stringify(value, { lineWidth: 0 }).trimEnd();
+		lines.splice(
+			index,
+			1,
+			`${key}:`,
+			...(body === "" ? [] : body.split("\n").map((line) => `  ${line}`)),
+		);
+	}
+	return unexpanded;
 }
 
 async function ensurePackageJson(
