@@ -1,9 +1,9 @@
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, isAbsolute, relative, resolve } from "node:path";
+import { matchFenceCloser, matchFenceOpener } from "./fence-scan.mjs";
 
 const INCLUDE_LINE =
 	/^([\t ]{0,3})<!--[\t ]*@include:[\t ]*([^\s]+?)(?:\{(\d*)-(\d*)\}|#([A-Za-z0-9._-]+))?[\t ]*-->[\t ]*$/u;
-const FENCE_LINE = /^[\t ]{0,3}(`{3,}|~{3,})/u;
 const REGION_START =
 	/(?:#|\/\/|<!--)\s*region\s+([A-Za-z0-9._-]+)\s*(?:-->)?\s*$/u;
 const REGION_END =
@@ -79,23 +79,19 @@ export function expandMarkdownIncludes(source, options = {}) {
 	let included = false;
 
 	for (const line of lines) {
-		const fenceMatch = line.match(FENCE_LINE);
-		if (fenceMatch) {
-			if (!fence)
-				fence = { character: fenceMatch[1][0], length: fenceMatch[1].length };
-			else if (
-				fenceMatch[1][0] === fence.character &&
-				fenceMatch[1].length >= fence.length
-			)
-				fence = null;
-			output.push(line);
-			continue;
-		}
 		if (fence) {
+			// 围栏内容保持原样；闭栏必须是仅含围栏标记（与后随空白）的行
+			if (matchFenceCloser(line, fence)) fence = null;
 			output.push(line);
 			continue;
 		}
 
+		const opener = matchFenceOpener(line);
+		if (opener) {
+			fence = opener;
+			output.push(line);
+			continue;
+		}
 		const match = line.match(INCLUDE_LINE);
 		if (!match) {
 			output.push(line);

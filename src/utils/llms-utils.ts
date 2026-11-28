@@ -1,9 +1,103 @@
 import type { CollectionEntry } from "astro:content";
 import type { LlmsConfig, LlmsCustomLink } from "@/types/llmsConfig";
+import {
+	columnsOf,
+	indentColumns,
+	splitContainerPrefix,
+} from "../plugins/markdown/fence-scan.mjs";
 import { getPostUrl } from "./url-utils.ts";
 
-const CODE_BLOCK_RE =
-	/(?:^|\n)(?<marker>\s*(?:`{3,}|~{3,}))([\s\w-]*)\n[\s\S]*?\n\k<marker>(?:\n|$)/g;
+// 反引号围栏的 info string 不允许包含反引号（CommonMark：否则是行内代码）。
+const FENCE_OPEN_RE = /^([\t ]*)(`{3,}|~{3,})(.*)$/;
+const FENCE_CLOSE_RE = /^([\t ]*)(`{3,}|~{3,})[\t ]*$/;
+
+/** 去除行首至多 columns 列的空白（tab 展开到 4 列制表位） */
+function stripColumns(line: string, columns: number): string {
+	if (columns <= 0) return line;
+	let used = 0;
+	let index = 0;
+	while (index < line.length && used < columns) {
+		const ch = line[index];
+		if (ch === "\t") used += 4 - (used % 4);
+		else if (ch === " ") used += 1;
+		else break;
+		index += 1;
+	}
+	return line.slice(index);
+}
+
+/**
+ * 扫描受保护的围栏代码块（``` / ~~~）。
+ *
+ * - 反引号围栏的 info string 不允许包含反引号（CommonMark：否则是行内代码），
+ *   无效的开栏按普通文本保留，不会吞掉后续合法围栏；
+ * - 闭栏使用同一标记字符、长度不小于开栏（CommonMark），支持带属性的
+ *   开栏（info string 中的 title 等）；
+ * - 相邻围栏块之间无需空行；
+ * - CRLF 输入先去掉行尾 \r 再匹配围栏行；
+ * - 缩进上限 ≤3 列相对活跃列表的内容列宽计算，列表项内的围栏有效，
+ *   而根级 tab（4 列）不能开 / 闭围栏。
+ */
+function protectFencedCodeBlocks(
+	source: string,
+	protect: (block: string) => string,
+): string {
+	const lines = source.split("\n");
+	const output: string[] = [];
+	let open: { character: string; length: number; start: number } | null = null;
+	let containerColumns = 0;
+	for (let index = 0; index < lines.length; index += 1) {
+		const raw = lines[index];
+		// CRLF：去掉行尾 \r 后再匹配围栏行
+		const line = raw.endsWith("\r") ? raw.slice(0, -1) : raw;
+		const { prefix, rest, container, list } = splitContainerPrefix(line);
+		if (!open) {
+			// 与 remark-escape-numeric-colons 相同：跟踪活跃列表内容列宽
+			if (container && list) {
+				containerColumns = columnsOf(prefix);
+			} else if (
+				!/^[\t ]*$/.test(line) &&
+				indentColumns(line) < containerColumns
+			) {
+				// 缩进低于列表内容列宽（含回到顶层的容器行）结束列表
+				containerColumns = 0;
+			}
+		}
+		// 视图行：容器前缀与列表内容缩进剥离后，相对缩进 ≤3 列才是围栏
+		const view = stripColumns(rest, containerColumns);
+		if (open) {
+			const closer = FENCE_CLOSE_RE.exec(view);
+			if (
+				closer &&
+				closer[2][0] === open.character &&
+				closer[2].length >= open.length &&
+				indentColumns(closer[1]) <= 3
+			) {
+				output.push(protect(lines.slice(open.start, index + 1).join("\n")));
+				open = null;
+			} else {
+				output.push(raw);
+			}
+			continue;
+		}
+		const opener = FENCE_OPEN_RE.exec(view);
+		if (
+			opener &&
+			indentColumns(opener[1]) <= 3 &&
+			!(opener[2][0] === "`" && opener[3].includes("`"))
+		) {
+			open = {
+				character: opener[2][0],
+				length: opener[2].length,
+				start: index,
+			};
+			continue;
+		}
+		output.push(raw);
+	}
+	return output.join("\n");
+}
+
 const LLM_ONLY_RE = /<llm-only>([\s\S]*?)<\/llm-only>/gi;
 const LLM_EXCLUDE_RE = /<llm-exclude>[\s\S]*?<\/llm-exclude>/gi;
 const HTML_COMMENT_RE = /<!--[\s\S]*?-->/g;
@@ -22,10 +116,10 @@ export function cleanMarkdownForLLM(rawMarkdown: string): string {
 	let counter = 0;
 
 	// 1. 保护代码块不被后续正则误伤
-	let content = rawMarkdown.replace(CODE_BLOCK_RE, (match) => {
+	let content = protectFencedCodeBlocks(rawMarkdown, (block) => {
 		const key = `__LLMS_CODE_BLOCK_${counter++}__`;
-		placeholders[key] = match;
-		return `\n${key}\n`;
+		placeholders[key] = block;
+		return key;
 	});
 
 	// 2. 彻底剔除加密容器内容
@@ -84,7 +178,7 @@ export function cleanMarkdownForLLM(rawMarkdown: string): string {
 
 	// 7. 还原受保护的代码块
 	for (const [key, code] of Object.entries(placeholders)) {
-		content = content.replace(key, code.trim());
+		content = content.replace(key, () => code.trim());
 	}
 
 	// 8. 规范化连续多余空行

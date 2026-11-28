@@ -142,3 +142,54 @@ test("does not rewrite fenced examples and escapes active markers only in groups
 	assert.match(output, /:::tabs\{sync="actual"\}/);
 	assert.match(output, /@tab\\:active Inside/);
 });
+
+test("keeps tabs whose title ends with a lone hash (F-113)", async () => {
+	const html = await render(`:::tabs
+
+@tab C#
+
+C language notes.
+
+@tab Normal
+
+Normal tab.
+
+:::`);
+
+	assert.match(html, /class="m3-option-group not-prose"/);
+	assert.match(html, /panel-title">C#/);
+});
+
+test("keeps a hash value suffix preceded by whitespace in the title (F-113)", async () => {
+	const html = await render(`:::tabs
+
+@tab Issue #5
+
+Issue notes.
+
+@tab Normal
+
+Normal tab.
+
+:::`);
+
+	assert.match(html, /panel-title">Issue #5/);
+});
+
+test("still splits unspaced hash value suffixes for sync (F-113)", async () => {
+	const html = await render(`:::tabs#runtime
+
+@tab Bun#bun
+
+Install Bun.
+
+@tab Node.js#node
+
+Use Node.
+
+:::`);
+
+	assert.match(html, /data-option-value="bun"/);
+	assert.match(html, /data-option-value="node"/);
+	assert.doesNotMatch(html, /panel-title">Bun#bun/);
+});

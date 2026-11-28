@@ -150,3 +150,120 @@ test("generateLlmsFullTxt aggregates post metadata and cleaned body into Markdow
 	assert.match(fullTxt, /Content of article 1\./);
 	assert.doesNotMatch(fullTxt, /Exclude this/);
 });
+
+test("cleanMarkdownForLLM protects code fences with attribute info strings (F-107)", () => {
+	const raw = [
+		'```js title="demo"',
+		"<llm-exclude>skip me</llm-exclude>",
+		'console.log("kept");',
+		"```",
+	].join("\n");
+	const cleaned = cleanMarkdownForLLM(raw);
+	assert.match(cleaned, /```js title="demo"/);
+	// 围栏内的 <llm-exclude> 是代码示例，不是页面标签，必须原样保留
+	assert.match(cleaned, /<llm-exclude>skip me<\/llm-exclude>/);
+	assert.match(cleaned, /console\.log\("kept"\);/);
+});
+
+test("cleanMarkdownForLLM restores code blocks without dollar-pattern expansion (F-120)", () => {
+	const raw = '```sh\nsed -e "s/a/$&/" -e "s/b/\\$1/"\n```';
+	const cleaned = cleanMarkdownForLLM(raw);
+	assert.match(cleaned, /s\/a\/\$&\/"/);
+	assert.doesNotMatch(cleaned, /s\/a\/sed/);
+});
+
+test("rejects backticks in backtick-fence info strings (review round 2)", () => {
+	const input = [
+		"```literal```",
+		"<llm-exclude>omit me</llm-exclude>",
+		"```js",
+		"<llm-exclude>keep this code example</llm-exclude>",
+		"kept()",
+		"```",
+	].join("\n");
+	const cleaned = cleanMarkdownForLLM(input);
+	assert.doesNotMatch(cleaned, /omit me/);
+	// 合法围栏在匹配阶段即被保护，内部的 llm-exclude 不受后续剔除影响
+	assert.match(cleaned, /keep this code example/);
+	assert.match(cleaned, /```js/);
+	assert.match(cleaned, /kept\(\)/);
+});
+
+test("protects the valid fence after an invalid backtick-info opener (review round 3)", () => {
+	const input = [
+		"```literal```",
+		"```js",
+		"kept()",
+		"```",
+	].join("\n");
+	const cleaned = cleanMarkdownForLLM(input);
+	assert.match(cleaned, /```js/);
+	assert.match(cleaned, /kept\(\)/);
+});
+
+test("protects adjacent tilde and backtick fenced blocks (review round 4)", () => {
+	const input = [
+		'~~~js title="demo"',
+		"first()",
+		"~~~",
+		"```html",
+		"<llm-exclude>keep example</llm-exclude>",
+		"```",
+	].join("\n");
+	const cleaned = cleanMarkdownForLLM(input);
+	assert.match(cleaned, /~~~js/);
+	assert.match(cleaned, /first\(\)/);
+	assert.match(cleaned, /keep example/);
+});
+
+test("accepts longer closing fences and protects only the fenced block (review round 4)", () => {
+	const input = [
+		'```js title="demo"',
+		"example()",
+		"````",
+		"",
+		"<llm-exclude>omit me</llm-exclude>",
+		"",
+		"```text",
+		"second()",
+		"```",
+	].join("\n");
+	const cleaned = cleanMarkdownForLLM(input);
+	assert.doesNotMatch(cleaned, /omit me/);
+	assert.match(cleaned, /example\(\)/);
+	assert.match(cleaned, /second\(\)/);
+});
+
+test("protects fenced blocks in CRLF input (review round 5)", () => {
+	const input = [
+		"~~~html",
+		"<llm-exclude>keep</llm-exclude>",
+		"~~~",
+	].join("\r\n");
+	const cleaned = cleanMarkdownForLLM(input);
+	assert.match(cleaned, /keep/);
+});
+
+test("protects list-contained fences with item-relative indentation (review round 5)", () => {
+	const input = [
+		"1.  Example",
+		"",
+		"    ~~~html",
+		"    <llm-exclude>keep example</llm-exclude>",
+		"    ~~~",
+	].join("\n");
+	const cleaned = cleanMarkdownForLLM(input);
+	assert.match(cleaned, /keep example/);
+	assert.match(cleaned, /Example/);
+});
+
+test("does not close a fence with a tab-indented marker (review round 5)", () => {
+	const input = [
+		"~~~html",
+		"\t~~~",
+		"<llm-exclude>keep</llm-exclude>",
+		"~~~",
+	].join("\n");
+	const cleaned = cleanMarkdownForLLM(input);
+	assert.match(cleaned, /keep/);
+});
