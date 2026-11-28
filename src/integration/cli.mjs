@@ -257,18 +257,19 @@ async function ensurePnpmWorkspace() {
 	}
 
 	const original = await readFile(file, "utf8");
-	let lines = await expandFlowKeys(original.split("\n"));
+	let lines = original.split("\n");
+	const unexpanded = await expandFlowKeys(lines);
 
 	const allowIndex = lines.findIndex((line) =>
 		/^allowBuilds:\s*(?:#.*)?$/.test(line),
 	);
-	if (allowIndex === -1) {
+	if (allowIndex === -1 && !unexpanded.has("allowBuilds")) {
 		lines = [
 			...lines.join("\n").trimEnd().split("\n"),
 			"",
 			...allowBlock.split("\n"),
 		];
-	} else {
+	} else if (allowIndex !== -1) {
 		// Rewrite the whole indented block so placeholders become `true`.
 		let end = allowIndex + 1;
 		while (end < lines.length && /^\s+\S/.test(lines[end])) end += 1;
@@ -285,7 +286,10 @@ async function ensurePnpmWorkspace() {
 		];
 	}
 
-	if (!lines.some((line) => /^onlyBuiltDependencies:\s*(?:#.*)?$/.test(line))) {
+	if (
+		!unexpanded.has("onlyBuiltDependencies") &&
+		!lines.some((line) => /^onlyBuiltDependencies:\s*(?:#.*)?$/.test(line))
+	) {
 		lines = [
 			...lines.join("\n").trimEnd().split("\n"),
 			...onlyBlock.split("\n"),
@@ -308,17 +312,27 @@ async function ensurePnpmWorkspace() {
  * which pnpm rejects as a duplicate mapping key. Rewrite the value as a block
  * first, keeping every entry: `ensurePnpmWorkspace` then updates it in place.
  *
- * shortcut: a flow value continued on later lines is left alone and would still
- * duplicate; upgrade if pnpm users start wrapping the braces.
+ * shortcut: a flow value continued on later lines is not normalised, so that key
+ * keeps only the entries the user wrote; upgrade if pnpm users start wrapping
+ * the braces.
  */
 async function expandFlowKeys(lines) {
+	const unexpanded = new Set();
 	for (const key of ["allowBuilds", "onlyBuiltDependencies"]) {
 		const index = lines.findIndex((line) =>
 			new RegExp(`^${key}:[ \\t]*[^\\s#]`).test(line),
 		);
 		if (index === -1) continue;
 		const { parse, stringify } = await import("yaml");
-		const value = parse(lines[index])?.[key];
+		let value;
+		try {
+			value = parse(lines[index])?.[key];
+		} catch {
+			// The value continues below; `ensurePnpmWorkspace` must not treat the
+			// key as absent and append a duplicate.
+			unexpanded.add(key);
+			continue;
+		}
 		// `key: []` keeps its meaning as an indented flow body; `key: {}` needs a
 		// bare header so the block rewrite can add approvals below it.
 		if (Array.isArray(value) && value.length === 0) {
@@ -338,7 +352,7 @@ async function expandFlowKeys(lines) {
 			...(body === "" ? [] : body.split("\n").map((line) => `  ${line}`)),
 		);
 	}
-	return lines;
+	return unexpanded;
 }
 
 async function ensurePackageJson(
