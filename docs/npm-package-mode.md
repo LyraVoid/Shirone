@@ -188,6 +188,11 @@ pnpm's strict layout, so the source repository never sees them:
   `set this to true or false` placeholders.
 - **npm provenance** — the published `repository.url` must point at the
   publishing repository, not at this one.
+- **A half-migrated project on bad input** — `init` used to rewrite the content
+  tree and back up `astro.config.*` before it read `package.json`, so a malformed
+  manifest or a second Astro config left the project half-migrated. The preflight
+  now runs before the first write and refuses both, naming the offending file; a
+  UTF-8 BOM in `package.json` is still accepted.
 
 ## Writing theme code that survives both modes
 
