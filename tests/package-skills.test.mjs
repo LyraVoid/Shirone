@@ -148,3 +148,28 @@ test("zip packaging still builds through its own staging directory", (t) => {
 		true,
 	);
 });
+
+test("refuses a symlink ZIP destination instead of deleting its target", (t) => {
+	const fixture = createFixture();
+	t.after(() => fixture.cleanup());
+	const notes = join(fixture.base, "notes.txt");
+	const link = join(fixture.base, "bundle.zip");
+	writeFileSync(notes, "keep me\n");
+	symlinkSync(notes, link, "file");
+
+	const result = fixture.run("--zip", "--output", link);
+	assert.equal(result.status, 1, result.stdout);
+	assert.equal(readFileSync(notes, "utf8"), "keep me\n");
+});
+
+test("refuses a marker whose plugin name only shares the prefix", (t) => {
+	const fixture = createFixture();
+	t.after(() => fixture.cleanup());
+	const foreign = join(fixture.base, "other-plugin");
+	mkdirSync(foreign);
+	writeFileSync(join(foreign, fixture.marker), "shirone-ai-other 1.0.0\n");
+	writeFileSync(join(foreign, "keep.txt"), "user data\n");
+
+	assert.equal(fixture.run("--output", foreign).status, 1);
+	assert.ok(existsSync(join(foreign, "keep.txt")));
+});

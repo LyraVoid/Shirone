@@ -2,6 +2,7 @@ import { spawnSync } from "node:child_process";
 import {
 	cpSync,
 	existsSync,
+	lstatSync,
 	mkdirSync,
 	readdirSync,
 	readFileSync,
@@ -52,6 +53,14 @@ function resolveOutputPath(path) {
 		return parent === resolved
 			? resolved
 			: join(resolveOutputPath(parent), basename(resolved));
+	}
+}
+
+function isSymlink(path) {
+	try {
+		return lstatSync(path).isSymbolicLink();
+	} catch {
+		return false;
 	}
 }
 
@@ -128,12 +137,9 @@ function preparePlugin(destination, skills) {
 	if (existsSync(resolvedDestination)) {
 		const marker = join(resolvedDestination, ".shirone-skills-package");
 		const owner = existsSync(marker)
-			? readFileSync(marker, "utf8").trimStart()
+			? (readFileSync(marker, "utf8").trimStart().split(/\s+/)[0] ?? "")
 			: "";
-		if (
-			!statSync(resolvedDestination).isDirectory() ||
-			!owner.startsWith(pluginName)
-		) {
+		if (!statSync(resolvedDestination).isDirectory() || owner !== pluginName) {
 			throw new Error(
 				`输出路径已存在且不是本工具生成的目录，请更换路径：${resolvedDestination}`,
 			);
@@ -161,6 +167,10 @@ function preparePlugin(destination, skills) {
 }
 
 function createZip(pluginRoot, zipPath) {
+	// The resolved path is where a symlink points, and replacement deletes that.
+	if (isSymlink(zipPath)) {
+		throw new Error(`ZIP 输出路径不能是符号链接：${resolve(zipPath)}`);
+	}
 	const resolvedZip = assertSafeOutputPath(zipPath);
 	if (existsSync(resolvedZip) && statSync(resolvedZip).isDirectory()) {
 		throw new Error(`ZIP 输出路径已经是目录：${resolvedZip}`);
