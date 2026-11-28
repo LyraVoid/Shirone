@@ -20,7 +20,9 @@ export type Translation = {
 
 const defaultTranslation = en;
 
-const map: { [key: string]: Translation } = {
+/** 已告警过的缺失 key（lang:key）：整次构建只提示一次 */
+const warnedMissing = new Set<string>();
+export const translations: { [key: string]: Translation } = {
 	es: es,
 	en: en,
 	en_us: en,
@@ -42,7 +44,7 @@ const map: { [key: string]: Translation } = {
 };
 
 export function getTranslation(lang: string): Translation {
-	return map[lang.toLowerCase()] || defaultTranslation;
+	return translations[lang.toLowerCase()] || defaultTranslation;
 }
 
 export function i18n(key: I18nKey): string {
@@ -62,6 +64,15 @@ export function i18n(key: I18nKey): string {
 		}
 	}
 
-	// 2. 回退到内置 10 语言词典
-	return getTranslation(lang)[key];
+	// 2. 回退到内置词典；当前语言缺失该 key 时回退英文并告警（避免页面静默缺字）
+	const localized = getTranslation(lang)[key];
+	if (localized !== undefined) return localized;
+	const missingId = `${lang}:${String(key)}`;
+	if (!warnedMissing.has(missingId)) {
+		warnedMissing.add(missingId);
+		console.warn(
+			`[i18n] missing translation for "${String(key)}" (lang: "${lang}"), falling back to en`,
+		);
+	}
+	return defaultTranslation[key] ?? String(key);
 }

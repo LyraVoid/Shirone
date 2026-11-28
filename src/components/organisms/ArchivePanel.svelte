@@ -15,6 +15,7 @@ import I18nKey from "@i18n/i18nKey";
 import { i18n } from "@i18n/translation";
 import Icon from "@iconify/svelte";
 import { formatCalendarDate } from "@utils/content-date";
+import { normalizeTags } from "@utils/taxonomy-utils";
 import { getPostUrlBySlug, url } from "@utils/url-utils";
 import { onMount } from "svelte";
 
@@ -107,7 +108,7 @@ const filtered = $derived(
 	sortedPosts.filter((p) => {
 		if (uncategorized && p.data.category) return false;
 		if (category && p.data.category !== category) return false;
-		if (tag && !p.data.tags.includes(tag)) return false;
+		if (tag && !normalizeTags(p.data.tags).includes(tag)) return false;
 		return true;
 	}),
 );
@@ -122,7 +123,7 @@ function toItem(post: Post): ArchiveItem {
 		href: post.url ?? getPostUrlBySlug(post.slug),
 		date: formatDate(post.data.published),
 		category: post.data.category ?? undefined,
-		tags: post.data.tags,
+		tags: normalizeTags(post.data.tags),
 	};
 }
 
@@ -145,7 +146,7 @@ const groups = $derived.by((): ArchiveGroup[] => {
 		}
 	} else if (groupBy === "tag") {
 		for (const p of filtered) {
-			for (const t of p.data.tags) add(`#${t}`, toItem(p));
+			for (const t of normalizeTags(p.data.tags)) add(`#${t}`, toItem(p));
 		}
 	} else {
 		for (const p of filtered) {
@@ -168,7 +169,7 @@ const groups = $derived.by((): ArchiveGroup[] => {
 onMount(() => {
 	const params = new URLSearchParams(window.location.search);
 	category = params.get("category") || "";
-	tag = params.get("tag") || "";
+	tag = (params.get("tag") || "").trim();
 	uncategorized = params.has("uncategorized");
 	readCollapsedState();
 });

@@ -27,7 +27,9 @@ export const siteConfig: SiteConfig = withUserConfig("site", {
 		reduceMotion: true, // 是否展示减少动效切换
 		texture: true, // 是否展示背景纹理选择
 	},
-	lang: "en", // Language code, e.g. 'en', 'zh_CN', 'ja', etc.
+	// 界面语言代码（大小写不敏感）：en / es / zh_CN / zh_TW / ja / ko / th / vi / id / tr（见 src/i18n/translation.ts）。
+	// 请与站点内容的主语言保持一致：示例内容多为中文时请改为 zh_CN，否则 <html lang> 与读屏发音不匹配；默认 en 面向英文站点。
+	lang: "en",
 	// IANA time zone for precise post and moment timestamps. It is independent of lang.
 	timeZone: "Asia/Shanghai",
 	themeColor: {

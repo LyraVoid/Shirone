@@ -11,11 +11,13 @@ import PageHeader from "@components/atoms/display/PageHeader.astro";
 import I18nKey from "@i18n/i18nKey";
 import { i18n } from "@i18n/translation";
 import MainGridLayout from "@layouts/MainGridLayout.astro";
-import { getTagList } from "@utils/content-utils";
+import { getSortedPosts, getTagList } from "@utils/content-utils";
+import { countTaggedPosts } from "@utils/taxonomy-utils";
 import { getTagUrl } from "@utils/url-utils";
 
 const tags = await getTagList();
-const totalPosts = tags.reduce((sum, tag) => sum + tag.count, 0);
+// 多标签文章只计一次：副标题的文章数 = 有标签的文章数，而不是标签出现次数
+const totalPosts = countTaggedPosts(await getSortedPosts());
 const tagSummary = `${tags.length} ${i18n(I18nKey.tagsCount)} · ${totalPosts} ${i18n(I18nKey.postsCount)}`;
 ---
 

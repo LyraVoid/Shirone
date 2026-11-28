@@ -5,5 +5,5 @@ import type I18nKey from "../i18n/i18nKey.ts";
  * 值为 I18nKey 对应的自定义文案字典。
  */
 export type I18nConfig = {
-	[lang: string]: Partial<Record<I18nKey | string, string>>;
+	[lang: string]: Partial<Record<I18nKey, string>>;
 };
