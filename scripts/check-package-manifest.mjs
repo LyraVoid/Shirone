@@ -20,9 +20,13 @@
 
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { builtinModules } from "node:module";
-import { extname, join, relative, resolve } from "node:path";
+import { dirname, extname, join, relative, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+import jsoncParser from "jsonc-parser";
 
-const ROOT = resolve(".");
+// Anchored at the script so a call from any working directory inspects the
+// same theme root.
+const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const SRC = join(ROOT, "src");
 const MANIFEST = join(SRC, "integration", "package.manifest.json");
 
@@ -46,11 +50,23 @@ try {
 const shippedByPackage = new Set(Object.keys(manifest.extraDependencies ?? {}));
 for (const name of shippedByPackage) declared.add(name);
 
-/** Path aliases from tsconfig `paths` — not npm packages. */
-const tsconfigText = readFileSync(join(ROOT, "tsconfig.json"), "utf8")
-	.replace(/^\s*\/\/.*$/gm, "")
-	.replace(/,(\s*[}\]])/g, "$1");
-const tsconfigPaths = JSON.parse(tsconfigText).compilerOptions?.paths ?? {};
+/** Path aliases from tsconfig `paths` — not npm packages. JSONC, since
+ * hand-stripping `//` comments corrupts string values that contain `//`. */
+const tsconfigParseErrors = [];
+const tsconfig = jsoncParser.parse(
+	readFileSync(join(ROOT, "tsconfig.json"), "utf8"),
+	tsconfigParseErrors,
+	{ allowTrailingComma: true },
+);
+if (
+	tsconfigParseErrors.length > 0 ||
+	!tsconfig ||
+	typeof tsconfig !== "object"
+) {
+	console.error("[manifest] cannot parse tsconfig.json");
+	process.exit(1);
+}
+const tsconfigPaths = tsconfig.compilerOptions?.paths ?? {};
 const aliasPrefixes = Object.keys(tsconfigPaths).map((p) =>
 	p.replace(/\*$/, ""),
 );
