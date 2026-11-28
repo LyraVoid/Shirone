@@ -113,6 +113,44 @@ export function toAbsoluteUrl(url: string, baseUrl: string): string {
 	return `${cleanBase}${cleanPath}`;
 }
 
+/**
+ * F-125：默认 corePages 可能指向已被 enable: false 关闭的顶层页面——
+ * 这些页面构建期不再产出（重定向存根会被删除，直达即 404），目录里不能留死链接。
+ * 只过滤站内链接（非 http(s):// 协议，含省略前导斜杠的相对路径）；
+ * 外链（http(s)://）不参与过滤。
+ */
+export function dropDisabledCorePages(
+	corePages: LlmsCustomLink[] | undefined,
+	disabledPages: readonly string[],
+): LlmsCustomLink[] {
+	return (corePages ?? []).filter((page) => {
+		if (/^https?:\/\//i.test(page.url)) return true;
+		// 查询串与锚点不参与页面匹配（"/about#bio" 的页面是 "about"）；
+		// 按 WHATWG 语义消解 "." / ".." 段（含 %2e 编码形式）：
+		// 单点段为 ".", "%2e"；双点段为 "..", ".%2e", "%2e.", "%2e%2e"（大小写不敏感）。
+		// 内部空段是真实段、可被 ".." 弹出（"/posts//../about/" 解析为
+		// "/posts/about/"，而非 "/about/"），之后取第一个非空段作为页面名。
+		const path = page.url.split(/[?#]/, 1)[0] ?? "";
+		const stack: string[] = [];
+		for (const part of path.split("/")) {
+			const dot = part.toLowerCase();
+			if (dot === "." || dot === "%2e") continue;
+			if (
+				dot === ".." ||
+				dot === ".%2e" ||
+				dot === "%2e." ||
+				dot === "%2e%2e"
+			) {
+				stack.pop();
+				continue;
+			}
+			stack.push(part);
+		}
+		const segment = stack.find((part) => part !== "") ?? "";
+		return segment.length === 0 || !disabledPages.includes(segment);
+	});
+}
+
 export interface GenerateLlmsTxtOptions {
 	posts: CollectionEntry<"posts">[];
 	baseUrl: string;

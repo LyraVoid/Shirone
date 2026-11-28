@@ -1,8 +1,9 @@
 import { getSortedPosts } from "@utils/content-utils";
-import { generateLlmsTxt } from "@utils/llms-utils";
+import { dropDisabledCorePages, generateLlmsTxt } from "@utils/llms-utils";
 import { isEncryptedPost } from "@utils/post-encryption";
 import type { APIContext, APIRoute } from "astro";
 import { llmsConfig, profileConfig, siteConfig } from "@/config";
+import { getDisabledPages } from "@/config/sitemapFilter";
 
 export const GET: APIRoute = async (context: APIContext) => {
 	if (!llmsConfig.enable) {
@@ -45,7 +46,14 @@ export const GET: APIRoute = async (context: APIContext) => {
 	const content = generateLlmsTxt({
 		posts: publicPosts,
 		baseUrl: siteUrl,
-		config: llmsConfig,
+		config: {
+			...llmsConfig,
+			// F-125：被关闭的顶层页面不再产出，目录里剔除对应 corePages
+			corePages: dropDisabledCorePages(
+				llmsConfig.corePages,
+				getDisabledPages(),
+			),
+		},
 		siteTitle: siteConfig.title,
 		siteSummary,
 	});

@@ -31,6 +31,7 @@ import {
 	invalidateConfigCache,
 	loadConfigModule,
 	loadPackageModule,
+	requireConfigExport,
 } from "./resolve/load-config.ts";
 import { normalisePath, resolvePaths } from "./resolve/paths.ts";
 import {
@@ -403,6 +404,9 @@ export function shirones(options: ShironesOptions = {}): AstroIntegration {
 					...(siteConfig?.site ? { site: siteConfig.site } : {}),
 					base: siteConfig?.base ?? "/",
 					trailingSlash: TRAILING_SLASH,
+					// F-123：permalink/alias 与静态页、分页或其他文章路由冲突时，
+					// Astro 默认只告警并静默丢弃后者；构建必须直接失败。
+					prerenderConflictBehavior: "error",
 					image: { endpoint: { route: IMAGE_ENDPOINT_ROUTE } },
 					fonts: fonts as never,
 					integrations,
@@ -690,9 +694,11 @@ async function createBundledIntegrations(
 		"sitemapFilter",
 		registryRef,
 	);
-	const sitemapFilter = sitemapModule.isSitemapPageAllowed as (
-		page: string,
-	) => boolean;
+	const sitemapFilter = requireConfigExport<(page: string) => boolean>(
+		sitemapModule,
+		"sitemapFilter.ts",
+		"isSitemapPageAllowed",
+	);
 
 	const badge = await loadPackageModule(
 		paths,
