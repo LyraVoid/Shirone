@@ -165,7 +165,11 @@ const defaultSchemeStyle = createDefaultSchemeStyle();
 		))}
 
 		<script is:inline define:vars={{DEFAULT_THEME, LIGHT_MODE, DARK_MODE, AUTO_MODE, BANNER_HEIGHT_EXTEND, configHue, lightTheme, darkTheme, defaultWallpaperMode, defaultTexturePreset, defaultTextureOpacity, textureEnabled}}>
-			const theme = localStorage.getItem('theme') || DEFAULT_THEME;
+			// localStorage 被禁（隐私模式/企业策略）时静默降级，避免首屏引导脚本抛错
+			const readStorage = (key) => {
+				try { return localStorage.getItem(key); } catch { return null; }
+			};
+			const theme = readStorage('theme') || DEFAULT_THEME;
 			let isDark = false;
 			switch (theme) {
 				case LIGHT_MODE:
@@ -185,25 +189,27 @@ const defaultSchemeStyle = createDefaultSchemeStyle();
 			}
 
 			document.documentElement.setAttribute('data-theme', isDark ? darkTheme : lightTheme);
-			const hue = localStorage.getItem('hue') || configHue;
-			document.documentElement.style.setProperty('--hue', hue);
-			if (localStorage.getItem('mc-motion') === 'reduced') {
+			// 完全数值校验（拒绝 '120oops' 等前缀解析误判），脏值回落到配置主题色并应用校验后的数值
+			const storedHue = readStorage('hue') ?? '';
+			const hueMatch = /^\d+(?:\.\d+)?$/.exec(storedHue.trim());
+			document.documentElement.style.setProperty('--hue', hueMatch ? hueMatch[0] : configHue);
+			if (readStorage('mc-motion') === 'reduced') {
 				document.documentElement.classList.add('motion-reduced');
 			}
-			const storedWallpaperMode = localStorage.getItem('wallpaper-mode');
+			const storedWallpaperMode = readStorage('wallpaper-mode');
 			const wallpaperMode = storedWallpaperMode === 'banner' || storedWallpaperMode === 'none'
 				? storedWallpaperMode
 				: defaultWallpaperMode;
 			document.documentElement.dataset.wallpaperMode = wallpaperMode;
 
 			if (textureEnabled) {
-				const storedTexturePreset = localStorage.getItem('texture-preset');
+				const storedTexturePreset = readStorage('texture-preset');
 				const validPresets = ['none', 'starlight', 'cyber-dots', 'topography', 'geometric', 'sakura'];
 				const texturePreset = storedTexturePreset && validPresets.includes(storedTexturePreset)
 					? storedTexturePreset
 					: defaultTexturePreset;
 				document.documentElement.dataset.texturePreset = texturePreset;
-				const storedTextureOpacity = localStorage.getItem('texture-opacity');
+				const storedTextureOpacity = readStorage('texture-opacity');
 				const textureOpacity = storedTextureOpacity ? parseFloat(storedTextureOpacity) : defaultTextureOpacity;
 				if (!isNaN(textureOpacity)) {
 					document.documentElement.style.setProperty('--texture-opacity', String(textureOpacity));

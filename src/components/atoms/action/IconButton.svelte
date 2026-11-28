@@ -26,6 +26,7 @@ let {
 	checked = $bindable(false),
 	disabled = false,
 	label = "",
+	title = undefined,
 	id = undefined,
 	ariaExpanded = undefined as boolean | undefined,
 	ariaControls = undefined as string | undefined,
@@ -64,6 +65,8 @@ let {
 	disabled?: boolean;
 	/** 无障碍标签（aria-label） */
 	label?: string;
+	/** 原生 title 提示：悬浮时展示的静态标签（无水合依赖） */
+	title?: string | undefined;
 	/** 根元素 id 透传（供 CSS 选择器 / 锚点引用） */
 	id?: string;
 	/** 折叠展开语义（aria-expanded） */
@@ -104,6 +107,7 @@ function handleClick() {
 		class:m3-icon-button--checked={checked}
 		class:m3-icon-button--disabled={disabled}
 		{style}
+		title={title}
 		aria-label={label}
 		aria-pressed={toggle ? checked : undefined}
 		aria-expanded={ariaExpanded}
@@ -125,6 +129,7 @@ function handleClick() {
 		class:m3-icon-button--checked={checked}
 		class:m3-icon-button--disabled={disabled}
 		{style}
+		title={title}
 		aria-label={label}
 		aria-pressed={toggle ? checked : undefined}
 		aria-expanded={ariaExpanded}

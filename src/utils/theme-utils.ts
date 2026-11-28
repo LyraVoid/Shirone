@@ -9,6 +9,32 @@ import {
 import { getDefaultSpec, getDefaultStyle, siteConfig } from "@/config";
 
 const STYLE_KEY = "mc-style";
+/**
+ * 与 setting-utils.ts 的安全包装同语义：浏览器策略阻止存储访问时，
+ * 读取返回 null、写入被忽略，主题推导不得被存储异常打断。
+ * 本地实现而非复用 setting-utils 包装，避免 theme-utils ↔ setting-utils 循环导入。
+ */
+function safeGetItem(key: string): string | null {
+	try {
+		return localStorage.getItem(key);
+	} catch {
+		return null;
+	}
+}
+
+function safeSetItem(key: string, value: string): boolean {
+	try {
+		localStorage.setItem(key, value);
+		return true;
+	} catch {
+		return false;
+	}
+}
+
+/** 持久化失败时的会话内覆盖：写入被浏览器策略阻止时，用户选择仍要生效。 */
+let styleOverride: McStyle | null = null;
+let specOverride: McSpec | null = null;
+
 const SPEC_KEY = "mc-spec";
 
 /** CSS custom-property names emitted for each M3/M3E role. */
@@ -75,22 +101,22 @@ export function isMcSpec(v: string): v is McSpec {
 }
 
 export function getStyle(): McStyle {
-	const stored = localStorage.getItem(STYLE_KEY);
+	const stored = styleOverride ?? safeGetItem(STYLE_KEY);
 	return stored && isMcStyle(stored) ? stored : (getDefaultStyle() as McStyle);
 }
 
 export function getSpec(): McSpec {
-	const stored = localStorage.getItem(SPEC_KEY);
+	const stored = specOverride ?? safeGetItem(SPEC_KEY);
 	return stored && isMcSpec(stored) ? stored : (getDefaultSpec() as McSpec);
 }
 
 export function setStyle(style: McStyle): void {
-	localStorage.setItem(STYLE_KEY, style);
+	styleOverride = safeSetItem(STYLE_KEY, style) ? null : style;
 	applyCurrentScheme();
 }
 
 export function setSpec(spec: McSpec): void {
-	localStorage.setItem(SPEC_KEY, spec);
+	specOverride = safeSetItem(SPEC_KEY, spec) ? null : spec;
 	applyCurrentScheme();
 }
 

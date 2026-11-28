@@ -73,18 +73,52 @@ function toggleGroup(group: string) {
 	openGroups[group] = !openGroups[group];
 }
 
+// 打开时焦点移入抽屉；关闭时归还给触发器，Tab 在抽屉内循环（对话框语义）
+let lastTrigger: HTMLElement | null = null;
+
+function close() {
+	open = false;
+	lastTrigger?.focus();
+	lastTrigger = null;
+}
+
 onMount(() => {
 	syncFromRoute();
 	const onToggle = () => {
-		open = !open;
 		if (open) {
-			tick().then(() => {
-				drawerEl?.querySelector<HTMLElement>("a, button")?.focus();
-			});
+			close();
+			return;
 		}
+		lastTrigger =
+			document.activeElement instanceof HTMLElement ? document.activeElement : null;
+		open = true;
+		tick().then(() => {
+			drawerEl?.querySelector<HTMLElement>("a, button")?.focus();
+		});
 	};
+	const focusables = () =>
+		drawerEl?.querySelectorAll<HTMLElement>("a[href], button:not([disabled])") ?? [];
 	const onKey = (e: KeyboardEvent) => {
-		if (e.key === "Escape") open = false;
+		if (e.key === "Escape") {
+			if (open) close();
+			return;
+		}
+		if (!open || e.key !== "Tab") return;
+		const items = focusables();
+		if (items.length === 0) return;
+		const first = items[0];
+		const last = items[items.length - 1];
+		const active = document.activeElement;
+		if (!drawerEl?.contains(active)) {
+			e.preventDefault();
+			first.focus();
+		} else if (e.shiftKey && active === first) {
+			e.preventDefault();
+			last.focus();
+		} else if (!e.shiftKey && active === last) {
+			e.preventDefault();
+			first.focus();
+		}
 	};
 	document.addEventListener("site-drawer:toggle", onToggle);
 	document.addEventListener("swup:content:replace", syncFromRoute);
@@ -103,8 +137,8 @@ let drawerEl: HTMLElement | undefined = $state();
 	class="site-drawer"
 	class:site-drawer--open={open}
 >
-	<div class="site-drawer__scrim" aria-hidden="true" onclick={() => (open = false)}></div>
-	<aside
+	<div class="site-drawer__scrim" aria-hidden="true" onclick={close}></div>
+	<div
 		bind:this={drawerEl}
 		class="site-drawer__panel"
 		role="dialog"
@@ -123,7 +157,7 @@ let drawerEl: HTMLElement | undefined = $state();
 						<button type="button" class="site-drawer__group-head" class:site-drawer__item--active={item.children.some((child) => activePrimary === child.value)} onclick={() => toggleGroup(item.value)} aria-expanded={openGroups[item.value] ?? false}>
 							{#if item.icon}<span class="site-drawer__group-icon" aria-hidden="true"><Icon icon={item.icon} /></span>{/if}
 							<span class="site-drawer__group-label">{item.label}</span>
-							<Icon class={openGroups[item.value] ? "site-drawer__group-arrow site-drawer__group-arrow--open" : "site-drawer__group-arrow"} icon="material-symbols:keyboard-arrow-down" />
+							<span class="site-drawer__group-arrow" class:site-drawer__group-arrow--open={openGroups[item.value]} aria-hidden="true"><Icon icon="material-symbols:keyboard-arrow-down" /></span>
 						</button>
 						{#if openGroups[item.value]}
 							<div class="site-drawer__group-body">
@@ -145,7 +179,7 @@ let drawerEl: HTMLElement | undefined = $state();
 			{/each}
 
 		</nav>
-	</aside>
+	</div>
 </div>
 
 <style lang="stylus">

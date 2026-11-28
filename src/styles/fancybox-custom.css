@@ -4,7 +4,7 @@
    并通过 --f-* 变量暴露外观；这里优先覆盖变量，只在变量覆盖不到的地方写规则。 */
 
 .fancybox__container {
-	--fancybox-bg: rgba(0, 0, 0, 0.88);
+	--fancybox-backdrop-bg: rgba(0, 0, 0, 0.88);
 
 	/* 按钮：圆角矩形 + 毛玻璃 */
 	--f-button-width: 48px;

@@ -6,11 +6,12 @@
  * - `aspect` 形如 `16 / 10` 的宽高比字符串，默认 `16 / 10`，非法值回退默认；
  * - `fit` `cover` | `contain`，默认 `cover`。
  *
- * 每个网格分配独立的 `data-fancybox="image-grid-N"` 分组 ID，
- * 灯箱轮播范围仅限当前网格，不与文章整体图片组合并。
+ * 每个网格分配独立的 `data-fancybox` 分组 ID，
  */
 import { h } from "hastscript";
 
+// gallerySequence 仅兜底无位置信息的合成节点；正常 Markdown 网格的分组 ID
+// 由首图 position 派生（文件内稳定），跨构建/同进程多站构建不再漂移。
 let gallerySequence = 0;
 
 const DEFAULT_COLUMNS = 3;
@@ -104,13 +105,46 @@ function findImages(nodes = []) {
 }
 
 /**
+ * FNV-1a 32 位散列（十进制字符串）：把文档身份并入分组 ID，跨文档不碰撞。
+ */
+function hashString(value) {
+	let hash = 0x811c9dc5;
+	for (let i = 0; i < value.length; i++) {
+		hash ^= value.charCodeAt(i);
+		hash = Math.imul(hash, 0x01000193) >>> 0;
+	}
+	return String(hash >>> 0);
+}
+
+/**
+ * 从首图 position + 文档身份派生分组 ID：确定性、文件内唯一，且不随构建次数漂移。
+ * 同一文档重复渲染（相同 vfile 路径）→ 相同 ID；不同文档行号列号重复时由
+ * 文档散列区分，共享处理器渲染多个文档也不会串组。
+ *
+ * @param {import('hast').Element[]} images 网格内图片节点。
+ * @param {string} docKey 文档身份（vfile 路径；不可用时为空串）。
+ * @returns {string}
+ */
+function deriveGalleryId(images, docKey) {
+	const start = images[0]?.position?.start;
+	if (start?.line != null) {
+		// 有文档身份（vfile 路径）→ 文档散列保证跨文档不碰撞；
+		// 无文档身份（如 moment 正文逐条渲染）→ 每次渲染分配独立序号，
+		// 同页多正文即使首图行列相同也不会串组
+		const doc = docKey ? `${hashString(docKey)}-` : `${gallerySequence++}-`;
+		return `image-grid-${doc}${start.line}-${start.column ?? 0}`;
+	}
+	return `image-grid-${gallerySequence++}`;
+}
+
+/**
  * 将 `:::grid` 指令渲染为响应式图片画廊。
  *
  * @param {Record<string, unknown>} properties 指令属性。
  * @param {import('hast').RootContent[]} children 指令子节点。
  * @returns {import('hast').Element}
  */
-export function ImageGridComponent(properties, children) {
+export function ImageGridComponent(properties, children, context) {
 	const images = findImages(children);
 	if (images.length === 0) {
 		return h(
@@ -120,7 +154,10 @@ export function ImageGridComponent(properties, children) {
 		);
 	}
 
-	const galleryId = `image-grid-${gallerySequence++}`;
+	const docKey = String(
+		context?.vfile?.path ?? context?.vfile?.history?.[0] ?? "",
+	);
+	const galleryId = deriveGalleryId(images, docKey);
 	const columns = parseColumns(properties?.columns);
 	const aspectRatio = parseAspectRatio(properties?.aspect);
 	const fit = parseFit(properties?.fit);

@@ -16,6 +16,26 @@ import { expressiveCodeConfig, siteConfig } from "@/config";
 import type { LIGHT_DARK_MODE, WallpaperMode } from "@/types/config";
 import type { TexturePreset } from "@/types/textureConfig";
 
+/**
+ * 浏览器策略可能阻止任何 localStorage 访问：读取失败返回 null、写入失败被忽略，
+ * 内存态/默认值继续生效，初始化流程不得被存储异常打断。
+ */
+function safeGetItem(key: string): string | null {
+	try {
+		return localStorage.getItem(key);
+	} catch {
+		return null;
+	}
+}
+
+function safeSetItem(key: string, value: string): void {
+	try {
+		localStorage.setItem(key, value);
+	} catch {
+		// 持久化失败时保留内存态
+	}
+}
+
 export function isTexturePreset(value: unknown): value is TexturePreset {
 	return (
 		typeof value === "string" &&
@@ -115,12 +135,21 @@ export function getDefaultHue(): number {
 }
 
 export function getHue(): number {
-	const stored = localStorage.getItem("hue");
-	return stored ? Number.parseInt(stored, 10) : getDefaultHue();
+	const stored: string | null = safeGetItem("hue");
+	if (stored) {
+		// 完全数值校验（拒绝 '120oops' 等前缀解析误判），脏值回落到配置主题色
+		if (/^\d+(?:\.\d+)?$/.test(stored.trim())) {
+			const parsed = Number.parseInt(stored, 10);
+			if (Number.isFinite(parsed)) {
+				return parsed;
+			}
+		}
+	}
+	return getDefaultHue();
 }
 
 export function setHue(hue: number): void {
-	localStorage.setItem("hue", String(hue));
+	safeSetItem("hue", String(hue));
 	const r = document.querySelector(":root") as HTMLElement;
 	if (!r) {
 		return;
@@ -166,12 +195,12 @@ export function applyThemeToDocument(theme: LIGHT_DARK_MODE): void {
 }
 
 export function setTheme(theme: LIGHT_DARK_MODE): void {
-	localStorage.setItem("theme", theme);
+	safeSetItem("theme", theme);
 	applyThemeToDocument(theme);
 }
 
 export function getStoredTheme(): LIGHT_DARK_MODE {
-	return (localStorage.getItem("theme") as LIGHT_DARK_MODE) || DEFAULT_THEME;
+	return (safeGetItem("theme") as LIGHT_DARK_MODE) || DEFAULT_THEME;
 }
 
 const MOTION_KEY = "mc-motion";
