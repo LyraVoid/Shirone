@@ -6,7 +6,8 @@ import { llmsConfig, siteConfig } from "@/config";
 
 export const GET: APIRoute = async (context: APIContext) => {
 	if (!llmsConfig.enable || !llmsConfig.generateFull) {
-		return new Response("Not Found", { status: 404 });
+		// 空响应体：Astro 静态构建只在 4xx 且 body 为空时跳过写文件
+		return new Response(null, { status: 404 });
 	}
 
 	const siteUrl = (
