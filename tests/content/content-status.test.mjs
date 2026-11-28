@@ -413,3 +413,22 @@ describe("content status", () => {
 		}
 	});
 });
+
+describe("content status 根级文件", () => {
+	it("内容仓的 public/CNAME 不会让用户的根级文件被报成多余文件", () => {
+		const fixture = createFixture();
+		try {
+			write(fixture.content, "public/CNAME", "example.com");
+			commitAll(fixture.content);
+			write(fixture.repo, "public/user-owned.txt", "mine");
+			const sync = syncPath(fixture);
+			assert.equal(sync.status, 0, sync.output);
+
+			const result = statusPath(fixture);
+			assert.equal(result.status, 0, result.output);
+			assert.ok(!result.output.includes("user-owned.txt"));
+		} finally {
+			rmSync(fixture.base, { recursive: true, force: true });
+		}
+	});
+});

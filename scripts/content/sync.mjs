@@ -335,7 +335,11 @@ function syncMount(sourceRoot, sourceDir, targetDir, resolved) {
 	const sourceFiles = collectFiles(sourceAbsolute);
 	const sourceFileSet = new Set(sourceFiles);
 	// 只有内容仓真正拥有的顶层段才参与裁剪，主题自有目录因此天然免疫。
-	const ownedSegments = new Set(sourceFiles.map(topSegment));
+	// 根级文件没有顶层段；若把空串当成拥有段，内容仓里一个 `public/CNAME`
+	// 就会让 `public/` 下所有根级用户文件都变得可裁剪。
+	const ownedSegments = new Set(
+		sourceFiles.map(topSegment).filter((segment) => segment !== ""),
+	);
 
 	let copied = 0;
 	for (const relativePath of sourceFiles) {
