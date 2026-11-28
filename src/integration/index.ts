@@ -404,7 +404,7 @@ export function shirones(options: ShironesOptions = {}): AstroIntegration {
 					base: siteConfig?.base ?? "/",
 					trailingSlash: TRAILING_SLASH,
 					image: { endpoint: { route: IMAGE_ENDPOINT_ROUTE } },
-					fonts: fonts as never,
+					...(fonts.length > 0 ? { fonts } : {}),
 					integrations,
 					markdown: { processor: processor as never },
 					vite: {

@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { existsSync } from "node:fs";
 import {
 	mkdir,
@@ -10,6 +11,7 @@ import {
 } from "node:fs/promises";
 import { basename, extname, join } from "node:path";
 import { FONT_ROLES } from "../types/fontConfig.ts";
+import type { AstroConfig } from "astro";
 import type { MetingMusicConfig, MusicProvider } from "../types/musicConfig.ts";
 import { buildMetingUrl } from "../utils/music/meting.ts";
 import { getFontFallbackOptions } from "./font-fallback.ts";
@@ -324,16 +326,26 @@ export async function runFontSubsetting(
 			);
 		}
 
+		// The cache key must cover the source file's identity, not just the
+		// charset: swapping in a different font under the same basename with
+		// an unchanged charset would otherwise keep shipping the old glyphs.
+		const sourceBytes = await readFile(source);
+		const sourceDigest = createHash("sha256")
+			.update(sourceBytes)
+			.digest("hex");
+
 		const ext = extname(variant.file);
 		const name = basename(variant.file, ext);
 		const outputPath = join(outDir, `${name}.subset.woff2`);
 		const tempPath = join(outDir, `${name}.subset.${Date.now()}.tmp`);
 
-		// Reuse an existing subset when the charset has not changed.
+		// Reuse an existing subset when neither the charset nor the source
+		// font file has changed.
 		const stamp = join(outDir, `${name}.stamp`);
+		const expectedStamp = `${sourceDigest}\n${charset}`;
 		if (existsSync(outputPath) && existsSync(stamp)) {
 			const previous = await readFile(stamp, "utf8");
-			if (previous === charset) {
+			if (previous === expectedStamp) {
 				outputs.set(variant.file, outputPath);
 				logger.info(`${name}: reused cached subset`);
 				continue;
@@ -342,7 +354,7 @@ export async function runFontSubsetting(
 
 		const started = Date.now();
 		try {
-			const buffer = await subsetFont(await readFile(source), charset, {
+			const buffer = await subsetFont(sourceBytes, charset, {
 				targetFormat: "woff2",
 			});
 			await writeFile(tempPath, buffer);
@@ -357,7 +369,7 @@ export async function runFontSubsetting(
 			}
 
 			await rename(tempPath, outputPath);
-			await writeFile(stamp, charset, "utf8");
+			await writeFile(stamp, expectedStamp, "utf8");
 
 			const originalSize = (await stat(source)).size;
 			const saved = (((originalSize - size) / originalSize) * 100).toFixed(1);
@@ -384,7 +396,7 @@ export async function buildFontDeclarations(
 	options: { subset: boolean; extraCharacters: string },
 	logger: { info: (m: string) => void; warn: (m: string) => void },
 	registryRef?: { overrides: Map<string, string> },
-): Promise<unknown[]> {
+): Promise<NonNullable<AstroConfig["fonts"]>> {
 	const configModule = await loadConfigModule(paths, "fontConfig", registryRef);
 	const fontConfig = configModule.fontConfig as FontConfigLike | undefined;
 	const resolvedFontOptions = configModule.resolvedFontOptions as
@@ -419,7 +431,7 @@ export async function buildFontDeclarations(
 	}
 
 	const { fontProviders } = await import("astro/config");
-	const declarations: unknown[] = [];
+	const declarations: NonNullable<AstroConfig["fonts"]> = [];
 	const hasMonoCjk = Boolean(resolvedFontOptions.roles["mono-cjk"]?.family);
 
 	for (const role of FONT_ROLES) {
