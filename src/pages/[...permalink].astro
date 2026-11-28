@@ -36,15 +36,17 @@ import {
 	mergeMarkdownSyntaxSnapshots,
 } from "@utils/markdown-syntaxes.mjs";
 import {
+	clearPermalinkReservations,
 	generatePermalinkSlug,
 	hasCustomPermalink,
 	initPostIdMap,
+	reservePermalinkSlug,
 } from "@utils/permalink-utils";
 import {
 	buildSeriesContexts,
 	type SeriesPostContext,
 } from "@utils/series-utils";
-import { getDir, getPostUrl, getPostUrlBySlug } from "@utils/url-utils";
+import { getDir, getPostUrl, getPostUrlBySlug, url } from "@utils/url-utils";
 import katexStylesheet from "katex/dist/katex.css?url";
 import overlayScrollbarsStylesheet from "overlayscrollbars/overlayscrollbars.css?url";
 import {
@@ -65,6 +67,9 @@ import {
 
 export async function getStaticPaths() {
 	const blogEntries = await getSortedPosts();
+	// dev 会反复重跑 getStaticPaths：先清空上一轮的 F-8 占用登记，
+	// 否则同一篇文章会被自己的上一轮登记误判为重复 permalink。
+	clearPermalinkReservations();
 	initPostIdMap(blogEntries);
 
 	const discoveryCandidates = blogEntries.map((entry) => ({
@@ -84,6 +89,8 @@ export async function getStaticPaths() {
 					published: entry.data.published,
 					series: entry.data.series,
 					seriesOrder: entry.data.seriesOrder,
+					// F-9：与 posts/[...slug].astro 一致，系列卡用规范链接
+					url: getPostUrl(entry),
 				})),
 			})
 		: new Map<string, SeriesPostContext>();
@@ -105,6 +112,11 @@ export async function getStaticPaths() {
 				entry.data.permalink?.replace(/^\/+/, "").replace(/\/+$/, "") ?? null;
 		} else if (permalinkConfig.enable) {
 			permalink = generatePermalinkSlug(entry);
+		}
+
+		// F-8：同一 permalink 被两篇文章占用时立即抛错（dev 下也生效）
+		if (permalink) {
+			reservePermalinkSlug(permalink, entry.id);
 		}
 
 		if (permalink) {
@@ -193,6 +205,10 @@ const ogImage = entry.data.image
 	: undefined;
 
 const canonicalPostUrl = getPostUrl(entry);
+// JSON-LD 需要绝对地址
+const canonicalPostHref = Astro.site
+	? new URL(url(canonicalPostUrl), Astro.site).href
+	: canonicalPostUrl;
 
 const jsonLd = {
 	"@context": "https://schema.org",
@@ -214,10 +230,12 @@ const jsonLd = {
 	inLanguage: entry.data.lang
 		? entry.data.lang.replace("_", "-")
 		: siteConfig.lang.replace("_", "-"),
+	url: canonicalPostHref,
+	mainEntityOfPage: canonicalPostHref,
 };
 ---
 
-<MainGridLayout banner={entry.data.image} ogImage={ogImage} title={entry.data.title} description={effectiveDescription} bannerDate={formatDateToYYYYMMDD(entry.data.published)} lang={entry.data.lang} setOGTypeArticle={true} headings={effectiveHeadings} postCategory={entry.data.category || undefined} page="post" hasComments={postCommentEnabled}>
+<MainGridLayout banner={entry.data.image} ogImage={ogImage} title={entry.data.title} description={effectiveDescription} bannerDate={formatDateToYYYYMMDD(entry.data.published)} lang={entry.data.lang} setOGTypeArticle={true} headings={effectiveHeadings} postCategory={entry.data.category || undefined} page="post" hasComments={postCommentEnabled} canonical={canonicalPostUrl}>
     {hasMath && <link slot="head" rel="stylesheet" data-swup-optional="math" href={katexStylesheet} />}
     {hasMath && <link slot="head" rel="stylesheet" data-swup-optional="math" href={overlayScrollbarsStylesheet} />}
     {markdownStylesheetAssets.map(({ pack, css }) => <style is:inline slot="head" data-swup-optional={pack} set:html={css}></style>)}

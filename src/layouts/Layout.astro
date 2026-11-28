@@ -45,10 +45,21 @@ interface Props {
 	lang?: string;
 	setOGTypeArticle?: boolean;
 	page?: SidebarPage;
+	/** 规范地址（BASE 相对路径）。双路由文章页（/posts/<slug>/ 与
+	 *  /<permalink>/）都传入同一个 canonical，避免两份 HTML 分裂收录权重 */
+	canonical?: string;
 }
 
-let { title, banner, ogImage, description, lang, setOGTypeArticle, page } =
-	Astro.props;
+let {
+	title,
+	banner,
+	ogImage,
+	description,
+	lang,
+	setOGTypeArticle,
+	page,
+	canonical,
+} = Astro.props;
 
 const initialPage =
 	page ?? (pathsEqual(Astro.url.pathname, url("/")) ? "home" : undefined);
@@ -57,9 +68,15 @@ const initialPage =
 // integration's `updateConfig()` — Astro snapshots the build origin in the
 // build constructor before the `astro:config:setup` hook runs. Derive the
 // absolute URL from `Astro.site` ourselves so og/twitter URLs stay correct.
-const canonicalUrl = Astro.site
+const pageUrl = Astro.site
 	? new URL(Astro.url.pathname + Astro.url.search, Astro.site)
 	: Astro.url;
+// 页面显式声明 canonical（如文章页双路由）时以其为准；`url()` 负责补 BASE
+const canonicalUrl = canonical
+	? Astro.site
+		? new URL(url(canonical), Astro.site)
+		: new URL(url(canonical), pageUrl)
+	: pageUrl;
 function getFirstBannerImage(source: BannerSourceValue | undefined): string {
 	if (!source) return "";
 	if (Array.isArray(source)) return source[0] || "";
@@ -120,6 +137,7 @@ const defaultSchemeStyle = createDefaultSchemeStyle();
 		<style is:inline>@layer properties, theme, base, components, utilities;</style>
 
 		<title>{pageTitle}</title>
+		<link rel="canonical" href={canonicalUrl} />
 
 		<meta charset="UTF-8" />
 		<meta name="description" content={description || pageTitle}>

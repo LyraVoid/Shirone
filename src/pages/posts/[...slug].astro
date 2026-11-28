@@ -45,6 +45,7 @@ import {
 	getPostUrl,
 	getPostUrlBySlug,
 	removeFileExtension,
+	url,
 } from "@utils/url-utils";
 import katexStylesheet from "katex/dist/katex.css?url";
 import overlayScrollbarsStylesheet from "overlayscrollbars/overlayscrollbars.css?url";
@@ -78,6 +79,10 @@ export async function getStaticPaths() {
 					published: entry.data.published,
 					series: entry.data.series,
 					seriesOrder: entry.data.seriesOrder,
+					// F-9：系列卡规范链接必须来自 getPostUrl 的同一套规则，
+					// 而不是 CollectionEntry.url 回退 —— 后者在开启 permalink
+					// 或自定义 permalink 时会指向非规范路由
+					url: getPostUrl(entry),
 				})),
 			})
 		: new Map<string, SeriesPostContext>();
@@ -200,6 +205,10 @@ const ogImage = entry.data.image
 	: undefined;
 
 const canonicalPostUrl = getPostUrl(entry);
+// JSON-LD 需要绝对地址；双路由下这里指向 permalink 规范页（与 canonical 一致）
+const canonicalPostHref = Astro.site
+	? new URL(url(canonicalPostUrl), Astro.site).href
+	: canonicalPostUrl;
 
 const jsonLd = {
 	"@context": "https://schema.org",
@@ -221,10 +230,12 @@ const jsonLd = {
 	inLanguage: entry.data.lang
 		? entry.data.lang.replace("_", "-")
 		: siteConfig.lang.replace("_", "-"),
+	url: canonicalPostHref,
+	mainEntityOfPage: canonicalPostHref,
 };
 ---
 
-<MainGridLayout banner={entry.data.image} ogImage={ogImage} title={entry.data.title} description={effectiveDescription} bannerDate={formatDateToYYYYMMDD(entry.data.published)} lang={entry.data.lang} setOGTypeArticle={true} headings={effectiveHeadings} postCategory={entry.data.category || undefined} page="post" hasComments={postCommentEnabled}>
+<MainGridLayout banner={entry.data.image} ogImage={ogImage} title={entry.data.title} description={effectiveDescription} bannerDate={formatDateToYYYYMMDD(entry.data.published)} lang={entry.data.lang} setOGTypeArticle={true} headings={effectiveHeadings} postCategory={entry.data.category || undefined} page="post" hasComments={postCommentEnabled} canonical={canonicalPostUrl}>
     {hasMath && <link slot="head" rel="stylesheet" data-swup-optional="math" href={katexStylesheet} />}
     {hasMath && <link slot="head" rel="stylesheet" data-swup-optional="math" href={overlayScrollbarsStylesheet} />}
     {markdownStylesheetAssets.map(({ pack, css }) => <style is:inline slot="head" data-swup-optional={pack} set:html={css}></style>)}

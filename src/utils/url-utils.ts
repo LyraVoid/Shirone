@@ -42,6 +42,29 @@ export function getPostUrlByAlias(alias: string): string {
 	return url(`/posts/${cleanAlias}/`);
 }
 
+/**
+ * 逐段百分号编码 permalink 路径（按 "/" 分段；已存在的段保持分隔结构），
+ * 使生成的 URL 与 Astro 生成的编码路径一致。
+ */
+function encodePermalinkSegments(slug: string): string {
+	return slug
+		.split("/")
+		.map((segment) => (segment ? encodeURIComponent(segment) : segment))
+		.join("/");
+}
+
+/**
+ * 由 base 显式拼接已编码的 permalink slug。不能走 url() 的前缀检查：
+ * slug 首段与部署 base 同名时（base "/my%20blog/"，slug "my blog/entry"），
+ * url() 会把 "/my%20blog/my%20blog/entry/" 误判为已带前缀而丢掉 base。
+ */
+export function buildPermalinkUrl(
+	encodedSlug: string,
+	baseUrl: string,
+): string {
+	return joinUrl("", baseUrl, encodedSlug, "/");
+}
+
 export function getPostUrl(
 	post:
 		| PostLikeForPermalink
@@ -70,7 +93,11 @@ export function getPostUrl(
 
 	if (permalinkConfig.enable) {
 		const slug = generatePermalinkSlug(post as PostLikeForPermalink);
-		return url(`/${slug}/`);
+		// %category%/%postname% 等占位符可能拼出含空格或非 ASCII 的段；
+		// 出口处逐段编码，路由参数仍保持原文，两边语义一致。
+		// 由 base 显式拼接，避免 slug 首段恰好与 base 同名时
+		// 被 url() 的前缀检查误判为“已带 base”而丢失前缀。
+		return buildPermalinkUrl(encodePermalinkSegments(slug), url("/"));
 	}
 
 	if (post.data?.alias && post.data.alias.trim().length > 0) {
