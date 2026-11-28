@@ -13,6 +13,8 @@ let keywordDesktop = "";
 let keywordMobile = "";
 let result: SearchResult[] = [];
 let isSearching = false;
+// 递增请求令牌：慢的旧请求返回后与最新令牌不符即丢弃，防止旧结果覆盖新查询
+let searchToken = 0;
 let pagefindLoaded = false;
 let initialized = false;
 
@@ -58,8 +60,11 @@ const setPanelVisibility = (show: boolean, isDesktop: boolean): void => {
 
 const search = async (keyword: string, isDesktop: boolean): Promise<void> => {
 	if (!keyword) {
+		// 使在途请求失效：清空查询时旧请求仍可能晚到并覆盖空结果
+		searchToken++;
 		setPanelVisibility(false, isDesktop);
 		result = [];
+		isSearching = false;
 		return;
 	}
 
@@ -69,6 +74,7 @@ const search = async (keyword: string, isDesktop: boolean): Promise<void> => {
 
 	isSearching = true;
 
+	const token = ++searchToken;
 	try {
 		let searchResults: SearchResult[] = [];
 
@@ -97,14 +103,17 @@ const search = async (keyword: string, isDesktop: boolean): Promise<void> => {
 			searchResults = fakeResult;
 		}
 
+		// 过期响应直接丢弃
+		if (token !== searchToken) return;
 		result = searchResults;
 		setPanelVisibility(result.length > 0, isDesktop);
 	} catch (error) {
+		if (token !== searchToken) return;
 		console.error("Search error:", error);
 		result = [];
 		setPanelVisibility(false, isDesktop);
 	} finally {
-		isSearching = false;
+		if (token === searchToken) isSearching = false;
 	}
 };
 
