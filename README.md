@@ -122,7 +122,7 @@ reported nor restored, unless you ask for the template assets back with
 
 ### Customize your site
 
-1. Set the canonical URL, title, language, theme, banner, and display options in `src/config/siteConfig.ts`.
+1. Set the canonical URL, title, language, theme, banner, and display options in `src/config/siteConfig.ts`. Set `lang` to match your content language (`en`, `es`, `zh_CN`, `zh_TW`, `ja`, `ko`, `th`, `vi`, `id`, `tr`); the default `en` targets English sites.
 2. Update the profile and navigation in `src/config/profileConfig.ts` and `src/config/navBarConfig.ts`.
 3. Review the feature-specific files in `src/config/`; their inline comments document defaults and supported values.
 4. Replace the sample posts, personal data, and media under `src/content/`, `src/data/`, and `public/`.
