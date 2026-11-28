@@ -89,6 +89,7 @@ class TableOfContents extends HTMLElement {
 	anchorNavIdx: number | null = null;
 	anchorNavScrollTop = 0;
 	updateScheduled = false;
+	initialized = false;
 
 	constructor() {
 		super();
@@ -291,6 +292,9 @@ class TableOfContents extends HTMLElement {
 	}
 
 	init() {
+		// 再初始化（如文章解密后刷新条目）：先拆掉上一轮绑定，避免监听器叠加
+		if (this.initialized) this.teardown();
+		this.initialized = true;
 		this.tocEl =
 			document.getElementById("toc") ??
 			document.getElementById("toc-inner-wrapper");
@@ -345,6 +349,10 @@ class TableOfContents extends HTMLElement {
 	}
 
 	disconnectedCallback() {
+		this.teardown();
+	}
+
+	teardown() {
 		this.sections.forEach((section) => {
 			if (section) this.observer.unobserve(section);
 		});
