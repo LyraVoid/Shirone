@@ -186,6 +186,9 @@ export const id: Translation = {
 	[Key.codeBlockCollapse]: "Ciutkan blok kode",
 	[Key.codeTreeExpand]: "Perluas pohon kode",
 	[Key.codeTreeCollapse]: "Tutup tampilan diperluas",
+	[Key.codeTreeFileNav]: "Navigasi file",
+	[Key.codeTreeContent]: "Konten kode",
+	[Key.codeTreeDefaultTitle]: "Proyek",
 	[Key.announcement]: "Pengumuman",
 	[Key.announcementClose]: "Tutup pengumuman",
 

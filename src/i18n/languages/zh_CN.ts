@@ -175,6 +175,9 @@ export const zh_CN: Translation = {
 	[Key.codeBlockCollapse]: "折叠代码块",
 	[Key.codeTreeExpand]: "放大代码树",
 	[Key.codeTreeCollapse]: "退出放大",
+	[Key.codeTreeFileNav]: "文件导航",
+	[Key.codeTreeContent]: "代码内容",
+	[Key.codeTreeDefaultTitle]: "项目",
 	[Key.announcement]: "公告",
 	[Key.announcementClose]: "关闭公告",
 

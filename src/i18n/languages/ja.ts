@@ -181,6 +181,9 @@ export const ja: Translation = {
 	[Key.codeBlockCollapse]: "コードブロックを折りたたむ",
 	[Key.codeTreeExpand]: "コードツリーを拡大",
 	[Key.codeTreeCollapse]: "拡大表示を閉じる",
+	[Key.codeTreeFileNav]: "ファイルナビゲーション",
+	[Key.codeTreeContent]: "コード内容",
+	[Key.codeTreeDefaultTitle]: "プロジェクト",
 	[Key.announcement]: "お知らせ",
 	[Key.announcementClose]: "告知を閉じる",
 

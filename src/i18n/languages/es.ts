@@ -184,6 +184,9 @@ export const es: Translation = {
 	[Key.codeBlockCollapse]: "Contraer bloque de código",
 	[Key.codeTreeExpand]: "Expandir árbol de código",
 	[Key.codeTreeCollapse]: "Cerrar vista ampliada",
+	[Key.codeTreeFileNav]: "Navegación de archivos",
+	[Key.codeTreeContent]: "Contenido del código",
+	[Key.codeTreeDefaultTitle]: "Proyecto",
 	[Key.announcement]: "Anuncio",
 	[Key.announcementClose]: "Cerrar anuncio",
 

@@ -175,6 +175,9 @@ export const zh_TW: Translation = {
 	[Key.codeBlockCollapse]: "摺疊程式碼區塊",
 	[Key.codeTreeExpand]: "放大程式碼樹",
 	[Key.codeTreeCollapse]: "退出放大",
+	[Key.codeTreeFileNav]: "檔案導航",
+	[Key.codeTreeContent]: "程式碼內容",
+	[Key.codeTreeDefaultTitle]: "專案",
 	[Key.announcement]: "公告",
 	[Key.announcementClose]: "關閉公告",
 

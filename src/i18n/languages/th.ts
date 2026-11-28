@@ -173,6 +173,9 @@ export const th: Translation = {
 	[Key.codeBlockCollapse]: "ย่อบล็อกโค้ด",
 	[Key.codeTreeExpand]: "ขยายโครงสร้างโค้ด",
 	[Key.codeTreeCollapse]: "ปิดมุมมองขยาย",
+	[Key.codeTreeFileNav]: "การนำทางไฟล์",
+	[Key.codeTreeContent]: "เนื้อหาโค้ด",
+	[Key.codeTreeDefaultTitle]: "โปรเจกต์",
 	[Key.announcement]: "ประกาศ",
 	[Key.announcementClose]: "ปิดประกาศ",
 
