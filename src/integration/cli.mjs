@@ -1142,8 +1142,9 @@ async function ensureAstroConfig(packageName, { force }) {
  * when the bytes are the starter's.
  */
 
-// shortcut: exact bytes of the Astro `basics` template assets; a copy from an
-// older starter is preserved rather than moved.
+// shortcut: exact bytes of the Astro `basics` template assets, compared with
+// CRLF folded to LF because git checks them out with either ending; a copy from
+// an older starter is preserved rather than moved.
 const STARTER_ASSET_DIGESTS = new Map([
 	[
 		"src/assets/astro.svg",
@@ -1179,8 +1180,9 @@ async function clearStarterFiles() {
 				continue;
 			}
 		} else if (STARTER_ASSET_DIGESTS.has(relativePath)) {
+			// Git checks these files out with the platform's line ending.
 			const digest = createHash("sha256")
-				.update(await readFile(file))
+				.update((await readFile(file, "utf8")).replaceAll("\r\n", "\n"))
 				.digest("hex");
 			if (digest !== STARTER_ASSET_DIGESTS.get(relativePath)) {
 				log.warn(`${relativePath} is not the starter asset — left in place`);

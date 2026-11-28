@@ -603,3 +603,19 @@ test("init moves the starter's src/assets svgs and keeps a user's own", (t) => {
 		).length,
 	);
 });
+
+test("a starter asset checked out with CRLF line endings is still moved", (t) => {
+	const fixture = createFixture();
+	t.after(() => fixture.cleanup());
+	const assets = join(fixture.project, "src/assets");
+	mkdirSync(assets, { recursive: true });
+	const starter = readFileSync(
+		join(ROOT, "tests/fixtures/starter-assets/astro.svg"),
+		"utf8",
+	).replaceAll(/\r\n/g, "\n");
+	writeFileSync(join(assets, "astro.svg"), starter.replaceAll("\n", "\r\n"));
+
+	const result = fixture.runInit();
+	assert.equal(result.status, 0, result.stderr);
+	assert.equal(existsSync(join(assets, "astro.svg")), false);
+});
