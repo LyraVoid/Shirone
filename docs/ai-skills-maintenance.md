@@ -60,7 +60,7 @@ pnpm.cmd skills:package
 pnpm.cmd skills:package -- --zip
 ```
 
-默认产物分别是 `artifacts/shirone-ai-<version>/` 和 `artifacts/shirone-ai-<version>.zip`。需要指定路径时增加 `--output <path>`；覆盖非本工具生成的目录时再增加 `--force`。打包脚本会自动发现所有技能，因此新增技能不需要修改打包清单。
+默认产物分别是 `artifacts/shirone-ai-<version>/` 和 `artifacts/shirone-ai-<version>.zip`。需要指定路径时增加 `--output <path>`。脚本只覆盖本工具生成的目录(含 `.shirone-skills-package` 标记);其他已存在目录、项目根目录及其上级目录、技能源目录都会被拒绝,`--force` 不能绕过。打包脚本会自动发现所有技能，因此新增技能不需要修改打包清单。
 
 ## 完成检查表
 

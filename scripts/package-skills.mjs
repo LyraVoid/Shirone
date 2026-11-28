@@ -5,12 +5,19 @@ import {
 	mkdirSync,
 	readdirSync,
 	readFileSync,
+	realpathSync,
 	rmSync,
 	statSync,
 	writeFileSync,
 } from "node:fs";
-import { tmpdir } from "node:os";
-import { dirname, isAbsolute, join, relative, resolve } from "node:path";
+import {
+	basename,
+	dirname,
+	isAbsolute,
+	join,
+	relative,
+	resolve,
+} from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
@@ -35,15 +42,38 @@ function hasFlag(name) {
 	return process.argv.includes(name);
 }
 
+/** Resolve symlinks on the part of `path` that exists, keeping any missing tail. */
+function resolveOutputPath(path) {
+	const resolved = resolve(path);
+	try {
+		return realpathSync(resolved);
+	} catch {
+		const parent = dirname(resolved);
+		return parent === resolved
+			? resolved
+			: join(resolveOutputPath(parent), basename(resolved));
+	}
+}
+
+function isInside(child, parent) {
+	const rel = relative(parent, child);
+	return rel === "" || (!rel.startsWith("..") && !isAbsolute(rel));
+}
+
+/**
+ * Writes and zip archives delete their destination first, so it must not be
+ * the project, one of its ancestors, or the skills source. `resolveOutputPath`
+ * makes a symlink that points at any of those behave like the path itself.
+ */
 function assertSafeOutputPath(destination) {
-	const resolvedDestination = resolve(destination);
-	const sourceRelative = relative(resolve(sourceDir), resolvedDestination);
-	if (
-		resolvedDestination === resolve(root) ||
-		!sourceRelative ||
-		(!sourceRelative.startsWith("..") && !isAbsolute(sourceRelative))
-	) {
-		throw new Error(`输出路径不能覆盖项目或技能源目录：${resolvedDestination}`);
+	const resolvedDestination = resolveOutputPath(destination);
+	if (isInside(resolveOutputPath(root), resolvedDestination)) {
+		throw new Error(
+			`输出路径不能是项目目录或其上级目录：${resolvedDestination}`,
+		);
+	}
+	if (isInside(resolvedDestination, resolveOutputPath(sourceDir))) {
+		throw new Error(`输出路径不能覆盖技能源目录：${resolvedDestination}`);
 	}
 	return resolvedDestination;
 }
@@ -93,13 +123,19 @@ function discoverSkills() {
 	return skills;
 }
 
-function preparePlugin(destination, skills, force = false) {
+function preparePlugin(destination, skills) {
 	const resolvedDestination = assertSafeOutputPath(destination);
 	if (existsSync(resolvedDestination)) {
 		const marker = join(resolvedDestination, ".shirone-skills-package");
-		if (!force && !existsSync(marker)) {
+		const owner = existsSync(marker)
+			? readFileSync(marker, "utf8").trimStart()
+			: "";
+		if (
+			!statSync(resolvedDestination).isDirectory() ||
+			!owner.startsWith(pluginName)
+		) {
 			throw new Error(
-				`输出目录已存在且不是本工具生成的目录，请更换路径或使用 --force：${resolvedDestination}`,
+				`输出路径已存在且不是本工具生成的目录，请更换路径：${resolvedDestination}`,
 			);
 		}
 	}
@@ -161,16 +197,19 @@ function createZip(pluginRoot, zipPath) {
 function main() {
 	const outputOption = readOption("--output");
 	const zip = hasFlag("--zip");
-	const force = hasFlag("--force");
 	const defaultBase = join(root, "artifacts", `${pluginName}-${pluginVersion}`);
 	const output = resolve(
 		outputOption ?? (zip ? `${defaultBase}.zip` : defaultBase),
 	);
 	const skills = discoverSkills();
 	if (zip) {
-		const staging = join(tmpdir(), `${pluginName}-skills-${process.pid}`);
+		const staging = join(
+			root,
+			"artifacts",
+			`${pluginName}-${process.pid}-${Date.now()}-staging`,
+		);
 		try {
-			preparePlugin(staging, skills, true);
+			preparePlugin(staging, skills);
 			createZip(staging, output);
 		} finally {
 			rmSync(staging, { recursive: true, force: true });
@@ -178,7 +217,7 @@ function main() {
 		console.log(`已打包 ${skills.length} 个技能：${output}`);
 		return;
 	}
-	const destination = preparePlugin(output, skills, force);
+	const destination = preparePlugin(output, skills);
 	console.log(`已生成 ${skills.length} 个技能的插件目录：${destination}`);
 }
 

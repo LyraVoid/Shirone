@@ -5,7 +5,7 @@
 ## 自动发现与独立打包
 
 - 项目内使用: 保持 `.agents/skills/<skill-name>/SKILL.md` 结构即可自动发现。新增或修改技能后运行 `pnpm.cmd check:manifest`。
-- 生成可安装插件目录: 在仓库根目录运行 `pnpm.cmd skills:package`,输出到 `artifacts/shirone-ai-<version>/`。覆盖已有的非本工具目录时显式加 `-- --force`。
+- 生成可安装插件目录: 在仓库根目录运行 `pnpm.cmd skills:package`,输出到 `artifacts/shirone-ai-<version>/`。只覆盖本工具生成的目录(含 `.shirone-skills-package` 标记),其他已存在目录会直接拒绝,请另选 `--output`。
 - 生成单文件安装包: 运行 `pnpm.cmd skills:package -- --zip`,输出 `artifacts/shirone-ai-<version>.zip`。也可用 `--output <path>` 指定输出路径。
 
 打包命令每次都从本目录动态发现技能并生成插件清单,`artifacts/` 是构建产物而非第二份源码,因此不需要分开维护。
