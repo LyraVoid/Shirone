@@ -7,6 +7,8 @@ let lastFocusedExpandBtn: HTMLElement | null = null;
 let originalCodeTreePlaceholder: HTMLDivElement | null = null;
 let mountedCodeTree: HTMLElement | null = null;
 let unlockPageScroll: (() => void) | null = null;
+let modalNavigateDismiss: (() => void) | null = null;
+let modalDismissStop: (() => void) | null = null;
 
 function setExpandButtonState(
 	button: HTMLButtonElement,
@@ -106,11 +108,23 @@ function switchCodeTreeFile(
 	}
 }
 
-function closeCodeTreeModal(): void {
+function closeCodeTreeModal(immediate = false): void {
 	if (!activeModalDialog) return;
-
 	const dialog = activeModalDialog;
 	const restoreDom = () => {
+		// 关闭动画期间又打开了新弹窗时，共享状态已归新弹窗所有；
+		// 这里只丢弃这段延迟回调所属的旧 dialog，绝不清全局状态。
+		if (activeModalDialog !== dialog) {
+			if (dialog.open) dialog.close();
+			dialog.remove();
+			return;
+		}
+		if (modalNavigateDismiss) {
+			window.swup?.hooks.off?.("visit:start", modalNavigateDismiss);
+			modalNavigateDismiss = null;
+		}
+		modalDismissStop?.();
+		modalDismissStop = null;
 		if (mountedCodeTree && originalCodeTreePlaceholder?.parentNode) {
 			originalCodeTreePlaceholder.parentNode.replaceChild(
 				mountedCodeTree,
@@ -136,7 +150,8 @@ function closeCodeTreeModal(): void {
 		lastFocusedExpandBtn = null;
 	};
 
-	if (prefersReducedMotion()) {
+	// 重开时必须同步收掉旧弹窗：延迟回调会把树恢复进即将被丢弃的旧 dialog
+	if (immediate || prefersReducedMotion()) {
 		restoreDom();
 	} else {
 		dialog.classList.add("closing");
@@ -150,12 +165,47 @@ function closeCodeTreeModal(): void {
 	}
 }
 
+/** 弹窗挂在 document.body（Swup 容器之外），导航开始时必须收掉，否则滚动锁泄漏 */
+function armNavigateDismiss(): void {
+	const arm = () => {
+		if (!window.swup?.hooks.once) return;
+		if (modalNavigateDismiss) {
+			window.swup?.hooks.off?.("visit:start", modalNavigateDismiss);
+		}
+		modalNavigateDismiss = () => {
+			modalNavigateDismiss = null;
+			// 页面马上要被 swup 替换，动画路径可能等不到 animationend（如
+			// reduced-motion 下无动画），必须同步收掉
+			closeCodeTreeModal(true);
+		};
+		window.swup.hooks.once("visit:start", modalNavigateDismiss);
+		// 测试可观察的信号：导航 dismiss 钩子已挂上（弹窗打开时 swup 可能尚未初始化）
+		document.documentElement.dataset.codeTreeDismissArmed = "true";
+	};
+	// swup 在 idle 后才初始化，且仓库内没有任何组件派发 swup:enable，
+	// 弹窗先于 swup 打开时改为轮询等待（10s 上限，随弹窗关闭停止）
+	if (window.swup?.hooks.once) {
+		arm();
+		return;
+	}
+	const startedAt = Date.now();
+	const poll = setInterval(() => {
+		if (window.swup?.hooks.once) {
+			clearInterval(poll);
+			arm();
+		} else if (Date.now() - startedAt > 10000) {
+			clearInterval(poll);
+		}
+	}, 100);
+	modalDismissStop = () => clearInterval(poll);
+}
+
 function openCodeTreeModal(
 	codeTree: HTMLElement,
 	triggerBtn: HTMLButtonElement,
 ): void {
 	if (activeModalDialog) {
-		closeCodeTreeModal();
+		closeCodeTreeModal(true);
 	}
 
 	lastFocusedExpandBtn = triggerBtn;
@@ -173,6 +223,7 @@ function openCodeTreeModal(
 
 	document.body.appendChild(dialog);
 	activeModalDialog = dialog;
+	armNavigateDismiss();
 
 	// Backdrop click handler
 	dialog.addEventListener("click", (event) => {
@@ -292,4 +343,7 @@ export function initCodeTrees(): void {
 			}
 		}
 	});
+
+	// 测试与延迟脚本的就绪信号：委托处理器已绑定
+	document.documentElement.dataset.codeTreesReady = "true";
 }

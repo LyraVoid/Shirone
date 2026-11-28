@@ -468,4 +468,55 @@ test.describe("Markdown interactive code trees", () => {
 		expect(layout.contentRect?.bottom).toBeCloseTo(layout.bodyBottom, 1);
 		expect(layout.contentMaxHeight).toBe("none");
 	});
+
+	test("dismisses the expanded modal on swup navigation (F-29)", async ({
+		page,
+	}) => {
+		await page.emulateMedia({ reducedMotion: "reduce" });
+		const codeTrees = await openPost(page);
+		// 委托处理器就绪后再点击（swup 在 idle 后才初始化，不能作为绑定信号）
+		await page.waitForFunction(() =>
+			document.documentElement.dataset.codeTreesReady === "true",
+		);
+		await codeTrees.first().locator(".m3-code-tree__expand-btn").click();
+		const dialog = page.locator("dialog.m3-code-tree-dialog");
+		await expect(dialog).toBeVisible();
+
+		// dismiss 钩子可能由轮询延迟挂载：等它真正挂上再导航，否则 visit:start 会漏接
+		await page.waitForFunction(() =>
+			document.documentElement.dataset.codeTreeDismissArmed === "true",
+		);
+		await page.evaluate(() => window.swup?.navigate("/"));
+		await expect(dialog).toHaveCount(0);
+		// 滚动锁必须随弹窗一起释放
+		await expect
+			.poll(() =>
+				page.evaluate(() => getComputedStyle(document.body).overflow),
+			)
+			.not.toBe("hidden");
+	});
+
+	test("reopening during the close animation keeps the modal usable (F-45)", async ({
+		page,
+	}) => {
+		const codeTrees = await openPost(page);
+		const firstTree = codeTrees.first();
+		const expandBtn = firstTree.locator(".m3-code-tree__expand-btn");
+		await expandBtn.click();
+		const dialog = page.locator("dialog.m3-code-tree-dialog");
+		await expect(dialog).toBeVisible();
+
+		// 关闭动画进行中立刻重新打开
+		await page.keyboard.press("Escape");
+		await expandBtn.click();
+		await page.waitForTimeout(400);
+
+		await expect(dialog).toBeVisible();
+		await expect(dialog.locator(".m3-code-tree")).toBeVisible();
+
+		// 再次 Escape 后树必须完整回到文档流
+		await page.keyboard.press("Escape");
+		await expect(dialog).toHaveCount(0);
+		await expect(firstTree).toBeVisible();
+	});
 });
