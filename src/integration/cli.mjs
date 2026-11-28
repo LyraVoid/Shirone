@@ -257,7 +257,7 @@ async function ensurePnpmWorkspace() {
 	}
 
 	const original = await readFile(file, "utf8");
-	let lines = original.split("\n");
+	let lines = await expandFlowKeys(original.split("\n"));
 
 	const allowIndex = lines.findIndex((line) =>
 		/^allowBuilds:\s*(?:#.*)?$/.test(line),
@@ -299,6 +299,38 @@ async function ensurePnpmWorkspace() {
 	}
 	await writeFile(file, next, "utf8");
 	log.ok("pnpm-workspace.yaml");
+}
+
+/**
+ * pnpm accepts `allowBuilds` and `onlyBuiltDependencies` in flow form too
+ * (`allowBuilds: { esbuild: false }`). `ensurePnpmWorkspace` only rewrites the
+ * block form, so an inline key looks absent and gets appended a second time,
+ * which pnpm rejects as a duplicate mapping key. Rewrite the value as a block
+ * first, keeping every entry: `ensurePnpmWorkspace` then updates it in place.
+ *
+ * shortcut: a flow value continued on later lines is left alone and would still
+ * duplicate; upgrade if pnpm users start wrapping the braces.
+ */
+async function expandFlowKeys(lines) {
+	for (const key of ["allowBuilds", "onlyBuiltDependencies"]) {
+		const index = lines.findIndex((line) =>
+			new RegExp(`^${key}:[ \\t]*[^\\s#]`).test(line),
+		);
+		if (index === -1) continue;
+		const { parse, stringify } = await import("yaml");
+		const value = parse(lines[index])?.[key];
+		const body =
+			value === null || typeof value !== "object"
+				? ""
+				: stringify(value, { lineWidth: 0 }).trimEnd();
+		lines.splice(
+			index,
+			1,
+			`${key}:`,
+			...(body === "" ? [] : body.split("\n").map((line) => `  ${line}`)),
+		);
+	}
+	return lines;
 }
 
 async function ensurePackageJson(

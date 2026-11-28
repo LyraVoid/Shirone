@@ -53,6 +53,7 @@ function createFixture({
 	astroConfigFilename = "astro.config.mjs",
 	createPackageJson = true,
 	includeJsoncParser = true,
+	includeYaml = true,
 } = {}) {
 	const root = mkdtempSync(join(tmpdir(), "shirones-cli-package-init-"));
 	const packageRoot = join(root, "node_modules", "shirones");
@@ -72,6 +73,12 @@ function createFixture({
 			"jsonc-parser",
 		);
 		cpSync(jsoncParserRoot, join(packageRoot, "node_modules/jsonc-parser"), {
+			recursive: true,
+		});
+	}
+	if (includeYaml) {
+		const yamlRoot = findPackageRoot(require.resolve("yaml"), "yaml");
+		cpSync(yamlRoot, join(packageRoot, "node_modules/yaml"), {
 			recursive: true,
 		});
 	}
@@ -265,6 +272,37 @@ test("init --update recognizes pnpm YAML keys with inline comments", (t) => {
 		workspace,
 		/^onlyBuiltDependencies: # retain the pnpm 10 comment$/m,
 	);
+	assert.match(workspace, /^ {2}- custom-native$/m);
+
+	const repeated = fixture.runCli(["init", "--update"]);
+	assert.equal(repeated.status, 0, repeated.stderr);
+	assert.equal(readFileSync(workspaceFile, "utf8"), workspace);
+});
+
+test("init --update rewrites flow-style pnpm YAML keys instead of duplicating them", (t) => {
+	const fixture = createFixture();
+	t.after(() => fixture.cleanup());
+
+	const initial = fixture.runInit();
+	assert.equal(initial.status, 0, initial.stderr);
+	const workspaceFile = join(fixture.project, "pnpm-workspace.yaml");
+	writeFileSync(
+		workspaceFile,
+		[
+			"allowBuilds: { esbuild: false, custom-native: true }",
+			'onlyBuiltDependencies: ["custom-native"]',
+			"",
+		].join("\n"),
+	);
+
+	const updated = fixture.runCli(["init", "--update"]);
+	assert.equal(updated.status, 0, updated.stderr);
+	const workspace = readFileSync(workspaceFile, "utf8");
+	assert.equal((workspace.match(/^allowBuilds:/gm) ?? []).length, 1);
+	assert.equal((workspace.match(/^onlyBuiltDependencies:/gm) ?? []).length, 1);
+	assert.match(workspace, /^ {2}esbuild: true$/m);
+	assert.match(workspace, /^ {2}sharp: true$/m);
+	assert.match(workspace, /^ {2}custom-native: true$/m);
 	assert.match(workspace, /^ {2}- custom-native$/m);
 
 	const repeated = fixture.runCli(["init", "--update"]);
