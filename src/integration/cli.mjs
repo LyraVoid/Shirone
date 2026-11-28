@@ -319,8 +319,16 @@ async function expandFlowKeys(lines) {
 		if (index === -1) continue;
 		const { parse, stringify } = await import("yaml");
 		const value = parse(lines[index])?.[key];
+		// `key: []` keeps its meaning as an indented flow body; `key: {}` needs a
+		// bare header so the block rewrite can add approvals below it.
+		if (Array.isArray(value) && value.length === 0) {
+			lines.splice(index, 1, `${key}:`, "  []");
+			continue;
+		}
 		const body =
-			value === null || typeof value !== "object"
+			value === null ||
+			typeof value !== "object" ||
+			Object.keys(value).length === 0
 				? ""
 				: stringify(value, { lineWidth: 0 }).trimEnd();
 		lines.splice(
