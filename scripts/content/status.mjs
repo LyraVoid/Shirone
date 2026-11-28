@@ -279,8 +279,11 @@ function compareMount(
 	const sourceFiles = new Set(
 		sourceSnapshot.files.map((file) => file.relative),
 	);
+	// 根级文件没有顶层段，不属于任何内容仓拥有的顶层段（见 sync.mjs 同一判据）。
 	const ownedSegments = new Set(
-		sourceSnapshot.files.map((file) => topSegment(file.relative)),
+		sourceSnapshot.files
+			.map((file) => topSegment(file.relative))
+			.filter((segment) => segment !== ""),
 	);
 	for (const sourceFile of sourceSnapshot.files) {
 		const targetFile = join(targetDirectory, sourceFile.relative);

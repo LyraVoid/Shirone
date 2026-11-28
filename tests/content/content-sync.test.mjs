@@ -481,3 +481,20 @@ describe("content sync", () => {
 		}
 	});
 });
+
+describe("content sync 根级文件", () => {
+	it("内容仓的 public/CNAME 不会让用户自己的根级文件变成可裁剪项", () => {
+		const fixture = createFixture();
+		try {
+			write(fixture.repo, "public/user-owned.txt", "mine");
+			write(fixture.content, "public/CNAME", "example.com");
+
+			runSync(fixture);
+
+			assert.equal(read(fixture, "public/user-owned.txt"), "mine");
+			assert.equal(read(fixture, "public/CNAME"), "example.com");
+		} finally {
+			rmSync(fixture.base, { recursive: true, force: true });
+		}
+	});
+});
