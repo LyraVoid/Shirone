@@ -6,6 +6,7 @@ import {
 	rmSync,
 	writeFileSync,
 } from "node:fs";
+import { readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -112,4 +113,12 @@ test("optional page sizes preserve old configs and reject invalid values", () =>
 		assert.equal(normalizePageSize(value), 12);
 	}
 	assert.equal(normalizePageSize(24), 24);
+});
+
+test("the post list page normalises pageSize before paginating", async () => {
+	const source = await readFile(
+		fileURLToPath(new URL("../src/pages/[...page].astro", import.meta.url)),
+		"utf8",
+	);
+	assert.match(source, /normalizePageSize\(postListConfig\.pageSize\)/);
 });
