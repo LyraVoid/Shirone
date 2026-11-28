@@ -168,3 +168,24 @@ export function normalisePath(
 		? trimmed.toLowerCase()
 		: trimmed;
 }
+
+/**
+ * True when `file` sits inside `dir`. Both go through `normalisePath`, so the
+ * check is safe against Windows separators (`D:\dir\file.ts`), Vite's
+ * `/@fs/` module IDs, and a sibling directory such as `dirFoo` (the trailing
+ * separator keeps the prefix from matching).
+ *
+ * `options` passes straight through to `normalisePath`: by default the host
+ * platform decides case handling (Windows filesystems are case-insensitive
+ * for every path, not just drive paths), and tests can pin the semantics
+ * explicitly so they are deterministic on any host.
+ */
+export function isPathUnder(
+	file: string,
+	dir: string,
+	options: { caseInsensitive?: boolean } = {},
+): boolean {
+	return normalisePath(file, options).startsWith(
+		`${normalisePath(dir, options)}/`,
+	);
+}

@@ -8,6 +8,7 @@ import {
 	detectThemeRepo,
 	fileSystemPathFromUrl,
 	findPackageRoot,
+	isPathUnder,
 	normalisePath,
 	resolvePaths,
 } from "../src/integration/resolve/paths.ts";
@@ -190,6 +191,34 @@ test("normalises relative override keys with Windows case-insensitive semantics"
 	assert.equal(
 		normalisePath("molecules/AnimeCard", { caseInsensitive: false }),
 		"molecules/AnimeCard",
+	);
+});
+
+test("isPathUnder compares watcher paths across separators and Vite IDs", () => {
+	// chokidar on Windows reports native separators; the integration's watcher
+	// handlers must match them against the config directory. A sibling
+	// directory (`configFoo`) must not count as inside `config`.
+	assert.equal(isPathUnder("D:\\site\\src\\config\\siteConfig.ts", "D:\\site\\src\\config"), true);
+	assert.equal(isPathUnder("/@fs/D:/site/src/config/siteConfig.ts", "D:/site/src/config"), true);
+	assert.equal(isPathUnder("D:\\site\\src\\configFoo\\other.ts", "D:\\site\\src\\config"), false);
+	assert.equal(isPathUnder("/home/user/site/config/x.ts", "/home/user/site/config"), true);
+	assert.equal(isPathUnder("/home/user/site/config-other/x.ts", "/home/user/site/config"), false);
+	// Case-insensitive on Windows drives, exact elsewhere.
+	assert.equal(isPathUnder("D:\\Site\\Config\\x.ts", "d:/site/config"), true);
+	// POSIX paths compare exactly; pin the semantics so the assertion does
+	// not depend on the CI host (on a Windows runner every path, drive or
+	// not, is case-insensitive because the filesystem is).
+	assert.equal(
+		isPathUnder("/home/user/Site/x.ts", "/home/user/site", {
+			caseInsensitive: false,
+		}),
+		false,
+	);
+	assert.equal(
+		isPathUnder("/home/user/Site/x.ts", "/home/user/site", {
+			caseInsensitive: true,
+		}),
+		true,
 	);
 });
 

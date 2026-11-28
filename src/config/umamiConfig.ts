@@ -21,20 +21,29 @@ export const umamiConfig: UmamiConfig = withUserConfig("umami", {
 });
 
 /**
- * 解析并校验 Umami 配置。未启用或关键参数缺失时返回 null。
+ * 解析并校验 Umami 配置。未启用，或既没有分享链接、也没有成对的采集
+ * 凭据时返回 null。
+ *
+ * 分享链接（shareUrl）只驱动 oddmisc 的公开分享统计与统计 UI；访问采集
+ * 脚本只需要 websiteId 与 scriptUrl 同时存在。两者按各自缺失的门控注入
+ * （见 Layout.astro 与 createBundledIntegrations）。
  */
 export function resolveUmamiOptions(config: UmamiConfig): ResolvedUmamiOptions {
 	if (!config.enable) {
 		return null;
 	}
 	const shareUrl = config.shareUrl?.trim();
-	if (!shareUrl) {
+	const websiteId = config.websiteId?.trim() || undefined;
+	const scriptUrl = config.scriptUrl?.trim() || undefined;
+	// Nothing to inject: no share stats, and the tracking script would 404
+	// without both credentials.
+	if (!shareUrl && !(websiteId && scriptUrl)) {
 		return null;
 	}
 	return {
-		shareUrl,
-		websiteId: config.websiteId?.trim() || undefined,
-		scriptUrl: config.scriptUrl?.trim() || undefined,
+		shareUrl: shareUrl || undefined,
+		websiteId,
+		scriptUrl,
 	};
 }
 

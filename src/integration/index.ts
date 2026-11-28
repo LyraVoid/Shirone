@@ -32,7 +32,7 @@ import {
 	loadConfigModule,
 	loadPackageModule,
 } from "./resolve/load-config.ts";
-import { normalisePath, resolvePaths } from "./resolve/paths.ts";
+import { isPathUnder, resolvePaths } from "./resolve/paths.ts";
 import {
 	buildOverrideRegistry,
 	createOverlayTargets,
@@ -305,10 +305,16 @@ export function shirones(options: ShironesOptions = {}): AstroIntegration {
 					"umamiConfig",
 					registryRef,
 				);
-				const umamiConfig = umamiModule.umamiConfig as { shareUrl: string };
+				const umamiConfig = umamiModule.umamiConfig as { shareUrl?: string };
 				const resolveUmamiOptions = umamiModule.resolveUmamiOptions as (
 					c: unknown,
 				) => unknown;
+				// Gate every injection on the RESOLVED options: the resolver
+				// trims, so a whitespace-only `shareUrl` counts as absent, and
+				// reading the raw string here would hand oddmisc `"   "`.
+				const umamiOptions = resolveUmamiOptions(umamiConfig) as {
+					shareUrl?: string;
+				} | null;
 
 				const musicWidgetEnabled = Boolean(
 					sidebarConfig?.enable &&
@@ -318,7 +324,6 @@ export function shirones(options: ShironesOptions = {}): AstroIntegration {
 				);
 				const musicEnabled =
 					musicWidgetEnabled && resolveMusicOptions(musicConfig) !== null;
-				const umamiEnabled = resolveUmamiOptions(umamiConfig) !== null;
 
 				// ── 2. Watch config files so the dev server restarts on edits ───
 				if (command === "dev" && existsSync(paths.configDir)) {
@@ -387,8 +392,7 @@ export function shirones(options: ShironesOptions = {}): AstroIntegration {
 								paths,
 								command,
 								{
-									umamiConfig,
-									umamiEnabled,
+									umamiOptions,
 								},
 								registryRef,
 							);
@@ -404,7 +408,7 @@ export function shirones(options: ShironesOptions = {}): AstroIntegration {
 					base: siteConfig?.base ?? "/",
 					trailingSlash: TRAILING_SLASH,
 					image: { endpoint: { route: IMAGE_ENDPOINT_ROUTE } },
-					fonts: fonts as never,
+					...(fonts.length > 0 ? { fonts } : {}),
 					integrations,
 					markdown: { processor: processor as never },
 					vite: {
@@ -514,21 +518,22 @@ export function shirones(options: ShironesOptions = {}): AstroIntegration {
 				// cache in every mode.
 				server.watcher.on("all", (_event, file) => {
 					if (typeof file !== "string") return;
-					// Trailing separator so a sibling such as `src/configFoo`
-					// does not also match.
-					if (file.startsWith(`${paths.configDir}/`)) {
+					// chokidar hands back whatever separators the platform uses, so
+					// the prefix check goes through `isPathUnder` (see its note on
+					// Windows). The trailing separator still keeps a sibling such
+					// as `src/configFoo` from matching.
+					if (isPathUnder(file, paths.configDir)) {
 						invalidateConfigCache();
 					}
 				});
 
 				// See "2.5. Plugin scripts": scripts are read once per start.
-				const scriptsDir = normalisePath(paths.scriptsDir);
 				server.watcher.on("all", (event, file) => {
 					if (typeof file !== "string") return;
 					if (event !== "add" && event !== "change" && event !== "unlink") {
 						return;
 					}
-					if (normalisePath(file).startsWith(`${scriptsDir}/`)) {
+					if (isPathUnder(file, paths.scriptsDir)) {
 						server.watcher.emit("change", paths.scriptsDir);
 					}
 				});
@@ -538,12 +543,10 @@ export function shirones(options: ShironesOptions = {}): AstroIntegration {
 
 				// Rebuild the override registry when an override file changes so
 				// dev picks new/moved/removed overrides up immediately.
-				const overrideDirs = createOverlayTargets(paths).map((t) =>
-					normalisePath(t.userDir),
-				);
+				const overrideDirs = createOverlayTargets(paths);
 				server.watcher.on("all", (_event, file) => {
 					if (typeof file !== "string") return;
-					if (overrideDirs.some((dir) => file.startsWith(`${dir}/`))) {
+					if (overrideDirs.some((t) => isPathUnder(file, t.userDir))) {
 						registryRef.overrides = buildOverrideRegistry(paths).overrides;
 					}
 				});
@@ -642,7 +645,7 @@ type ConfigCommand = Parameters<
 async function createBundledIntegrations(
 	paths: ResolvedShironesPaths,
 	command: ConfigCommand,
-	options: { umamiConfig: { shareUrl: string }; umamiEnabled: boolean },
+	options: { umamiOptions: { shareUrl?: string } | null },
 	registryRef?: { overrides: Map<string, string> },
 ) {
 	const [
@@ -662,10 +665,13 @@ async function createBundledIntegrations(
 		import("@expressive-code/plugin-collapsible-sections"),
 		import("@expressive-code/plugin-line-numbers"),
 	]);
-	const oddmiscIntegration = options.umamiEnabled
+	// `umamiOptions` is the resolver's output, so `shareUrl` is already trimmed:
+	// a whitespace-only value counts as absent instead of reaching oddmisc.
+	const oddmiscShareUrl = options.umamiOptions?.shareUrl;
+	const oddmiscIntegration = oddmiscShareUrl
 		? (await import("oddmisc/astro")).oddmisc({
 				umami: {
-					shareUrl: options.umamiConfig.shareUrl,
+					shareUrl: oddmiscShareUrl,
 				},
 			})
 		: null;
