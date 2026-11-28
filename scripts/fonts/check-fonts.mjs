@@ -3,17 +3,13 @@ import { basename, extname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { resolvedFontOptions } from "../../src/config/fontConfig.ts";
 import { siteConfig } from "../../src/config/siteConfig.ts";
+import { parseByteBudget } from "./budget.mjs";
 import { resolveFontAssetPath } from "./asset-path.mjs";
 
 const projectRoot = fileURLToPath(new URL("../../", import.meta.url));
 const dist = join(projectRoot, "dist");
-const maxTotalBytes = Number(
-	process.env.FONT_MAX_TOTAL_BYTES ?? resolvedFontOptions.budget.maxTotalBytes,
-);
-const maxFamilyBytes = Number(
-	process.env.FONT_MAX_FAMILY_BYTES ??
-		resolvedFontOptions.budget.maxFamilyBytes,
-);
+let maxTotalBytes;
+let maxFamilyBytes;
 
 async function walk(directory) {
 	const entries = await readdir(directory, { withFileTypes: true });
@@ -35,6 +31,16 @@ function resolveAssetPath(reference) {
 }
 
 try {
+	maxTotalBytes = parseByteBudget(
+		process.env.FONT_MAX_TOTAL_BYTES,
+		resolvedFontOptions.budget.maxTotalBytes,
+		"FONT_MAX_TOTAL_BYTES",
+	);
+	maxFamilyBytes = parseByteBudget(
+		process.env.FONT_MAX_FAMILY_BYTES,
+		resolvedFontOptions.budget.maxFamilyBytes,
+		"FONT_MAX_FAMILY_BYTES",
+	);
 	const allFiles = await walk(dist);
 	const textFiles = allFiles.filter((file) =>
 		[".html", ".css"].includes(extname(file).toLowerCase()),
