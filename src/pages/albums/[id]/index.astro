@@ -45,6 +45,8 @@ if (resolvedAlbum.password) {
 	bannerDate={resolvedAlbum.date}
 	page="albums"
 >
+		{/* F-121：隐藏相册不进 sitemap，页面上再声明 noindex 以禁止收录 */}
+		{resolvedAlbum.hidden && <meta slot="head" name="robots" content="noindex" />}
 		<section class="album-detail">
 		<div class="album-detail__hero">
 			<img
