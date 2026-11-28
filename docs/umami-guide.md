@@ -51,7 +51,8 @@ shareUrl: https://your-umami-instance.com/share/<shareId>
 ### 3. 可选访问采集
 
 `shareUrl` 只负责读取公开分享统计。需要让 Shirone 页面本身向 Umami 上报访问时，
-再同时配置 `websiteId` 与 `scriptUrl`。只配置其中一项不会加载采集脚本。
+再同时配置 `websiteId` 与 `scriptUrl`。只配置其中一项不会加载采集脚本；只配置
+采集两项而不填 `shareUrl` 同样可行——此时仅启用访问采集，不注入统计 UI。
 
 ## 零额外负担原则
 

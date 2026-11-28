@@ -305,10 +305,16 @@ export function shirones(options: ShironesOptions = {}): AstroIntegration {
 					"umamiConfig",
 					registryRef,
 				);
-				const umamiConfig = umamiModule.umamiConfig as { shareUrl: string };
+				const umamiConfig = umamiModule.umamiConfig as { shareUrl?: string };
 				const resolveUmamiOptions = umamiModule.resolveUmamiOptions as (
 					c: unknown,
 				) => unknown;
+				// Gate every injection on the RESOLVED options: the resolver
+				// trims, so a whitespace-only `shareUrl` counts as absent, and
+				// reading the raw string here would hand oddmisc `"   "`.
+				const umamiOptions = resolveUmamiOptions(umamiConfig) as {
+					shareUrl?: string;
+				} | null;
 
 				const musicWidgetEnabled = Boolean(
 					sidebarConfig?.enable &&
@@ -318,7 +324,6 @@ export function shirones(options: ShironesOptions = {}): AstroIntegration {
 				);
 				const musicEnabled =
 					musicWidgetEnabled && resolveMusicOptions(musicConfig) !== null;
-				const umamiEnabled = resolveUmamiOptions(umamiConfig) !== null;
 
 				// ── 2. Watch config files so the dev server restarts on edits ───
 				if (command === "dev" && existsSync(paths.configDir)) {
@@ -387,8 +392,7 @@ export function shirones(options: ShironesOptions = {}): AstroIntegration {
 								paths,
 								command,
 								{
-									umamiConfig,
-									umamiEnabled,
+									umamiOptions,
 								},
 								registryRef,
 							);
@@ -641,7 +645,7 @@ type ConfigCommand = Parameters<
 async function createBundledIntegrations(
 	paths: ResolvedShironesPaths,
 	command: ConfigCommand,
-	options: { umamiConfig: { shareUrl: string }; umamiEnabled: boolean },
+	options: { umamiOptions: { shareUrl?: string } | null },
 	registryRef?: { overrides: Map<string, string> },
 ) {
 	const [
@@ -661,10 +665,13 @@ async function createBundledIntegrations(
 		import("@expressive-code/plugin-collapsible-sections"),
 		import("@expressive-code/plugin-line-numbers"),
 	]);
-	const oddmiscIntegration = options.umamiEnabled
+	// `umamiOptions` is the resolver's output, so `shareUrl` is already trimmed:
+	// a whitespace-only value counts as absent instead of reaching oddmisc.
+	const oddmiscShareUrl = options.umamiOptions?.shareUrl;
+	const oddmiscIntegration = oddmiscShareUrl
 		? (await import("oddmisc/astro")).oddmisc({
 				umami: {
-					shareUrl: options.umamiConfig.shareUrl,
+					shareUrl: oddmiscShareUrl,
 				},
 			})
 		: null;

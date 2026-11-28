@@ -72,7 +72,7 @@ async function waitForVisualReady(page: import("@playwright/test").Page) {
 }
 
 test.describe("Umami analytics", () => {
-	test("resolver rejects disabled and incomplete configuration", () => {
+	test("resolver rejects disabled and credential-less configuration", () => {
 		const disabled: UmamiConfig = {
 			enable: false,
 			shareUrl: "http://127.0.0.1:4321/share/test-share",
@@ -81,6 +81,21 @@ test.describe("Umami analytics", () => {
 
 		expect(resolveUmamiOptions(disabled)).toBeNull();
 		expect(resolveUmamiOptions(incomplete)).toBeNull();
+	});
+
+	test("resolver resolves tracking-only configuration without a share URL", () => {
+		const resolved = resolveUmamiOptions({
+			enable: true,
+			shareUrl: "",
+			websiteId: "  website-test  ",
+			scriptUrl: "  http://127.0.0.1:4321/script.js  ",
+		});
+
+		expect(resolved).toEqual({
+			shareUrl: undefined,
+			websiteId: "website-test",
+			scriptUrl: "http://127.0.0.1:4321/script.js",
+		});
 	});
 
 	test("resolver trims enabled configuration", () => {

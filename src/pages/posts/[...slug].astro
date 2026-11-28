@@ -186,7 +186,7 @@ const postLicense = resolveLicenseConfig(
 	entry.data.license,
 	profileConfig.name,
 );
-const umamiEnabled = resolveUmamiOptions(umamiConfig) !== null;
+const umamiEnabled = Boolean(resolveUmamiOptions(umamiConfig)?.shareUrl);
 const authorAvatarUrl = shareOptions
 	? await resolveAsset(profileConfig.avatar ?? "")
 	: "";

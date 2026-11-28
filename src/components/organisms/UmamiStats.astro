@@ -13,7 +13,7 @@ interface Props {
 }
 
 const { variant = "meta", path, class: className, style } = Astro.props;
-const enabled = resolveUmamiOptions(umamiConfig) !== null;
+const enabled = Boolean(resolveUmamiOptions(umamiConfig)?.shareUrl);
 const pageViewsLabel = i18n(I18nKey.profileStatsPageViews);
 const visitsLabel = i18n(I18nKey.profileStatsVisits);
 const rootClass = [

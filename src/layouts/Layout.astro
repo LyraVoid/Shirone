@@ -233,7 +233,7 @@ const defaultSchemeStyle = createDefaultSchemeStyle();
 		data-banner-has-mobile={String(hasMobileBanner)}
 	>
 		<ConfigCarrier></ConfigCarrier>
-		{umamiOptions && <UmamiRuntime />}
+		{umamiOptions?.shareUrl && <UmamiRuntime />}
 		{textureEnabled && (
 			<div
 				id="m3e-texture-canvas"

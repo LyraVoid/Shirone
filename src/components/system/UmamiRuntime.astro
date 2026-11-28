@@ -97,6 +97,11 @@
 
 <script is:inline>
 	(() => {
+		// The layout shell re-runs this inline script on every swup head
+		// replacement, but the listeners below live on window/document and
+		// would stack up; register them once per document.
+		if (window.__shironeUmamiRuntimeBound) return;
+		window.__shironeUmamiRuntimeBound = true;
 		const rootSelector = "[data-shirone-umami]";
 		let scheduled = false;
 
@@ -186,7 +191,10 @@
 						root
 							.querySelector("[data-shirone-umami-display]")
 							?.setAttribute("aria-busy", "false");
-						root.dataset.umamiLoaded = "true";
+						// Reset the flag (set to "loading" above) so the next
+						// navigation retries this root; any truthy value here
+						// would exclude it from every later load forever.
+						delete root.dataset.umamiLoaded;
 					}
 				}),
 			);
