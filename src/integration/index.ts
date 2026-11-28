@@ -32,7 +32,7 @@ import {
 	loadConfigModule,
 	loadPackageModule,
 } from "./resolve/load-config.ts";
-import { normalisePath, resolvePaths } from "./resolve/paths.ts";
+import { isPathUnder, resolvePaths } from "./resolve/paths.ts";
 import {
 	buildOverrideRegistry,
 	createOverlayTargets,
@@ -514,21 +514,22 @@ export function shirones(options: ShironesOptions = {}): AstroIntegration {
 				// cache in every mode.
 				server.watcher.on("all", (_event, file) => {
 					if (typeof file !== "string") return;
-					// Trailing separator so a sibling such as `src/configFoo`
-					// does not also match.
-					if (file.startsWith(`${paths.configDir}/`)) {
+					// chokidar hands back whatever separators the platform uses, so
+					// the prefix check goes through `isPathUnder` (see its note on
+					// Windows). The trailing separator still keeps a sibling such
+					// as `src/configFoo` from matching.
+					if (isPathUnder(file, paths.configDir)) {
 						invalidateConfigCache();
 					}
 				});
 
 				// See "2.5. Plugin scripts": scripts are read once per start.
-				const scriptsDir = normalisePath(paths.scriptsDir);
 				server.watcher.on("all", (event, file) => {
 					if (typeof file !== "string") return;
 					if (event !== "add" && event !== "change" && event !== "unlink") {
 						return;
 					}
-					if (normalisePath(file).startsWith(`${scriptsDir}/`)) {
+					if (isPathUnder(file, paths.scriptsDir)) {
 						server.watcher.emit("change", paths.scriptsDir);
 					}
 				});
@@ -538,12 +539,10 @@ export function shirones(options: ShironesOptions = {}): AstroIntegration {
 
 				// Rebuild the override registry when an override file changes so
 				// dev picks new/moved/removed overrides up immediately.
-				const overrideDirs = createOverlayTargets(paths).map((t) =>
-					normalisePath(t.userDir),
-				);
+				const overrideDirs = createOverlayTargets(paths);
 				server.watcher.on("all", (_event, file) => {
 					if (typeof file !== "string") return;
-					if (overrideDirs.some((dir) => file.startsWith(`${dir}/`))) {
+					if (overrideDirs.some((t) => isPathUnder(file, t.userDir))) {
 						registryRef.overrides = buildOverrideRegistry(paths).overrides;
 					}
 				});
