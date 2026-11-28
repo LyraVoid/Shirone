@@ -574,3 +574,68 @@ test("an inline CommonJS require call in astro.config.cjs is preserved", (t) => 
 		original,
 	);
 });
+
+test("a malformed package.json fails before init moves any project files", (t) => {
+	const fixture = createFixture();
+	t.after(() => fixture.cleanup());
+	const manifest = join(fixture.project, "package.json");
+	const broken = '{ "name": "broken",\n';
+	writeFileSync(manifest, broken);
+
+	const result = fixture.runInit();
+	assert.notEqual(result.status, 0);
+	assert.match(result.stderr, /Could not parse package\.json/);
+	assert.equal(readFileSync(manifest, "utf8"), broken);
+	assert.equal(existsSync(join(fixture.project, "shirones")), false);
+	assert.equal(existsSync(join(fixture.project, "public")), false);
+	assert.equal(existsSync(join(fixture.project, "astro.config.mjs")), false);
+	assert.equal(existsSync(join(fixture.project, ".shirones-backup")), false);
+});
+
+test("init accepts a package.json with a UTF-8 BOM", (t) => {
+	const fixture = createFixture();
+	t.after(() => fixture.cleanup());
+	const manifest = join(fixture.project, "package.json");
+	writeFileSync(manifest, `\uFEFF${readFileSync(manifest, "utf8")}`);
+
+	const result = fixture.runInit();
+	assert.equal(result.status, 0, result.stderr);
+	const pkg = JSON.parse(readFileSync(manifest, "utf8").replace(/^\uFEFF/, ""));
+	assert.equal(pkg.name, "existing-astro-project");
+	assert.equal(existsSync(join(fixture.project, ".shirones-backup")), false);
+});
+
+test("multiple Astro configs are reported before init backs any of them up", (t) => {
+	const original = "export default {};\n";
+	const fixture = createFixture({ astroConfig: original });
+	t.after(() => fixture.cleanup());
+	const second = join(fixture.project, "astro.config.ts");
+	writeFileSync(second, original);
+
+	const result = fixture.runInit();
+	assert.notEqual(result.status, 0);
+	assert.match(result.stderr, /Multiple Astro configs found/);
+	assert.equal(
+		readFileSync(join(fixture.project, "astro.config.mjs"), "utf8"),
+		original,
+	);
+	assert.equal(readFileSync(second, "utf8"), original);
+	assert.equal(existsSync(join(fixture.project, "shirones")), false);
+	assert.equal(existsSync(join(fixture.project, ".shirones-backup")), false);
+});
+
+test("init --update refuses a malformed manifest before repairing drift", (t) => {
+	const fixture = createFixture();
+	t.after(() => fixture.cleanup());
+	assert.equal(fixture.runInit().status, 0);
+
+	// `--update` restores template files the project is missing; this one must
+	// stay missing when the manifest cannot be read.
+	rmSync(join(fixture.project, "public/favicon.svg"));
+	writeFileSync(join(fixture.project, "package.json"), "{ not json\n");
+
+	const result = fixture.runCli(["init", "--update"]);
+	assert.notEqual(result.status, 0);
+	assert.match(result.stderr, /Could not parse package\.json/);
+	assert.equal(existsSync(join(fixture.project, "public/favicon.svg")), false);
+});

@@ -343,7 +343,7 @@ async function ensurePackageJson(
 		return [packageName, ...Object.keys(dependencies)];
 	}
 
-	const pkg = JSON.parse(await readFile(pkgPath, "utf8"));
+	const pkg = await readProjectPackageJson();
 	pkg.scripts ??= {};
 	pkg.dependencies ??= {};
 	pkg.devDependencies ??= {};
@@ -835,6 +835,44 @@ const ASTRO_CONFIG_FILENAMES = [
 	"astro.config.mts",
 	"astro.config.cjs",
 ];
+
+/**
+ * Read the project manifest the way every init writer must: a UTF-8 BOM is an
+ * encoding marker, not JSON syntax, and a non-object cannot become a manifest.
+ */
+async function readProjectPackageJson() {
+	const raw = await readFile(join(CWD, "package.json"), "utf8");
+	const value = JSON.parse(raw.startsWith("\uFEFF") ? raw.slice(1) : raw);
+	if (!value || typeof value !== "object" || Array.isArray(value)) {
+		throw new Error("package.json must contain a JSON object.");
+	}
+	return value;
+}
+
+/**
+ * Validate the inputs init only reads after it has already replaced the content
+ * tree. Failing here leaves the project untouched instead of half-initialised.
+ */
+async function validateScaffoldInputs() {
+	if (existsSync(join(CWD, "package.json"))) {
+		try {
+			await readProjectPackageJson();
+		} catch (error) {
+			throw new Error(
+				`Could not parse package.json (${error.message}); fix the file and run \`shirones init\` again.`,
+			);
+		}
+	}
+
+	const configs = ASTRO_CONFIG_FILENAMES.filter((name) =>
+		existsSync(join(CWD, name)),
+	);
+	if (configs.length > 1) {
+		throw new Error(
+			`Multiple Astro configs found (${configs.join(", ")}); keep the one Astro should load and run \`shirones init\` again.`,
+		);
+	}
+}
 
 const BACKUP_DIR = ".shirones-backup";
 
@@ -1635,6 +1673,10 @@ async function init(args) {
 	// Validate user JSONC before any scaffold or backup changes, so a malformed
 	// config cannot leave the project half-initialised.
 	await validateExistingTsConfig();
+
+	// Same reason for the manifest and the Astro config: the `--update` repair
+	// path writes too, so refuse ambiguous input before either branch runs.
+	await validateScaffoldInputs();
 
 	// Already initialised? Report drift from the template instead of
 	// re-scaffolding; `--update` repairs the safe bits (never overwrites the
