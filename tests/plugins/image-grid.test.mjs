@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-
+import { ImageGridComponent } from "../../src/plugins/rehype-component-image-grid.mjs";
 import { siteMarkdownProcessor } from "../../src/utils/markdown-processor.mjs";
 
 // unified() 返回配置型处理器，需经 createRenderer 取得真正的渲染器（与 Astro 构建期同一条插件链）
@@ -36,7 +36,9 @@ test("renders a default grid with three tracks and one lightbox group", async ()
 	assert.equal(figureCount, 3);
 
 	// 同一网格共享独立分组 ID
-	const groupIds = new Set(html.match(/data-fancybox="image-grid-\d+"/g) ?? []);
+	const groupIds = new Set(
+		html.match(/data-fancybox="image-grid-[\d-]+"/g) ?? [],
+	);
 	assert.equal(groupIds.size, 1);
 
 	// 零额外负担：惰性加载与异步解码
@@ -119,6 +121,69 @@ test("assigns independent lightbox groups per grid", async () => {
 		].join("\n"),
 	);
 
-	const groupIds = new Set(html.match(/data-fancybox="image-grid-\d+"/g) ?? []);
+	const groupIds = new Set(
+		html.match(/data-fancybox="image-grid-[\d-]+"/g) ?? [],
+	);
 	assert.equal(groupIds.size, 2);
+});
+
+test("gallery group ids are deterministic across repeated renders (F-17)", () => {
+	// 有文档身份的正文：同文档同位置 → 稳定 ID（跨构建/多站构建不漂移）
+	const image = (src) => ({
+		type: "element",
+		tagName: "img",
+		properties: { src, alt: "x" },
+		children: [],
+		position: { start: { line: 2, column: 1 } },
+	});
+	const idOf = (el) => el.children[0].children[0].properties.dataFancybox;
+	const render = () =>
+		ImageGridComponent({}, [image("/images/albums/01.webp")], {
+			vfile: { path: "src/content/posts/x.md" },
+		});
+	const id = idOf(render());
+	assert.ok(id);
+	assert.equal(id, idOf(render()));
+	assert.doesNotMatch(id, /undefined|NaN/);
+});
+
+test("gallery group ids stay distinct across documents with identical positions (F-17)", () => {
+	// rehype-components 向组件处理器传入 { tree, vfile } 上下文；
+	// 两个文档的首图位于同一行列时，分组 ID 由文档身份散列区分。
+	const image = (src) => ({
+		type: "element",
+		tagName: "img",
+		properties: { src, alt: "x" },
+		children: [],
+		position: { start: { line: 12, column: 2 } },
+	});
+	const idOf = (el) => el.children[0].children[0].properties.dataFancybox;
+	const render = (src, path) =>
+		ImageGridComponent({}, [image(src)], { vfile: { path } });
+
+	const one = render("/images/albums/01.webp", "src/content/posts/one.md");
+	const two = render("/images/albums/01.webp", "src/content/posts/two.md");
+	assert.notEqual(idOf(one), idOf(two), "不同文档同位置不得串组");
+	for (const id of [idOf(one), idOf(two)]) {
+		assert.match(id, /^image-grid-[\d-]+$/);
+	}
+	// 同一文档重复渲染 → 相同 ID
+	const again = render("/images/albums/01.webp", "src/content/posts/one.md");
+	assert.equal(idOf(one), idOf(again));
+});
+
+test("gallery group ids stay distinct for bodies without document identity (F-17)", () => {
+	const image = (src) => ({
+		type: "element",
+		tagName: "img",
+		properties: { src, alt: "x" },
+		children: [],
+		position: { start: { line: 3, column: 1 } },
+	});
+	const idOf = (el) => el.children[0].children[0].properties.dataFancybox;
+	// moment 正文等无 vfile 路径的场景：每次渲染分配独立序号，不共享空文档键
+	const first = ImageGridComponent({}, [image("/m/01.webp")], {});
+	const second = ImageGridComponent({}, [image("/m/01.webp")], {});
+	assert.notEqual(idOf(first), idOf(second), "无文档身份的正文不得共享分组");
+	assert.match(idOf(first), /^image-grid-[\d-]+$/);
 });

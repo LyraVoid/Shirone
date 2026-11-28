@@ -240,14 +240,15 @@ test.describe("Markdown image grid gallery", () => {
 		);
 		const firstLinks = grids.nth(0).locator(".image-grid__link");
 		const groupId = await firstLinks.first().getAttribute("data-fancybox");
-		expect(groupId).toMatch(/^image-grid-\d+$/);
+		// F-17: 分组 id 由图片源位置派生（image-grid-<line>-<column>），确定性且随内容变化
+		expect(groupId).toMatch(/^image-grid-[\d-]+$/);
 		// 相邻网格分组互不相同
 		const secondGroupId = await grids
 			.nth(1)
 			.locator(".image-grid__link")
 			.first()
 			.getAttribute("data-fancybox");
-		expect(secondGroupId).toMatch(/^image-grid-\d+$/);
+		expect(secondGroupId).toMatch(/^image-grid-[\d-]+$/);
 		expect(secondGroupId).not.toBe(groupId);
 
 		// 最小语法网格仅 2 张图，轮播范围不超过本网格（Fancybox v6 惰性创建非活动幻灯片，
