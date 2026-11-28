@@ -355,6 +355,37 @@ test("init --update leaves a flow-style pnpm value spread over lines unchanged",
 	assert.equal(readFileSync(workspaceFile, "utf8"), workspace);
 });
 
+test("init --update leaves an anchored flow-style pnpm value alone", (t) => {
+	const fixture = createFixture();
+	t.after(() => fixture.cleanup());
+
+	const initial = fixture.runInit();
+	assert.equal(initial.status, 0, initial.stderr);
+	const workspaceFile = join(fixture.project, "pnpm-workspace.yaml");
+	writeFileSync(
+		workspaceFile,
+		[
+			"allowBuilds: { esbuild: false }",
+			"onlyBuiltDependencies: &native [custom-native]",
+			"ignoredOptionalDependencies: *native",
+			"",
+		].join("\n"),
+	);
+
+	const updated = fixture.runCli(["init", "--update"]);
+	assert.equal(updated.status, 0, updated.stderr);
+	const workspace = readFileSync(workspaceFile, "utf8");
+	assert.match(
+		workspace,
+		/^onlyBuiltDependencies: &native \[custom-native\]$/m,
+	);
+	assert.match(workspace, /^ignoredOptionalDependencies: \*native$/m);
+	assert.deepEqual(
+		require("yaml").parse(workspace).ignoredOptionalDependencies,
+		["custom-native"],
+	);
+});
+
 // `public/` belongs to the user once the project is scaffolded: the real
 // template ships tens of megabytes of demo media, and deleting it must neither
 // show up as drift nor be undone by `--update`. Only `--public` re-adds it.

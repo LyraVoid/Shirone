@@ -333,6 +333,12 @@ async function expandFlowKeys(lines) {
 			unexpanded.add(key);
 			continue;
 		}
+		// An anchor on the flow value is dropped by `stringify`, and any `*alias`
+		// elsewhere then points at nothing; leave the line alone instead.
+		if (new RegExp(`^${key}:[ \\t]*&`).test(lines[index])) {
+			unexpanded.add(key);
+			continue;
+		}
 		// `key: []` keeps its meaning as an indented flow body; `key: {}` needs a
 		// bare header so the block rewrite can add approvals below it.
 		if (Array.isArray(value) && value.length === 0) {
