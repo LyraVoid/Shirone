@@ -1,5 +1,6 @@
 import rss from "@astrojs/rss";
 import { getFeedPosts } from "@utils/feed";
+import { escapeXml } from "@utils/feed-text.mjs";
 import type { APIContext } from "astro";
 import { siteConfig } from "@/config";
 
@@ -18,6 +19,6 @@ export async function GET(context: APIContext): Promise<Response> {
 			link: post.link,
 			content: post.contentHtml,
 		})),
-		customData: `<language>${siteConfig.lang}</language>`,
+		customData: `<language>${escapeXml(siteConfig.lang)}</language>`,
 	});
 }
