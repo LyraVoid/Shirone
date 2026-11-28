@@ -2,6 +2,11 @@
 
 This project runs unit tests directly with Node. CI uses Node 26.13.0. Astro/Vite supplies TypeScript, aliases, and extension resolution during development, but `node --test` does not; code loaded by tests must work in both environments.
 
+`pnpm type-check` runs `astro sync` before checking TypeScript declarations, so
+it works before any Astro types have been generated. The `Diagnostics and tests` job runs the same
+declaration checker as a blocking step immediately after `astro check`, which
+already generates the Astro types.
+
 ## Runtime boundaries
 
 - Do not make a pure Node test path import a TypeScript module containing a runtime `enum`. Node's strip-only TypeScript loader does not support `enum`.
@@ -36,6 +41,8 @@ is needed.
 ## Browser regression path selection
 
 The main `ci.yml` runs quality checks, diagnostics, Node unit tests, a Node 26.13.0 production build, and the cross-repository package-mode validation for every PR and push. Only the Playwright browser suites are path-gated.
+
+`pnpm test` discovers browser specs under `tests/site/`. Run `node --test "tests/**/*.test.mjs"` for the separate Node suite.
 
 - For a PR, changed paths are computed from the base SHA to the PR merge commit; for a push, from the event's `before` SHA to the current commit. Manual dispatches and new-branch pushes select both browser suites. The Shirones package-mode job is unconditional and runs on every workflow trigger.
 - `tests/fixtures/**` selects the comment suite. Source, dependencies, runtime/build config, scripts, public assets, and workflow changes select both browser suites. Fast paths are limited to explicit documentation/Markdown patterns and the Node-test globs (`tests/*.test.mjs`, `tests/*/*.test.mjs`). Bash `*` can match `/`, so the second pattern also matches deeper paths such as `tests/plugins/markdown/katex-version.test.mjs`; these globs are not limited to one directory level. Unrecognized paths fail closed and select both browser suites; mixed changes take the most conservative selection.

@@ -52,7 +52,7 @@
 		"lighthouse:mobile": "node scripts/lighthouse/run.mjs --device=mobile",
 		"lighthouse": "node scripts/lighthouse/run.mjs --device=desktop",
 		"astro": "astro",
-		"type-check": "node scripts/type-check.mjs",
+		"type-check": "astro sync && node scripts/type-check.mjs",
 		"schemas": "node scripts/content/generate-config-schemas.mjs",
 		"new-post": "node scripts/new-post.js",
 		"format": "biome format --write ./src",

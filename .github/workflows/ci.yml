@@ -119,6 +119,10 @@ jobs:
       - name: Check Astro diagnostics
         run: pnpm exec astro check
 
+      - name: Check TypeScript declarations
+        # Astro check already generated the content types in this job.
+        run: node scripts/type-check.mjs
+
       - name: Check Svelte diagnostics
         run: pnpm exec svelte-check --tsconfig ./tsconfig.json
 

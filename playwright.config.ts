@@ -6,7 +6,7 @@ import { defineConfig } from "@playwright/test";
  * 复用系统 Chrome（channel: chrome），避免额外下载浏览器。
  */
 export default defineConfig({
-	testDir: "./tests",
+	testDir: "./tests/site",
 	timeout: 30_000,
 	expect: { timeout: 5_000 },
 	// 截图命名去掉平台/项目后缀（-win32），且随 spec 文件旁存放
