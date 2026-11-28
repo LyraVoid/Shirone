@@ -623,3 +623,19 @@ test("multiple Astro configs are reported before init backs any of them up", (t)
 	assert.equal(existsSync(join(fixture.project, "shirones")), false);
 	assert.equal(existsSync(join(fixture.project, ".shirones-backup")), false);
 });
+
+test("init --update refuses a malformed manifest before repairing drift", (t) => {
+	const fixture = createFixture();
+	t.after(() => fixture.cleanup());
+	assert.equal(fixture.runInit().status, 0);
+
+	// `--update` restores template files the project is missing; this one must
+	// stay missing when the manifest cannot be read.
+	rmSync(join(fixture.project, "public/favicon.svg"));
+	writeFileSync(join(fixture.project, "package.json"), "{ not json\n");
+
+	const result = fixture.runCli(["init", "--update"]);
+	assert.notEqual(result.status, 0);
+	assert.match(result.stderr, /Could not parse package\.json/);
+	assert.equal(existsSync(join(fixture.project, "public/favicon.svg")), false);
+});

@@ -1674,6 +1674,10 @@ async function init(args) {
 	// config cannot leave the project half-initialised.
 	await validateExistingTsConfig();
 
+	// Same reason for the manifest and the Astro config: the `--update` repair
+	// path writes too, so refuse ambiguous input before either branch runs.
+	await validateScaffoldInputs();
+
 	// Already initialised? Report drift from the template instead of
 	// re-scaffolding; `--update` repairs the safe bits (never overwrites the
 	// user's files). `--public` on its own only re-adds static assets;
@@ -1685,10 +1689,6 @@ async function init(args) {
 		}
 		return checkAndUpdate(packageName, { apply, restorePublic });
 	}
-
-	// Everything below writes into the project. Refuse inputs that would only
-	// fail after the content tree has been replaced and backed up.
-	await validateScaffoldInputs();
 
 	console.log(
 		`\n${colours.bold}Shirone${colours.reset} · initialising project`,
